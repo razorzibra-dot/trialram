@@ -3,7 +3,7 @@
  * Displays customers in a data table with filtering and actions
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { DataTable, Column } from '@/modules/shared/components/DataTable';
 import { useCustomers, useDeleteCustomer, useBulkCustomerOperations } from '../hooks/useCustomers';
 import { useCustomerStore } from '../store/customerStore';
@@ -104,10 +104,10 @@ export const CustomerList: React.FC<CustomerListProps> = ({
           medium: 'bg-yellow-100 text-yellow-800',
           enterprise: 'bg-purple-100 text-purple-800',
         };
-        
+
         return (
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className={sizeColors[size as keyof typeof sizeColors] || ''}
           >
             {size || 'Unknown'}
@@ -127,7 +127,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
           inactive: 'bg-gray-100 text-gray-800',
           prospect: 'bg-orange-100 text-orange-800',
         };
-        
+
         return (
           <Badge className={statusColors[status as keyof typeof statusColors] || ''}>
             {status || 'Unknown'}
@@ -155,39 +155,41 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   ], []);
 
   // Handle pagination
-  const handlePaginationChange = (page: number, pageSize: number) => {
-    setFilters({ 
-      ...filters, 
-      page, 
-      pageSize 
+  const handlePaginationChange = useCallback((page: number, pageSize: number) => {
+    setFilters({
+      ...filters,
+      page,
+      pageSize
     });
-  };
+  }, [filters, setFilters]);
 
   // Handle search
-  const handleSearch = (search: string) => {
-    setFilters({ 
-      ...filters, 
+  const handleSearch = useCallback((search: string) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
       search,
       page: 1 // Reset to first page
-    });
-  };
+    }));
+  }, [setFilters]);
 
   // Handle selection
-  const handleSelectionChange = (selectedRowKeys: string[], selectedRows: Customer[]) => {
+  const handleSelectionChange = useCallback((selectedRowKeys: string[], selectedRows: Customer[]) => {
     setSelectedCustomerIds(selectedRowKeys);
-  };
+  }, [setSelectedCustomerIds]);
 
   // Handle bulk delete
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
     if (selectedCustomerIds.length === 0) return;
-    
+
     if (confirm(`Are you sure you want to delete ${selectedCustomerIds.length} customers?`)) {
       await bulkDelete.mutateAsync(selectedCustomerIds);
+      setSelectedCustomerIds([]); // Clear selection after bulk delete
+      refetch(); // Refetch data after deletion
     }
-  };
+  }, [selectedCustomerIds, bulkDelete, refetch, setSelectedCustomerIds]);
 
   // Row actions
-  const getRowActions = (customer: Customer) => [
+  const getRowActions = useCallback((customer: Customer) => [
     {
       label: 'View',
       icon: <Eye className="w-4 h-4" />,
@@ -203,11 +205,15 @@ export const CustomerList: React.FC<CustomerListProps> = ({
       icon: <Trash2 className="w-4 h-4" />,
       onClick: () => {
         if (confirm('Are you sure you want to delete this customer?')) {
-          deleteCustomer.mutate(customer.id);
+          deleteCustomer.mutate(customer.id, {
+            onSuccess: () => {
+              refetch(); // Refetch data after deletion
+            },
+          });
         }
       },
     },
-  ];
+  ], [onViewCustomer, onEditCustomer, deleteCustomer, refetch]);
 
   return (
     <div className="space-y-4">

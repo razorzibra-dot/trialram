@@ -17,6 +17,7 @@ export * from './components/CustomerList';
 
 // Routes
 export { customerRoutes } from './routes';
+import { customerRoutes } from './routes';
 
 // Module configuration
 export const customerModule = {

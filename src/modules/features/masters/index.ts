@@ -17,6 +17,7 @@ export * from './components/ProductsList';
 
 // Routes
 export { mastersRoutes } from './routes';
+import { mastersRoutes } from './routes';
 
 // Module configuration
 export const mastersModule = {

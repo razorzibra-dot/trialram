@@ -52,7 +52,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { tenantService } from '@/services/tenantService';
 import { Tenant } from '@/types/crm';

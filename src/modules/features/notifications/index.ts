@@ -8,6 +8,7 @@ export * from './views/NotificationsPage';
 
 // Routes
 export { notificationsRoutes } from './routes';
+import { notificationsRoutes } from './routes';
 
 // Module configuration  
 export const notificationsModule = {

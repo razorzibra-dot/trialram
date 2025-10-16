@@ -14,6 +14,7 @@ export * from './components/TicketsList';
 
 // Routes
 export { ticketsRoutes } from './routes';
+import { ticketsRoutes } from './routes';
 
 // Module configuration
 export const ticketsModule = {

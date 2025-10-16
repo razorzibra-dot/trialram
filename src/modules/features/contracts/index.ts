@@ -20,6 +20,7 @@ export { ContractDetailPage } from './views/ContractDetailPage';
 
 // Routes
 export { contractsRoutes } from './routes';
+import { contractsRoutes } from './routes';
 
 // Module configuration
 export const contractsModule = {

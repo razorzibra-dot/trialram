@@ -14,6 +14,7 @@ export * from './components/DashboardWidgets';
 
 // Routes
 export { dashboardRoutes } from './routes';
+import { dashboardRoutes } from './routes';
 
 // Module configuration
 export const dashboardModule = {

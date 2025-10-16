@@ -4,13 +4,27 @@
  */
 
 // Store exports
-export * from './store/customerStore';
+export { 
+  useCustomerStore, 
+  useCustomerFilters, 
+  useCustomerPagination,
+  useCustomerSelection
+} from './store/customerStore';
+export type { CustomerFilters, CustomerState } from './store/customerStore';
 
 // Service exports
-export * from './services/customerService';
+export { CustomerService } from './services/customerService';
+export type { CreateCustomerData, UpdateCustomerData } from './services/customerService';
 
 // Hook exports
-export * from './hooks/useCustomers';
+export { 
+  useCustomers, 
+  useCustomer, 
+  useCustomerTags,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer 
+} from './hooks/useCustomers';
 
 // Component exports
 export * from './components/CustomerList';

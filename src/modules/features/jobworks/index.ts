@@ -14,6 +14,7 @@ export * from './components/JobWorksList';
 
 // Routes
 export { jobWorksRoutes } from './routes';
+import { jobWorksRoutes } from './routes';
 
 // Module configuration
 export const jobWorksModule = {

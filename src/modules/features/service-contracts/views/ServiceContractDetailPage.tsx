@@ -47,7 +47,7 @@ import {
 import dayjs from 'dayjs';
 import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;

@@ -25,6 +25,7 @@ export * from './components/SalesList';
 
 // Routes
 export { salesRoutes } from './routes';
+import { salesRoutes } from './routes';
 
 // Module configuration
 export const salesModule = {

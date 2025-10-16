@@ -34,9 +34,9 @@ import {
   SearchOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/modules/shared/components/EnterpriseLayout';
-import { PageHeader } from '@/modules/shared/components/PageHeader';
-import { StatCard } from '@/modules/shared/components/StatCard';
+import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatCard } from '@/components/common/StatCard';
 import { useCompanyStats, useImportCompanies, useCompanies, useDeleteCompany } from '../hooks/useCompanies';
 import { useAuth } from '@/contexts/AuthContext';
 import { Company, CompanyFilters } from '@/types/masters';

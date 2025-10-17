@@ -213,7 +213,8 @@ export class JobWorksService extends BaseService {
    */
   async updateJobWorkStatus(id: string, status: string): Promise<JobWork> {
     try {
-      return await this.updateJobWork(id, { status: status as any });
+      const typedStatus = status as 'pending' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';
+      return await this.updateJobWork(id, { status: typedStatus });
     } catch (error) {
       this.handleError(`Failed to update job work status for ${id}`, error);
       throw error;
@@ -223,7 +224,7 @@ export class JobWorksService extends BaseService {
   /**
    * Get job work statistics
    */
-  async getJobWorkStats(): Promise<any> {
+  async getJobWorkStats(): Promise<unknown> {
     try {
       const response = await this.getJobWorks({ pageSize: 1000 });
       const jobWorks = response.data;

@@ -53,26 +53,7 @@ import { cn } from '@/lib/utils';
 const Logs: React.FC = () => {
   const { hasRole } = useAuth();
   
-  // Redirect if not admin
-  if (!hasRole('admin')) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-              <p className="text-gray-500">
-                You need administrator privileges to access audit logs and system monitoring.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // State management
+  // State management - must be before any early returns for React Hook rules
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<LogFilters>({ page: 1, limit: 25 });
@@ -80,7 +61,7 @@ const Logs: React.FC = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [activeTab, setActiveTab] = useState('logs');
-
+  
   // Fetch logs
   const fetchLogs = async (showLoading = true) => {
     try {
@@ -105,12 +86,14 @@ const Logs: React.FC = () => {
     }
   };
 
-  // Auto-refresh logs
+  // Auto-refresh logs - must be before permission check for React Hook rules
   useEffect(() => {
+    if (!hasRole('admin')) return; // Early return after hooks
     fetchLogs();
-  }, [filters]);
+  }, [filters, hasRole]);
 
   useEffect(() => {
+    if (!hasRole('admin')) return; // Early return after hooks
     if (autoRefresh && activeTab === 'logs') {
       const interval = setInterval(() => {
         fetchLogs(false); // Don't show loading on auto-refresh
@@ -118,7 +101,26 @@ const Logs: React.FC = () => {
       
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, activeTab, filters]);
+  }, [autoRefresh, activeTab, filters, hasRole]);
+  
+  // Redirect if not admin
+  if (!hasRole('admin')) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+              <p className="text-gray-500">
+                You need administrator privileges to access audit logs and system monitoring.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Handle pagination
   const handlePageChange = (newPage: number) => {

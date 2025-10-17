@@ -35,7 +35,7 @@ export class RealTicketService implements ITicketService {
         });
       }
 
-      const response = await baseApiService.get<any>(
+      const response = await baseApiService.get<TicketResponse[]>(
         `${apiConfig.endpoints.tickets.base}?${params.toString()}`
       );
 
@@ -44,8 +44,9 @@ export class RealTicketService implements ITicketService {
         ? payload
         : (payload?.items ?? []);
       return list;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch tickets');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch tickets';
+      throw new Error(message);
     }
   }
 
@@ -59,8 +60,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch ticket');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ticket';
+      throw new Error(message);
     }
   }
 
@@ -75,8 +77,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create ticket');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create ticket';
+      throw new Error(message);
     }
   }
 
@@ -91,8 +94,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update ticket');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update ticket';
+      throw new Error(message);
     }
   }
 
@@ -104,8 +108,9 @@ export class RealTicketService implements ITicketService {
       await baseApiService.delete(
         `${apiConfig.endpoints.tickets.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete ticket');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete ticket';
+      throw new Error(message);
     }
   }
 
@@ -119,8 +124,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch ticket categories');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ticket categories';
+      throw new Error(message);
     }
   }
 
@@ -134,8 +140,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch ticket priorities');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ticket priorities';
+      throw new Error(message);
     }
   }
 
@@ -150,8 +157,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to assign ticket');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to assign ticket';
+      throw new Error(message);
     }
   }
 
@@ -166,8 +174,9 @@ export class RealTicketService implements ITicketService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to change ticket status');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to change ticket status';
+      throw new Error(message);
     }
   }
 
@@ -189,8 +198,9 @@ export class RealTicketService implements ITicketService {
       }>(`${apiConfig.endpoints.tickets.base}/${ticketId}/comments`, { content });
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to add comment');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to add comment';
+      throw new Error(message);
     }
   }
 
@@ -212,8 +222,9 @@ export class RealTicketService implements ITicketService {
       }>>(`${apiConfig.endpoints.tickets.base}/${ticketId}/comments`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch comments');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch comments';
+      throw new Error(message);
     }
   }
 
@@ -235,8 +246,9 @@ export class RealTicketService implements ITicketService {
       }>(`${apiConfig.endpoints.tickets.base}/${ticketId}/attachments`, file);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload attachment');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload attachment';
+      throw new Error(message);
     }
   }
 
@@ -248,8 +260,9 @@ export class RealTicketService implements ITicketService {
       await baseApiService.delete(
         `${apiConfig.endpoints.tickets.base}/${ticketId}/attachments/${attachmentId}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete attachment');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete attachment';
+      throw new Error(message);
     }
   }
 
@@ -281,8 +294,9 @@ export class RealTicketService implements ITicketService {
       }>(`${apiConfig.endpoints.tickets.base}/stats`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch ticket statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ticket statistics';
+      throw new Error(message);
     }
   }
 
@@ -317,8 +331,9 @@ export class RealTicketService implements ITicketService {
       }>(`${apiConfig.endpoints.tickets.base}/analytics${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch ticket analytics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ticket analytics';
+      throw new Error(message);
     }
   }
 
@@ -336,8 +351,9 @@ export class RealTicketService implements ITicketService {
         `${apiConfig.endpoints.tickets.base}/bulk-update`,
         { ticketIds, updates }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to bulk update tickets');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to bulk update tickets';
+      throw new Error(message);
     }
   }
 
@@ -358,7 +374,7 @@ export class RealTicketService implements ITicketService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.tickets.base}/export?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as unknown as { data: Blob }
       );
 
       if (format === 'xlsx') {
@@ -367,8 +383,9 @@ export class RealTicketService implements ITicketService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export tickets');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export tickets';
+      throw new Error(message);
     }
   }
 
@@ -394,8 +411,9 @@ export class RealTicketService implements ITicketService {
       }>(`${apiConfig.endpoints.tickets.base}/sla-metrics`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch SLA metrics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch SLA metrics';
+      throw new Error(message);
     }
   }
 }

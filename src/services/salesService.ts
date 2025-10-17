@@ -266,7 +266,7 @@ class SalesService {
   }
 
   // Interface compliance methods - aliases for existing methods
-  async getSales(filters?: any): Promise<Deal[]> {
+  async getSales(filters?: Record<string, unknown>): Promise<Deal[]> {
     return this.getDeals(filters);
   }
 
@@ -274,11 +274,11 @@ class SalesService {
     return this.getDeal(id);
   }
 
-  async createSale(data: any): Promise<Deal> {
+  async createSale(data: Record<string, unknown>): Promise<Deal> {
     return this.createDeal(data);
   }
 
-  async updateSale(id: string, data: any): Promise<Deal> {
+  async updateSale(id: string, data: Record<string, unknown>): Promise<Deal> {
     return this.updateDeal(id, data);
   }
 
@@ -286,12 +286,12 @@ class SalesService {
     return this.deleteDeal(id);
   }
 
-  async getPipelineStages(): Promise<any[]> {
+  async getPipelineStages(): Promise<Array<{ id: string; name: string; order: number }>> {
     const stages = await this.getStages();
     return stages.map(stage => ({ id: stage, name: stage, order: stages.indexOf(stage) }));
   }
 
-  async getSalesAnalytics(period?: string): Promise<any> {
+  async getSalesAnalytics(period?: string): Promise<Record<string, unknown>> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();

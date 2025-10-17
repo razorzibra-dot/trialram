@@ -95,11 +95,12 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
       onSuccess();
       onOpenChange(false);
       resetForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create complaint:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create complaint';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create complaint',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -183,7 +184,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
                 <Label htmlFor="type">Type *</Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, type: value })}
                   required
                 >
                   <SelectTrigger>
@@ -204,7 +205,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
                 <Label htmlFor="priority">Priority *</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, priority: value })}
                   required
                 >
                   <SelectTrigger>

@@ -197,7 +197,8 @@ export class ServiceContractService extends BaseService {
    */
   async updateServiceContractStatus(id: string, status: string): Promise<ServiceContract> {
     try {
-      return await this.updateServiceContract(id, { status: status as any });
+      const contractStatus = status as 'draft' | 'active' | 'completed' | 'cancelled' | 'on_hold';
+      return await this.updateServiceContract(id, { status: contractStatus });
     } catch (error) {
       this.handleError(`Failed to update service contract status for ${id}`, error);
       throw error;

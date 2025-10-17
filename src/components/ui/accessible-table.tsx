@@ -245,8 +245,8 @@ const AccessibleTableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 AccessibleTableRow.displayName = "AccessibleTableRow"
 
 // Table with bulk selection capabilities
-interface BulkSelectTableProps extends AccessibleTableProps {
-  data: any[]
+interface BulkSelectTableProps<T = unknown> extends AccessibleTableProps {
+  data: T[]
   onSelectionChange?: (selectedRows: number[]) => void
   selectable?: boolean
 }
@@ -258,7 +258,7 @@ const BulkSelectTable = React.forwardRef<HTMLTableElement, BulkSelectTableProps>
     onSelectionChange, 
     selectable = false,
     ...props 
-  }, ref) => {
+  }: BulkSelectTableProps, ref) => {
     const [selection, setSelection] = React.useState<SelectionState>({
       selectedRows: new Set(),
       selectAll: false,

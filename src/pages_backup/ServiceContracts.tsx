@@ -80,7 +80,7 @@ const ServiceContracts: React.FC = () => {
 
   // State management
   const [contracts, setContracts] = useState<ServiceContract[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);

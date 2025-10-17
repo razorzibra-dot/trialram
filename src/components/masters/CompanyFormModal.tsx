@@ -36,7 +36,7 @@ import { companyService } from '@/services/companyService';
 const formSchema = z.object({
   name: z.string().min(1, 'Company name is required').max(100, 'Name too long'),
   address: z.string().min(1, 'Address is required').max(500, 'Address too long'),
-  phone: z.string().min(1, 'Phone is required').regex(/^[+]?[0-9\s\-\(\)]+$/, 'Invalid phone format'),
+  phone: z.string().min(1, 'Phone is required').regex(/^[+]?[0-9\s\-()]+$/, 'Invalid phone format'),
   email: z.string().min(1, 'Email is required').email('Invalid email format'),
   website: z.string().url('Invalid URL format').optional().or(z.literal('')),
   industry: z.string().min(1, 'Industry is required'),

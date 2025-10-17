@@ -32,18 +32,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   const setFilters = useCustomerStore((state) => state.setFilters);
 
   // Memoize filters to prevent unnecessary re-renders
-  const stableFilters = useMemo(() => filters, [
-    filters.search,
-    filters.status,
-    filters.industry,
-    filters.size,
-    filters.assignedTo,
-    filters.tags?.join(','),
-    filters.dateRange?.start,
-    filters.dateRange?.end,
-    filters.page,
-    filters.pageSize,
-  ]);
+  const stableFilters = useMemo(() => filters, [filters]);
 
   const { customers, pagination, isLoading, refetch } = useCustomers(stableFilters);
   const deleteCustomer = useDeleteCustomer();

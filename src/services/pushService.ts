@@ -15,7 +15,7 @@ async function getWebPush(): Promise<WebPushModule> {
   return webpushModule!;
 }
 import { DatabaseService } from './database';
-import { PushSubscription, VAPIDKeys, PushNotificationPayload } from '@/types/notifications';
+import { PushSubscription, VAPIDKeys, PushNotificationPayload, WebPushSubscription } from '@/types/notifications';
 
 export class PushService {
   private vapidKeys: VAPIDKeys | null = null;
@@ -97,7 +97,7 @@ export class PushService {
   }
 
   // Subscription management
-  async saveSubscription(userId: string, subscription: any): Promise<PushSubscription> {
+  async saveSubscription(userId: string, subscription: WebPushSubscription): Promise<PushSubscription> {
     try {
       // Check if subscription already exists
       const existingSubscription = await DatabaseService.findOne('push_subscriptions', {
@@ -206,20 +206,21 @@ export class PushService {
       });
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to send push notification:', error);
 
       // Handle expired subscriptions
-      if (error.statusCode === 410 || error.statusCode === 404) {
+      if (error instanceof Object && ('statusCode' in error) && (error.statusCode === 410 || error.statusCode === 404)) {
         await DatabaseService.update('push_subscriptions', subscription.id, {
           is_active: false,
           updated_at: new Date().toISOString()
         });
       }
 
+      const message = error instanceof Error ? error.message : 'Failed to send push notification';
       return {
         success: false,
-        error: error.message || 'Failed to send push notification'
+        error: message
       };
     }
   }
@@ -228,7 +229,7 @@ export class PushService {
     icon?: string;
     badge?: string;
     image?: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     actions?: Array<{ action: string; title: string; icon?: string }>;
     requireInteraction?: boolean;
     silent?: boolean;
@@ -302,7 +303,7 @@ export class PushService {
     icon?: string;
     badge?: string;
     image?: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     actions?: Array<{ action: string; title: string; icon?: string }>;
     requireInteraction?: boolean;
     silent?: boolean;

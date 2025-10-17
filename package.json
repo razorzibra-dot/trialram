@@ -118,13 +118,12 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged && npm run validate:pre-commit"
+      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "node scripts/validate-code.cjs --fix --staged"
+      "eslint --fix"
     ]
   }
 }

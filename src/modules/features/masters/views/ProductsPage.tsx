@@ -124,11 +124,12 @@ export const ProductsPage: React.FC = () => {
     setFilters({ ...filters, search: value, page: 1 });
   };
 
-  const handleStatusFilterChange = (value: string) => {
+  const handleStatusFilterChange = (value: string): void => {
     setStatusFilter(value);
+    const statusValue: 'active' | 'inactive' | 'discontinued' | undefined = value === 'all' ? undefined : (value as 'active' | 'inactive' | 'discontinued');
     setFilters({ 
       ...filters, 
-      status: value === 'all' ? undefined : value as any,
+      status: statusValue,
       page: 1 
     });
   };

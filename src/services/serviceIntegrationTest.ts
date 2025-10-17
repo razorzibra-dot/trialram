@@ -43,7 +43,7 @@ export interface IntegrationTestResults {
     canSwitchToReal: boolean;
     currentMode: 'mock' | 'real';
   };
-  serviceHealth: any;
+  serviceHealth: Record<string, unknown>;
   serviceResults: ServiceTestResult[];
   summary: {
     totalServices: number;
@@ -56,7 +56,7 @@ export interface IntegrationTestResults {
 /**
  * Test service interface compliance
  */
-function testServiceInterface(service: any, expectedMethods: string[]): {
+function testServiceInterface(service: Record<string, unknown>, expectedMethods: string[]): {
   hasRequiredMethods: boolean;
   missingMethods: string[];
 } {
@@ -79,7 +79,7 @@ function testServiceInterface(service: any, expectedMethods: string[]): {
  */
 async function testService(
   serviceName: string,
-  getServiceFn: () => any,
+  getServiceFn: () => Record<string, unknown>,
   expectedMethods: string[]
 ): Promise<ServiceTestResult> {
   const result: ServiceTestResult = {
@@ -105,9 +105,10 @@ async function testService(
     const testService = getServiceFn();
     result.interfaceCompliance = testServiceInterface(testService, expectedMethods);
     
-  } catch (error: any) {
-    result.mockMode.error = error.message;
-    result.realMode.error = error.message;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    result.mockMode.error = message;
+    result.realMode.error = message;
   }
 
   return result;
@@ -234,7 +235,7 @@ export async function runServiceIntegrationTests(): Promise<IntegrationTestResul
       results.overallStatus = 'pass';
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Service integration test failed:', error);
     results.overallStatus = 'fail';
   }
@@ -301,8 +302,8 @@ export function quickHealthCheck(): void {
  */
 export async function runComprehensiveServiceTests(): Promise<{
   integration: IntegrationTestResults;
-  edgeCases: any;
-  performance: any;
+  edgeCases: Record<string, unknown>;
+  performance: Record<string, unknown>;
 }> {
   console.log('🚀 Starting Comprehensive Service Tests...');
 
@@ -325,7 +326,7 @@ export async function runComprehensiveServiceTests(): Promise<{
 /**
  * Test edge cases and error scenarios
  */
-async function testEdgeCases(): Promise<any> {
+async function testEdgeCases(): Promise<Record<string, unknown>> {
   console.log('🔍 Testing Edge Cases...');
 
   const results = {
@@ -345,17 +346,19 @@ async function testEdgeCases(): Promise<any> {
       const customerService = apiServiceFactory.getCustomerService();
       await customerService.getCustomers();
       results.authenticationErrors.push({ test: 'invalid_user', status: 'failed', reason: 'Should have thrown auth error' });
-    } catch (error: any) {
-      results.authenticationErrors.push({ test: 'invalid_user', status: 'passed', error: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      results.authenticationErrors.push({ test: 'invalid_user', status: 'passed', error: message });
     }
 
     // Test validation errors
     try {
       const customerService = apiServiceFactory.getCustomerService();
-      await customerService.createCustomer({} as any);
+      await customerService.createCustomer({} as Record<string, unknown>);
       results.validationErrors.push({ test: 'empty_data', status: 'failed', reason: 'Should have thrown validation error' });
-    } catch (error: any) {
-      results.validationErrors.push({ test: 'empty_data', status: 'passed', error: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      results.validationErrors.push({ test: 'empty_data', status: 'passed', error: message });
     }
 
     // Test not found errors
@@ -363,8 +366,9 @@ async function testEdgeCases(): Promise<any> {
       const customerService = apiServiceFactory.getCustomerService();
       await customerService.getCustomer('non-existent-id');
       results.notFoundErrors.push({ test: 'non_existent_id', status: 'failed', reason: 'Should have thrown not found error' });
-    } catch (error: any) {
-      results.notFoundErrors.push({ test: 'non_existent_id', status: 'passed', error: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      results.notFoundErrors.push({ test: 'non_existent_id', status: 'passed', error: message });
     }
 
   } catch (error) {
@@ -377,7 +381,7 @@ async function testEdgeCases(): Promise<any> {
 /**
  * Test service performance
  */
-async function testPerformance(): Promise<any> {
+async function testPerformance(): Promise<Record<string, unknown>> {
   console.log('⚡ Testing Performance...');
 
   const results = {
@@ -425,31 +429,50 @@ async function testPerformance(): Promise<any> {
 /**
  * Print comprehensive test results
  */
-export function printComprehensiveResults(results: any): void {
+export function printComprehensiveResults(results: Record<string, unknown>): void {
   console.log('\n📊 Comprehensive Service Test Results');
   console.log('=====================================');
 
   // Print integration results
-  printTestResults(results.integration);
+  if (results.integration && typeof results.integration === 'object') {
+    printTestResults(results.integration as IntegrationTestResults);
+  }
 
   // Print edge case results
   console.log('\n🔍 Edge Case Test Results:');
-  Object.entries(results.edgeCases).forEach(([category, tests]: [string, any]) => {
-    console.log(`\n  ${category}:`);
-    tests.forEach((test: any) => {
-      const status = test.status === 'passed' ? '✅' : '❌';
-      console.log(`    ${status} ${test.test}: ${test.error || test.reason || 'OK'}`);
+  if (results.edgeCases && typeof results.edgeCases === 'object') {
+    Object.entries(results.edgeCases).forEach(([category, tests]) => {
+      console.log(`\n  ${category}:`);
+      if (Array.isArray(tests)) {
+        tests.forEach((test: unknown) => {
+          if (test && typeof test === 'object') {
+            const testObj = test as Record<string, unknown>;
+            const status = testObj.status === 'passed' ? '✅' : '❌';
+            console.log(`    ${status} ${testObj.test}: ${testObj.error || testObj.reason || 'OK'}`);
+          }
+        });
+      }
     });
-  });
+  }
 
   // Print performance results
   console.log('\n⚡ Performance Test Results:');
-  Object.entries(results.performance.responseTime || {}).forEach(([service, metrics]: [string, any]) => {
-    console.log(`\n  ${service}:`);
-    console.log(`    Average: ${metrics.average.toFixed(2)}ms`);
-    console.log(`    Min: ${metrics.min.toFixed(2)}ms`);
-    console.log(`    Max: ${metrics.max.toFixed(2)}ms`);
-  });
+  if (results.performance && typeof results.performance === 'object') {
+    const perfObj = results.performance as Record<string, unknown>;
+    if (perfObj.responseTime && typeof perfObj.responseTime === 'object') {
+      Object.entries(perfObj.responseTime).forEach(([service, metrics]) => {
+        console.log(`\n  ${service}:`);
+        if (metrics && typeof metrics === 'object') {
+          const metricsObj = metrics as Record<string, unknown>;
+          if (typeof metricsObj.average === 'number' && typeof metricsObj.min === 'number' && typeof metricsObj.max === 'number') {
+            console.log(`    Average: ${metricsObj.average.toFixed(2)}ms`);
+            console.log(`    Min: ${metricsObj.min.toFixed(2)}ms`);
+            console.log(`    Max: ${metricsObj.max.toFixed(2)}ms`);
+          }
+        }
+      });
+    }
+  }
 
   console.log('\n=====================================\n');
 }

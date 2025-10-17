@@ -36,7 +36,7 @@ export class RealCustomerService implements ICustomerService {
         });
       }
 
-      const response = await baseApiService.get<any>(
+      const response = await baseApiService.get<Record<string, unknown>>(
         `${apiConfig.endpoints.customers.base}?${params.toString()}`
       );
 
@@ -45,8 +45,9 @@ export class RealCustomerService implements ICustomerService {
         ? payload
         : (payload?.items ?? []);
       return list;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customers';
+      throw new Error(message);
     }
   }
 
@@ -60,8 +61,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customer');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customer';
+      throw new Error(message);
     }
   }
 
@@ -76,8 +78,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create customer');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create customer';
+      throw new Error(message);
     }
   }
 
@@ -92,8 +95,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update customer');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update customer';
+      throw new Error(message);
     }
   }
 
@@ -105,8 +109,9 @@ export class RealCustomerService implements ICustomerService {
       await baseApiService.delete(
         `${apiConfig.endpoints.customers.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete customer');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete customer';
+      throw new Error(message);
     }
   }
 
@@ -119,8 +124,9 @@ export class RealCustomerService implements ICustomerService {
         `${apiConfig.endpoints.customers.bulk}/delete`,
         { customerIds: ids }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete customers';
+      throw new Error(message);
     }
   }
 
@@ -136,8 +142,9 @@ export class RealCustomerService implements ICustomerService {
           data: updates 
         }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update customers';
+      throw new Error(message);
     }
   }
 
@@ -153,8 +160,9 @@ export class RealCustomerService implements ICustomerService {
           assignedTo 
         }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to assign customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to assign customers';
+      throw new Error(message);
     }
   }
 
@@ -170,8 +178,9 @@ export class RealCustomerService implements ICustomerService {
           tagIds 
         }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to tag customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to tag customers';
+      throw new Error(message);
     }
   }
 
@@ -199,8 +208,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to search customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to search customers';
+      throw new Error(message);
     }
   }
 
@@ -214,8 +224,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch tags');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch tags';
+      throw new Error(message);
     }
   }
 
@@ -230,8 +241,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create tag');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create tag';
+      throw new Error(message);
     }
   }
 
@@ -246,8 +258,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update tag');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update tag';
+      throw new Error(message);
     }
   }
 
@@ -259,8 +272,9 @@ export class RealCustomerService implements ICustomerService {
       await baseApiService.delete(
         `${apiConfig.endpoints.customers.tags}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete tag');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete tag';
+      throw new Error(message);
     }
   }
 
@@ -285,7 +299,7 @@ export class RealCustomerService implements ICustomerService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.customers.export}?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as Record<string, unknown>
       );
 
       // Convert blob to string for CSV/JSON or return blob URL for Excel
@@ -295,8 +309,9 @@ export class RealCustomerService implements ICustomerService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export customers';
+      throw new Error(message);
     }
   }
 
@@ -311,8 +326,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to import customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to import customers';
+      throw new Error(message);
     }
   }
 
@@ -338,8 +354,9 @@ export class RealCustomerService implements ICustomerService {
       }>(`${apiConfig.endpoints.customers.base}/stats`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customer statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customer statistics';
+      throw new Error(message);
     }
   }
 
@@ -363,8 +380,9 @@ export class RealCustomerService implements ICustomerService {
       }>>(`${apiConfig.endpoints.customers.base}/${customerId}/activity`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customer activity');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customer activity';
+      throw new Error(message);
     }
   }
 
@@ -386,8 +404,9 @@ export class RealCustomerService implements ICustomerService {
       }>>(`${apiConfig.endpoints.customers.base}/${customerId}/notes`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customer notes');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customer notes';
+      throw new Error(message);
     }
   }
 
@@ -409,8 +428,9 @@ export class RealCustomerService implements ICustomerService {
       }>(`${apiConfig.endpoints.customers.base}/${customerId}/notes`, { content });
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to add customer note');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to add customer note';
+      throw new Error(message);
     }
   }
 
@@ -424,7 +444,7 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Fallback to default industries
       return [
         'Technology',
@@ -450,7 +470,7 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Fallback to default sizes
       return ['startup', 'small', 'medium', 'enterprise'];
     }
@@ -467,8 +487,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to check for duplicates');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to check for duplicates';
+      throw new Error(message);
     }
   }
 
@@ -483,8 +504,9 @@ export class RealCustomerService implements ICustomerService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to merge customers');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to merge customers';
+      throw new Error(message);
     }
   }
 }

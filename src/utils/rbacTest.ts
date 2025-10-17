@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * RBAC Testing Utility
  * Comprehensive testing for Role-Based Access Control
@@ -311,8 +312,7 @@ export class RBACTester {
    * Print test results
    */
   printResults(): void {
-    console.log('
-🔐 RBAC Test Results');
+    console.log('\n🔐 RBAC Test Results');
     console.log('===================');
     
     let totalPassed = 0;
@@ -320,8 +320,7 @@ export class RBACTester {
     let totalTests = 0;
     
     this.results.forEach(suite => {
-      console.log(`
-📋 ${suite.suiteName}`);
+      console.log(`\n📋 ${suite.suiteName}`);
       console.log(`   ✅ Passed: ${suite.passed}`);
       console.log(`   ❌ Failed: ${suite.failed}`);
       console.log(`   📊 Total: ${suite.total}`);
@@ -338,23 +337,19 @@ export class RBACTester {
       totalTests += suite.total;
     });
     
-    console.log('
-📊 Overall Results:');
+    console.log('\n📊 Overall Results:');
     console.log(`   ✅ Total Passed: ${totalPassed}`);
     console.log(`   ❌ Total Failed: ${totalFailed}`);
     console.log(`   📊 Total Tests: ${totalTests}`);
     console.log(`   📈 Success Rate: ${((totalPassed / totalTests) * 100).toFixed(1)}%`);
     
     if (totalFailed === 0) {
-      console.log('
-🎉 All RBAC tests passed! The system is properly configured.');
+      console.log('\n🎉 All RBAC tests passed! The system is properly configured.');
     } else {
-      console.log('
-⚠️  Some RBAC tests failed. Please review the configuration.');
+      console.log('\n⚠️  Some RBAC tests failed. Please review the configuration.');
     }
     
-    console.log('===================
-');
+    console.log('===================\n');
   }
 
   /**

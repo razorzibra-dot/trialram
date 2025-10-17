@@ -7,7 +7,16 @@ import {
   RenewalReminder,
   DigitalSignature,
   ApprovalRecord,
-  ContractParty
+  ContractParty,
+  ComplianceItem,
+  ContractVersion,
+  ApprovalData,
+  RejectionData,
+  AuditTrailEntry,
+  AuditTrailFilters,
+  ApprovalWorkflowStep,
+  ContractAttachmentDetail,
+  AttachmentUploadData
 } from '@/types/contracts';
 import { authService } from './authService';
 
@@ -736,7 +745,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Interface compliance methods - aliases for existing methods
-  async getContractAnalytics(): Promise<any> {
+  async getContractAnalytics(): Promise<Record<string, unknown>> {
     return this.getAnalytics();
   }
 
@@ -851,7 +860,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Contract Versioning Methods
-  async getContractVersions(contractId: string): Promise<any[]> {
+  async getContractVersions(contractId: string): Promise<Record<string, unknown>[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock versions data
@@ -885,7 +894,7 @@ Authorized Signature: _________________________ Date: _________
     ];
   }
 
-  async createContractVersion(versionData: any): Promise<any> {
+  async createContractVersion(versionData: Omit<ContractVersion, 'id' | 'createdAt'>): Promise<ContractVersion> {
     await new Promise(resolve => setTimeout(resolve, 800));
     // Mock implementation
     return {
@@ -909,7 +918,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Compliance Tracking Methods
-  async getComplianceItems(contractId: string): Promise<any[]> {
+  async getComplianceItems(contractId: string): Promise<ComplianceItem[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock compliance items
@@ -951,7 +960,7 @@ Authorized Signature: _________________________ Date: _________
     ];
   }
 
-  async createComplianceItem(itemData: any): Promise<any> {
+  async createComplianceItem(itemData: Omit<ComplianceItem, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'createdByName'>): Promise<ComplianceItem> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
@@ -965,13 +974,25 @@ Authorized Signature: _________________________ Date: _________
     };
   }
 
-  async updateComplianceItem(itemId: string, itemData: any): Promise<any> {
+  async updateComplianceItem(itemId: string, itemData: Partial<Omit<ComplianceItem, 'id' | 'createdAt' | 'createdBy' | 'createdByName'>>): Promise<ComplianceItem> {
     await new Promise(resolve => setTimeout(resolve, 500));
     // Mock implementation
     return {
       id: itemId,
-      ...itemData,
-      updatedAt: new Date().toISOString()
+      title: itemData.title || '',
+      description: itemData.description || '',
+      category: itemData.category || 'other',
+      status: itemData.status || 'pending_review',
+      priority: itemData.priority || 'medium',
+      dueDate: itemData.dueDate || new Date().toISOString(),
+      assignedTo: itemData.assignedTo || '',
+      assignedToName: itemData.assignedToName || '',
+      evidence: itemData.evidence || '',
+      notes: itemData.notes || '',
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      createdBy: '',
+      createdByName: ''
     };
   }
 
@@ -981,7 +1002,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Renewal Management Methods
-  async getRenewalReminders(contractId: string): Promise<any[]> {
+  async getRenewalReminders(contractId: string): Promise<RenewalReminder[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock renewal reminders
@@ -989,34 +1010,36 @@ Authorized Signature: _________________________ Date: _________
       {
         id: '1',
         contractId,
-        daysBeforeExpiry: 30,
-        message: 'Contract renewal required in 30 days',
+        contractTitle: 'Sample Contract',
+        reminderDate: new Date().toISOString(),
+        daysUntilExpiry: 30,
+        status: 'pending',
         recipients: ['manager@company.com', 'legal@company.com'],
-        sent: false,
-        createdAt: new Date().toISOString()
+        message: 'Contract renewal required in 30 days',
+        created_at: new Date().toISOString()
       },
       {
         id: '2',
         contractId,
-        daysBeforeExpiry: 7,
-        message: 'Urgent: Contract expires in 7 days',
+        contractTitle: 'Sample Contract',
+        reminderDate: new Date().toISOString(),
+        daysUntilExpiry: 7,
+        status: 'sent',
         recipients: ['manager@company.com'],
-        sent: true,
-        sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+        message: 'Urgent: Contract expires in 7 days',
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
       }
     ];
   }
 
-  async createRenewalReminder(contractId: string, reminderData: any): Promise<any> {
+  async createRenewalReminder(contractId: string, reminderData: Omit<RenewalReminder, 'id' | 'created_at'>): Promise<RenewalReminder> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     return {
       id: Date.now().toString(),
       contractId,
       ...reminderData,
-      sent: false,
-      createdAt: new Date().toISOString()
+      created_at: new Date().toISOString()
     };
   }
 
@@ -1025,25 +1048,45 @@ Authorized Signature: _________________________ Date: _________
     // Mock implementation
   }
 
-  async renewContract(contractId: string, renewalData: any): Promise<any> {
+  async renewContract(contractId: string, renewalData: Partial<Contract>): Promise<Contract> {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Mock contract renewal
     return {
       id: Date.now().toString(),
-      originalContractId: contractId,
-      ...renewalData,
+      title: renewalData.title || '',
+      description: renewalData.description,
+      type: renewalData.type || 'service_agreement',
       status: 'active',
-      createdAt: new Date().toISOString()
+      customer_id: renewalData.customer_id || '',
+      parties: renewalData.parties || [],
+      value: renewalData.value || 0,
+      total_value: renewalData.total_value || renewalData.value || 0,
+      currency: renewalData.currency || 'USD',
+      start_date: renewalData.start_date || new Date().toISOString().split('T')[0],
+      end_date: renewalData.end_date || '',
+      auto_renew: renewalData.auto_renew || false,
+      approval_history: renewalData.approval_history || [],
+      compliance_status: renewalData.compliance_status || 'pending_review',
+      created_by: renewalData.created_by || '',
+      tags: renewalData.tags || [],
+      priority: renewalData.priority || 'medium',
+      reminder_days: renewalData.reminder_days || [],
+      signature_status: renewalData.signature_status || { totalRequired: 0, completed: 0, pending: [] },
+      attachments: renewalData.attachments || [],
+      tenant_id: renewalData.tenant_id || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      version: renewalData.version || 1
     };
   }
 
   // Audit Trail Methods
-  async getAuditTrail(contractId: string, filters: any = {}): Promise<any[]> {
+  async getAuditTrail(contractId: string, filters: AuditTrailFilters = {}): Promise<AuditTrailEntry[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock audit trail data
-    const mockEntries = [
+    const mockEntries: AuditTrailEntry[] = [
       {
         id: '1',
         action: 'Contract Created',
@@ -1091,20 +1134,20 @@ Authorized Signature: _________________________ Date: _________
     let filteredEntries = mockEntries;
 
     if (filters.actionType) {
-      filteredEntries = filteredEntries.filter(e => e.actionType === filters.actionType);
+      filteredEntries = filteredEntries.filter(e => e.actionType === filters.actionType as AuditTrailEntry['actionType']);
     }
 
     if (filters.searchTerm) {
       filteredEntries = filteredEntries.filter(e =>
-        e.action.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        e.description.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        e.action.toLowerCase().includes(filters.searchTerm!.toLowerCase()) ||
+        e.description.toLowerCase().includes(filters.searchTerm!.toLowerCase())
       );
     }
 
     return filteredEntries;
   }
 
-  async exportAuditTrail(contractId: string, filters: any = {}): Promise<string> {
+  async exportAuditTrail(contractId: string, filters: AuditTrailFilters = {}): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const entries = await this.getAuditTrail(contractId, filters);
@@ -1127,7 +1170,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Approval Workflow Methods
-  async getApprovalWorkflow(contractId: string): Promise<any[]> {
+  async getApprovalWorkflow(contractId: string): Promise<ApprovalWorkflowStep[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock approval workflow
@@ -1173,30 +1216,29 @@ Authorized Signature: _________________________ Date: _________
     ];
   }
 
-  async getApprovalRecords(contractId: string): Promise<any[]> {
+  async getApprovalRecords(contractId: string): Promise<ApprovalRecord[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock approval records
     return [
       {
         id: '1',
-        contractId,
-        approverId: 'legal1',
+        stage: 'Legal Review',
+        approver: 'legal1',
         approverName: 'Legal Department',
-        approverAvatar: '/avatars/legal.png',
-        decision: 'approved',
+        status: 'approved',
         comments: 'All legal requirements met. Contract approved.',
         timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
       }
     ];
   }
 
-  async approveContractStep(contractId: string, stepId: string, approvalData: any): Promise<void> {
+  async approveContractStep(contractId: string, stepId: string, approvalData: ApprovalData): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
     // Mock implementation
   }
 
-  async rejectContractStep(contractId: string, stepId: string, rejectionData: any): Promise<void> {
+  async rejectContractStep(contractId: string, stepId: string, rejectionData: RejectionData): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
     // Mock implementation
   }
@@ -1207,7 +1249,7 @@ Authorized Signature: _________________________ Date: _________
   }
 
   // Attachment Management Methods
-  async getContractAttachments(contractId: string): Promise<any[]> {
+  async getContractAttachments(contractId: string): Promise<ContractAttachmentDetail[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Mock attachments
@@ -1245,7 +1287,7 @@ Authorized Signature: _________________________ Date: _________
     ];
   }
 
-  async uploadContractAttachment(contractId: string, attachmentData: any): Promise<any> {
+  async uploadContractAttachment(contractId: string, attachmentData: AttachmentUploadData): Promise<ContractAttachmentDetail[]> {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Mock file upload

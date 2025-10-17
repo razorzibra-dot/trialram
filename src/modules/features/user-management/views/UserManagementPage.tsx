@@ -134,8 +134,9 @@ export const UserManagementPage: React.FC = () => {
       await userService.deleteUser(userId);
       message.success('User deleted successfully');
       loadUsers();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to delete user');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to delete user';
+      message.error(error_msg);
     }
   };
 
@@ -144,8 +145,9 @@ export const UserManagementPage: React.FC = () => {
     try {
       await userService.resetPassword(userId);
       message.success('Password reset email sent');
-    } catch (error: any) {
-      message.error(error.message || 'Failed to reset password');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to reset password';
+      message.error(error_msg);
     }
   };
 
@@ -163,8 +165,9 @@ export const UserManagementPage: React.FC = () => {
       setIsModalVisible(false);
       form.resetFields();
       loadUsers();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save user');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to save user';
+      message.error(error_msg);
     } finally {
       setSubmitting(false);
     }

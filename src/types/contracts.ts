@@ -251,3 +251,107 @@ export interface DigitalSignature {
   status: 'pending' | 'completed' | 'declined';
   verificationCode?: string;
 }
+
+export interface ComplianceItem {
+  id: string;
+  title: string;
+  description: string;
+  category: 'regulatory' | 'financial' | 'legal' | 'operational' | 'other';
+  status: 'compliant' | 'non_compliant' | 'pending_review';
+  priority: 'low' | 'medium' | 'high';
+  dueDate: string;
+  assignedTo: string;
+  assignedToName: string;
+  evidence: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  createdByName: string;
+}
+
+export interface ContractVersion {
+  id: string;
+  contractId?: string;
+  version: number;
+  title?: string;
+  description?: string;
+  status: 'draft' | 'active' | 'archived';
+  documentUrl: string;
+  isCurrentVersion: boolean;
+  createdAt: string;
+  createdBy?: string;
+  notes?: string;
+}
+
+export interface ApprovalData {
+  approvalNotes?: string;
+  approvalDate?: string;
+  approvalStatus?: string;
+}
+
+export interface RejectionData {
+  rejectionReason: string;
+  rejectionDate?: string;
+}
+
+export interface AuditTrailEntry {
+  id: string;
+  action: string;
+  actionType: 'create' | 'update' | 'sign' | 'approve' | 'reject' | 'delete';
+  description: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  timestamp: string;
+  ipAddress: string;
+  userAgent?: string;
+  changes?: Array<{ field: string; oldValue: unknown; newValue: unknown }>;
+}
+
+export interface AuditTrailFilters {
+  actionType?: string;
+  searchTerm?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  userId?: string;
+}
+
+export interface ApprovalWorkflowStep {
+  id: string;
+  stepNumber: number;
+  title: string;
+  description: string;
+  approverRole: string;
+  approverName: string;
+  approverId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  isRequired: boolean;
+  approvedAt?: string;
+  comments?: string;
+  canApprove: boolean;
+}
+
+export interface ContractAttachmentDetail {
+  id: string;
+  fileName: string;
+  originalName: string;
+  fileSize: number;
+  fileType: string;
+  category?: string;
+  description?: string;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+  downloadUrl: string;
+  previewUrl?: string;
+  isPublic?: boolean;
+  version?: number;
+}
+
+export interface AttachmentUploadData {
+  files: File[];
+  category?: string;
+  description?: string;
+  isPublic?: boolean;
+}

@@ -120,11 +120,12 @@ export const CompaniesPage: React.FC = () => {
     setFilters({ ...filters, search: value, page: 1 });
   };
 
-  const handleStatusFilterChange = (value: string) => {
+  const handleStatusFilterChange = (value: string): void => {
     setStatusFilter(value);
+    const statusValue: 'active' | 'inactive' | 'prospect' | undefined = value === 'all' ? undefined : (value as 'active' | 'inactive' | 'prospect');
     setFilters({ 
       ...filters, 
-      status: value === 'all' ? undefined : value as any,
+      status: statusValue,
       page: 1 
     });
   };

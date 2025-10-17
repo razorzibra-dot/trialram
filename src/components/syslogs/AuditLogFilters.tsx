@@ -42,7 +42,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = ({
     filters.date_to ? new Date(filters.date_to) : undefined
   );
 
-  const handleFilterChange = (key: keyof LogFilters, value: any) => {
+  const handleFilterChange = (key: keyof LogFilters, value: string | number | undefined) => {
     onFiltersChange({
       ...filters,
       [key]: value,

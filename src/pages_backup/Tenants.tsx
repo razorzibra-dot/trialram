@@ -88,26 +88,11 @@ const Tenants: React.FC = () => {
     tenant: Tenant | null;
   }>({ isOpen: false, tenant: null });
 
-  // Check admin access
-  if (!hasRole('admin')) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-              <p className="text-gray-500">You need admin privileges to access tenant management.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   useEffect(() => {
-    loadTenants();
-  }, [searchTerm, statusFilter, planFilter]);
+    if (hasRole('admin')) {
+      loadTenants();
+    }
+  }, [searchTerm, statusFilter, planFilter, hasRole]);
 
   const loadTenants = async () => {
     try {
@@ -232,6 +217,23 @@ const Tenants: React.FC = () => {
       </Badge>
     );
   };
+
+  // Check admin access
+  if (!hasRole('admin')) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+              <p className="text-gray-500">You need admin privileges to access tenant management.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -444,7 +446,7 @@ const Tenants: React.FC = () => {
                 <Label htmlFor="status">Status</Label>
                 <Select 
                   value={formData.status} 
-                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -460,7 +462,7 @@ const Tenants: React.FC = () => {
                 <Label htmlFor="plan">Plan</Label>
                 <Select 
                   value={formData.plan} 
-                  onValueChange={(value: any) => setFormData({ ...formData, plan: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, plan: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />

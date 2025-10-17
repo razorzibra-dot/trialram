@@ -2,7 +2,7 @@
  * Super Admin Tenants Page - Enterprise Ant Design Version
  * Comprehensive tenant management for super administrators with full CRUD operations
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Row, 
@@ -55,6 +55,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { tenantService } from '@/services/tenantService';
 import { Tenant } from '@/types/crm';
+import { TenantSettings } from '@/types/rbac';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -136,8 +137,9 @@ export const SuperAdminTenantsPage: React.FC = () => {
       const fullTenant = await tenantService.getTenant(tenant.id);
       setViewingTenant(fullTenant);
       setIsDetailsModalVisible(true);
-    } catch (error: any) {
-      message.error(error.message || 'Failed to load tenant details');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load tenant details';
+      message.error(errorMessage);
     }
   };
 
@@ -148,8 +150,9 @@ export const SuperAdminTenantsPage: React.FC = () => {
       setEditingTenant(tenant);
       settingsForm.setFieldsValue(settings);
       setIsSettingsModalVisible(true);
-    } catch (error: any) {
-      message.error(error.message || 'Failed to load tenant settings');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load tenant settings';
+      message.error(errorMessage);
     }
   };
 
@@ -158,9 +161,10 @@ export const SuperAdminTenantsPage: React.FC = () => {
     try {
       await tenantService.deleteTenant(tenantId);
       message.success('Tenant deleted successfully');
-      fetchTenants();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to delete tenant');
+      void fetchTenants();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete tenant';
+      message.error(errorMessage);
     }
   };
 
@@ -170,9 +174,10 @@ export const SuperAdminTenantsPage: React.FC = () => {
       const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
       await tenantService.updateTenantStatus(tenant.id, newStatus);
       message.success(`Tenant ${newStatus === 'active' ? 'activated' : 'suspended'} successfully`);
-      fetchTenants();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to update tenant status');
+      void fetchTenants();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update tenant status';
+      message.error(errorMessage);
     }
   };
 
@@ -189,16 +194,17 @@ export const SuperAdminTenantsPage: React.FC = () => {
       }
       setIsModalVisible(false);
       form.resetFields();
-      fetchTenants();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save tenant');
+      void fetchTenants();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save tenant';
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
   // Handle settings submit
-  const handleSettingsSubmit = async (values: any) => {
+  const handleSettingsSubmit = async (values: TenantSettings) => {
     if (!editingTenant) return;
     
     try {
@@ -207,9 +213,10 @@ export const SuperAdminTenantsPage: React.FC = () => {
       message.success('Tenant settings updated successfully');
       setIsSettingsModalVisible(false);
       settingsForm.resetFields();
-      fetchTenants();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to update tenant settings');
+      void fetchTenants();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update tenant settings';
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -306,7 +313,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
       title: 'Tenant',
       dataIndex: 'name',
       key: 'name',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Tenant) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ 
             padding: 8, 
@@ -364,7 +371,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
       align: 'right',
       fixed: 'right',
       width: 120,
-      render: (_: any, record: Tenant) => (
+      render: (_: unknown, record: Tenant) => (
         <Space>
           <Button
             type="text"

@@ -153,11 +153,11 @@ class DashboardService {
   }
 
   // Interface compliance methods
-  async getMetrics(): Promise<any> {
+  async getMetrics(): Promise<Record<string, unknown>> {
     return this.getDashboardStats();
   }
 
-  async getAnalytics(period?: string): Promise<any> {
+  async getAnalytics(period?: string): Promise<Record<string, unknown>> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
@@ -185,27 +185,30 @@ class DashboardService {
     };
   }
 
-  async getWidgetData(widgetType: string): Promise<any> {
+  async getWidgetData(widgetType: string): Promise<Record<string, unknown>> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
     switch (widgetType) {
-      case 'sales_pipeline':
+      case 'sales_pipeline': {
         const chartData = await this.getChartData();
         return chartData.salesPipeline;
+      }
 
-      case 'ticket_status':
+      case 'ticket_status': {
         const ticketData = await this.getChartData();
         return ticketData.ticketsByStatus;
+      }
 
       case 'recent_activity':
         return this.getRecentActivity();
 
-      case 'monthly_revenue':
+      case 'monthly_revenue': {
         const revenueData = await this.getChartData();
         return revenueData.monthlyRevenue;
+      }
 
       default:
         throw new Error(`Unknown widget type: ${widgetType}`);

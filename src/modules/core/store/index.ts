@@ -11,7 +11,10 @@ import { shallow } from 'zustand/shallow';
 // Store slices
 import { createAuthSlice, AuthSlice } from './slices/authSlice';
 import { createUISlice, UISlice } from './slices/uiSlice';
-import { createNotificationSlice, NotificationSlice } from './slices/notificationSlice';
+import { createNotificationSlice, NotificationSlice, Notification } from './slices/notificationSlice';
+
+// Types
+import { LoginCredentials } from '../../types/auth';
 
 // Combined store type
 export interface RootStore extends AuthSlice, UISlice, NotificationSlice {}
@@ -21,7 +24,7 @@ export const useStore = create<RootStore>()(
   devtools(
     persist(
       subscribeWithSelector(
-        immer((...a) => ({
+        immer((...a: Parameters<typeof createAuthSlice>) => ({
           ...createAuthSlice(...a),
           ...createUISlice(...a),
           ...createNotificationSlice(...a),
@@ -29,7 +32,7 @@ export const useStore = create<RootStore>()(
       ),
       {
         name: 'crm-store',
-        partialize: (state) => ({
+        partialize: (state: RootStore) => ({
           // Only persist certain parts of the state
           auth: {
             user: state.user,
@@ -85,9 +88,25 @@ export const useNotifications = () => useStore((state) => ({
 }), shallow);
 
 // Store actions for external use
-export const storeActions = {
+export const storeActions: {
   auth: {
-    login: (credentials: any) => useStore.getState().login(credentials),
+    login: (credentials: LoginCredentials) => Promise<void>;
+    logout: () => Promise<void>;
+    refreshToken: () => Promise<void>;
+  };
+  ui: {
+    setTheme: (theme: string) => void;
+    toggleSidebar: () => void;
+    setLoading: (loading: boolean) => void;
+  };
+  notifications: {
+    add: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+    remove: (id: string) => void;
+    markAsRead: (id: string) => void;
+  };
+} = {
+  auth: {
+    login: (credentials: LoginCredentials) => useStore.getState().login(credentials),
     logout: () => useStore.getState().logout(),
     refreshToken: () => useStore.getState().refreshToken(),
   },
@@ -97,7 +116,7 @@ export const storeActions = {
     setLoading: (loading: boolean) => useStore.getState().setLoading(loading),
   },
   notifications: {
-    add: (notification: any) => useStore.getState().addNotification(notification),
+    add: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => useStore.getState().addNotification(notification),
     remove: (id: string) => useStore.getState().removeNotification(id),
     markAsRead: (id: string) => useStore.getState().markAsRead(id),
   },

@@ -40,8 +40,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch users');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch users';
+      throw new Error(message);
     }
   }
 
@@ -55,8 +56,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch user');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user';
+      throw new Error(message);
     }
   }
 
@@ -71,8 +73,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create user');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create user';
+      throw new Error(message);
     }
   }
 
@@ -87,8 +90,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update user');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update user';
+      throw new Error(message);
     }
   }
 
@@ -100,8 +104,9 @@ export class RealUserService implements IUserService {
       await baseApiService.delete(
         `${apiConfig.endpoints.users.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete user');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete user';
+      throw new Error(message);
     }
   }
 
@@ -125,8 +130,9 @@ export class RealUserService implements IUserService {
       }>>(apiConfig.endpoints.users.roles);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch roles');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch roles';
+      throw new Error(message);
     }
   }
 
@@ -148,8 +154,9 @@ export class RealUserService implements IUserService {
       }>>(apiConfig.endpoints.users.permissions);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch permissions');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch permissions';
+      throw new Error(message);
     }
   }
 
@@ -177,8 +184,9 @@ export class RealUserService implements IUserService {
       }>(apiConfig.endpoints.users.roles, roleData);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create role');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create role';
+      throw new Error(message);
     }
   }
 
@@ -206,8 +214,9 @@ export class RealUserService implements IUserService {
       }>(`${apiConfig.endpoints.users.roles}/${roleId}`, updates);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update role');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update role';
+      throw new Error(message);
     }
   }
 
@@ -219,8 +228,9 @@ export class RealUserService implements IUserService {
       await baseApiService.delete(
         `${apiConfig.endpoints.users.roles}/${roleId}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete role');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete role';
+      throw new Error(message);
     }
   }
 
@@ -248,8 +258,9 @@ export class RealUserService implements IUserService {
       }>(apiConfig.endpoints.users.invitations, invitationData);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to send invitation');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send invitation';
+      throw new Error(message);
     }
   }
 
@@ -277,8 +288,9 @@ export class RealUserService implements IUserService {
       }>>(apiConfig.endpoints.users.invitations);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch invitations');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch invitations';
+      throw new Error(message);
     }
   }
 
@@ -290,8 +302,9 @@ export class RealUserService implements IUserService {
       await baseApiService.delete(
         `${apiConfig.endpoints.users.invitations}/${invitationId}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to cancel invitation');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel invitation';
+      throw new Error(message);
     }
   }
 
@@ -303,8 +316,9 @@ export class RealUserService implements IUserService {
       await baseApiService.post(
         `${apiConfig.endpoints.users.invitations}/${invitationId}/resend`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to resend invitation');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to resend invitation';
+      throw new Error(message);
     }
   }
 
@@ -319,8 +333,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update user status');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update user status';
+      throw new Error(message);
     }
   }
 
@@ -334,8 +349,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to reset password');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to reset password';
+      throw new Error(message);
     }
   }
 
@@ -362,8 +378,9 @@ export class RealUserService implements IUserService {
       }>>(`${apiConfig.endpoints.users.base}/${userId}/activity${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch user activity');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user activity';
+      throw new Error(message);
     }
   }
 
@@ -389,8 +406,9 @@ export class RealUserService implements IUserService {
       }>(`${apiConfig.endpoints.users.base}/stats`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch user statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user statistics';
+      throw new Error(message);
     }
   }
 
@@ -407,8 +425,9 @@ export class RealUserService implements IUserService {
         `${apiConfig.endpoints.users.base}/bulk-update`,
         { userIds, updates }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to bulk update users');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to bulk update users';
+      throw new Error(message);
     }
   }
 
@@ -429,7 +448,7 @@ export class RealUserService implements IUserService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.users.base}/export?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as unknown as { data: Blob }
       );
 
       if (format === 'xlsx') {
@@ -438,8 +457,9 @@ export class RealUserService implements IUserService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export users');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export users';
+      throw new Error(message);
     }
   }
 
@@ -454,8 +474,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload avatar');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload avatar';
+      throw new Error(message);
     }
   }
 
@@ -469,8 +490,9 @@ export class RealUserService implements IUserService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch user permissions');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user permissions';
+      throw new Error(message);
     }
   }
 
@@ -483,8 +505,9 @@ export class RealUserService implements IUserService {
         `${apiConfig.endpoints.users.base}/${userId}/permissions`,
         { permissions }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update user permissions');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update user permissions';
+      throw new Error(message);
     }
   }
 }

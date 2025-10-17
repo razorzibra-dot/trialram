@@ -3,20 +3,20 @@
  * Manages service instances and their dependencies
  */
 
-export interface ServiceConstructor<T = any> {
-  new (...args: any[]): T;
+export interface ServiceConstructor<T = unknown> {
+  new (...args: unknown[]): T;
 }
 
-export interface ServiceFactory<T = any> {
+export interface ServiceFactory<T = unknown> {
   (): T;
 }
 
-export type ServiceDefinition<T = any> = ServiceConstructor<T> | ServiceFactory<T>;
+export type ServiceDefinition<T = unknown> = ServiceConstructor<T> | ServiceFactory<T>;
 
 export class ServiceContainer {
   private static instance: ServiceContainer;
-  private services = new Map<string, any>();
-  private singletons = new Map<string, any>();
+  private services = new Map<string, unknown>();
+  private singletons = new Map<string, unknown>();
   private factories = new Map<string, ServiceDefinition>();
 
   private constructor() {}

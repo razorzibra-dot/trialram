@@ -165,7 +165,7 @@ class TenantService {
 
     const updatedUser: User = {
       ...user,
-      role: newRole as any
+      role: newRole as string
     };
 
     // In a real implementation, this would update the database

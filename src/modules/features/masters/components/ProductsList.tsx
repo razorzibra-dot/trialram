@@ -123,7 +123,7 @@ export const ProductsList: React.FC<ProductsListProps> = ({
     if (selectedRows.length === 0) return;
     
     const ids = selectedRows.map(product => product.id);
-    await bulkUpdate.mutateAsync({ ids, updates: { status: status as any } });
+    await bulkUpdate.mutateAsync({ ids, updates: { status } });
     setSelectedRows([]);
   };
 

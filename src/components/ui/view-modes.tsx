@@ -139,7 +139,7 @@ const KanbanBoard = React.forwardRef<HTMLDivElement, KanbanBoardProps>(
                   <div className="flex items-center gap-2 flex-wrap">
                     {item.status && (
                       <StatusBadge 
-                        status={item.status as any} 
+                        status={item.status as 'working' | 'done' | 'stuck' | 'pending' | 'active' | 'inactive' | 'draft' | 'published' | 'archived'} 
                         size="sm"
                       />
                     )}
@@ -260,7 +260,7 @@ interface DashboardViewProps {
     id: string
     title: string
     type: 'chart' | 'stats' | 'list'
-    data: any
+    data: unknown
   }>
   className?: string
 }
@@ -295,7 +295,7 @@ const DashboardView = React.forwardRef<HTMLDivElement, DashboardViewProps>(
             )}
             {widget.type === 'list' && (
               <div className="space-y-2">
-                {widget.data.items?.map((item: any, index: number) => (
+                {(widget.data as { items?: Array<{ label: string; value: unknown }> }).items?.map((item, index: number) => (
                   <div key={index} className="flex items-center justify-between py-1">
                     <span className="text-sm text-neutral-700">{item.label}</span>
                     <Badge variant="secondary" size="sm">{item.value}</Badge>

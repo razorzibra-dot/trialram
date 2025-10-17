@@ -337,7 +337,7 @@ const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Template Type</Label>
-                <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+                <Select value={formData.type} onValueChange={(value: string) => setFormData(prev => ({ ...prev, type: value as 'service_agreement' | 'nda' | 'purchase_order' | 'employment' | 'custom' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -407,7 +407,7 @@ const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-type">Template Type</Label>
-                <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+                <Select value={formData.type} onValueChange={(value: string) => setFormData(prev => ({ ...prev, type: value as 'service_agreement' | 'nda' | 'purchase_order' | 'employment' | 'custom' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

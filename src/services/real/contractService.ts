@@ -35,7 +35,7 @@ export class RealContractService implements IContractService {
         });
       }
 
-      const response = await baseApiService.get<any>(
+      const response = await baseApiService.get<Record<string, unknown>>(
         `${apiConfig.endpoints.contracts.base}?${params.toString()}`
       );
 
@@ -44,8 +44,9 @@ export class RealContractService implements IContractService {
         ? payload
         : (payload?.items ?? []);
       return list;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch contracts');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch contracts';
+      throw new Error(message);
     }
   }
 
@@ -59,8 +60,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch contract';
+      throw new Error(message);
     }
   }
 
@@ -75,8 +77,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create contract';
+      throw new Error(message);
     }
   }
 
@@ -91,8 +94,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update contract';
+      throw new Error(message);
     }
   }
 
@@ -104,8 +108,9 @@ export class RealContractService implements IContractService {
       await baseApiService.delete(
         `${apiConfig.endpoints.contracts.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete contract';
+      throw new Error(message);
     }
   }
 
@@ -119,7 +124,7 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Fallback to default types
       return [
         { id: 'service', name: 'Service Contract' },
@@ -156,8 +161,9 @@ export class RealContractService implements IContractService {
       }>(apiConfig.endpoints.contracts.analytics);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch contract analytics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch contract analytics';
+      throw new Error(message);
     }
   }
 
@@ -181,15 +187,16 @@ export class RealContractService implements IContractService {
       }>>(apiConfig.endpoints.contracts.templates);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch contract templates');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch contract templates';
+      throw new Error(message);
     }
   }
 
   /**
    * Create contract from template
    */
-  async createContractFromTemplate(templateId: string, variables: Record<string, any>): Promise<ContractResponse> {
+  async createContractFromTemplate(templateId: string, variables: Record<string, unknown>): Promise<ContractResponse> {
     try {
       const response = await baseApiService.post<ContractResponse>(
         `${apiConfig.endpoints.contracts.templates}/${templateId}/create`,
@@ -197,8 +204,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create contract from template');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create contract from template';
+      throw new Error(message);
     }
   }
 
@@ -212,8 +220,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch expiring contracts');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch expiring contracts';
+      throw new Error(message);
     }
   }
 
@@ -235,8 +244,9 @@ export class RealContractService implements IContractService {
       }>>(apiConfig.endpoints.contracts.renewals);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch renewal opportunities');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch renewal opportunities';
+      throw new Error(message);
     }
   }
 
@@ -255,8 +265,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to renew contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to renew contract';
+      throw new Error(message);
     }
   }
 
@@ -271,8 +282,9 @@ export class RealContractService implements IContractService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to terminate contract');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to terminate contract';
+      throw new Error(message);
     }
   }
 
@@ -313,8 +325,9 @@ export class RealContractService implements IContractService {
       }>(`${apiConfig.endpoints.contracts.base}/${contractId}/documents`, file);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload contract document');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload contract document';
+      throw new Error(message);
     }
   }
 
@@ -325,13 +338,14 @@ export class RealContractService implements IContractService {
     try {
       const response = await baseApiService.get(
         `${apiConfig.endpoints.contracts.base}/${contractId}/pdf`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as Record<string, unknown>
       );
 
       const blob = new Blob([response.data], { type: 'application/pdf' });
       return URL.createObjectURL(blob);
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to generate contract PDF');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to generate contract PDF';
+      throw new Error(message);
     }
   }
 
@@ -344,7 +358,7 @@ export class RealContractService implements IContractService {
     description: string;
     user: { id: string; name: string };
     createdAt: string;
-    changes?: Record<string, any>;
+    changes?: Record<string, unknown>;
   }>> {
     try {
       const response = await baseApiService.get<Array<{
@@ -353,12 +367,13 @@ export class RealContractService implements IContractService {
         description: string;
         user: { id: string; name: string };
         createdAt: string;
-        changes?: Record<string, any>;
+        changes?: Record<string, unknown>;
       }>>(`${apiConfig.endpoints.contracts.base}/${contractId}/history`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch contract history');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch contract history';
+      throw new Error(message);
     }
   }
 
@@ -379,7 +394,7 @@ export class RealContractService implements IContractService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.contracts.base}/export?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as Record<string, unknown>
       );
 
       if (format === 'xlsx') {
@@ -388,8 +403,9 @@ export class RealContractService implements IContractService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export contracts');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export contracts';
+      throw new Error(message);
     }
   }
 }

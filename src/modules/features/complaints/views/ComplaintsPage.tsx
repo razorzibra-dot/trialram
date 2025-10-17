@@ -2,7 +2,7 @@
  * Complaints Page - Modular Version
  * Enhanced complaint management with lifecycle tracking
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { complaintService } from '@/services/complaintService';
 import { Complaint, ComplaintFilters } from '@/types/complaints';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,12 +53,7 @@ export const ComplaintsPage: React.FC = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [engineers, setEngineers] = useState<Array<{ id: string; name: string; }>>([]);
 
-  useEffect(() => {
-    fetchComplaints();
-    fetchEngineers();
-  }, [searchTerm, statusFilter, typeFilter, priorityFilter, engineerFilter]);
-
-  const fetchComplaints = async () => {
+  const fetchComplaints = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       const filters: ComplaintFilters = {};
@@ -71,22 +66,27 @@ export const ComplaintsPage: React.FC = () => {
 
       const data = await complaintService.getComplaints(filters);
       setComplaints(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch complaints:', error);
       toast.error('Failed to fetch complaints');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter, typeFilter, priorityFilter, engineerFilter]);
 
-  const fetchEngineers = async () => {
+  const fetchEngineers = useCallback(async (): Promise<void> => {
     try {
       const data = await complaintService.getEngineers();
       setEngineers(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch engineers:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchComplaints();
+    void fetchEngineers();
+  }, [fetchComplaints, fetchEngineers]);
 
   const getStatusTag = (status: string) => {
     const colorMap: Record<string, string> = {
@@ -164,7 +164,7 @@ export const ComplaintsPage: React.FC = () => {
       title: 'Complaint',
       dataIndex: 'title',
       key: 'title',
-      render: (_: any, record: Complaint) => (
+      render: (_: string | unknown, record: Complaint) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ 
             padding: 8, 
@@ -235,7 +235,7 @@ export const ComplaintsPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       align: 'right' as const,
-      render: (_: any, record: Complaint) => (
+      render: (_: unknown, record: Complaint) => (
         <Space>
           <Button
             type="text"

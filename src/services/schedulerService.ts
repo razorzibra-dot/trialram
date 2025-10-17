@@ -116,7 +116,7 @@ export class SchedulerService {
     total: number;
   }> {
     try {
-      let queryFilters: Record<string, any> = {};
+      const queryFilters: Record<string, unknown> = {};
 
       if (filters?.job_type) {
         queryFilters.job_type = filters.job_type;
@@ -395,10 +395,10 @@ export class SchedulerService {
     }
   }
 
-  async updateJobExecution(jobId: string, status: 'success' | 'failed', metadata: Record<string, any>): Promise<void> {
+  async updateJobExecution(jobId: string, status: 'success' | 'failed', metadata: Record<string, unknown>): Promise<void> {
     try {
       // Update job with execution info
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         last_run_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

@@ -224,7 +224,7 @@ export const SuperAdminAnalyticsPage: React.FC = () => {
         { text: 'Premium', value: 'Premium' },
         { text: 'Enterprise', value: 'Enterprise' },
       ],
-      onFilter: (value: any, record: TenantUsage) => record.plan === value,
+      onFilter: (value: string | number | boolean, record: TenantUsage) => record.plan === value,
     },
     {
       title: 'Users',

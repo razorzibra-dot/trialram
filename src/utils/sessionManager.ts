@@ -165,7 +165,7 @@ class SessionManager {
   getSessionInfo(): {
     isValid: boolean;
     timeUntilExpiry: number;
-    user: any;
+    user: unknown;
     tokenPayload: JWTPayload | null;
   } {
     const token = authService.getToken();

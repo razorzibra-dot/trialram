@@ -238,7 +238,7 @@ class ServiceContractService {
   // Create new service contract (auto-generated from product sale)
   async createServiceContract(
     productSaleId: string,
-    productSale: any,
+    productSale: Record<string, unknown>,
     data: Partial<ServiceContractFormData> = {}
   ): Promise<ServiceContract> {
     try {
@@ -457,7 +457,14 @@ Contract cancelled on ${new Date().toISOString().split('T')[0]}. Reason: ${reaso
   }
 
   // Get contract analytics
-  async getContractAnalytics(): Promise<any> {
+  async getContractAnalytics(): Promise<{
+    total_contracts: number;
+    active_contracts: number;
+    expired_contracts: number;
+    renewed_contracts: number;
+    total_value: number;
+    [key: string]: unknown;
+  }> {
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
 

@@ -38,8 +38,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload file');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload file';
+      throw new Error(message);
     }
   }
 
@@ -52,8 +53,9 @@ export class RealFileService implements IFileService {
         `${apiConfig.endpoints.files.download}/${id}`,
         filename
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to download file');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to download file';
+      throw new Error(message);
     }
   }
 
@@ -65,8 +67,9 @@ export class RealFileService implements IFileService {
       await baseApiService.delete(
         `${apiConfig.endpoints.files.delete}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete file');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete file';
+      throw new Error(message);
     }
   }
 
@@ -80,8 +83,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch file metadata');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch file metadata';
+      throw new Error(message);
     }
   }
 
@@ -121,8 +125,9 @@ export class RealFileService implements IFileService {
       }>(`${apiConfig.endpoints.files.metadata}?${params.toString()}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch files');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch files';
+      throw new Error(message);
     }
   }
 
@@ -142,8 +147,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update file metadata');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update file metadata';
+      throw new Error(message);
     }
   }
 
@@ -167,7 +173,7 @@ export class RealFileService implements IFileService {
       }>>(`${apiConfig.endpoints.files.metadata}/categories`);
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Fallback to default categories
       return [
         { id: 'general', name: 'General' },
@@ -223,8 +229,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to bulk delete files');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to bulk delete files';
+      throw new Error(message);
     }
   }
 
@@ -252,8 +259,9 @@ export class RealFileService implements IFileService {
       }>(`${apiConfig.endpoints.files.metadata}/stats`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch storage statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch storage statistics';
+      throw new Error(message);
     }
   }
 
@@ -277,8 +285,9 @@ export class RealFileService implements IFileService {
       }>(`${apiConfig.endpoints.files.metadata}/${fileId}/share`, options);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to generate share link');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to generate share link';
+      throw new Error(message);
     }
   }
 
@@ -290,8 +299,9 @@ export class RealFileService implements IFileService {
       await baseApiService.delete(
         `${apiConfig.endpoints.files.metadata}/${fileId}/share`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to revoke share link');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to revoke share link';
+      throw new Error(message);
     }
   }
 
@@ -317,8 +327,9 @@ export class RealFileService implements IFileService {
       }>>(`${apiConfig.endpoints.files.metadata}/${fileId}/versions`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch file versions');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch file versions';
+      throw new Error(message);
     }
   }
 
@@ -344,8 +355,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload file version');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload file version';
+      throw new Error(message);
     }
   }
 
@@ -359,8 +371,9 @@ export class RealFileService implements IFileService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to restore file version');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to restore file version';
+      throw new Error(message);
     }
   }
 
@@ -380,8 +393,9 @@ export class RealFileService implements IFileService {
       }>(`${apiConfig.endpoints.files.metadata}/${fileId}/scan`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to scan file');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to scan file';
+      throw new Error(message);
     }
   }
 }

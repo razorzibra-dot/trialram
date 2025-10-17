@@ -43,10 +43,10 @@ interface AuditEntry {
   userAgent?: string;
   changes?: {
     field: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: unknown;
+    newValue: unknown;
   }[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface ContractAuditTrailProps {

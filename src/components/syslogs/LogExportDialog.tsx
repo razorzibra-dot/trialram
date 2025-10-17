@@ -172,12 +172,13 @@ const LogExportDialog: React.FC<LogExportDialogProps> = ({
     ];
 
     switch (format) {
-      case 'csv':
+      case 'csv': {
         const headers = 'ID,Timestamp,User Name,User Email,Action,Resource Type,Resource Name,Details,IP Address,Status,Duration (ms)';
         const rows = mockLogs.map(log => 
           `${log.id},${log.timestamp},${log.user_name},${log.user_email},${log.action},${log.resource_type},${log.resource_name},"${log.details}",${log.ip_address},${log.status},${log.duration_ms}`
         ).join('\r\n');
         return options.includeHeaders ? `${headers}\r\n${rows}` : rows;
+      }
         
       case 'json':
         return JSON.stringify({

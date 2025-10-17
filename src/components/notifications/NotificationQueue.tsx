@@ -54,7 +54,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
       const items = await notificationService.getNotificationQueue();
       const filtered = items.filter(item => (filterStatus === 'all' || item.status === filterStatus) && (filterChannel === 'all' || item.channel === filterChannel));
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setQueueItems(filtered as any);
+      setQueueItems(filtered);
     } catch (error) {
       console.error('Failed to load queue items:', error);
     } finally {
@@ -62,7 +62,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
     }
   };
 
-  const handleCreateNotification = async (data: any) => {
+  const handleCreateNotification = async (data: { templateId: string; recipientId: string; channel: string; variables: string; priority: string; scheduledAt?: string }) => {
     try {
       await notificationService.queueNotification({
         templateId: data.templateId,
@@ -376,7 +376,7 @@ function CreateNotificationForm({
   onSubmit 
 }: { 
   templates: NotificationTemplate[];
-  onSubmit: (data: any) => void;
+  onSubmit: (data: { templateId: string; recipientId: string; channel: string; variables: string; priority: string; scheduledAt?: string }) => void;
 }) {
   const [formData, setFormData] = useState({
     templateId: '',

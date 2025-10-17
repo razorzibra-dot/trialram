@@ -141,8 +141,9 @@ export const RoleManagementPage: React.FC = () => {
       await rbacService.deleteRole(roleId);
       message.success('Role deleted successfully');
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to delete role');
+    } catch (error: unknown) {
+      const message_text = error instanceof Error ? error.message : 'Failed to delete role';
+      message.error(message_text);
     }
   };
 
@@ -178,15 +179,16 @@ export const RoleManagementPage: React.FC = () => {
       form.resetFields();
       setSelectedPermissions([]);
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save role');
+    } catch (error: unknown) {
+      const error_message = error instanceof Error ? error.message : 'Failed to save role';
+      message.error(error_message);
     } finally {
       setSubmitting(false);
     }
   };
 
   // Handle template submit
-  const handleTemplateSubmit = async (values: any) => {
+  const handleTemplateSubmit = async (values: Record<string, unknown>) => {
     try {
       setSubmitting(true);
       const template = roleTemplates.find(t => t.id === values.templateId);
@@ -205,8 +207,9 @@ export const RoleManagementPage: React.FC = () => {
       templateForm.resetFields();
       setSelectedTemplateId(null);
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to create role from template');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to create role from template';
+      message.error(error_msg);
     } finally {
       setSubmitting(false);
     }

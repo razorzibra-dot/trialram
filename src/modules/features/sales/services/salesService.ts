@@ -277,7 +277,7 @@ export class SalesService extends BaseService {
 
         try {
           const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
-          const dealData: any = {};
+          const dealData: Record<string, string | undefined> = {};
 
           headers.forEach((header, index) => {
             dealData[header.toLowerCase().replace(' ', '_')] = values[index];

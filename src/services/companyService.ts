@@ -240,8 +240,7 @@ class CompanyService {
     
     const csvContent = [csvHeaders, ...csvRows]
       .map(row => row.map(field => `"${field}"`).join(','))
-      .join('
-');
+      .join('\n');
     
     return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   }

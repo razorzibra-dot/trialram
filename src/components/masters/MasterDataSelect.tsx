@@ -21,7 +21,7 @@ interface MasterDataOption {
   value: string;
   label: string;
   description?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }
 
 interface MasterDataSelectProps {

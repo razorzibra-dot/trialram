@@ -463,7 +463,7 @@ const ContractComplianceTracker: React.FC<ContractComplianceTrackerProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}>
+                <Select value={formData.category} onValueChange={(value: string) => setFormData(prev => ({ ...prev, category: value as 'legal' | 'regulatory' | 'internal' | 'security' | 'financial' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -490,7 +490,7 @@ const ContractComplianceTracker: React.FC<ContractComplianceTrackerProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}>
+                <Select value={formData.priority} onValueChange={(value: string) => setFormData(prev => ({ ...prev, priority: value as 'low' | 'medium' | 'high' | 'critical' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -556,7 +556,7 @@ const ContractComplianceTracker: React.FC<ContractComplianceTrackerProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">Category</Label>
-                <Select value={formData.category} onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}>
+                <Select value={formData.category} onValueChange={(value: string) => setFormData(prev => ({ ...prev, category: value as 'legal' | 'regulatory' | 'internal' | 'security' | 'financial' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -583,7 +583,7 @@ const ContractComplianceTracker: React.FC<ContractComplianceTrackerProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}>
+                <Select value={formData.priority} onValueChange={(value: string) => setFormData(prev => ({ ...prev, priority: value as 'low' | 'medium' | 'high' | 'critical' }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

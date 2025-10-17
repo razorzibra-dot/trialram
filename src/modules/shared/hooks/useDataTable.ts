@@ -13,13 +13,13 @@ export interface UseDataTableOptions<T> {
   initialPageSize?: number;
   initialSortBy?: string;
   initialSortOrder?: 'asc' | 'desc';
-  initialFilters?: Record<string, any>;
+  initialFilters?: Record<string, unknown>;
   enableSelection?: boolean;
   enableSearch?: boolean;
   searchDebounceMs?: number;
 }
 
-export function useDataTable<T extends Record<string, any>>({
+export function useDataTable<T extends Record<string, unknown>>({
   queryKey,
   queryFn,
   initialPageSize = 20,
@@ -95,7 +95,7 @@ export function useDataTable<T extends Record<string, any>>({
     setPage(1); // Reset to first page when sorting changes
   }, []);
 
-  const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
+  const handleFilterChange = useCallback((newFilters: Record<string, unknown>) => {
     setFilters(newFilters);
     setPage(1); // Reset to first page when filters change
   }, []);

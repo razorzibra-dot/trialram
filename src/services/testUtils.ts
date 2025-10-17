@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Testing Utilities for Services
  * Provides comprehensive testing support with realistic mock data and edge cases

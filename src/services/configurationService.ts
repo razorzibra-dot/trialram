@@ -4,9 +4,9 @@ export interface ConfigurationSetting {
   id?: string;
   category: string;
   setting_key: string;
-  setting_value: any;
+  setting_value: unknown;
   description?: string;
-  validation_schema?: any;
+  validation_schema?: ValidationSchema;
   is_active?: boolean;
   last_modified_by: string;
   tenant_id?: string;
@@ -19,8 +19,8 @@ export interface ConfigurationAudit {
   setting_id: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW';
   user_id: string;
-  before_value?: any;
-  after_value?: any;
+  before_value?: unknown;
+  after_value?: unknown;
   change_reason?: string;
   ip_address?: string;
   user_agent?: string;
@@ -31,8 +31,8 @@ export interface ConfigurationAudit {
 export interface ValidationSchema {
   type: string;
   required?: boolean;
-  properties?: Record<string, any>;
-  items?: any;
+  properties?: Record<string, unknown>;
+  items?: unknown;
   enum?: string[];
   minimum?: number;
   maximum?: number;
@@ -488,7 +488,7 @@ class ConfigurationService {
   }
 
   // Validation Methods
-  validateSetting(value: any, schema: ValidationSchema): { valid: boolean; errors: string[] } {
+  validateSetting(value: unknown, schema: ValidationSchema): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     if (schema.required && (value === null || value === undefined || value === '')) {

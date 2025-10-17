@@ -23,23 +23,19 @@ export interface ValidationResult {
  */
 export function detectUnicodeEscapes(content: string): CodeQualityIssue[] {
   const issues: CodeQualityIssue[] = [];
-  const lines = content.split('
-');
+  const lines = content.split('\n');
 
   lines.forEach((line, lineIndex) => {
     // Check for escaped newlines
-    const escapedNewlineMatches = line.matchAll(/\
-/g);
+    const escapedNewlineMatches = line.matchAll(/\n/g);
     for (const match of escapedNewlineMatches) {
       if (match.index !== undefined) {
         issues.push({
           line: lineIndex + 1,
           column: match.index + 1,
           type: 'escaped_newline',
-          message: 'Found escaped newline (\
-) - should use actual line breaks',
-          suggestion: 'Replace \
- with actual line breaks or use template literals',
+          message: 'Found escaped newline (\\n) - should use actual line breaks',
+          suggestion: 'Replace \\n with actual line breaks or use template literals',
           severity: 'error'
         });
       }
@@ -86,19 +82,17 @@ export function autoFixUnicodeEscapes(content: string): string {
   let fixedContent = content;
 
   // Fix escaped newlines in string literals
-  fixedContent = fixedContent.replace(/\
-/g, '
-');
+  fixedContent = fixedContent.replace(/\\n/g, '\n');
   
   // Fix escaped quotes
-  fixedContent = fixedContent.replace(/"/g, '"');
-  fixedContent = fixedContent.replace(/'/g, "'");
+  fixedContent = fixedContent.replace(/\\"/g, '"');
+  fixedContent = fixedContent.replace(/\\'/g, "'");
   
   // Fix escaped tabs
-  fixedContent = fixedContent.replace(/\  /g, '  ');
+  fixedContent = fixedContent.replace(/\\t/g, '\t');
   
   // Fix escaped carriage returns
-  fixedContent = fixedContent.replace(/\/g, '');
+  fixedContent = fixedContent.replace(/\\r/g, '');
 
   return fixedContent;
 }
@@ -133,8 +127,7 @@ export function validateFileContent(content: string, filePath: string): Validati
  */
 function validateReactTypeScriptCode(content: string): CodeQualityIssue[] {
   const issues: CodeQualityIssue[] = [];
-  const lines = content.split('
-');
+  const lines = content.split('\n');
 
   lines.forEach((line, lineIndex) => {
     // Check for improper className formatting
@@ -181,18 +174,14 @@ export function formatCode(content: string): string {
   formatted = autoFixUnicodeEscapes(formatted);
   
   // Normalize line endings
-  formatted = formatted.replace(/
-/g, '
-');
+  formatted = formatted.replace(/\r\n/g, '\n');
   
   // Remove trailing whitespace
-  formatted = formatted.replace(/[   ]+$/gm, '');
+  formatted = formatted.replace(/[ \t]+$/gm, '');
   
   // Ensure file ends with newline
-  if (!formatted.endsWith('
-')) {
-    formatted += '
-';
+  if (!formatted.endsWith('\n')) {
+    formatted += '\n';
   }
   
   return formatted;
@@ -208,25 +197,17 @@ export function generateQualityReport(filePath: string, content: string): string
     return `✅ ${filePath}: No code quality issues found`;
   }
   
-  let report = `❌ ${filePath}: Found ${validation.issues.length} code quality issues:
-
-`;
+  let report = `❌ ${filePath}: Found ${validation.issues.length} code quality issues:\n\n`;
   
   validation.issues.forEach((issue, index) => {
-    report += `${index + 1}. Line ${issue.line}, Column ${issue.column} [${issue.severity.toUpperCase()}]
-`;
-    report += `   Type: ${issue.type}
-`;
-    report += `   Message: ${issue.message}
-`;
-    report += `   Suggestion: ${issue.suggestion}
-
-`;
+    report += `${index + 1}. Line ${issue.line}, Column ${issue.column} [${issue.severity.toUpperCase()}]\n`;
+    report += `   Type: ${issue.type}\n`;
+    report += `   Message: ${issue.message}\n`;
+    report += `   Suggestion: ${issue.suggestion}\n\n`;
   });
   
   if (validation.fixedContent) {
-    report += `🔧 Auto-fix available. Run the fix command to apply corrections.
-`;
+    report += `🔧 Auto-fix available. Run the fix command to apply corrections.\n`;
   }
   
   return report;
@@ -248,17 +229,12 @@ export const FORMATTING_GUIDELINES = {
     good: [
       'const message = "Hello World";',
       'const template = `Hello ${name}`;',
-      'const multiline = `
-  Line 1
-  Line 2
-`;'
+      'const multiline = `\n  Line 1\n  Line 2\n`;'
     ],
     bad: [
       'const message = "Hello World";',
-      'const template = "Hello \
- World";',
-      'const multiline = "Line 1\
-Line 2";'
+      'const template = "Hello \\n World";',
+      'const multiline = "Line 1\\nLine 2";'
     ]
   },
   jsx: {
@@ -279,10 +255,8 @@ Line 2";'
       "import { Button } from '@/components/ui/button';"
     ],
     bad: [
-      "import React from 'react';\
-",
-      "import { Button } from '@/components/ui/button';\
-"
+      "import React from 'react';\\n",
+      "import { Button } from '@/components/ui/button';\\n"
     ]
   }
 };

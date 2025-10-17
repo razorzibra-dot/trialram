@@ -17,10 +17,10 @@ export interface AuditLog {
     email: string;
   };
   changes?: {
-    before: Record<string, any>;
-    after: Record<string, any>;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ipAddress: string;
   userAgent: string;
   createdAt: string;
@@ -345,8 +345,8 @@ class AuditService {
     action: string,
     resource: string,
     resourceId: string,
-    changes?: { before: any; after: any },
-    metadata?: Record<string, any>
+    changes?: { before: unknown; after: unknown },
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     const user = authService.getCurrentUser();
     if (!user) return; // Don't log if no user

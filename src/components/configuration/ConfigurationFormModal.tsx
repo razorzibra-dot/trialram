@@ -27,7 +27,7 @@ interface FormField {
   key: string;
   label: string;
   type: 'text' | 'number' | 'boolean' | 'select' | 'textarea' | 'json' | 'array';
-  value: any;
+  value: unknown;
   required?: boolean;
   options?: string[];
   description?: string;
@@ -94,7 +94,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
     setValidationErrors({});
   }, [setting, isOpen]);
 
-  const generateFormFields = (value: any, schema: ValidationSchema | null) => {
+  const generateFormFields = (value: unknown, schema: ValidationSchema | null) => {
     if (!value || typeof value !== 'object') return;
 
     const fields: FormField[] = [];
@@ -117,7 +117,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
     setFormFields(fields);
   };
 
-  const inferFieldType = (value: any, schema?: any): FormField['type'] => {
+  const inferFieldType = (value: unknown, schema?: ValidationSchema): FormField['type'] => {
     if (schema?.type) {
       switch (schema.type) {
         case 'boolean': return 'boolean';
@@ -139,7 +139,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
     return 'text';
   };
 
-  const handleFieldChange = (fieldKey: string, newValue: any) => {
+  const handleFieldChange = (fieldKey: string, newValue: unknown) => {
     const updatedFields = formFields.map(field => 
       field.key === fieldKey ? { ...field, value: newValue } : field
     );
@@ -230,7 +230,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
         setting_value: formFields.reduce((acc, field) => {
           acc[field.key] = field.value;
           return acc;
-        }, {} as any)
+        }, {} as Record<string, unknown>)
       };
 
       if (setting?.id) {

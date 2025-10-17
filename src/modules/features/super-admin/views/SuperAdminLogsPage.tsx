@@ -55,8 +55,8 @@ interface AuditLog {
   status: 'success' | 'failure' | 'warning';
   details: string;
   changes?: {
-    before: Record<string, any>;
-    after: Record<string, any>;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
   };
 }
 

@@ -3,7 +3,7 @@
  * Manage PDF templates for invoices, contracts, reports, etc.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Row, 
   Col, 
@@ -23,7 +23,7 @@ import {
   Badge
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { MenuProps } from 'antd';
+import type { MenuProps, FormInstance } from 'antd';
 import { 
   PlusOutlined, 
   SearchOutlined, 
@@ -51,6 +51,16 @@ import { useAuth } from '@/contexts/AuthContext';
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 
+// Form values interface for PDF templates
+interface TemplateFormValues {
+  name: string;
+  category: string;
+  description: string;
+  content: string;
+  variables: string;
+  is_active?: boolean;
+}
+
 export const PDFTemplatesPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const [form] = Form.useForm();
@@ -65,14 +75,10 @@ export const PDFTemplatesPage: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate | null>(null);
   const [previewHtml, setPreviewHtml] = useState('');
 
-  useEffect(() => {
-    fetchTemplates();
-  }, [searchTerm, categoryFilter]);
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: Record<string, string> = {};
       
       if (searchTerm) filters.search = searchTerm;
       if (categoryFilter !== 'all') filters.category = categoryFilter;
@@ -85,9 +91,13 @@ export const PDFTemplatesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, categoryFilter]);
 
-  const handleCreate = async (values: any) => {
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
+  const handleCreate = async (values: TemplateFormValues): Promise<void> => {
     try {
       await pdfTemplateService.createTemplate({
         name: values.name,
@@ -103,12 +113,13 @@ export const PDFTemplatesPage: React.FC = () => {
       setShowCreateModal(false);
       form.resetFields();
       fetchTemplates();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to create template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create template';
+      message.error(errorMessage);
     }
   };
 
-  const handleEdit = async (values: any) => {
+  const handleEdit = async (values: TemplateFormValues): Promise<void> => {
     if (!selectedTemplate) return;
 
     try {
@@ -125,12 +136,13 @@ export const PDFTemplatesPage: React.FC = () => {
       setSelectedTemplate(null);
       form.resetFields();
       fetchTemplates();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to update template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update template';
+      message.error(errorMessage);
     }
   };
 
-  const handleDelete = async (template: PDFTemplate) => {
+  const handleDelete = async (template: PDFTemplate): Promise<void> => {
     Modal.confirm({
       title: 'Delete Template',
       content: `Are you sure you want to delete "${template.name}"?`,
@@ -141,38 +153,41 @@ export const PDFTemplatesPage: React.FC = () => {
           await pdfTemplateService.deleteTemplate(template.id);
           message.success('Template deleted successfully');
           fetchTemplates();
-        } catch (error: any) {
-          message.error(error.message || 'Failed to delete template');
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete template';
+          message.error(errorMessage);
         }
       }
     });
   };
 
-  const handleDuplicate = async (template: PDFTemplate) => {
+  const handleDuplicate = async (template: PDFTemplate): Promise<void> => {
     try {
       await pdfTemplateService.duplicateTemplate(template.id);
       message.success('Template duplicated successfully');
       fetchTemplates();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to duplicate template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to duplicate template';
+      message.error(errorMessage);
     }
   };
 
-  const handleSetDefault = async (template: PDFTemplate) => {
+  const handleSetDefault = async (template: PDFTemplate): Promise<void> => {
     try {
       await pdfTemplateService.setDefaultTemplate(template.id, template.category);
       message.success('Default template updated');
       fetchTemplates();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to set default template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to set default template';
+      message.error(errorMessage);
     }
   };
 
-  const handlePreview = async (template: PDFTemplate) => {
+  const handlePreview = async (template: PDFTemplate): Promise<void> => {
     try {
       // Create sample data for preview
       const sampleData: Record<string, string> = {};
-      template.variables.forEach(variable => {
+      template.variables.forEach((variable: string) => {
         sampleData[variable] = `[${variable}]`;
       });
 
@@ -180,12 +195,13 @@ export const PDFTemplatesPage: React.FC = () => {
       setPreviewHtml(html);
       setSelectedTemplate(template);
       setShowPreviewModal(true);
-    } catch (error: any) {
-      message.error(error.message || 'Failed to preview template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to preview template';
+      message.error(errorMessage);
     }
   };
 
-  const handleExport = async (template: PDFTemplate) => {
+  const handleExport = async (template: PDFTemplate): Promise<void> => {
     try {
       const blob = await pdfTemplateService.exportTemplate(template.id);
       const url = URL.createObjectURL(blob);
@@ -197,19 +213,21 @@ export const PDFTemplatesPage: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       message.success('Template exported successfully');
-    } catch (error: any) {
-      message.error(error.message || 'Failed to export template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export template';
+      message.error(errorMessage);
     }
   };
 
-  const handleImport = async (file: File) => {
+  const handleImport = async (file: File): Promise<boolean> => {
     try {
       await pdfTemplateService.importTemplate(file);
       message.success('Template imported successfully');
       fetchTemplates();
       return false; // Prevent default upload behavior
-    } catch (error: any) {
-      message.error(error.message || 'Failed to import template');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import template';
+      message.error(errorMessage);
       return false;
     }
   };

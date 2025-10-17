@@ -2,7 +2,7 @@
  * Product Sales Page - Enterprise Version
  * Redesigned with Ant Design and EnterpriseLayout
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -76,12 +76,7 @@ export const ProductSalesPage: React.FC = () => {
   const [selectedSale, setSelectedSale] = useState<ProductSale | null>(null);
 
   // Load data
-  useEffect(() => {
-    loadProductSales();
-    loadAnalytics();
-  }, [currentPage, pageSize, filters]);
-
-  const loadProductSales = async () => {
+  const loadProductSales = useCallback(async () => {
     try {
       setLoading(true);
       const response = await productSaleService.getProductSales(filters, currentPage, pageSize);
@@ -93,16 +88,21 @@ export const ProductSalesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, currentPage, pageSize]);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       const analyticsData = await productSaleService.getProductSalesAnalytics();
       setAnalytics(analyticsData);
     } catch (err) {
       console.error('Error loading analytics:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadProductSales();
+    void loadAnalytics();
+  }, [loadProductSales, loadAnalytics]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -286,7 +286,7 @@ export const ProductSalesPage: React.FC = () => {
       fixed: 'right',
       width: 180,
       align: 'center',
-      render: (_: any, record: ProductSale) => (
+      render: (_: unknown, record: ProductSale) => (
         <Space size="small">
           <Tooltip title="View Details">
             <Button

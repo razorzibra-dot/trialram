@@ -167,7 +167,7 @@ export class DashboardService extends BaseService {
   /**
    * Get widget data by type
    */
-  async getWidgetData(widgetType: string): Promise<any> {
+  async getWidgetData(widgetType: string): Promise<unknown> {
     try {
       switch (widgetType) {
         case 'sales_overview':
@@ -202,7 +202,7 @@ export class DashboardService extends BaseService {
   /**
    * Get performance metrics
    */
-  async getPerformanceMetrics(): Promise<any> {
+  async getPerformanceMetrics(): Promise<unknown> {
     try {
       return {
         responseTime: 245, // ms

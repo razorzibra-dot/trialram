@@ -114,7 +114,7 @@ export const CompaniesList: React.FC<CompaniesListProps> = ({
     if (selectedRows.length === 0) return;
     
     const ids = selectedRows.map(company => company.id);
-    await bulkUpdate.mutateAsync({ ids, updates: { status: status as any } });
+    await bulkUpdate.mutateAsync({ ids, updates: { status } });
     setSelectedRows([]);
   };
 

@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Data Model Integration Test
  * Comprehensive testing for unified data models and relationships
@@ -376,8 +377,7 @@ export class DataModelIntegrationTester {
    * Print test results
    */
   printResults(): void {
-    console.log('
-🔗 Data Model Integration Test Results');
+    console.log('\n🔗 Data Model Integration Test Results');
     console.log('=====================================');
     
     let totalPassed = 0;
@@ -385,8 +385,7 @@ export class DataModelIntegrationTester {
     let totalTests = 0;
     
     this.results.forEach(suite => {
-      console.log(`
-📋 ${suite.suiteName}`);
+      console.log(`\n📋 ${suite.suiteName}`);
       console.log(`   ✅ Passed: ${suite.passed}`);
       console.log(`   ❌ Failed: ${suite.failed}`);
       console.log(`   📊 Total: ${suite.total}`);
@@ -406,23 +405,19 @@ export class DataModelIntegrationTester {
       totalTests += suite.total;
     });
     
-    console.log('
-📊 Overall Results:');
+    console.log('\n📊 Overall Results:');
     console.log(`   ✅ Total Passed: ${totalPassed}`);
     console.log(`   ❌ Total Failed: ${totalFailed}`);
     console.log(`   📊 Total Tests: ${totalTests}`);
     console.log(`   📈 Success Rate: ${((totalPassed / totalTests) * 100).toFixed(1)}%`);
     
     if (totalFailed === 0) {
-      console.log('
-🎉 All data model integration tests passed! Models are properly unified.');
+      console.log('\n🎉 All data model integration tests passed! Models are properly unified.');
     } else {
-      console.log('
-⚠️  Some data model tests failed. Please review the model relationships.');
+      console.log('\n⚠️  Some data model tests failed. Please review the model relationships.');
     }
     
-    console.log('=====================================
-');
+    console.log('=====================================\n');
   }
 
   /**

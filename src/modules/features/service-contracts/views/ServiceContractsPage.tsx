@@ -2,7 +2,7 @@
  * Service Contracts Page - Enterprise Version
  * Redesigned with Ant Design and EnterpriseLayout
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -89,11 +89,7 @@ export const ServiceContractsPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<ServiceContract | null>(null);
 
   // Load data
-  useEffect(() => {
-    loadContracts();
-  }, [currentPage, pageSize, filters]);
-
-  const loadContracts = async () => {
+  const loadContracts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await serviceContractService.getServiceContracts(filters, currentPage, pageSize);
@@ -108,7 +104,11 @@ export const ServiceContractsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, currentPage, pageSize]);
+
+  useEffect(() => {
+    void loadContracts();
+  }, [loadContracts]);
 
   const calculateStats = (contractsData: ServiceContract[]) => {
     const now = new Date();
@@ -331,7 +331,7 @@ export const ServiceContractsPage: React.FC = () => {
       fixed: 'right',
       width: 150,
       align: 'center',
-      render: (_: any, record: ServiceContract) => (
+      render: (_: unknown, record: ServiceContract) => (
         <Space size="small">
           <Tooltip title="View Details">
             <Button

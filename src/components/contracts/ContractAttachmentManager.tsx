@@ -447,7 +447,7 @@ const ContractAttachmentManager: React.FC<ContractAttachmentManagerProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={uploadForm.category} onValueChange={(value: any) => setUploadForm(prev => ({ ...prev, category: value }))}>
+                <Select value={uploadForm.category} onValueChange={(value: string) => setUploadForm(prev => ({ ...prev, category: value }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

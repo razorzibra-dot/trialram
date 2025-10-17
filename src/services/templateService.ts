@@ -108,7 +108,7 @@ export class TemplateService {
     total: number;
   }> {
     try {
-      let queryFilters: Record<string, any> = {};
+      const queryFilters: Record<string, unknown> = {};
 
       if (filters?.channel) {
         queryFilters.channel = filters.channel;
@@ -157,7 +157,7 @@ export class TemplateService {
   }
 
   // Template processing
-  async renderTemplate(templateId: string, variables: Record<string, any>): Promise<string> {
+  async renderTemplate(templateId: string, variables: Record<string, unknown>): Promise<string> {
     try {
       const template = await this.getTemplate(templateId);
       if (!template) {
@@ -175,7 +175,7 @@ export class TemplateService {
     }
   }
 
-  async validateVariables(template: NotificationTemplate, variables: Record<string, any>): Promise<void> {
+  async validateVariables(template: NotificationTemplate, variables: Record<string, unknown>): Promise<void> {
     try {
       const requiredVariables = template.variables || [];
       const missingVariables = requiredVariables.filter(variable => 
@@ -201,7 +201,7 @@ export class TemplateService {
     }
   }
 
-  async previewTemplate(templateId: string, sampleData: Record<string, any>): Promise<{
+  async previewTemplate(templateId: string, sampleData: Record<string, unknown>): Promise<{
     title?: string;
     message: string;
     variables: string[];
@@ -255,9 +255,9 @@ export class TemplateService {
         status: 'draft' as const
       };
 
-      delete (newVersion as any).id;
-      delete (newVersion as any).created_at;
-      delete (newVersion as any).updated_at;
+      delete (newVersion as unknown as Record<string, unknown>).id;
+      delete (newVersion as unknown as Record<string, unknown>).created_at;
+      delete (newVersion as unknown as Record<string, unknown>).updated_at;
 
       return await this.createTemplate(newVersion);
     } catch (error) {
@@ -298,7 +298,7 @@ export class TemplateService {
   }
 
   // Helper methods
-  private validateTemplateData(templateData: any): void {
+  private validateTemplateData(templateData: unknown): void {
     if (!templateData.name || templateData.name.trim() === '') {
       throw new Error('Template name is required');
     }
@@ -330,7 +330,7 @@ export class TemplateService {
     return variables;
   }
 
-  private processTemplateString(template: string, variables: Record<string, any>): string {
+  private processTemplateString(template: string, variables: Record<string, unknown>): string {
     let processed = template;
 
     // Replace all variables in the format {{variableName}}
@@ -440,9 +440,9 @@ export class TemplateService {
         f_version: 1
       };
 
-      delete (duplicateData as any).id;
-      delete (duplicateData as any).created_at;
-      delete (duplicateData as any).updated_at;
+      delete (duplicateData as unknown as Record<string, unknown>).id;
+      delete (duplicateData as unknown as Record<string, unknown>).created_at;
+      delete (duplicateData as unknown as Record<string, unknown>).updated_at;
 
       return await this.createTemplate(duplicateData);
     } catch (error) {

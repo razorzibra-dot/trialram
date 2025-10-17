@@ -90,38 +90,26 @@ function generateBatchSummary(results: FileValidationResult[]): string {
   const invalidFiles = totalFiles - validFiles;
   const filesWithEscapes = results.filter(r => r.hasUnicodeEscapes).length;
   
-  let summary = `📊 Validation Summary:
-`;
-  summary += `Total Files: ${totalFiles}
-`;
-  summary += `Valid Files: ${validFiles} ✅
-`;
-  summary += `Invalid Files: ${invalidFiles} ❌
-`;
-  summary += `Files with Unicode Escapes: ${filesWithEscapes} 🔧
-
-`;
+  let summary = `📊 Validation Summary:\n`;
+  summary += `Total Files: ${totalFiles}\n`;
+  summary += `Valid Files: ${validFiles} ✅\n`;
+  summary += `Invalid Files: ${invalidFiles} ❌\n`;
+  summary += `Files with Unicode Escapes: ${filesWithEscapes} 🔧\n\n`;
   
   if (invalidFiles > 0) {
-    summary += `❌ Files with Issues:
-`;
+    summary += `❌ Files with Issues:\n`;
     results.filter(r => !r.isValid).forEach(result => {
-      summary += `  - ${result.filePath} (${result.issues.length} issues)
-`;
+      summary += `  - ${result.filePath} (${result.issues.length} issues)\n`;
     });
-    summary += '
-';
+    summary += '\n';
   }
   
   if (filesWithEscapes > 0) {
-    summary += `🔧 Files with Unicode Escapes:
-`;
+    summary += `🔧 Files with Unicode Escapes:\n`;
     results.filter(r => r.hasUnicodeEscapes).forEach(result => {
-      summary += `  - ${result.filePath}
-`;
+      summary += `  - ${result.filePath}\n`;
     });
-    summary += '
-';
+    summary += '\n';
   }
   
   if (validFiles === totalFiles) {
@@ -160,46 +148,31 @@ export function getFilesToValidate(filePaths: string[]): string[] {
  * Generates detailed validation report
  */
 export function generateDetailedReport(result: FileValidationResult): string {
-  let report = `📄 File: ${result.filePath}
-`;
-  report += `Status: ${result.isValid ? '✅ Valid' : '❌ Invalid'}
-`;
-  report += `Unicode Escapes: ${result.hasUnicodeEscapes ? '🔧 Found' : '✅ None'}
-`;
-  report += `Issues: ${result.issues.length}
-
-`;
+  let report = `📄 File: ${result.filePath}\n`;
+  report += `Status: ${result.isValid ? '✅ Valid' : '❌ Invalid'}\n`;
+  report += `Unicode Escapes: ${result.hasUnicodeEscapes ? '🔧 Found' : '✅ None'}\n`;
+  report += `Issues: ${result.issues.length}\n\n`;
   
   if (result.issues.length > 0) {
-    report += `🔍 Issues Found:
-`;
+    report += `🔍 Issues Found:\n`;
     result.issues.forEach((issue, index) => {
-      report += `${index + 1}. Line ${issue.line}, Column ${issue.column}
-`;
-      report += `   Type: ${issue.type} [${issue.severity}]
-`;
-      report += `   Message: ${issue.message}
-`;
-      report += `   Suggestion: ${issue.suggestion}
-
-`;
+      report += `${index + 1}. Line ${issue.line}, Column ${issue.column}\n`;
+      report += `   Type: ${issue.type} [${issue.severity}]\n`;
+      report += `   Message: ${issue.message}\n`;
+      report += `   Suggestion: ${issue.suggestion}\n\n`;
     });
   }
   
   if (result.suggestions.length > 0) {
-    report += `💡 Suggestions:
-`;
+    report += `💡 Suggestions:\n`;
     result.suggestions.forEach((suggestion, index) => {
-      report += `${index + 1}. ${suggestion}
-`;
+      report += `${index + 1}. ${suggestion}\n`;
     });
-    report += '
-';
+    report += '\n';
   }
   
   if (result.fixedContent && result.fixedContent !== result.originalContent) {
-    report += `🔧 Auto-fix available - content can be automatically corrected.
-`;
+    report += `🔧 Auto-fix available - content can be automatically corrected.\n`;
   }
   
   return report;
@@ -210,21 +183,17 @@ export function generateDetailedReport(result: FileValidationResult): string {
  */
 export function validateReactComponent(content: string): CodeQualityIssue[] {
   const issues: CodeQualityIssue[] = [];
-  const lines = content.split('
-');
+  const lines = content.split('\n');
   
   lines.forEach((line, lineIndex) => {
     // Check for proper import statements
-    if (line.includes('import') && line.includes('\
-')) {
+    if (line.includes('import') && line.includes('\n')) {
       issues.push({
         line: lineIndex + 1,
-        column: line.indexOf('\
-') + 1,
+        column: line.indexOf('\n') + 1,
         type: 'unicode_escape',
         message: 'Import statement contains escaped newline',
-        suggestion: 'Remove \
- from import statement',
+        suggestion: 'Remove escaped newline from import statement',
         severity: 'error'
       });
     }
@@ -272,12 +241,8 @@ export async function preCommitValidation(files: { path: string; content: string
   let report = batchResult.summary;
   
   if (!canCommit) {
-    report += '
-
-🚫 COMMIT BLOCKED: Files contain unicode escape errors or code quality issues.
-';
-    report += '🔧 Run the auto-fix command to resolve these issues before committing.
-';
+    report += '\n🚫 COMMIT BLOCKED: Files contain unicode escape errors or code quality issues.\n';
+    report += '🔧 Run the auto-fix command to resolve these issues before committing.\n';
   }
   
   return {

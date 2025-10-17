@@ -45,7 +45,7 @@ export function TemplateManager({ className }: TemplateManagerProps) {
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: Record<string, string> = {};
       
       if (filterChannel !== 'all') {
         filters.channel = filterChannel;
@@ -63,7 +63,7 @@ export function TemplateManager({ className }: TemplateManagerProps) {
     }
   };
 
-  const handleCreateTemplate = async (templateData: any) => {
+  const handleCreateTemplate = async (templateData: Partial<NotificationTemplate>) => {
     try {
       await templateService.createTemplate(templateData);
       await loadTemplates();
@@ -73,7 +73,7 @@ export function TemplateManager({ className }: TemplateManagerProps) {
     }
   };
 
-  const handleUpdateTemplate = async (templateId: string, updates: any) => {
+  const handleUpdateTemplate = async (templateId: string, updates: Partial<NotificationTemplate>) => {
     try {
       await templateService.updateTemplate(templateId, updates);
       await loadTemplates();
@@ -375,7 +375,7 @@ function TemplateForm({
   onSubmit 
 }: { 
   template?: NotificationTemplate; 
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Partial<NotificationTemplate>) => void;
 }) {
   const [formData, setFormData] = useState({
     name: template?.name || '',
@@ -495,7 +495,7 @@ function TemplateForm({
 
 // Template Preview Component
 function TemplatePreview({ template }: { template: NotificationTemplate }) {
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<unknown>(null);
   const [sampleVariables, setSampleVariables] = useState<Record<string, string>>({});
 
   useEffect(() => {

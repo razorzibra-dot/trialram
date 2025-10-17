@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Service Integration Validation Script
  * Comprehensive validation of all services and their integration
@@ -27,13 +28,19 @@ export interface ValidationReport {
     failedTests: number;
     warningTests: number;
   };
-  serviceHealth: any;
-  integrationTests: any;
-  functionalityTests: any;
-  performanceTests: any;
-  errorHandlingTests: any;
+  serviceHealth: Record<string, unknown>;
+  integrationTests: Record<string, unknown>;
+  functionalityTests: Record<string, unknown>;
+  performanceTests: Record<string, unknown>;
+  errorHandlingTests: Record<string, unknown>;
   recommendations: string[];
 }
+
+// Helper type for test results
+type TestResult = Record<string, unknown> & {
+  status?: string;
+  error?: string;
+};
 
 /**
  * Main validation function
@@ -100,7 +107,7 @@ export async function validateServiceIntegration(): Promise<ValidationReport> {
 /**
  * Validate service health
  */
-async function validateServiceHealth(): Promise<any> {
+async function validateServiceHealth(): Promise<TestResult> {
   const health = getServiceHealth();
   const issues = [];
 
@@ -138,7 +145,7 @@ async function validateServiceHealth(): Promise<any> {
 /**
  * Validate core functionality
  */
-async function validateFunctionality(): Promise<any> {
+async function validateFunctionality(): Promise<TestResult> {
   const results = {
     crud_operations: [],
     data_consistency: [],
@@ -199,16 +206,18 @@ async function validateFunctionality(): Promise<any> {
         status: 'passed',
         details: `Customers: ${customers.length}, Sales: ${sales.length}`
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       results.data_consistency.push({
         test: 'data_structure',
         status: 'failed',
-        error: error.message
+        error: errorMessage
       });
     }
 
-  } catch (error: any) {
-    console.error('Functionality validation failed:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Functionality validation failed:', errorMessage);
   }
 
   return results;
@@ -217,7 +226,7 @@ async function validateFunctionality(): Promise<any> {
 /**
  * Validate performance
  */
-async function validatePerformance(): Promise<any> {
+async function validatePerformance(): Promise<TestResult> {
   const results = {
     response_times: [],
     memory_usage: [],
@@ -246,12 +255,13 @@ async function validatePerformance(): Promise<any> {
           status: performance.average < 1000 ? 'passed' : 'warning', // 1 second threshold
           details: `Avg: ${performance.average.toFixed(2)}ms`
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         results.response_times.push({
           service: name,
           method,
           status: 'failed',
-          error: error.message
+          error: errorMessage
         });
       }
     }
@@ -271,16 +281,18 @@ async function validatePerformance(): Promise<any> {
         totalTime: end - start,
         status: (end - start) < 5000 ? 'passed' : 'warning' // 5 second threshold
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       results.concurrent_requests.push({
         test: 'concurrent_requests',
         status: 'failed',
-        error: error.message
+        error: errorMessage
       });
     }
 
-  } catch (error: any) {
-    console.error('Performance validation failed:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Performance validation failed:', errorMessage);
   }
 
   return results;
@@ -289,7 +301,7 @@ async function validatePerformance(): Promise<any> {
 /**
  * Validate error handling
  */
-async function validateErrorHandling(): Promise<any> {
+async function validateErrorHandling(): Promise<TestResult> {
   const results = {
     error_types: [],
     error_consistency: [],
@@ -312,7 +324,7 @@ async function validateErrorHandling(): Promise<any> {
         name: 'validation_error',
         test: async () => {
           const service = apiServiceFactory.getCustomerService();
-          await service.createCustomer({} as any);
+          await service.createCustomer({} as unknown);
         }
       }
     ];
@@ -325,11 +337,12 @@ async function validateErrorHandling(): Promise<any> {
           status: 'failed',
           reason: 'Expected error but operation succeeded'
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         results.error_types.push({
           type: name,
           status: 'passed',
-          error: error.message
+          error: errorMessage
         });
       }
     }
@@ -341,8 +354,9 @@ async function validateErrorHandling(): Promise<any> {
       details: 'Error handling structure is consistent'
     });
 
-  } catch (error: any) {
-    console.error('Error handling validation failed:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error handling validation failed:', errorMessage);
   }
 
   return results;
@@ -367,20 +381,23 @@ function calculateSummary(report: ValidationReport): void {
 
   sections.forEach(section => {
     if (section && typeof section === 'object') {
-      Object.values(section).forEach((subsection: any) => {
+      Object.values(section).forEach((subsection: unknown) => {
         if (Array.isArray(subsection)) {
-          subsection.forEach((test: any) => {
+          subsection.forEach((test: unknown) => {
             totalTests++;
-            switch (test.status) {
-              case 'passed':
-                passedTests++;
-                break;
-              case 'failed':
+            if (typeof test === 'object' && test !== null && 'status' in test) {
+              const status = (test as Record<string, unknown>).status;
+              switch (status) {
+                case 'passed':
+                  passedTests++;
+                  break;
+                case 'failed':
                 failedTests++;
                 break;
               case 'warning':
                 warningTests++;
                 break;
+              }
             }
           });
         }

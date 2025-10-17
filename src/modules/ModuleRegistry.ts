@@ -153,8 +153,8 @@ export class ModuleRegistry {
   /**
    * Get all routes from modules
    */
-  getAllRoutes(): any[] {
-    const routes: any[] = [];
+  getAllRoutes(): Array<Record<string, unknown>> {
+    const routes: Array<Record<string, unknown>> = [];
     
     for (const module of this.modules.values()) {
       if (module.routes) {

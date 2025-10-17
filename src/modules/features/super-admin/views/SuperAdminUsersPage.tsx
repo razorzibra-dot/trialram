@@ -145,8 +145,9 @@ export const SuperAdminUsersPage: React.FC = () => {
       await userService.deleteUser(userId);
       message.success('User deleted successfully');
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to delete user');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+      message.error(errorMessage);
     }
   };
 
@@ -155,8 +156,9 @@ export const SuperAdminUsersPage: React.FC = () => {
     try {
       await userService.resetPassword(userId);
       message.success('Password reset email sent successfully');
-    } catch (error: any) {
-      message.error(error.message || 'Failed to reset password');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
+      message.error(errorMessage);
     }
   };
 
@@ -174,8 +176,9 @@ export const SuperAdminUsersPage: React.FC = () => {
       setIsModalVisible(false);
       form.resetFields();
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save user');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save user';
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

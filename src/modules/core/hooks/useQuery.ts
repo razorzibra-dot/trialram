@@ -74,7 +74,7 @@ export function useMutation<
   return useReactMutation({
     mutationFn,
     ...options,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: TData, variables: TVariables, context: TContext | undefined) => {
       if (options?.showSuccessNotification) {
         addNotification({
           type: 'success',
@@ -84,7 +84,7 @@ export function useMutation<
       }
       options?.onSuccess?.(data, variables, context);
     },
-    onError: (error, variables, context) => {
+    onError: (error: TError, variables: TVariables, context: TContext | undefined) => {
       if (options?.showErrorNotification !== false) {
         addNotification({
           type: 'error',
@@ -107,7 +107,7 @@ export function useOptimisticMutation<
   mutationFn: MutationFunction<TData, TVariables>,
   options: UseMutationOptions<TData, TError, TVariables, TContext> & {
     queryKey: QueryKey;
-    updateFn: (oldData: any, variables: TVariables) => any;
+    updateFn: (oldData: TData | undefined, variables: TVariables) => TData;
     showSuccessNotification?: boolean;
     showErrorNotification?: boolean;
     successMessage?: string;
@@ -119,22 +119,22 @@ export function useOptimisticMutation<
   
   return useReactMutation({
     mutationFn,
-    onMutate: async (variables) => {
+    onMutate: async (variables: TVariables) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: options.queryKey });
       
       // Snapshot previous value
-      const previousData = queryClient.getQueryData(options.queryKey);
+      const previousData = queryClient.getQueryData<TData>(options.queryKey);
       
       // Optimistically update
-      queryClient.setQueryData(options.queryKey, (oldData: any) => 
+      queryClient.setQueryData<TData>(options.queryKey, (oldData: TData | undefined) => 
         options.updateFn(oldData, variables)
       );
       
       // Return context with previous data
       return { previousData };
     },
-    onError: (error, variables, context) => {
+    onError: (error: TError, variables: TVariables, context: { previousData: TData | undefined } | undefined) => {
       // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(options.queryKey, context.previousData);
@@ -150,7 +150,7 @@ export function useOptimisticMutation<
       
       options?.onError?.(error, variables, context);
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: TData, variables: TVariables, context: { previousData: TData | undefined } | undefined) => {
       if (options?.showSuccessNotification) {
         addNotification({
           type: 'success',
@@ -160,7 +160,7 @@ export function useOptimisticMutation<
       }
       options?.onSuccess?.(data, variables, context);
     },
-    onSettled: (data, error, variables, context) => {
+    onSettled: (data: TData | undefined, error: TError | null, variables: TVariables, context: { previousData: TData | undefined } | undefined) => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: options.queryKey });
       options?.onSettled?.(data, error, variables, context);
@@ -169,6 +169,13 @@ export function useOptimisticMutation<
 }
 
 // Infinite query hook
+export interface InfiniteQueryOptions {
+  showErrorNotification?: boolean;
+  errorMessage?: string;
+  onError?: (error: Error) => void;
+  [key: string]: unknown;
+}
+
 export function useInfiniteQuery<
   TQueryFnData = unknown,
   TError = unknown,
@@ -177,7 +184,7 @@ export function useInfiniteQuery<
 >(
   queryKey: TQueryKey,
   queryFn: QueryFunction<TQueryFnData, TQueryKey>,
-  options?: any
+  options?: InfiniteQueryOptions
 ) {
   const addNotification = useStore((state) => state.addNotification);
   
@@ -185,15 +192,18 @@ export function useInfiniteQuery<
     queryKey,
     queryFn,
     ...options,
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
       if (options?.showErrorNotification !== false) {
         addNotification({
           type: 'error',
           title: 'Error',
-          message: options?.errorMessage || error?.message || 'An error occurred',
+          message: options?.errorMessage || errorObj?.message || 'An error occurred',
         });
       }
-      options?.onError?.(error);
+      if (options?.onError && errorObj instanceof Error) {
+        options.onError(errorObj);
+      }
     },
   });
 }

@@ -14,7 +14,7 @@ export interface PDFTemplate {
 
 export interface PDFGenerationRequest {
   templateId: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   fileName?: string;
 }
 

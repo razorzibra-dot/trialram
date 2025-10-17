@@ -14,12 +14,17 @@ import { apiConfig, getApiHeaders } from '@/config/apiConfig';
 import { ApiResponse, ApiError } from './interfaces';
 import { toast } from '@/hooks/use-toast';
 
-export interface RequestConfig extends AxiosRequestConfig {
+export interface RequestConfig extends InternalAxiosRequestConfig {
   skipAuth?: boolean;
   skipErrorHandling?: boolean;
   retryAttempts?: number;
   retryDelay?: number;
   timeout?: number;
+  metadata?: {
+    startTime?: number;
+  };
+  _retry?: boolean;
+  _retryCount?: number;
 }
 
 export interface ApiMetrics {
@@ -33,8 +38,8 @@ class BaseApiService {
   private client: AxiosInstance;
   private isRefreshing = false;
   private failedQueue: Array<{
-    resolve: (value?: any) => void;
-    reject: (error?: any) => void;
+    resolve: (value?: Record<string, unknown>) => void;
+    reject: (error?: Error) => void;
   }> = [];
   private metrics: ApiMetrics = {
     requestCount: 0,
@@ -123,7 +128,7 @@ class BaseApiService {
    * Handle successful responses
    */
   private handleSuccessResponse(response: AxiosResponse): void {
-    const config = response.config as any;
+    const config = response.config as RequestConfig;
     const responseTime = Date.now() - (config.metadata?.startTime || 0);
 
     // Update metrics
@@ -141,8 +146,8 @@ class BaseApiService {
   /**
    * Handle error responses with retry logic
    */
-  private async handleErrorResponse(error: AxiosError): Promise<any> {
-    const config = error.config as any;
+  private async handleErrorResponse(error: AxiosError): Promise<AxiosResponse<unknown>> {
+    const config = error.config as RequestConfig;
     const responseTime = Date.now() - (config?.metadata?.startTime || 0);
 
     // Update metrics
@@ -174,8 +179,8 @@ class BaseApiService {
   /**
    * Handle 401 Unauthorized errors
    */
-  private async handle401Error(error: AxiosError): Promise<any> {
-    const config = error.config as any;
+  private async handle401Error(error: AxiosError): Promise<AxiosResponse<unknown>> {
+    const config = error.config as RequestConfig;
 
     // If already retried or no refresh token, logout
     if (config._retry || !this.getRefreshToken()) {
@@ -258,7 +263,7 @@ class BaseApiService {
    * Check if request should be retried
    */
   private shouldRetry(error: AxiosError): boolean {
-    const config = error.config as any;
+    const config = error.config as RequestConfig;
     const retryAttempts = config?.retryAttempts || apiConfig.retryAttempts;
     const currentAttempt = config?._retryCount || 0;
 
@@ -272,8 +277,8 @@ class BaseApiService {
   /**
    * Retry failed request
    */
-  private async retryRequest(error: AxiosError): Promise<any> {
-    const config = error.config as any;
+  private async retryRequest(error: AxiosError): Promise<AxiosResponse<unknown>> {
+    const config = error.config as RequestConfig;
     const retryDelay = config?.retryDelay || apiConfig.retryDelay;
     
     config._retryCount = (config._retryCount || 0) + 1;
@@ -287,7 +292,7 @@ class BaseApiService {
   /**
    * Process queued requests after token refresh
    */
-  private processQueue(error: any): void {
+  private processQueue(error: Error | null): void {
     this.failedQueue.forEach(({ resolve, reject }) => {
       if (error) {
         reject(error);
@@ -314,7 +319,7 @@ class BaseApiService {
         { refreshToken }
       );
 
-      const body: any = response.data;
+      const body: Record<string, unknown> = response.data;
       const token: string = body?.data?.token ?? body?.token;
       const newRefreshToken: string | undefined = body?.data?.refreshToken ?? body?.refreshToken;
       
@@ -348,7 +353,7 @@ class BaseApiService {
   /**
    * Get current user from storage
    */
-  private getCurrentUser(): any {
+  private getCurrentUser(): Record<string, unknown> | null {
     const userStr = localStorage.getItem('crm_user');
     return userStr ? JSON.parse(userStr) : null;
   }
@@ -438,27 +443,27 @@ class BaseApiService {
    * Public API methods
    */
 
-  async get<T = any>(url: string, config?: RequestConfig): Promise<{ data: T }> {
+  async get<T = Record<string, unknown>>(url: string, config?: RequestConfig): Promise<{ data: T }> {
     const response = await this.client.get(url, config);
     return { data: response.data as T };
   }
 
-  async post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<{ data: T }> {
+  async post<T = Record<string, unknown>>(url: string, data?: Record<string, unknown>, config?: RequestConfig): Promise<{ data: T }> {
     const response = await this.client.post(url, data, config);
     return { data: response.data as T };
   }
 
-  async put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<{ data: T }> {
+  async put<T = Record<string, unknown>>(url: string, data?: Record<string, unknown>, config?: RequestConfig): Promise<{ data: T }> {
     const response = await this.client.put(url, data, config);
     return { data: response.data as T };
   }
 
-  async patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<{ data: T }> {
+  async patch<T = Record<string, unknown>>(url: string, data?: Record<string, unknown>, config?: RequestConfig): Promise<{ data: T }> {
     const response = await this.client.patch(url, data, config);
     return { data: response.data as T };
   }
 
-  async delete<T = any>(url: string, config?: RequestConfig): Promise<{ data: T }> {
+  async delete<T = Record<string, unknown>>(url: string, config?: RequestConfig): Promise<{ data: T }> {
     const response = await this.client.delete(url, config);
     return { data: response.data as T };
   }
@@ -466,7 +471,7 @@ class BaseApiService {
   /**
    * Upload file with progress tracking
    */
-  async uploadFile<T = any>(
+  async uploadFile<T = Record<string, unknown>>(
     url: string, 
     file: File, 
     onProgress?: (progress: number) => void,

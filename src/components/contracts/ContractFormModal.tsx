@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Contract, ContractTemplate, ContractFormData, ContractParty } from '@/types/contracts';
+import { Customer } from '@/types/crm';
+import { User } from '@/types/auth';
 import { contractService, customerService, userService } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,8 +34,8 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
   
@@ -92,7 +94,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
           title: contract.title,
           description: contract.description || '',
           contract_number: contract.contract_number || '',
-          type: contract.type as any,
+          type: contract.type as Contract['type'],
           customer_id: contract.customer_id,
           customer_name: contract.customer_name || '',
           customer_contact: contract.customer_contact || '',
@@ -111,8 +113,8 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
           renewalTerms: contract.renewal_terms || '',
           terms: contract.terms || '',
           approval_stage: contract.approval_stage || 'draft',
-          compliance_status: contract.compliance_status as any,
-          priority: contract.priority as any,
+          compliance_status: contract.compliance_status as Contract['compliance_status'],
+          priority: contract.priority as Contract['priority'],
           reminderDays: contract.reminder_days,
           next_reminder_date: contract.next_reminder_date || '',
           assignedTo: contract.assigned_to || '',
@@ -209,7 +211,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
         setFormData(prev => ({
           ...prev,
           templateId,
-          type: template.type as any,
+          type: template.type as Contract['type'],
           content: template.content,
           title: prev.title || template.name
         }));
@@ -394,7 +396,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
                   <Label htmlFor="type">Contract Type</Label>
                   <Select
                     value={formData.type}
-                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}
+                    onValueChange={(value: Contract['type']) => setFormData(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -553,7 +555,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
                       <Label>Role</Label>
                       <Select
                         value={newParty.role}
-                        onValueChange={(value: any) => setNewParty(prev => ({ ...prev, role: value }))}
+                        onValueChange={(value: ContractParty['role']) => setNewParty(prev => ({ ...prev, role: value }))}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -759,7 +761,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
                   <Label htmlFor="priority">Priority</Label>
                   <Select
                     value={formData.priority}
-                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}
+                    onValueChange={(value: Contract['priority']) => setFormData(prev => ({ ...prev, priority: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -814,7 +816,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
                   <Label htmlFor="compliance_status">Compliance Status</Label>
                   <Select
                     value={formData.compliance_status}
-                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, compliance_status: value }))}
+                    onValueChange={(value: string) => setFormData(prev => ({ ...prev, compliance_status: value as 'pending_review' | 'compliant' | 'non_compliant' }))}
                   >
                     <SelectTrigger>
                       <SelectValue />

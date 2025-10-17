@@ -5,7 +5,7 @@ export class WhatsAppService {
   private rateLimitCache = new Map<string, RateLimitInfo>();
 
   // Message sending
-  async sendTemplateMessage(phoneNumber: string, templateName: string, variables: Record<string, any>): Promise<{ messageId: string }> {
+  async sendTemplateMessage(phoneNumber: string, templateName: string, variables: Record<string, unknown>): Promise<{ messageId: string }> {
     try {
       // Get WhatsApp configuration
       const config = await this.getWhatsAppConfig();
@@ -235,7 +235,7 @@ export class WhatsAppService {
     }
   }
 
-  async processIncomingMessage(message: any, metadata: any): Promise<void> {
+  async processIncomingMessage(message: unknown, metadata: unknown): Promise<void> {
     try {
       // Find or create conversation
       const conversation = await this.findOrCreateConversation(message.from, metadata.phone_number_id);
@@ -333,7 +333,7 @@ export class WhatsAppService {
   }
 
   // Helper methods
-  private prepareTemplateParameters(variables: Record<string, any>): Array<{ type: string; text: string }> {
+  private prepareTemplateParameters(variables: Record<string, unknown>): Array<{ type: string; text: string }> {
     return Object.values(variables).map(value => ({
       type: 'text',
       text: String(value)
@@ -385,7 +385,7 @@ export class WhatsAppService {
     }
   }
 
-  private async storeOutboundMessage(phoneNumber: string, messageId: string, messageType: string, data: Record<string, any>): Promise<void> {
+  private async storeOutboundMessage(phoneNumber: string, messageId: string, messageType: string, data: Record<string, unknown>): Promise<void> {
     try {
       const conversation = await this.findOrCreateConversation(phoneNumber, 'default');
 
@@ -418,7 +418,7 @@ export class WhatsAppService {
   // Conversation management
   async getConversations(userId?: string): Promise<WhatsAppConversation[]> {
     try {
-      const filters: Record<string, any> = { status: 'active' };
+      const filters: Record<string, unknown> = { status: 'active' };
       if (userId) {
         filters.user_id = userId;
       }

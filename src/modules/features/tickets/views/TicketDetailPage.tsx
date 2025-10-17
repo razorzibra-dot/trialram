@@ -263,8 +263,9 @@ export const TicketDetailPage: React.FC = () => {
 
   const handleStatusChange = async (newStatus: string) => {
     try {
-      await ticketService.updateTicket(id!, { status: newStatus as any });
-      setTicket({ ...ticket!, status: newStatus as any });
+      const typedStatus = newStatus as 'open' | 'in_progress' | 'pending' | 'resolved' | 'closed';
+      await ticketService.updateTicket(id!, { status: typedStatus });
+      setTicket({ ...ticket!, status: typedStatus });
       message.success('Status updated successfully');
 
       // Add activity
@@ -285,8 +286,9 @@ export const TicketDetailPage: React.FC = () => {
 
   const handlePriorityChange = async (newPriority: string) => {
     try {
-      await ticketService.updateTicket(id!, { priority: newPriority as any });
-      setTicket({ ...ticket!, priority: newPriority as any });
+      const typedPriority = newPriority as 'low' | 'medium' | 'high' | 'urgent';
+      await ticketService.updateTicket(id!, { priority: typedPriority });
+      setTicket({ ...ticket!, priority: typedPriority });
       message.success('Priority updated successfully');
 
       // Add activity

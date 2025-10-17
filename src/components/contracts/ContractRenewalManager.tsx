@@ -231,7 +231,7 @@ const ContractRenewalManager: React.FC<ContractRenewalManagerProps> = ({
             <AlertDescription>
               <div className="flex items-center justify-between">
                 <span>
-                  <Badge variant={renewalStatus.color as any} className="mr-2">
+                  <Badge variant={renewalStatus.color as 'default' | 'secondary' | 'destructive' | 'outline'} className="mr-2">
                     {renewalStatus.status.toUpperCase()}
                   </Badge>
                   {renewalStatus.message}

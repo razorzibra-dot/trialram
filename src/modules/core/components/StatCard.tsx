@@ -5,4 +5,3 @@
  */
 
 export { StatCard, type StatCardProps } from '@/components/common/StatCard';
-export { default } from '@/components/common/StatCard';

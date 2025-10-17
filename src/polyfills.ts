@@ -4,9 +4,9 @@ import process from 'process';
 import { EventEmitter } from 'events';
 
 // Ensure Buffer is available globally BEFORE any other modules load
-(globalThis as any).Buffer = Buffer;
-(globalThis as any).global = globalThis;
-(globalThis as any).process = process;
+(globalThis as Record<string, unknown>).Buffer = Buffer;
+(globalThis as Record<string, unknown>).global = globalThis;
+(globalThis as Record<string, unknown>).process = process;
 
 // Make Node.js globals available in browser
 if (typeof window !== 'undefined') {
@@ -22,8 +22,8 @@ if (typeof window !== 'undefined') {
   
   // Add process methods that streams might need
   if (!window.process.nextTick) {
-    window.process.nextTick = function(callback: Function, ...args: any[]) {
-      setTimeout(() => callback(...args), 0);
+    window.process.nextTick = function(callback: (...args: unknown[]) => void, ...args: unknown[]) {
+      setTimeout(() => callback(...(args as unknown[])), 0);
     };
   }
   
@@ -35,15 +35,15 @@ if (typeof window !== 'undefined') {
 
 // Ensure all globals are set immediately
 if (typeof global === 'undefined') {
-  (globalThis as any).global = globalThis;
+  (globalThis as Record<string, unknown>).global = globalThis;
 }
 
 if (typeof Buffer === 'undefined') {
-  (globalThis as any).Buffer = Buffer;
+  (globalThis as Record<string, unknown>).Buffer = Buffer;
 }
 
 if (typeof process === 'undefined') {
-  (globalThis as any).process = process;
+  (globalThis as Record<string, unknown>).process = process;
 }
 
 // Add process.browser flag globally
@@ -53,8 +53,8 @@ if (process && typeof process.browser === 'undefined') {
 
 // Ensure Buffer methods are available
 if (Buffer && !Buffer.isBuffer) {
-  Buffer.isBuffer = function(obj: any) {
-    return obj != null && obj.constructor === Buffer;
+  Buffer.isBuffer = function(obj: unknown) {
+    return obj != null && (obj as Record<string, unknown>).constructor === Buffer;
   };
 }
 

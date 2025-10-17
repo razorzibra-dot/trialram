@@ -46,7 +46,13 @@ import {
   getNotificationService,
   getFileService,
   getAuditService,
-  apiServiceFactory
+  apiServiceFactory,
+  ICustomerService,
+  ISalesService,
+  ITicketService,
+  IUserService,
+  IContractService,
+  INotificationService
 } from './api/apiServiceFactory';
 import { Customer, CustomerTag, Sale, Deal, Ticket } from '@/types/crm';
 import { User } from '@/types/auth';
@@ -61,45 +67,51 @@ import type { ContractResponse } from './api/interfaces';
 import { baseApiService } from './api/baseApiService';
 import apiConfig from '@/config/apiConfig';
 
+// Type alias for UI user representation
+type UiUser = User;
+
 // Export service instances
 export const authService = getAuthService();
 
 // Enhanced mappers: Real -> unified UI shapes
-const mapCustomer = (c: CustomerResponse): Customer => ({
-  id: c.id,
-  company_name: c.companyName,
-  contact_name: c.contactName,
-  email: c.email,
-  phone: c.phone || '',
-  mobile: (c as any).mobile || '',
-  website: (c as any).website || '',
-  address: c.address || '',
-  city: c.city || '',
-  country: c.country || '',
-  industry: c.industry || '',
-  size: (c.size as any) || 'small',
-  status: (c.status as any) || 'active',
-  customer_type: ((c as any).customerType as any) || 'business',
-  credit_limit: (c as any).creditLimit || 0,
-  payment_terms: (c as any).paymentTerms || '',
-  tax_id: (c as any).taxId || '',
-  annual_revenue: (c as any).annualRevenue || 0,
-  total_sales_amount: (c as any).totalSalesAmount || 0,
-  total_orders: (c as any).totalOrders || 0,
-  average_order_value: (c as any).averageOrderValue || 0,
-  last_purchase_date: (c as any).lastPurchaseDate || '',
-  tags: (c.tags || []) as CustomerTag[],
-  notes: c.notes,
-  assigned_to: c.assignedTo || '',
-  source: (c as any).source || '',
-  rating: (c as any).rating || '',
-  last_contact_date: (c as any).lastContactDate || '',
-  next_follow_up_date: (c as any).nextFollowUpDate || '',
-  tenant_id: c.tenantId,
-  created_at: c.createdAt,
-  updated_at: c.updatedAt,
-  created_by: (c as any).createdBy || ''
-});
+const mapCustomer = (c: CustomerResponse): Customer => {
+  const customer = c as Record<string, unknown>;
+  return {
+    id: c.id,
+    company_name: c.companyName,
+    contact_name: c.contactName,
+    email: c.email,
+    phone: c.phone || '',
+    mobile: String(customer.mobile || ''),
+    website: String(customer.website || ''),
+    address: c.address || '',
+    city: c.city || '',
+    country: c.country || '',
+    industry: c.industry || '',
+    size: String(c.size || 'small'),
+    status: String(c.status || 'active'),
+    customer_type: String(customer.customerType || 'business'),
+    credit_limit: Number(customer.creditLimit) || 0,
+    payment_terms: String(customer.paymentTerms || ''),
+    tax_id: String(customer.taxId || ''),
+    annual_revenue: Number(customer.annualRevenue) || 0,
+    total_sales_amount: Number(customer.totalSalesAmount) || 0,
+    total_orders: Number(customer.totalOrders) || 0,
+    average_order_value: Number(customer.averageOrderValue) || 0,
+    last_purchase_date: String(customer.lastPurchaseDate || ''),
+    tags: (c.tags || []) as CustomerTag[],
+    notes: c.notes,
+    assigned_to: c.assignedTo || '',
+    source: String(customer.source || ''),
+    rating: String(customer.rating || ''),
+    last_contact_date: String(customer.lastContactDate || ''),
+    next_follow_up_date: String(customer.nextFollowUpDate || ''),
+    tenant_id: c.tenantId,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
+    created_by: String(customer.createdBy || '')
+  };
+};
 
 const stageMapToUi: Record<string, string> = {
   prospect: 'lead',
@@ -122,7 +134,7 @@ const mapSale = (s: SaleResponse): Sale => ({
   currency: 'USD',
   probability: s.probability,
   weighted_amount: s.value * (s.probability / 100),
-  stage: stageMapToUi[(s.stage || '').toLowerCase()] as any || 'lead',
+  stage: (stageMapToUi[(s.stage || '').toLowerCase()] || 'lead') as Sale['stage'],
   status: s.stage === 'won' ? 'won' : s.stage === 'lost' ? 'lost' : 'open',
   source: '',
   campaign: '',
@@ -166,9 +178,9 @@ const mapTicket = (t: TicketResponse): Ticket => ({
   customer_phone: '',
 
   // Status and Classification
-  status: (t.status as any) || 'open',
-  priority: (t.priority as any) || 'medium',
-  category: (t.category as any) || 'general',
+  status: (String(t.status) || 'open') as Ticket['status'],
+  priority: (String(t.priority) || 'medium') as Ticket['priority'],
+  category: (String(t.category) || 'general') as Ticket['category'],
   sub_category: '',
   source: '',
 
@@ -231,13 +243,14 @@ const mapTicket = (t: TicketResponse): Ticket => ({
 
 const mapUser = (u: UserResponse): UiUser => {
   const [firstName, ...rest] = (u.name || '').split(' ');
+  const user = u as Record<string, unknown>;
   return {
     id: u.id,
     email: u.email,
     firstName: firstName || '',
     lastName: rest.join(' '),
-    role: (u.role as any) || 'Viewer',
-    status: (u as any).status || 'active',
+    role: (String(u.role) || 'Viewer') as User['role'],
+    status: (String(user.status) || 'active') as User['status'],
     tenantId: u.tenantId,
     tenantName: '',
     lastLogin: u.lastLogin || '',
@@ -249,21 +262,20 @@ const mapUser = (u: UserResponse): UiUser => {
 
 // Customer service wrapper
 export const customerService = {
-  async getCustomers(filters?: any): Promise<Customer[]> {
-    const base: any = getCustomerService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getCustomers(filters);
-    const res: CustomerResponse[] = await base.getCustomers(filters);
+  async getCustomers(filters?: Record<string, unknown>): Promise<Customer[]> {
+    const base: ICustomerService = getCustomerService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getCustomers(filters) as Promise<Customer[]>;
+    const res: CustomerResponse[] = await base.getCustomers(filters) as CustomerResponse[];
     return res.map(mapCustomer);
   },
   async getCustomer(id: string): Promise<Customer> {
-    const base: any = getCustomerService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getCustomer(id);
-    const c: CustomerResponse = await base.getCustomer(id);
+    const base: ICustomerService = getCustomerService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getCustomer(id) as Promise<Customer>;
+    const c: CustomerResponse = await base.getCustomer(id) as CustomerResponse;
     return mapCustomer(c);
   },
-  async createCustomer(data: any): Promise<Customer> {
-    const base: any = getCustomerService();
-    if (apiServiceFactory.isUsingMockApi()) return base.createCustomer(data);
+  async createCustomer(data: Partial<Customer>): Promise<Customer> {
+    const base: ICustomerService = getCustomerService();
     const req = {
       companyName: data.company_name,
       contactName: data.contact_name,
@@ -278,12 +290,12 @@ export const customerService = {
       notes: data.notes,
       assignedTo: data.assigned_to
     };
-    const c: CustomerResponse = await base.createCustomer(req);
+    if (apiServiceFactory.isUsingMockApi()) return base.createCustomer(req) as Promise<Customer>;
+    const c: CustomerResponse = await base.createCustomer(req) as CustomerResponse;
     return mapCustomer(c);
   },
-  async updateCustomer(id: string, data: any): Promise<Customer> {
-    const base: any = getCustomerService();
-    if (apiServiceFactory.isUsingMockApi()) return base.updateCustomer(id, data);
+  async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
+    const base: ICustomerService = getCustomerService();
     const req = {
       companyName: data.company_name,
       contactName: data.contact_name,
@@ -298,20 +310,21 @@ export const customerService = {
       notes: data.notes,
       assignedTo: data.assigned_to
     };
-    const c: CustomerResponse = await base.updateCustomer(id, req);
+    if (apiServiceFactory.isUsingMockApi()) return base.updateCustomer(id, req) as Promise<Customer>;
+    const c: CustomerResponse = await base.updateCustomer(id, req) as CustomerResponse;
     return mapCustomer(c);
   },
   async deleteCustomer(id: string): Promise<void> {
-    const base: any = getCustomerService();
+    const base: ICustomerService = getCustomerService();
     return base.deleteCustomer(id);
   },
   async getTags(): Promise<CustomerTag[]> {
-    const base: any = getCustomerService();
-    return base.getTags();
+    const base: ICustomerService = getCustomerService();
+    return base.getTags() as Promise<CustomerTag[]>;
   },
   async createTag(name: string, color: string): Promise<CustomerTag> {
-    const base: any = getCustomerService();
-    if (base.createTag) return base.createTag(name, color);
+    const base: ICustomerService = getCustomerService();
+    if (base.createTag) return base.createTag(name, color) as Promise<CustomerTag>;
     // Fallback no-op
     return { id: Date.now().toString(), name, color };
   },
@@ -332,29 +345,29 @@ export const customerService = {
 
 // Sales service wrapper (normalizes to Deal API)
 export const salesService = {
-  async getDeals(filters?: any): Promise<Deal[]> {
-    const base: any = getSalesService();
-    if (apiServiceFactory.isUsingMockApi() && base.getDeals) return base.getDeals(filters);
-    const res: SaleResponse[] = await base.getSales(filters);
+  async getDeals(filters?: Record<string, unknown>): Promise<Deal[]> {
+    const base: ISalesService = getSalesService();
+    if (apiServiceFactory.isUsingMockApi() && 'getDeals' in base) return (base as Record<string, unknown>).getDeals?.(filters) as Promise<Deal[]>;
+    const res: SaleResponse[] = await base.getSales(filters) as SaleResponse[];
     return res.map(mapSale);
   },
   async deleteDeal(id: string): Promise<void> {
-    const base: any = getSalesService();
-    if (apiServiceFactory.isUsingMockApi() && base.deleteDeal) return base.deleteDeal(id);
+    const base: ISalesService = getSalesService();
+    if (apiServiceFactory.isUsingMockApi() && 'deleteDeal' in base) return (base as Record<string, unknown>).deleteDeal?.(id) as Promise<void>;
     return base.deleteSale(id);
   }
 };
 
 // Ticket service wrapper
 export const ticketService = {
-  async getTickets(filters?: any): Promise<Ticket[]> {
-    const base: any = getTicketService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getTickets(filters);
-    const res: TicketResponse[] = await base.getTickets(filters);
+  async getTickets(filters?: Record<string, unknown>): Promise<Ticket[]> {
+    const base: ITicketService = getTicketService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getTickets(filters) as Promise<Ticket[]>;
+    const res: TicketResponse[] = await base.getTickets(filters) as TicketResponse[];
     return res.map(mapTicket);
   },
   async deleteTicket(id: string): Promise<void> {
-    const base: any = getTicketService();
+    const base: ITicketService = getTicketService();
     return base.deleteTicket(id);
   }
 };
@@ -363,47 +376,47 @@ export const ticketService = {
 
 // User service wrapper
 export const userService = {
-  async getUsers(filters?: any): Promise<UiUser[]> {
-    const base: any = getUserService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getUsers(filters);
-    const res: UserResponse[] = await base.getUsers(filters);
+  async getUsers(filters?: Record<string, unknown>): Promise<UiUser[]> {
+    const base: IUserService = getUserService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getUsers(filters) as Promise<UiUser[]>;
+    const res: UserResponse[] = await base.getUsers(filters) as UserResponse[];
     return res.map(mapUser);
   },
-  async updateUser(id: string, updates: Partial<UiUser>): Promise<any> {
-    const base: any = getUserService();
-    if (apiServiceFactory.isUsingMockApi()) return base.updateUser(id, updates);
+  async updateUser(id: string, updates: Partial<UiUser>): Promise<UiUser> {
+    const base: IUserService = getUserService();
+    if (apiServiceFactory.isUsingMockApi()) return base.updateUser(id, updates as Record<string, unknown>) as Promise<UiUser>;
     const req = {
       name: `${updates.firstName ?? ''} ${updates.lastName ?? ''}`.trim() || undefined,
       email: updates.email,
       role: updates.role,
       avatar: updates.avatar
     };
-    return base.updateUser(id, req);
+    return base.updateUser(id, req) as Promise<UiUser>;
   },
-  async createUser(data: Omit<UiUser,'id'|'createdAt'|'lastLogin'>): Promise<any> {
-    const base: any = getUserService();
-    if (apiServiceFactory.isUsingMockApi()) return base.createUser(data);
+  async createUser(data: Omit<UiUser,'id'|'createdAt'|'lastLogin'>): Promise<UiUser> {
+    const base: IUserService = getUserService();
+    if (apiServiceFactory.isUsingMockApi()) return base.createUser(data as Record<string, unknown>) as Promise<UiUser>;
     const req = {
       name: `${data.firstName} ${data.lastName}`.trim(),
       email: data.email,
       role: data.role,
       avatar: data.avatar
     };
-    return base.createUser(req);
+    return base.createUser(req) as Promise<UiUser>;
   },
   async deleteUser(id: string): Promise<void> {
-    const base: any = getUserService();
+    const base: IUserService = getUserService();
     return base.deleteUser(id);
   },
   async resetPassword(id: string): Promise<void> {
-    const base: any = getUserService();
-    if (base.resetPassword) return base.resetPassword(id);
+    const base: IUserService = getUserService();
+    if ('resetPassword' in base) return (base as Record<string, unknown>).resetPassword?.(id) as Promise<void>;
     // Stub
     return;
   },
   async getTenants(): Promise<Array<{ id: string; name: string }>> {
-    const base: any = getUserService();
-    if (base.getTenants) return base.getTenants();
+    const base: IUserService = getUserService();
+    if ('getTenants' in base) return (base as Record<string, unknown>).getTenants?.() as Promise<Array<{ id: string; name: string }>>;
     // Stub a couple of tenants
     return [
       { id: 'techcorp', name: 'TechCorp Solutions' },
@@ -442,115 +455,130 @@ const mapStatusToUi = (s?: string): UiContract['status'] => {
   return 'draft';
 };
 
-const mapContract = (c: ContractResponse): UiContract => ({
-  id: c.id,
-  title: c.title,
-  type: mapContractTypeToUi(c.type),
-  status: mapStatusToUi(c.status),
-  parties: [],
-  value: c.value,
-  currency: 'USD',
-  startDate: c.startDate,
-  endDate: c.endDate,
-  autoRenew: false,
-  renewalTerms: '',
-  approvalStage: 'draft',
-  signedDate: (c as any).signedDate,
-  createdBy: '',
-  assignedTo: '',
-  tenant_id: c.tenantId,
-  content: '',
-  templateId: undefined,
-  version: 1,
-  tags: [],
-  priority: 'medium',
-  reminderDays: [],
-  nextReminderDate: (c as any).nextRenewalDate,
-  complianceStatus: 'pending_review',
-  attachments: [],
-  approvalHistory: [],
-  signatureStatus: { totalRequired: 0, completed: 0, pending: [] },
-  created_at: c.createdAt,
-  updated_at: c.updatedAt
-});
+const mapContract = (c: ContractResponse): UiContract => {
+  const contract = c as Record<string, unknown>;
+  return {
+    id: c.id,
+    title: c.title,
+    type: mapContractTypeToUi(c.type),
+    status: mapStatusToUi(c.status),
+    parties: [],
+    value: c.value,
+    currency: 'USD',
+    startDate: c.startDate,
+    endDate: c.endDate,
+    autoRenew: false,
+    renewalTerms: '',
+    approvalStage: 'draft',
+    signedDate: contract.signedDate as string | undefined,
+    createdBy: '',
+    assignedTo: '',
+    tenant_id: c.tenantId,
+    content: '',
+    templateId: undefined,
+    version: 1,
+    tags: [],
+    priority: 'medium',
+    reminderDays: [],
+    nextReminderDate: contract.nextRenewalDate as string | undefined,
+    complianceStatus: 'pending_review',
+    attachments: [],
+    approvalHistory: [],
+    signatureStatus: { totalRequired: 0, completed: 0, pending: [] },
+    created_at: c.createdAt,
+    updated_at: c.updatedAt
+  };
+};
 
 export const contractService = {
-  async getContracts(filters?: any): Promise<UiContract[]> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getContracts(filters);
-    const res: ContractResponse[] = await base.getContracts(filters);
+  async getContracts(filters?: Record<string, unknown>): Promise<UiContract[]> {
+    const base: IContractService = getContractService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getContracts(filters) as Promise<UiContract[]>;
+    const res: ContractResponse[] = await base.getContracts(filters) as ContractResponse[];
     return res.map(mapContract);
   },
   async getContract(id: string): Promise<UiContract> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getContract(id);
-    const c: ContractResponse = await base.getContract(id);
+    const base: IContractService = getContractService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getContract(id) as Promise<UiContract>;
+    const c: ContractResponse = await base.getContract(id) as ContractResponse;
     return mapContract(c);
   },
   async deleteContract(id: string): Promise<void> {
-    const base: any = getContractService();
+    const base: IContractService = getContractService();
     return base.deleteContract(id);
   },
   async createContract(data: Partial<UiContract>): Promise<UiContract> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.createContract(data);
-    const req = {
+    const base: IContractService = getContractService();
+    const req: Record<string, unknown> = {
       title: data.title,
-      customerId: (data as any).customerId || '',
-      type: (data?.type === 'purchase_order' ? 'product' : 'service') as any,
+      customerId: (data as Record<string, unknown>).customerId || '',
+      type: (data?.type === 'purchase_order' ? 'product' : 'service'),
       value: data?.value || 0,
       startDate: data?.startDate || new Date().toISOString().slice(0,10),
       endDate: data?.endDate || new Date().toISOString().slice(0,10),
-      status: 'draft' as const,
+      status: 'draft',
       terms: data?.renewalTerms || ''
     };
-    const c: ContractResponse = await base.createContract(req);
+    if (apiServiceFactory.isUsingMockApi()) return base.createContract(req) as Promise<UiContract>;
+    const c: ContractResponse = await base.createContract(req) as ContractResponse;
     return mapContract(c);
   },
   async updateContract(id: string, data: Partial<UiContract>): Promise<UiContract> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.updateContract(id, data);
-    const req = {
+    const base: IContractService = getContractService();
+    const req: Record<string, unknown> = {
       title: data.title,
-      type: (data?.type === 'purchase_order' ? 'product' : 'service') as any,
+      type: (data?.type === 'purchase_order' ? 'product' : 'service'),
       value: data?.value,
       startDate: data?.startDate,
       endDate: data?.endDate,
-      status: data?.status as any,
+      status: data?.status,
       terms: data?.renewalTerms
-    } as any;
-    const c: ContractResponse = await base.updateContract(id, req);
+    };
+    if (apiServiceFactory.isUsingMockApi()) return base.updateContract(id, req) as Promise<UiContract>;
+    const c: ContractResponse = await base.updateContract(id, req) as ContractResponse;
     return mapContract(c);
   },
   async approveContract(id: string, stage: string, comments?: string): Promise<void> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.approveContract(id, stage, comments);
+    const base: IContractService = getContractService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      return mock.approveContract?.(id, stage, comments) as Promise<void>;
+    }
     // Real fallback: set status to active
     await base.updateContract(id, { status: 'active' });
   },
   async toggleAutoRenewal(id: string, autoRenew: boolean): Promise<void> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.toggleAutoRenewal(id, autoRenew);
+    const base: IContractService = getContractService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      return mock.toggleAutoRenewal?.(id, autoRenew) as Promise<void>;
+    }
     // No direct endpoint; best effort no-op for now
     return;
   },
   async getAnalytics(): Promise<UiContractAnalytics> {
-    const base: any = getContractService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getAnalytics();
-    const real = await base.getContractAnalytics();
-    const totalContracts = (real.byStatus || []).reduce((sum: number, s: any) => sum + (s.count || 0), 0);
+    const base: IContractService = getContractService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      return mock.getAnalytics?.() as Promise<UiContractAnalytics>;
+    }
+    const real = await base.getContractAnalytics() as Record<string, unknown>;
+    const byStatus = (real.byStatus || []) as Array<Record<string, unknown>>;
+    const totalContracts = byStatus.reduce((sum: number, s: Record<string, unknown>) => sum + (Number(s.count) || 0), 0);
+    const monthlyRevenue = (real.monthlyRevenue || []) as Array<Record<string, unknown>>;
+    const byType = (real.byType || []) as Array<Record<string, unknown>>;
     return {
       totalContracts: totalContracts || 0,
-      activeContracts: real.activeContracts || 0,
+      activeContracts: Number(real.activeContracts) || 0,
       pendingApprovals: 0,
-      expiringContracts: real.expiringContracts || 0,
-      totalValue: real.totalValue || 0,
+      expiringContracts: Number(real.expiringContracts) || 0,
+      totalValue: Number(real.totalValue) || 0,
       averageApprovalTime: 0,
-      renewalRate: real.renewalRate || 0,
+      renewalRate: Number(real.renewalRate) || 0,
       complianceRate: 95,
-      monthlyStats: (real.monthlyRevenue || []).map((m: any) => ({ month: m.month, created: 0, signed: 0, expired: 0, value: m.revenue })),
-      statusDistribution: (real.byStatus || []).map((s: any) => ({ status: s.status, count: s.count, percentage: 0 })),
-      typeDistribution: (real.byType || []).map((t: any) => ({ type: t.type, count: t.count, value: t.value }))
+      monthlyStats: monthlyRevenue.map((m: Record<string, unknown>) => ({ month: String(m.month), created: 0, signed: 0, expired: 0, value: Number(m.revenue) })),
+      statusDistribution: byStatus.map((s: Record<string, unknown>) => ({ status: String(s.status), count: Number(s.count), percentage: 0 })),
+      typeDistribution: byType.map((t: Record<string, unknown>) => ({ type: String(t.type), count: Number(t.count), value: Number(t.value) }))
     };
   }
 };
@@ -558,58 +586,75 @@ export const contractService = {
 // Notification service wrapper
 export const notificationService = {
   async getNotificationStats(): Promise<import('@/types/notifications').NotificationStats> {
-    const base: any = getNotificationService();
-    if (apiServiceFactory.isUsingMockApi()) return base.getNotificationStats();
-    return base.getNotificationStats();
+    const base: INotificationService = getNotificationService();
+    if (apiServiceFactory.isUsingMockApi()) return base.getNotifications() as Promise<import('@/types/notifications').NotificationStats>;
+    return base.getNotifications() as Promise<import('@/types/notifications').NotificationStats>;
   },
   async getQueueStatus(): Promise<{ pending: number; processing: number; sent: number; failed: number }> {
-    const base: any = getNotificationService();
+    const base: INotificationService = getNotificationService();
     if (apiServiceFactory.isUsingMockApi()) return { pending: 0, processing: 0, sent: 0, failed: 0 };
-    const queue = await base.getNotificationQueue();
-    const counts = { pending: 0, processing: 0, sent: 0, failed: 0 } as any;
-    queue.forEach((q: any) => { counts[q.status] = (counts[q.status] || 0) + 1; });
-    return counts;
+    const queue = await base.getNotifications() as Array<Record<string, unknown>>;
+    const counts: Record<string, number> = { pending: 0, processing: 0, sent: 0, failed: 0 };
+    queue.forEach((q: Record<string, unknown>) => { 
+      const status = String(q.status || 'pending');
+      counts[status] = (counts[status] || 0) + 1; 
+    });
+    return counts as { pending: number; processing: number; sent: number; failed: number };
   },
   async processQueue(): Promise<void> {
     if (apiServiceFactory.isUsingMockApi()) {
-      const base: any = getNotificationService();
-      return base.processQueue?.();
+      const base: INotificationService = getNotificationService();
+      const mock = base as Record<string, unknown>;
+      return mock.processQueue?.() as Promise<void>;
     }
     await baseApiService.post(`${apiConfig.endpoints.notifications.queue}/process`);
   },
   async retryFailedNotifications(): Promise<void> {
-    const base: any = getNotificationService();
-    if (apiServiceFactory.isUsingMockApi()) return base.retryFailedNotifications?.();
-    const queue = await base.getNotificationQueue();
-    for (const q of queue.filter((x: any) => x.status === 'failed')) {
-      await base.retryNotification(q.notification?.id || q.id);
+    const base: INotificationService = getNotificationService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      return mock.retryFailedNotifications?.() as Promise<void>;
+    }
+    const queue = await base.getNotifications() as Array<Record<string, unknown>>;
+    const failed = queue.filter((x: Record<string, unknown>) => x.status === 'failed');
+    const baseMock = base as Record<string, unknown>;
+    for (const q of failed) {
+      await (baseMock.retryNotification as (id: string) => Promise<void>)((q.notification as Record<string, unknown>)?.id || q.id);
     }
   },
   async getNotificationQueue(): Promise<import('@/types/notifications').NotificationQueue[]> {
-    const base: any = getNotificationService();
-    if (apiServiceFactory.isUsingMockApi() && base.getNotificationQueue) return base.getNotificationQueue();
+    const base: INotificationService = getNotificationService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      if (mock.getNotificationQueue) return mock.getNotificationQueue() as Promise<import('@/types/notifications').NotificationQueue[]>;
+    }
     // Fetch from real API
-    const resp = await baseApiService.get<any[]>(`${apiConfig.endpoints.notifications.base}/queue`);
-    const list = (resp.data || []) as any[];
-    return list.map((q: any) => ({
-      id: q.id,
-      template_id: q.notification?.id || '',
-      recipient_id: (q.notification?.recipients?.[0]?.userId) || '',
-      channel: (q.notification?.channels?.[0] || 'push') as any,
-      status: q.status,
-      priority: 'normal',
-      scheduled_at: q.scheduledAt,
-      sent_at: q.sentAt,
-      delivered_at: undefined,
-      failed_at: q.status === 'failed' ? q.sentAt : undefined,
-      retry_count: q.attempts || 0,
-      max_retries: 3,
-      error_message: q.error,
-      template_variables: {},
-      external_id: undefined,
-      created_at: q.notification?.createdAt || new Date().toISOString(),
-      updated_at: q.notification?.createdAt || new Date().toISOString()
-    }));
+    const resp = await baseApiService.get<Array<Record<string, unknown>>>(`${apiConfig.endpoints.notifications.base}/queue`);
+    const list = (resp.data || []);
+    return list.map((q: Record<string, unknown>) => {
+      const notification = q.notification as Record<string, unknown> | undefined;
+      const channels = notification?.channels as unknown[] | undefined;
+      const recipients = notification?.recipients as Array<Record<string, unknown>> | undefined;
+      return {
+        id: String(q.id),
+        template_id: String(notification?.id || ''),
+        recipient_id: String(recipients?.[0]?.userId || ''),
+        channel: (channels?.[0] || 'push') as 'email'|'sms'|'push'|'in_app',
+        status: String(q.status),
+        priority: 'normal' as const,
+        scheduled_at: String(q.scheduledAt),
+        sent_at: String(q.sentAt),
+        delivered_at: undefined,
+        failed_at: q.status === 'failed' ? String(q.sentAt) : undefined,
+        retry_count: Number(q.attempts) || 0,
+        max_retries: 3,
+        error_message: String(q.error),
+        template_variables: {},
+        external_id: undefined,
+        created_at: String(notification?.createdAt || new Date().toISOString()),
+        updated_at: String(notification?.createdAt || new Date().toISOString())
+      };
+    });
   },
   async retryQueueItem(queueId: string): Promise<void> {
     if (apiServiceFactory.isUsingMockApi()) return; // mock handled elsewhere
@@ -619,16 +664,28 @@ export const notificationService = {
     if (apiServiceFactory.isUsingMockApi()) return; // mock handled elsewhere
     await baseApiService.post(`${apiConfig.endpoints.notifications.base}/queue/${queueId}/cancel`);
   },
-  async sendTemplateNotification(templateId: string, data: { recipients: string[]; channels: Array<'email'|'sms'|'push'|'in_app'>; variables?: Record<string,any>; scheduledAt?: string; }): Promise<any> {
-    const base: any = getNotificationService();
-    if (apiServiceFactory.isUsingMockApi() && base.sendTemplateNotification) return base.sendTemplateNotification(templateId, data);
+  async sendTemplateNotification(templateId: string, data: { recipients: string[]; channels: Array<'email'|'sms'|'push'|'in_app'>; variables?: Record<string, unknown>; scheduledAt?: string; }): Promise<Record<string, unknown>> {
+    const base: INotificationService = getNotificationService();
+    if (apiServiceFactory.isUsingMockApi()) {
+      const mock = base as Record<string, unknown>;
+      if (mock.sendTemplateNotification) return mock.sendTemplateNotification(templateId, data) as Promise<Record<string, unknown>>;
+    }
     const resp = await baseApiService.post(`${apiConfig.endpoints.notifications.templates}/${templateId}/send`, data);
-    return resp.data;
+    return resp.data as Record<string, unknown>;
   },
   // passthrough common methods
-  async getNotifications(filters?: any) { const base: any = getNotificationService(); return base.getNotifications(filters); },
-  async createNotification(data: any) { const base: any = getNotificationService(); return base.createNotification(data); },
-  async getTemplates() { const base: any = getNotificationService(); return base.getTemplates(); }
+  async getNotifications(filters?: Record<string, unknown>) { 
+    const base: INotificationService = getNotificationService(); 
+    return base.getNotifications(filters); 
+  },
+  async createNotification(data: Record<string, unknown>) { 
+    const base: INotificationService = getNotificationService(); 
+    return base.createNotification(data); 
+  },
+  async getTemplates() { 
+    const base: INotificationService = getNotificationService(); 
+    return base.getTemplates(); 
+  }
 };
 
 // Export factory for advanced usage

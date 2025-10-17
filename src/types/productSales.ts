@@ -139,10 +139,10 @@ export interface StatusData {
 export interface ContractGenerationData {
   product_sale: ProductSale;
   service_contract: ServiceContract;
-  customer: any;
-  product: any;
-  company: any;
-  template: any; // Will use ContractTemplate from contracts.ts
+  customer: Record<string, unknown>;
+  product: Record<string, unknown>;
+  company: Record<string, unknown>;
+  template: Record<string, unknown>; // Will use ContractTemplate from contracts.ts
 }
 
 // Constants

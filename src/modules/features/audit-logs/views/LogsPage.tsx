@@ -3,7 +3,7 @@
  * Audit log viewer with advanced filtering and export
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Row, 
   Col, 
@@ -41,6 +41,14 @@ import dayjs, { Dayjs } from 'dayjs';
 
 const { RangePicker } = DatePicker;
 
+interface AuditLogFilters {
+  search?: string;
+  action?: string;
+  resource?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export const LogsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -52,14 +60,10 @@ export const LogsPage: React.FC = () => {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [searchTerm, actionFilter, resourceFilter, dateRange]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: AuditLogFilters = {};
       
       if (searchTerm) filters.search = searchTerm;
       if (actionFilter) filters.action = actionFilter;
@@ -69,17 +73,22 @@ export const LogsPage: React.FC = () => {
 
       const data = await auditService.getAuditLogs(filters);
       setLogs(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch logs:', error);
-      message.error(error.message || 'Failed to fetch audit logs');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch audit logs';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, actionFilter, resourceFilter, dateRange]);
+
+  useEffect(() => {
+    void fetchLogs();
+  }, [fetchLogs]);
 
   const handleExport = async (format: 'csv' | 'json') => {
     try {
-      const filters: any = {};
+      const filters: AuditLogFilters = {};
       if (searchTerm) filters.search = searchTerm;
       if (actionFilter) filters.action = actionFilter;
       if (resourceFilter) filters.resource = resourceFilter;
@@ -96,8 +105,9 @@ export const LogsPage: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       message.success(`Logs exported as ${format.toUpperCase()}`);
-    } catch (error: any) {
-      message.error(error.message || 'Failed to export logs');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export logs';
+      message.error(errorMessage);
     }
   };
 

@@ -16,7 +16,7 @@ export interface ContractFormData {
   customer_id: string;
   customer_name?: string;
   customer_contact?: string;
-  parties: any[];
+  parties: Array<Record<string, unknown>>;
   value: number;
   total_value: number;
   currency: string;
@@ -277,7 +277,8 @@ export class ContractService extends BaseService {
    */
   async updateContractStatus(id: string, status: string): Promise<Contract> {
     try {
-      return await this.updateContract(id, { status: status as any });
+      const contractStatus = status as 'draft' | 'pending_approval' | 'active' | 'renewed' | 'expired' | 'terminated';
+      return await this.updateContract(id, { status: contractStatus });
     } catch (error) {
       this.handleError(`Failed to update contract status for ${id}`, error);
       throw error;

@@ -10,7 +10,7 @@ import { serviceContainer } from '../services/ServiceContainer';
  * @param serviceName The name of the service to retrieve
  * @returns The service instance
  */
-export function useService<T = any>(serviceName: string): T {
+export function useService<T = unknown>(serviceName: string): T {
   const service = serviceContainer.get(serviceName);
   
   if (!service) {

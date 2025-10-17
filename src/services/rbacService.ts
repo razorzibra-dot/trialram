@@ -321,7 +321,7 @@ class RBACService {
     return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }
 
-  async logAction(action: string, resource: string, resourceId?: string, details?: Record<string, any>): Promise<void> {
+  async logAction(action: string, resource: string, resourceId?: string, details?: Record<string, unknown>): Promise<void> {
     const currentUser = authService.getCurrentUser();
     if (!currentUser) return;
 

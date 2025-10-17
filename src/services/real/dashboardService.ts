@@ -24,8 +24,9 @@ export class RealDashboardService implements IDashboardService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch dashboard metrics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch dashboard metrics';
+      throw new Error(message);
     }
   }
 
@@ -40,8 +41,9 @@ export class RealDashboardService implements IDashboardService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch analytics data');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch analytics data';
+      throw new Error(message);
     }
   }
 
@@ -54,7 +56,7 @@ export class RealDashboardService implements IDashboardService {
     description: string;
     user: { id: string; name: string; avatar?: string };
     createdAt: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>> {
     try {
       const response = await baseApiService.get<Array<{
@@ -63,27 +65,29 @@ export class RealDashboardService implements IDashboardService {
         description: string;
         user: { id: string; name: string; avatar?: string };
         createdAt: string;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
       }>>(`${apiConfig.endpoints.dashboard.metrics}/recent-activity`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch recent activity');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch recent activity';
+      throw new Error(message);
     }
   }
 
   /**
    * Get widget data
    */
-  async getWidgetData(widgetType: string): Promise<any> {
+  async getWidgetData(widgetType: string): Promise<Record<string, unknown>> {
     try {
-      const response = await baseApiService.get(
+      const response = await baseApiService.get<Record<string, unknown>>(
         `${apiConfig.endpoints.dashboard.widgets}/${widgetType}`
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch widget data');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch widget data';
+      throw new Error(message);
     }
   }
 
@@ -122,8 +126,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/sales-overview${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sales overview');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sales overview';
+      throw new Error(message);
     }
   }
 
@@ -153,8 +158,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/customer-overview`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch customer overview');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch customer overview';
+      throw new Error(message);
     }
   }
 
@@ -186,8 +192,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/support-overview`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch support overview');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch support overview';
+      throw new Error(message);
     }
   }
 
@@ -220,8 +227,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/financial-overview${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch financial overview');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch financial overview';
+      throw new Error(message);
     }
   }
 
@@ -271,8 +279,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/team-performance`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch team performance');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch team performance';
+      throw new Error(message);
     }
   }
 
@@ -314,8 +323,9 @@ export class RealDashboardService implements IDashboardService {
       }>(`${apiConfig.endpoints.dashboard.metrics}/system-health`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch system health');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch system health';
+      throw new Error(message);
     }
   }
 
@@ -330,7 +340,7 @@ export class RealDashboardService implements IDashboardService {
     createdBy: { id: string; name: string };
     createdAt: string;
     lastRun: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
   }>> {
     try {
       const response = await baseApiService.get<Array<{
@@ -341,35 +351,37 @@ export class RealDashboardService implements IDashboardService {
         createdBy: { id: string; name: string };
         createdAt: string;
         lastRun: string;
-        parameters: Record<string, any>;
+        parameters: Record<string, unknown>;
       }>>(apiConfig.endpoints.dashboard.reports);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch custom reports');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch custom reports';
+      throw new Error(message);
     }
   }
 
   /**
    * Generate custom report
    */
-  async generateCustomReport(reportId: string, parameters?: Record<string, any>): Promise<{
+  async generateCustomReport(reportId: string, parameters?: Record<string, unknown>): Promise<{
     reportId: string;
-    data: any;
+    data: Record<string, unknown>;
     generatedAt: string;
     format: string;
   }> {
     try {
       const response = await baseApiService.post<{
         reportId: string;
-        data: any;
+        data: Record<string, unknown>;
         generatedAt: string;
         format: string;
       }>(`${apiConfig.endpoints.dashboard.reports}/${reportId}/generate`, { parameters });
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to generate custom report');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to generate custom report';
+      throw new Error(message);
     }
   }
 
@@ -386,7 +398,7 @@ export class RealDashboardService implements IDashboardService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.dashboard.metrics}/export?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as Record<string, unknown>
       );
 
       if (format === 'xlsx') {
@@ -395,8 +407,9 @@ export class RealDashboardService implements IDashboardService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export dashboard data');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export dashboard data';
+      throw new Error(message);
     }
   }
 }

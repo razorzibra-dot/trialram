@@ -87,7 +87,7 @@ export interface ApiEndpoints {
 const environments: Record<string, ApiEnvironment> = {
   development: {
     name: 'Development',
-    baseUrl: (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:5137/api/v1',
+    baseUrl: (typeof import.meta !== 'undefined' && (import.meta.env as unknown as Record<string, string>)?.VITE_API_BASE_URL) || 'http://localhost:5137/api/v1',
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 1000,

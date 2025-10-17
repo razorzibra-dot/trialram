@@ -116,7 +116,8 @@ export const TicketsPage: React.FC = () => {
               </h2>
             </Col>
             {Object.entries(stats.byStatus).map(([status, count]) => {
-              const statusConfig: Record<string, { icon: any; color: 'primary' | 'warning' | 'success' | 'info' }> = {
+              type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+              const statusConfig: Record<string, { icon: IconType; color: 'primary' | 'warning' | 'success' | 'info' }> = {
                 open: { icon: AlertCircle, color: 'primary' },
                 in_progress: { icon: Clock, color: 'warning' },
                 resolved: { icon: CheckCircle, color: 'success' },

@@ -6,12 +6,19 @@ import { sessionManager } from '@/utils/sessionManager';
 import { httpInterceptor } from '@/utils/httpInterceptor';
 import { toast } from '@/hooks/use-toast';
 
+interface SessionInfo {
+  isValid: boolean;
+  timeUntilExpiry: number;
+  user: unknown;
+  tokenPayload: unknown;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
-  sessionInfo: () => any;
+  sessionInfo: () => SessionInfo;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

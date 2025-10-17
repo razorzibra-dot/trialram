@@ -3,7 +3,7 @@
  * Manage user notifications with real-time updates
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Row, 
   Col, 
@@ -46,6 +46,12 @@ import { PageHeader, StatCard } from '@/components/common';
 import { notificationService, Notification, NotificationPreferences } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface NotificationFilters {
+  search?: string;
+  is_read?: boolean;
+  category?: string;
+}
+
 export const NotificationsPage: React.FC = () => {
   const { user } = useAuth();
   const [form] = Form.useForm();
@@ -59,30 +65,10 @@ export const NotificationsPage: React.FC = () => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-    fetchPreferences();
-
-    // Subscribe to real-time notifications
-    const unsubscribe = notificationService.subscribeToNotifications((notification) => {
-      message.info({
-        content: notification.title,
-        duration: 3
-      });
-      fetchNotifications();
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [searchTerm, filterRead, filterCategory]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: NotificationFilters = {};
       
       if (searchTerm) filters.search = searchTerm;
       if (filterRead !== 'all') filters.is_read = filterRead === 'read';
@@ -90,55 +76,78 @@ export const NotificationsPage: React.FC = () => {
 
       const data = await notificationService.getNotifications(filters);
       setNotifications(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch notifications:', error);
       message.error('Failed to fetch notifications');
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, filterRead, filterCategory]);
 
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async (): Promise<void> => {
     try {
       const prefs = await notificationService.getNotificationPreferences();
       setPreferences(prefs);
       form.setFieldsValue(prefs);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch preferences:', error);
     }
-  };
+  }, [form]);
 
-  const handleMarkAsRead = async (id: string) => {
+  useEffect(() => {
+    void fetchNotifications();
+    void fetchPreferences();
+
+    // Subscribe to real-time notifications
+    const unsubscribe = notificationService.subscribeToNotifications((notification: Notification) => {
+      message.info({
+        content: notification.title,
+        duration: 3
+      });
+      setNotifications(prev => [notification, ...prev]);
+    });
+
+    return () => unsubscribe();
+  }, [fetchNotifications, fetchPreferences]);
+
+  useEffect(() => {
+    void fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleMarkAsRead = async (id: string): Promise<void> => {
     try {
       await notificationService.markAsRead(id);
       message.success('Marked as read');
-      fetchNotifications();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to mark as read');
+      void fetchNotifications();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark as read';
+      message.error(errorMessage);
     }
   };
 
-  const handleMarkAsUnread = async (id: string) => {
+  const handleMarkAsUnread = async (id: string): Promise<void> => {
     try {
       await notificationService.markAsUnread(id);
       message.success('Marked as unread');
-      fetchNotifications();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to mark as unread');
+      void fetchNotifications();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark as unread';
+      message.error(errorMessage);
     }
   };
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = async (): Promise<void> => {
     try {
       await notificationService.markAllAsRead();
       message.success('All notifications marked as read');
-      fetchNotifications();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to mark all as read');
+      void fetchNotifications();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark all as read';
+      message.error(errorMessage);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string): Promise<void> => {
     Modal.confirm({
       title: 'Delete Notification',
       content: 'Are you sure you want to delete this notification?',
@@ -148,15 +157,16 @@ export const NotificationsPage: React.FC = () => {
         try {
           await notificationService.deleteNotification(id);
           message.success('Notification deleted');
-          fetchNotifications();
-        } catch (error: any) {
-          message.error(error.message || 'Failed to delete notification');
+          void fetchNotifications();
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete notification';
+          message.error(errorMessage);
         }
       }
     });
   };
 
-  const handleDeleteAllRead = async () => {
+  const handleDeleteAllRead = async (): Promise<void> => {
     Modal.confirm({
       title: 'Delete All Read Notifications',
       content: 'Are you sure you want to delete all read notifications?',
@@ -166,22 +176,24 @@ export const NotificationsPage: React.FC = () => {
         try {
           await notificationService.deleteAllRead();
           message.success('All read notifications deleted');
-          fetchNotifications();
-        } catch (error: any) {
-          message.error(error.message || 'Failed to delete notifications');
+          void fetchNotifications();
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete notifications';
+          message.error(errorMessage);
         }
       }
     });
   };
 
-  const handleSavePreferences = async (values: any) => {
+  const handleSavePreferences = async (values: NotificationPreferences): Promise<void> => {
     try {
       await notificationService.updateNotificationPreferences(values);
       message.success('Preferences saved successfully');
       setShowPreferencesModal(false);
-      fetchPreferences();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save preferences');
+      void fetchPreferences();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save preferences';
+      message.error(errorMessage);
     }
   };
 
@@ -411,9 +423,11 @@ export const NotificationsPage: React.FC = () => {
                       icon={notification.is_read ? <CloseCircleOutlined /> : <CheckOutlined />}
                       onClick={(e) => {
                         e.stopPropagation();
-                        notification.is_read 
-                          ? handleMarkAsUnread(notification.id)
-                          : handleMarkAsRead(notification.id);
+                        if (notification.is_read) {
+                          handleMarkAsUnread(notification.id);
+                        } else {
+                          handleMarkAsRead(notification.id);
+                        }
                       }}
                     />
                   </Tooltip>,

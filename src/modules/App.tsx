@@ -13,6 +13,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { moduleRegistry, initializeModules } from './ModuleRegistry';
 import { createModularRouter } from './routing/ModularRouter';
 import { registerCoreModules } from './bootstrap';
+import type { RouteObject } from 'react-router-dom';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -32,7 +33,7 @@ const queryClient = new QueryClient({
 const ModularApp: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [router, setRouter] = useState<any>(null);
+  const [router, setRouter] = useState<RouteObject[] | null>(null);
 
   useEffect(() => {
     const initializeApp = async () => {

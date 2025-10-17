@@ -58,7 +58,7 @@ export function createLazyRoute<P extends object>(
 }
 
 // Preload function for route components
-export function preloadRoute(importFn: () => Promise<any>): void {
+export function preloadRoute(importFn: () => Promise<Record<string, unknown>>): void {
   // Preload the component
   importFn().catch(error => {
     console.warn('Failed to preload route component:', error);
@@ -67,7 +67,7 @@ export function preloadRoute(importFn: () => Promise<any>): void {
 
 // Route preloader hook
 export function useRoutePreloader() {
-  const preloadRoutes = React.useCallback((routes: Array<() => Promise<any>>) => {
+  const preloadRoutes = React.useCallback((routes: Array<() => Promise<Record<string, unknown>>>) => {
     routes.forEach(route => {
       preloadRoute(route);
     });

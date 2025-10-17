@@ -35,7 +35,7 @@ export class RealSalesService implements ISalesService {
         });
       }
 
-      const response = await baseApiService.get<any>(
+      const response = await baseApiService.get<SaleResponse[]>(
         `${apiConfig.endpoints.sales.base}?${params.toString()}`
       );
 
@@ -44,8 +44,9 @@ export class RealSalesService implements ISalesService {
         ? payload
         : (payload?.items ?? []);
       return list;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sales');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sales';
+      throw new Error(message);
     }
   }
 
@@ -59,8 +60,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sale');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sale';
+      throw new Error(message);
     }
   }
 
@@ -75,8 +77,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create sale');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create sale';
+      throw new Error(message);
     }
   }
 
@@ -91,8 +94,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update sale');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update sale';
+      throw new Error(message);
     }
   }
 
@@ -104,8 +108,9 @@ export class RealSalesService implements ISalesService {
       await baseApiService.delete(
         `${apiConfig.endpoints.sales.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete sale');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete sale';
+      throw new Error(message);
     }
   }
 
@@ -119,8 +124,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch pipeline stages');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch pipeline stages';
+      throw new Error(message);
     }
   }
 
@@ -151,8 +157,9 @@ export class RealSalesService implements ISalesService {
       }>(`${apiConfig.endpoints.sales.analytics}${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sales analytics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sales analytics';
+      throw new Error(message);
     }
   }
 
@@ -172,8 +179,9 @@ export class RealSalesService implements ISalesService {
       }>(apiConfig.endpoints.sales.forecasting);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sales forecasting');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sales forecasting';
+      throw new Error(message);
     }
   }
 
@@ -188,8 +196,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to move sale to stage');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to move sale to stage';
+      throw new Error(message);
     }
   }
 
@@ -221,8 +230,9 @@ export class RealSalesService implements ISalesService {
       }>(apiConfig.endpoints.sales.pipeline);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch pipeline overview');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch pipeline overview';
+      throw new Error(message);
     }
   }
 
@@ -251,8 +261,9 @@ export class RealSalesService implements ISalesService {
       }>>(`${apiConfig.endpoints.sales.base}/leaderboard${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sales leaderboard');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sales leaderboard';
+      throw new Error(message);
     }
   }
 
@@ -276,8 +287,9 @@ export class RealSalesService implements ISalesService {
       }>>(`${apiConfig.endpoints.sales.base}/${saleId}/activities`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch sale activities');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch sale activities';
+      throw new Error(message);
     }
   }
 
@@ -304,8 +316,9 @@ export class RealSalesService implements ISalesService {
       }>(`${apiConfig.endpoints.sales.base}/${saleId}/activities`, activity);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to add sale activity');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to add sale activity';
+      throw new Error(message);
     }
   }
 
@@ -319,8 +332,9 @@ export class RealSalesService implements ISalesService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to clone sale');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to clone sale';
+      throw new Error(message);
     }
   }
 
@@ -341,7 +355,7 @@ export class RealSalesService implements ISalesService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.sales.base}/export?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as unknown as { data: Blob }
       );
 
       if (format === 'xlsx') {
@@ -350,8 +364,9 @@ export class RealSalesService implements ISalesService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export sales');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export sales';
+      throw new Error(message);
     }
   }
 }

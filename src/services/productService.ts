@@ -1,4 +1,4 @@
-import { Product } from '@/types/masters';
+import { Product, ProductFormData } from '@/types/masters';
 import { authService } from './authService';
 
 class ProductService {
@@ -162,7 +162,7 @@ class ProductService {
     return product;
   }
 
-  async createProduct(data: any): Promise<Product> {
+  async createProduct(data: ProductFormData): Promise<Product> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
@@ -207,7 +207,7 @@ class ProductService {
     return newProduct;
   }
 
-  async updateProduct(id: string, data: any): Promise<Product> {
+  async updateProduct(id: string, data: Partial<ProductFormData>): Promise<Product> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();

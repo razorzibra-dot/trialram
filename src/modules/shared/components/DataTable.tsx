@@ -39,11 +39,11 @@ import {
   Plus,
 } from 'lucide-react';
 
-export interface Column<T = any> {
+export interface Column<T = Record<string, unknown>> {
   key: string;
   title: string;
   dataIndex?: keyof T;
-  render?: (value: any, record: T, index: number) => React.ReactNode;
+  render?: (value: unknown, record: T, index: number) => React.ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   width?: string | number;
@@ -52,7 +52,7 @@ export interface Column<T = any> {
   className?: string;
 }
 
-export interface DataTableProps<T = any> {
+export interface DataTableProps<T = Record<string, unknown>> {
   columns: Column<T>[];
   data: T[];
   loading?: boolean;
@@ -75,8 +75,8 @@ export interface DataTableProps<T = any> {
     onChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   };
   filtering?: {
-    filters: Record<string, any>;
-    onChange: (filters: Record<string, any>) => void;
+    filters: Record<string, unknown>;
+    onChange: (filters: Record<string, unknown>) => void;
   };
   search?: {
     value: string;
@@ -103,7 +103,7 @@ export interface DataTableProps<T = any> {
   rowKey?: string | ((record: T) => string);
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   loading = false,

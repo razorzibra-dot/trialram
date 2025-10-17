@@ -9,38 +9,35 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 const TenantConfigurationPage = lazy(() => import('./views/TenantConfigurationPage'));
 const ConfigurationTestPage = lazy(() => import('./views/ConfigurationTestPage'));
 
-// Route wrapper with error boundary
-const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ErrorBoundary>
-    <React.Suspense fallback={<div>Loading...</div>}>
-      {children}
-    </React.Suspense>
-  </ErrorBoundary>
-);
-
 export const configurationRoutes: RouteObject[] = [
   {
     path: 'configuration',
     element: (
-      <RouteWrapper>
-        <TenantConfigurationPage />
-      </RouteWrapper>
+      <ErrorBoundary>
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <TenantConfigurationPage />
+        </React.Suspense>
+      </ErrorBoundary>
     ),
   },
   {
     path: 'tenant-configuration',
     element: (
-      <RouteWrapper>
-        <TenantConfigurationPage />
-      </RouteWrapper>
+      <ErrorBoundary>
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <TenantConfigurationPage />
+        </React.Suspense>
+      </ErrorBoundary>
     ),
   },
   {
     path: 'configuration-test',
     element: (
-      <RouteWrapper>
-        <ConfigurationTestPage />
-      </RouteWrapper>
+      <ErrorBoundary>
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <ConfigurationTestPage />
+        </React.Suspense>
+      </ErrorBoundary>
     ),
   },
 ];

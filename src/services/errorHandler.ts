@@ -48,7 +48,7 @@ export enum ErrorCode {
 export interface ServiceError {
   code: ErrorCode;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   field?: string;
   timestamp: string;
   service: string;
@@ -64,7 +64,7 @@ export interface ErrorContext {
   userId?: string;
   tenantId?: string;
   correlationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -72,7 +72,7 @@ export interface ErrorContext {
  */
 export class CrmServiceError extends Error {
   public readonly code: ErrorCode;
-  public readonly details?: any;
+  public readonly details?: Record<string, unknown>;
   public readonly field?: string;
   public readonly timestamp: string;
   public readonly service: string;
@@ -85,7 +85,7 @@ export class CrmServiceError extends Error {
     code: ErrorCode,
     message: string,
     context: ErrorContext,
-    details?: any,
+    details?: Record<string, unknown>,
     field?: string
   ) {
     super(message);
@@ -150,7 +150,7 @@ export class ErrorHandler {
    * Handle and format errors consistently
    */
   static handle(
-    error: any,
+    error: unknown,
     context: ErrorContext,
     defaultCode: ErrorCode = ErrorCode.INTERNAL_ERROR
   ): never {
@@ -192,7 +192,7 @@ export class ErrorHandler {
     code: ErrorCode,
     message: string,
     context: ErrorContext,
-    details?: any,
+    details?: Record<string, unknown>,
     field?: string
   ): CrmServiceError {
     return new CrmServiceError(code, message, context, details, field);
@@ -205,7 +205,7 @@ export class ErrorHandler {
     message: string,
     context: ErrorContext,
     field?: string,
-    details?: any
+    details?: Record<string, unknown>
   ): never {
     throw new CrmServiceError(ErrorCode.VALIDATION_ERROR, message, context, details, field);
   }
@@ -314,7 +314,7 @@ export class ErrorHandler {
 /**
  * Service wrapper for consistent error handling
  */
-export function withErrorHandling<T extends any[], R>(
+export function withErrorHandling<T extends unknown[], R>(
   service: string,
   operation: string,
   fn: (...args: T) => Promise<R>
@@ -369,7 +369,7 @@ export async function withRetry<T>(
     retryableErrors = [ErrorCode.NETWORK_ERROR, ErrorCode.TIMEOUT_ERROR, ErrorCode.SERVICE_UNAVAILABLE]
   } = options;
 
-  let lastError: any;
+  let lastError: unknown;
   let delay = delayMs;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

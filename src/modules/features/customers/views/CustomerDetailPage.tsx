@@ -274,7 +274,7 @@ const CustomerDetailPage: React.FC = () => {
     {
       title: 'Period',
       key: 'period',
-      render: (_: any, record: RelatedContract) => (
+      render: (_: unknown, record: RelatedContract) => (
         <span>
           {formatDate(record.start_date)} - {formatDate(record.end_date)}
         </span>

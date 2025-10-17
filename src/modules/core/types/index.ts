@@ -28,7 +28,7 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -41,7 +41,7 @@ export interface FilterOptions {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   pageSize?: number;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 // Module types
@@ -56,9 +56,9 @@ export interface ModuleConfig {
 export interface FeatureModule {
   name: string;
   path?: string;
-  routes?: any[];
+  routes?: Array<Record<string, unknown>>;
   services?: string[];
-  components?: Record<string, any>;
+  components?: Record<string, unknown>;
   dependencies?: string[];
   initialize?: () => Promise<void>;
   cleanup?: () => Promise<void>;
@@ -75,7 +75,7 @@ export interface LoadingState {
   error?: string | null;
 }
 
-export interface FormState<T = any> extends LoadingState {
+export interface FormState<T = unknown> extends LoadingState {
   data: T;
   isDirty: boolean;
   isValid: boolean;
@@ -97,20 +97,20 @@ export interface CacheConfig {
 }
 
 // Event types
-export interface AppEvent<T = any> {
+export interface AppEvent<T = unknown> {
   type: string;
   payload: T;
   timestamp: string;
   source?: string;
 }
 
-export type EventHandler<T = any> = (event: AppEvent<T>) => void;
+export type EventHandler<T = unknown> = (event: AppEvent<T>) => void;
 
 // Error types
 export interface AppError extends Error {
   code?: string;
   statusCode?: number;
-  details?: any;
+  details?: unknown;
 }
 
 export interface ValidationError {
@@ -179,10 +179,10 @@ export interface ThemeConfig {
 // Route types
 export interface RouteConfig {
   path: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<Record<string, unknown>>;
   exact?: boolean;
   permissions?: string[];
-  layout?: React.ComponentType<any>;
+  layout?: React.ComponentType<Record<string, unknown>>;
   meta?: {
     title?: string;
     description?: string;

@@ -446,7 +446,7 @@ const SuperAdminUsers: React.FC = () => {
                 <Label htmlFor="edit-role">Role</Label>
                 <Select
                   value={formData.role || ''}
-                  onValueChange={(value) => setFormData({ ...formData, role: value as any })}
+                  onValueChange={(value: string) => setFormData({ ...formData, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -463,7 +463,7 @@ const SuperAdminUsers: React.FC = () => {
                 <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={formData.status || ''}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />

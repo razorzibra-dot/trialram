@@ -4,7 +4,7 @@
  */
 
 // Base interfaces
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
@@ -20,7 +20,7 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   field?: string;
 }
 
@@ -36,7 +36,7 @@ export interface FilterParams {
   status?: string;
   dateFrom?: string;
   dateTo?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Authentication interfaces
@@ -64,7 +64,7 @@ export interface LoginResponse {
     id: string;
     name: string;
     domain: string;
-    settings: any;
+    settings: Record<string, unknown>;
   };
 }
 
@@ -92,7 +92,7 @@ export interface CustomerRequest {
   tags?: string[];
   notes?: string;
   assignedTo?: string;
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
 
 export interface CustomerResponse {
@@ -119,7 +119,7 @@ export interface CustomerResponse {
     name: string;
     email: string;
   };
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   tenantId: string;
@@ -375,7 +375,7 @@ export interface NotificationRequest {
   channels: Array<'email' | 'sms' | 'push' | 'in_app'>;
   scheduledAt?: string;
   templateId?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface NotificationResponse {
@@ -410,10 +410,10 @@ export interface AuditLogResponse {
     email: string;
   };
   changes?: {
-    before: Record<string, any>;
-    after: Record<string, any>;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ipAddress: string;
   userAgent: string;
   createdAt: string;

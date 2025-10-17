@@ -121,8 +121,9 @@ export const JobWorksPage: React.FC = () => {
                 Job Works by Status
               </h2>
             </Col>
-            {Object.entries(stats.byStatus).map(([status, count]) => {
-              const statusConfig: Record<string, { icon: any; color: 'primary' | 'warning' | 'success' | 'info' }> = {
+            {Object.entries(stats.byStatus).map(([status, count]: [string, number]) => {
+              type IconComponent = typeof Clock;
+              const statusConfig: Record<string, { icon: IconComponent; color: 'primary' | 'warning' | 'success' | 'info' }> = {
                 pending: { icon: Clock, color: 'warning' },
                 in_progress: { icon: Briefcase, color: 'primary' },
                 completed: { icon: CheckCircle, color: 'success' },

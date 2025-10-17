@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
-import { Ticket } from '@/types/crm';
+import { Ticket, TicketComment } from '@/types/crm';
 import { PaginatedResponse } from '@/modules/core/types';
 import { ticketService as legacyTicketService } from '@/services';
 
@@ -126,7 +126,8 @@ export class TicketService extends BaseService {
    */
   async updateTicketStatus(id: string, status: string): Promise<Ticket> {
     try {
-      return await this.updateTicket(id, { status: status as any });
+      const typedStatus = status as 'open' | 'in_progress' | 'pending' | 'resolved' | 'closed';
+      return await this.updateTicket(id, { status: typedStatus });
     } catch (error) {
       this.handleError(`Failed to update ticket status for ${id}`, error);
       throw error;
@@ -138,7 +139,8 @@ export class TicketService extends BaseService {
    */
   async updateTicketPriority(id: string, priority: string): Promise<Ticket> {
     try {
-      return await this.updateTicket(id, { priority: priority as any });
+      const typedPriority = priority as 'low' | 'medium' | 'high' | 'urgent';
+      return await this.updateTicket(id, { priority: typedPriority });
     } catch (error) {
       this.handleError(`Failed to update ticket priority for ${id}`, error);
       throw error;
@@ -340,7 +342,7 @@ export class TicketService extends BaseService {
   /**
    * Get ticket comments
    */
-  async getTicketComments(ticketId: string): Promise<any[]> {
+  async getTicketComments(ticketId: string): Promise<TicketComment[]> {
     try {
       // This would typically fetch from a separate comments endpoint
       // For now, return empty array

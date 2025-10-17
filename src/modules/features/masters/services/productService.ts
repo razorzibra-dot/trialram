@@ -196,7 +196,8 @@ export class ProductService extends BaseService {
    */
   async updateProductStatus(id: string, status: string): Promise<Product> {
     try {
-      return await this.updateProduct(id, { status: status as any });
+      const typedStatus = status as 'active' | 'inactive' | 'discontinued';
+      return await this.updateProduct(id, { status: typedStatus });
     } catch (error) {
       this.handleError(`Failed to update product status for ${id}`, error);
       throw error;
@@ -434,7 +435,7 @@ export class ProductService extends BaseService {
 
         try {
           const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
-          const productData: any = {};
+          const productData: Record<string, string | undefined> = {};
 
           headers.forEach((header, index) => {
             productData[header.toLowerCase().replace(' ', '_')] = values[index];

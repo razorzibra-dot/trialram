@@ -223,7 +223,7 @@ const UserManagement: React.FC = () => {
       await tenantService.addUserToTenant(currentUser.tenant_id, {
         name: addUserForm.name,
         email: addUserForm.email,
-        role: addUserForm.role as any,
+        role: addUserForm.role,
         avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`
       });
 

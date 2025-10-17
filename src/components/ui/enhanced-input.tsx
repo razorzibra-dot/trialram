@@ -205,9 +205,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 SearchInput.displayName = "SearchInput"
 
 // Password Input Component
-interface PasswordInputProps extends Omit<EnhancedInputProps, 'type' | 'rightIcon'> {}
-
-const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+const PasswordInput = React.forwardRef<HTMLInputElement, Omit<EnhancedInputProps, 'type' | 'rightIcon'>>(
   ({ ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false)
 

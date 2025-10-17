@@ -46,7 +46,7 @@ interface PermissionMatrixRow {
   permissionId: string;
   permissionName: string;
   permissionDescription: string;
-  [roleId: string]: any; // Dynamic role columns
+  [roleId: string]: unknown; // Dynamic role columns
 }
 
 export const PermissionMatrixPage: React.FC = () => {
@@ -177,8 +177,9 @@ export const PermissionMatrixPage: React.FC = () => {
       message.success('Changes saved successfully');
       setChanges(new Map());
       loadData();
-    } catch (error: any) {
-      message.error(error.message || 'Failed to save changes');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to save changes';
+      message.error(error_msg);
     } finally {
       setSaving(false);
     }

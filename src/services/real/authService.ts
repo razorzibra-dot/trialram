@@ -13,6 +13,7 @@ import {
   ApiResponse 
 } from '../api/interfaces';
 import { IAuthService } from '../api/apiServiceFactory';
+import { User } from '@/types/auth';
 
 export class RealAuthService implements IAuthService {
   private tokenKey = 'crm_auth_token';
@@ -49,8 +50,9 @@ export class RealAuthService implements IAuthService {
       user.lastLogin = new Date().toISOString();
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Login failed');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      throw new Error(message);
     }
   }
 
@@ -81,9 +83,13 @@ export class RealAuthService implements IAuthService {
   /**
    * Get current user
    */
-  getCurrentUser(): any {
+  getCurrentUser(): User | null {
     const userStr = localStorage.getItem(this.userKey);
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      return userStr ? (JSON.parse(userStr) as User) : null;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -190,19 +196,20 @@ export class RealAuthService implements IAuthService {
       localStorage.setItem(this.tokenKey, token);
 
       return token;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Clear session on refresh failure
       this.clearSession();
-      throw new Error(error.message || 'Token refresh failed');
+      const message = error instanceof Error ? error.message : 'Token refresh failed';
+      throw new Error(message);
     }
   }
 
   /**
    * Get user profile
    */
-  async getProfile(): Promise<any> {
+  async getProfile(): Promise<User> {
     try {
-      const response = await baseApiService.get(
+      const response = await baseApiService.get<User>(
         apiConfig.endpoints.auth.profile
       );
 
@@ -212,17 +219,18 @@ export class RealAuthService implements IAuthService {
       localStorage.setItem(this.userKey, JSON.stringify(user));
 
       return user;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch profile');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch profile';
+      throw new Error(message);
     }
   }
 
   /**
    * Update user profile
    */
-  async updateProfile(profileData: any): Promise<any> {
+  async updateProfile(profileData: Partial<Omit<User, 'id' | 'createdAt' | 'createdBy'>>): Promise<User> {
     try {
-      const response = await baseApiService.put(
+      const response = await baseApiService.put<User>(
         apiConfig.endpoints.auth.profile,
         profileData
       );
@@ -233,8 +241,9 @@ export class RealAuthService implements IAuthService {
       localStorage.setItem(this.userKey, JSON.stringify(user));
 
       return user;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      throw new Error(message);
     }
   }
 
@@ -250,8 +259,9 @@ export class RealAuthService implements IAuthService {
           newPassword,
         }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to change password');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to change password';
+      throw new Error(message);
     }
   }
 
@@ -260,13 +270,14 @@ export class RealAuthService implements IAuthService {
    */
   async getPermissions(): Promise<string[]> {
     try {
-      const response = await baseApiService.get(
+      const response = await baseApiService.get<string[]>(
         apiConfig.endpoints.auth.permissions
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch permissions');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch permissions';
+      throw new Error(message);
     }
   }
 
@@ -280,8 +291,9 @@ export class RealAuthService implements IAuthService {
         { email },
         { skipAuth: true }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to request password reset');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to request password reset';
+      throw new Error(message);
     }
   }
 
@@ -295,8 +307,9 @@ export class RealAuthService implements IAuthService {
         { token, newPassword },
         { skipAuth: true }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to reset password');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to reset password';
+      throw new Error(message);
     }
   }
 
@@ -310,8 +323,9 @@ export class RealAuthService implements IAuthService {
         { token },
         { skipAuth: true }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to verify email');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to verify email';
+      throw new Error(message);
     }
   }
 
@@ -320,13 +334,14 @@ export class RealAuthService implements IAuthService {
    */
   async enableTwoFactor(): Promise<{ qrCode: string; backupCodes: string[] }> {
     try {
-      const response = await baseApiService.post(
+      const response = await baseApiService.post<{ qrCode: string; backupCodes: string[] }>(
         `${apiConfig.endpoints.auth.profile}/enable-2fa`
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to enable two-factor authentication');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to enable two-factor authentication';
+      throw new Error(message);
     }
   }
 
@@ -339,17 +354,18 @@ export class RealAuthService implements IAuthService {
         `${apiConfig.endpoints.auth.profile}/disable-2fa`,
         { code }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to disable two-factor authentication');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to disable two-factor authentication';
+      throw new Error(message);
     }
   }
 
   /**
    * Get user tenant information
    */
-  getUserTenant(): any {
+  getUserTenant(): Record<string, unknown> | null {
     const user = this.getCurrentUser();
-    return user?.tenant || null;
+    return user?.tenant ? (user.tenant as Record<string, unknown>) : null;
   }
 
   /**
@@ -399,7 +415,7 @@ export class RealAuthService implements IAuthService {
   /**
    * Get demo accounts (for development)
    */
-  getDemoAccounts(): { tenant: string; users: any[] }[] {
+  getDemoAccounts(): Array<{ tenant: string; users: Partial<User>[] }> {
     // This would typically come from the backend
     return [
       {

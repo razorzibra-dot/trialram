@@ -25,7 +25,7 @@ interface NotificationDashboardProps {
 
 export function NotificationDashboard({ className }: NotificationDashboardProps) {
   const [stats, setStats] = useState<NotificationStats | null>(null);
-  const [queueStatus, setQueueStatus] = useState<any>(null);
+  const [queueStatus, setQueueStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

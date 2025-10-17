@@ -109,11 +109,11 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
         title: 'Success',
         description: 'Comment added successfully'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add comment:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add comment',
+        description: error instanceof Error ? error.message : 'Failed to add comment',
         variant: 'destructive'
       });
     } finally {
@@ -139,11 +139,11 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
         title: 'Success',
         description: 'Complaint updated successfully'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update complaint:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update complaint',
+        description: error instanceof Error ? error.message : 'Failed to update complaint',
         variant: 'destructive'
       });
     } finally {
@@ -155,7 +155,7 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
     if (newStatus === 'closed') {
       setShowCloseDialog(true);
     } else {
-      setUpdateData({ ...updateData, status: newStatus as any });
+      setUpdateData({ ...updateData, status: newStatus as Complaint['status'] });
     }
   };
 
@@ -172,11 +172,11 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
         title: 'Success',
         description: 'Complaint reopened successfully'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to reopen complaint:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to reopen complaint',
+        description: error instanceof Error ? error.message : 'Failed to reopen complaint',
         variant: 'destructive'
       });
     }
@@ -311,7 +311,7 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
                       <Label htmlFor="priority">Priority</Label>
                       <Select
                         value={updateData.priority}
-                        onValueChange={(value: any) => setUpdateData({ ...updateData, priority: value })}
+                        onValueChange={(value: Complaint['priority']) => setUpdateData({ ...updateData, priority: value })}
                       >
                         <SelectTrigger>
                           <SelectValue />

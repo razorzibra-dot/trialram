@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ServiceContract, ServiceContractFormData } from '@/types/productSales';
+import { Customer } from '@/types/crm';
+import { Product } from '@/types/masters';
 import { serviceContractService, customerService, productService } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -30,8 +32,8 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
   
   const [formData, setFormData] = useState({
@@ -175,10 +177,10 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save service contract',
+        description: error instanceof Error ? error.message : 'Failed to save service contract',
         variant: 'destructive'
       });
     } finally {
@@ -237,7 +239,7 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
+                    onValueChange={(value: ServiceContract['status']) => setFormData(prev => ({ ...prev, status: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -401,7 +403,7 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                 <Label htmlFor="service_level">Service Level</Label>
                 <Select
                   value={formData.service_level}
-                  onValueChange={(value: any) => setFormData(prev => ({ ...prev, service_level: value }))}
+                  onValueChange={(value: ServiceContract['service_level']) => setFormData(prev => ({ ...prev, service_level: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />

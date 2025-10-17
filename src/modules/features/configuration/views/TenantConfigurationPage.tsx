@@ -3,7 +3,7 @@
  * Comprehensive tenant settings management with tabs
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Row, 
   Col, 
@@ -60,11 +60,7 @@ export const TenantConfigurationPage: React.FC = () => {
   const [settings, setSettings] = useState<TenantSettings | null>(null);
   const [activeTab, setActiveTab] = useState('general');
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const tenant = await tenantService.getCurrentTenant();
@@ -110,77 +106,87 @@ export const TenantConfigurationPage: React.FC = () => {
           ip_whitelist_enabled: tenant.settings.security?.ip_whitelist_enabled || false
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch settings:', error);
       message.error('Failed to load tenant settings');
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    void fetchSettings();
+  }, [fetchSettings]);
+
+  const handleSave = async (): Promise<void> => {
     try {
       setSaving(true);
-      const values = await form.validateFields();
+      const values = await form.validateFields() as Record<string, unknown>;
       
       if (!user?.tenant_id) {
         message.error('Tenant ID not found');
         return;
       }
 
+      const allowedIps = typeof values.allowed_ips === 'string' 
+        ? values.allowed_ips.split(',').map((ip: string) => ip.trim())
+        : [];
+
       const updatedSettings: Partial<TenantSettings> = {
-        timezone: values.timezone,
-        date_format: values.date_format,
-        time_format: values.time_format,
-        currency: values.currency,
-        language: values.language,
+        timezone: values.timezone as string,
+        date_format: values.date_format as string,
+        time_format: values.time_format as string,
+        currency: values.currency as string,
+        language: values.language as string,
         branding: {
-          company_name: values.company_name,
-          logo_url: values.logo_url || '',
+          company_name: values.company_name as string,
+          logo_url: (values.logo_url as string) || '',
           primary_color: typeof values.primary_color === 'string' 
             ? values.primary_color 
-            : values.primary_color?.toHexString?.() || '#1890ff',
+            : (values.primary_color as { toHexString?: () => string })?.toHexString?.() || '#1890ff',
           secondary_color: typeof values.secondary_color === 'string'
             ? values.secondary_color
-            : values.secondary_color?.toHexString?.() || '#52c41a'
+            : (values.secondary_color as { toHexString?: () => string })?.toHexString?.() || '#52c41a'
         },
         features: {
-          enable_customers: values.enable_customers,
-          enable_sales: values.enable_sales,
-          enable_contracts: values.enable_contracts,
-          enable_tickets: values.enable_tickets,
-          enable_complaints: values.enable_complaints,
-          enable_job_works: values.enable_job_works
+          enable_customers: values.enable_customers as boolean,
+          enable_sales: values.enable_sales as boolean,
+          enable_contracts: values.enable_contracts as boolean,
+          enable_tickets: values.enable_tickets as boolean,
+          enable_complaints: values.enable_complaints as boolean,
+          enable_job_works: values.enable_job_works as boolean
         },
         email: {
-          enabled: values.email_enabled,
-          smtp_host: values.smtp_host,
-          smtp_port: values.smtp_port,
-          smtp_user: values.smtp_user,
-          smtp_password: values.smtp_password || '',
-          smtp_from: values.smtp_from
+          enabled: values.email_enabled as boolean,
+          smtp_host: values.smtp_host as string,
+          smtp_port: values.smtp_port as number,
+          smtp_user: values.smtp_user as string,
+          smtp_password: (values.smtp_password as string) || '',
+          smtp_from: values.smtp_from as string
         },
         sms: {
-          enabled: values.sms_enabled,
-          provider: values.sms_provider,
-          api_key: values.sms_api_key || '',
-          sender_id: values.sms_sender_id || ''
+          enabled: values.sms_enabled as boolean,
+          provider: values.sms_provider as string,
+          api_key: (values.sms_api_key as string) || '',
+          sender_id: (values.sms_sender_id as string) || ''
         },
         security: {
-          mfa_enabled: values.mfa_enabled,
-          password_expiry_days: values.password_expiry_days,
-          session_timeout_minutes: values.session_timeout_minutes,
-          ip_whitelist_enabled: values.ip_whitelist_enabled,
-          allowed_ips: values.allowed_ips?.split(',').map((ip: string) => ip.trim()) || []
+          mfa_enabled: values.mfa_enabled as boolean,
+          password_expiry_days: values.password_expiry_days as number,
+          session_timeout_minutes: values.session_timeout_minutes as number,
+          ip_whitelist_enabled: values.ip_whitelist_enabled as boolean,
+          allowed_ips: allowedIps
         }
       };
 
       await tenantService.updateTenantSettings(user.tenant_id, updatedSettings);
       message.success('Settings saved successfully');
-      fetchSettings();
-    } catch (error: any) {
-      console.error('Failed to save settings:', error);
-      message.error(error.message || 'Failed to save settings');
+      void fetchSettings();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Failed to save settings:', error.message);
+        message.error(error.message || 'Failed to save settings');
+      }
     } finally {
       setSaving(false);
     }

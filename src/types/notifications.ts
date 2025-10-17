@@ -21,7 +21,7 @@ export interface PushSubscription {
   endpoint: string;
   p256dh_key: string;
   auth_key: string;
-  browser_info: Record<string, any>;
+  browser_info: Record<string, unknown>;
   is_active: boolean;
   last_used_at?: string;
   created_at: string;
@@ -55,7 +55,7 @@ export interface NotificationQueue {
   retry_count: number;
   max_retries: number;
   error_message?: string;
-  template_variables: Record<string, any>;
+  template_variables: Record<string, unknown>;
   external_id?: string;
   created_at: string;
   updated_at: string;
@@ -71,7 +71,7 @@ export interface NotificationHistory {
   sent_at?: string;
   delivered_at?: string;
   read_at?: string;
-  response_data: Record<string, any>;
+  response_data: Record<string, unknown>;
   cost?: number;
   created_at: string;
   updated_at: string;
@@ -98,7 +98,7 @@ export interface ScheduledJob {
   job_name: string;
   cron_expression: string;
   template_id: string;
-  target_criteria: Record<string, any>;
+  target_criteria: Record<string, unknown>;
   is_active: boolean;
   last_run_at?: string;
   next_run_at?: string;
@@ -143,12 +143,20 @@ export interface VAPIDKeys {
   updated_at: string;
 }
 
+export interface WebPushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
 // API Request/Response Types
 export interface QueueNotificationRequest {
   templateId: string;
   recipientId: string;
   channel: 'whatsapp' | 'push' | 'both';
-  variables: Record<string, any>;
+  variables: Record<string, unknown>;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   scheduledAt?: string;
 }
@@ -204,7 +212,7 @@ export interface PushNotificationPayload {
   icon?: string;
   badge?: string;
   image?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   actions?: Array<{
     action: string;
     title: string;

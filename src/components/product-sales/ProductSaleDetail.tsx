@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ProductSale, PRODUCT_SALE_STATUSES } from '@/types/productSales';
+import { ProductSale, PRODUCT_SALE_STATUSES, FileAttachment } from '@/types/productSales';
 import { serviceContractService } from '@/services/serviceContractService';
 import { ServiceContract } from '@/types/productSales';
 
@@ -119,7 +119,7 @@ const ProductSaleDetail: React.FC<ProductSaleDetailProps> = ({
     }
   };
 
-  const handleDownloadAttachment = (attachment: any) => {
+  const handleDownloadAttachment = (attachment: FileAttachment) => {
     // In a real implementation, this would download the file
     toast.success(`Downloading ${attachment.name}...`);
   };

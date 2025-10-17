@@ -3,7 +3,7 @@
  * Comprehensive view of service contract with timeline, renewal tracking, and billing
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -82,6 +82,25 @@ interface ContractActivity {
   user: string;
 }
 
+interface EditContractValues {
+  contract_number?: string;
+  customer_name?: string;
+  product_name?: string;
+  payment_terms?: string;
+  billing_cycle?: string;
+  contract_value?: number;
+  description?: string;
+}
+
+interface RenewContractValues {
+  renewal_period: string;
+  new_end_date?: string;
+}
+
+interface AddNoteValues {
+  note: string;
+}
+
 interface Invoice {
   id: string;
   invoice_number: string;
@@ -106,13 +125,7 @@ export const ServiceContractDetailPage: React.FC = () => {
   const [form] = Form.useForm();
   const [noteForm] = Form.useForm();
 
-  useEffect(() => {
-    if (id) {
-      loadContractDetails();
-    }
-  }, [id]);
-
-  const loadContractDetails = async () => {
+  const loadContractDetails = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -207,14 +220,22 @@ export const ServiceContractDetailPage: React.FC = () => {
       setInvoices(mockInvoices);
       form.setFieldsValue(mockContract);
     } catch (error) {
-      message.error('Failed to load contract details');
-      console.error('Error loading contract:', error);
+      if (error instanceof Error) {
+        message.error('Failed to load contract details');
+        console.error('Error loading contract:', error.message);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleEdit = async (values: any) => {
+  useEffect(() => {
+    if (id) {
+      loadContractDetails();
+    }
+  }, [id, loadContractDetails]);
+
+  const handleEdit = async (values: EditContractValues) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -234,11 +255,13 @@ export const ServiceContractDetailPage: React.FC = () => {
       };
       setActivities([newActivity, ...activities]);
     } catch (error) {
-      message.error('Failed to update contract');
+      if (error instanceof Error) {
+        message.error('Failed to update contract');
+      }
     }
   };
 
-  const handleRenew = async (values: any) => {
+  const handleRenew = async (values: RenewContractValues) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -257,13 +280,15 @@ export const ServiceContractDetailPage: React.FC = () => {
       };
       setActivities([newActivity, ...activities]);
 
-      loadContractDetails();
+      void loadContractDetails();
     } catch (error) {
-      message.error('Failed to renew contract');
+      if (error instanceof Error) {
+        message.error('Failed to renew contract');
+      }
     }
   };
 
-  const handleAddNote = async (values: any) => {
+  const handleAddNote = async (values: AddNoteValues) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -282,7 +307,9 @@ export const ServiceContractDetailPage: React.FC = () => {
       noteForm.resetFields();
       message.success('Note added successfully');
     } catch (error) {
-      message.error('Failed to add note');
+      if (error instanceof Error) {
+        message.error('Failed to add note');
+      }
     }
   };
 
@@ -299,7 +326,9 @@ export const ServiceContractDetailPage: React.FC = () => {
           message.success('Contract deleted successfully');
           navigate('/tenant/service-contracts');
         } catch (error) {
-          message.error('Failed to delete contract');
+          if (error instanceof Error) {
+            message.error('Failed to delete contract');
+          }
         }
       },
     });

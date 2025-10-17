@@ -183,7 +183,8 @@ export class CompanyService extends BaseService {
    */
   async updateCompanyStatus(id: string, status: string): Promise<Company> {
     try {
-      return await this.updateCompany(id, { status: status as any });
+      const typedStatus = status as 'active' | 'inactive' | 'prospect';
+      return await this.updateCompany(id, { status: typedStatus });
     } catch (error) {
       this.handleError(`Failed to update company status for ${id}`, error);
       throw error;
@@ -372,7 +373,7 @@ export class CompanyService extends BaseService {
 
         try {
           const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
-          const companyData: any = {};
+          const companyData: Record<string, string | undefined> = {};
 
           headers.forEach((header, index) => {
             companyData[header.toLowerCase().replace(' ', '_')] = values[index];

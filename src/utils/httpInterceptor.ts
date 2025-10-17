@@ -12,17 +12,19 @@ interface RequestConfig {
   url: string;
   method?: string;
   headers?: Record<string, string>;
-  body?: any;
+  body?: BodyInit | null;
   _retry?: boolean;
+}
+
+interface QueuedRequest {
+  resolve: (value?: Response | Promise<Response>) => void;
+  reject: (error?: Error | unknown) => void;
+  config: RequestConfig;
 }
 
 class HttpInterceptor {
   private isRefreshing = false;
-  private failedQueue: Array<{
-    resolve: (value?: any) => void;
-    reject: (error?: any) => void;
-    config: RequestConfig;
-  }> = [];
+  private failedQueue: QueuedRequest[] = [];
   private callbacks: InterceptorCallbacks = {};
   private originalFetch: typeof fetch;
 
@@ -97,8 +99,8 @@ class HttpInterceptor {
       url: config.url,
       method: config.init.method || 'GET',
       headers: this.headersToObject(config.init.headers),
-      body: config.init.body,
-      _retry: (config.init as any)._retry
+      body: config.init.body as BodyInit | null,
+      _retry: (config.init as Record<string, unknown>)._retry as boolean | undefined
     };
 
     // If already retried or no token, redirect to login
@@ -172,7 +174,7 @@ class HttpInterceptor {
   /**
    * Handle network errors
    */
-  private handleNetworkError(error: any): void {
+  private handleNetworkError(error: Error | unknown): void {
     const message = 'Network error. Please check your connection and try again.';
     
     toast({
@@ -185,7 +187,7 @@ class HttpInterceptor {
   /**
    * Process queued requests after token refresh
    */
-  private processQueue(error: any): void {
+  private processQueue(error: Error | null): void {
     this.failedQueue.forEach(({ resolve, reject, config }) => {
       if (error) {
         reject(error);

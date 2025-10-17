@@ -16,12 +16,12 @@ export interface LogEntry {
   service: string;
   operation: string;
   message: string;
-  data?: any;
+  data?: unknown;
   userId?: string;
   tenantId?: string;
   correlationId?: string;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface LoggerConfig {
@@ -70,28 +70,28 @@ export class ServiceLogger {
   /**
    * Log debug message
    */
-  debug(operation: string, message: string, data?: any, metadata?: Record<string, any>): void {
+  debug(operation: string, message: string, data?: unknown, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, operation, message, data, metadata);
   }
 
   /**
    * Log info message
    */
-  info(operation: string, message: string, data?: any, metadata?: Record<string, any>): void {
+  info(operation: string, message: string, data?: unknown, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, operation, message, data, metadata);
   }
 
   /**
    * Log warning message
    */
-  warn(operation: string, message: string, data?: any, metadata?: Record<string, any>): void {
+  warn(operation: string, message: string, data?: unknown, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, operation, message, data, metadata);
   }
 
   /**
    * Log error message
    */
-  error(operation: string, message: string, error?: any, metadata?: Record<string, any>): void {
+  error(operation: string, message: string, error?: unknown, metadata?: Record<string, unknown>): void {
     const errorData = error instanceof Error ? {
       name: error.name,
       message: error.message,
@@ -104,7 +104,7 @@ export class ServiceLogger {
   /**
    * Log operation start
    */
-  startOperation(operation: string, data?: any, metadata?: Record<string, any>): OperationLogger {
+  startOperation(operation: string, data?: unknown, metadata?: Record<string, unknown>): OperationLogger {
     const correlationId = this.generateCorrelationId();
     const startTime = Date.now();
 
@@ -124,8 +124,8 @@ export class ServiceLogger {
     level: LogLevel,
     operation: string,
     message: string,
-    data?: any,
-    metadata?: Record<string, any>
+    data?: unknown,
+    metadata?: Record<string, unknown>
   ): void {
     // Check if log level is enabled
     if (!this.isLevelEnabled(level)) {
@@ -273,7 +273,7 @@ export class OperationLogger {
   /**
    * Log operation progress
    */
-  progress(message: string, data?: any): void {
+  progress(message: string, data?: unknown): void {
     this.logger.info(this.operation, message, data, {
       correlationId: this.correlationId,
       phase: 'progress',
@@ -284,7 +284,7 @@ export class OperationLogger {
   /**
    * Log operation success
    */
-  success(message: string = 'Operation completed successfully', data?: any): void {
+  success(message: string = 'Operation completed successfully', data?: unknown): void {
     const duration = Date.now() - this.startTime;
     this.logger.info(this.operation, message, data, {
       correlationId: this.correlationId,
@@ -296,7 +296,7 @@ export class OperationLogger {
   /**
    * Log operation failure
    */
-  failure(message: string, error?: any): void {
+  failure(message: string, error?: unknown): void {
     const duration = Date.now() - this.startTime;
     this.logger.error(this.operation, message, error, {
       correlationId: this.correlationId,
@@ -308,7 +308,7 @@ export class OperationLogger {
   /**
    * Log operation warning
    */
-  warning(message: string, data?: any): void {
+  warning(message: string, data?: unknown): void {
     const duration = Date.now() - this.startTime;
     this.logger.warn(this.operation, message, data, {
       correlationId: this.correlationId,
@@ -347,11 +347,11 @@ export const serviceLoggers = {
 /**
  * Performance monitoring decorator
  */
-export function logPerformance<T extends any[], R>(
+export function logPerformance<T extends unknown[], R>(
   logger: ServiceLogger,
   operation: string
 ) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: Record<string, unknown>, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: T): Promise<R> {

@@ -88,13 +88,11 @@ ${colorConfig
       itemConfig.color
     return color ? `  --color-${key}: ${color};` : null
   })
-  .join("
-")}
+  .join('\n')}
 }
 `
           )
-          .join("
-"),
+          .join('\n'),
       }}
     />
   )

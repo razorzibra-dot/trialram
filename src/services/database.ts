@@ -9,7 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 // Database helper functions
 export class DatabaseService {
   // Generic query methods
-  static async select(table: string, columns = '*', filters?: Record<string, any>) {
+  static async select(table: string, columns = '*', filters?: Record<string, unknown>) {
     let query = supabase.from(table).select(columns);
     
     if (filters) {
@@ -27,7 +27,7 @@ export class DatabaseService {
     return data;
   }
 
-  static async insert(table: string, data: Record<string, any>) {
+  static async insert(table: string, data: Record<string, unknown>) {
     const { data: result, error } = await supabase
       .from(table)
       .insert(data)
@@ -38,7 +38,7 @@ export class DatabaseService {
     return result;
   }
 
-  static async update(table: string, id: string, data: Record<string, any>) {
+  static async update(table: string, id: string, data: Record<string, unknown>) {
     const { data: result, error } = await supabase
       .from(table)
       .update(data)
@@ -73,7 +73,7 @@ export class DatabaseService {
     return data;
   }
 
-  static async findOne(table: string, filters: Record<string, any>) {
+  static async findOne(table: string, filters: Record<string, unknown>) {
     let query = supabase.from(table).select('*');
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -88,7 +88,7 @@ export class DatabaseService {
     return data;
   }
 
-  static async count(table: string, filters?: Record<string, any>) {
+  static async count(table: string, filters?: Record<string, unknown>) {
     let query = supabase.from(table).select('*', { count: 'exact', head: true });
     
     if (filters) {

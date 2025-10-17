@@ -40,8 +40,9 @@ export class RealNotificationService implements INotificationService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch notifications');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notifications';
+      throw new Error(message);
     }
   }
 
@@ -56,8 +57,9 @@ export class RealNotificationService implements INotificationService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create notification');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create notification';
+      throw new Error(message);
     }
   }
 
@@ -69,8 +71,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.patch(
         `${apiConfig.endpoints.notifications.base}/${id}/read`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to mark notification as read');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to mark notification as read';
+      throw new Error(message);
     }
   }
 
@@ -82,8 +85,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.patch(
         `${apiConfig.endpoints.notifications.base}/read-all`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to mark all notifications as read');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to mark all notifications as read';
+      throw new Error(message);
     }
   }
 
@@ -95,8 +99,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.delete(
         `${apiConfig.endpoints.notifications.base}/${id}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete notification');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete notification';
+      throw new Error(message);
     }
   }
 
@@ -122,8 +127,9 @@ export class RealNotificationService implements INotificationService {
       }>>(apiConfig.endpoints.notifications.templates);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch notification templates');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notification templates';
+      throw new Error(message);
     }
   }
 
@@ -155,8 +161,9 @@ export class RealNotificationService implements INotificationService {
       }>(apiConfig.endpoints.notifications.templates, templateData);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create notification template');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create notification template';
+      throw new Error(message);
     }
   }
 
@@ -187,8 +194,9 @@ export class RealNotificationService implements INotificationService {
       }>(`${apiConfig.endpoints.notifications.templates}/${templateId}`, updates);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update notification template');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update notification template';
+      throw new Error(message);
     }
   }
 
@@ -200,8 +208,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.delete(
         `${apiConfig.endpoints.notifications.templates}/${templateId}`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete notification template');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete notification template';
+      throw new Error(message);
     }
   }
 
@@ -211,7 +220,7 @@ export class RealNotificationService implements INotificationService {
   async sendTemplateNotification(templateId: string, data: {
     recipients: string[];
     channels: Array<'email' | 'sms' | 'push' | 'in_app'>;
-    variables?: Record<string, any>;
+    variables?: Record<string, unknown>;
     scheduledAt?: string;
   }): Promise<NotificationResponse> {
     try {
@@ -221,8 +230,9 @@ export class RealNotificationService implements INotificationService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to send template notification');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send template notification';
+      throw new Error(message);
     }
   }
 
@@ -250,8 +260,9 @@ export class RealNotificationService implements INotificationService {
       }>>(apiConfig.endpoints.notifications.queue);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch notification queue');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notification queue';
+      throw new Error(message);
     }
   }
 
@@ -263,8 +274,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.post(
         `${apiConfig.endpoints.notifications.base}/${notificationId}/retry`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to retry notification');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to retry notification';
+      throw new Error(message);
     }
   }
 
@@ -276,8 +288,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.post(
         `${apiConfig.endpoints.notifications.base}/${notificationId}/cancel`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to cancel notification');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel notification';
+      throw new Error(message);
     }
   }
 
@@ -315,8 +328,9 @@ export class RealNotificationService implements INotificationService {
       }>(endpoint);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch notification preferences');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notification preferences';
+      throw new Error(message);
     }
   }
 
@@ -341,8 +355,9 @@ export class RealNotificationService implements INotificationService {
         : apiConfig.endpoints.notifications.preferences;
 
       await baseApiService.put(endpoint, preferences);
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update notification preferences');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update notification preferences';
+      throw new Error(message);
     }
   }
 
@@ -372,8 +387,9 @@ export class RealNotificationService implements INotificationService {
       }>(`${apiConfig.endpoints.notifications.base}/stats`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch notification statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notification statistics';
+      throw new Error(message);
     }
   }
 
@@ -387,7 +403,7 @@ export class RealNotificationService implements INotificationService {
     recipients: string[];
     channels: Array<'email' | 'sms' | 'push' | 'in_app'>;
     templateId?: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   }>): Promise<Array<{ id: string; status: 'success' | 'failed'; error?: string }>> {
     try {
       const response = await baseApiService.post<Array<{ id: string; status: 'success' | 'failed'; error?: string }>>(
@@ -396,8 +412,9 @@ export class RealNotificationService implements INotificationService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to send bulk notifications');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send bulk notifications';
+      throw new Error(message);
     }
   }
 
@@ -416,8 +433,9 @@ export class RealNotificationService implements INotificationService {
         `${apiConfig.endpoints.notifications.base}/push/subscribe`,
         subscription
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to subscribe to push notifications');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to subscribe to push notifications';
+      throw new Error(message);
     }
   }
 
@@ -429,8 +447,9 @@ export class RealNotificationService implements INotificationService {
       await baseApiService.post(
         `${apiConfig.endpoints.notifications.base}/push/unsubscribe`
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to unsubscribe from push notifications');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to unsubscribe from push notifications';
+      throw new Error(message);
     }
   }
 }

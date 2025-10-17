@@ -3,7 +3,7 @@
  * Platform-wide settings including email, SMS, payment gateways, and system configuration
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Form,
@@ -109,11 +109,7 @@ export const SuperAdminConfigurationPage: React.FC = () => {
   const [config, setConfig] = useState<PlatformConfig | null>(null);
   const [activeTab, setActiveTab] = useState('email');
 
-  useEffect(() => {
-    loadConfiguration();
-  }, []);
-
-  const loadConfiguration = async () => {
+  const loadConfiguration = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -183,14 +179,20 @@ export const SuperAdminConfigurationPage: React.FC = () => {
       setConfig(mockConfig);
       form.setFieldsValue(mockConfig);
     } catch (error) {
-      message.error('Failed to load configuration');
-      console.error('Error loading config:', error);
+      if (error instanceof Error) {
+        message.error('Failed to load configuration');
+        console.error('Error loading config:', error.message);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
 
-  const handleSave = async (values: any) => {
+  useEffect(() => {
+    loadConfiguration();
+  }, [loadConfiguration]);
+
+  const handleSave = async (values: PlatformConfig) => {
     try {
       setSaving(true);
       
@@ -200,8 +202,10 @@ export const SuperAdminConfigurationPage: React.FC = () => {
       setConfig(values);
       message.success('Configuration saved successfully');
     } catch (error) {
-      message.error('Failed to save configuration');
-      console.error('Error saving config:', error);
+      if (error instanceof Error) {
+        message.error('Failed to save configuration');
+        console.error('Error saving config:', error.message);
+      }
     } finally {
       setSaving(false);
     }

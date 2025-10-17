@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 export const UsersPage: React.FC = () => {
   const { hasPermission } = useAuth();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -71,8 +71,8 @@ export const UsersPage: React.FC = () => {
 
   const stats = {
     total: users.length,
-    active: users.filter((u: any) => u.status === 'active').length,
-    inactive: users.filter((u: any) => u.status === 'inactive').length,
+    active: users.filter((u) => (u as Record<string, unknown>).status === 'active').length,
+    inactive: users.filter((u) => (u as Record<string, unknown>).status === 'inactive').length,
   };
 
   const columns = [
@@ -80,7 +80,7 @@ export const UsersPage: React.FC = () => {
       title: 'User',
       dataIndex: 'name',
       key: 'name',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ 
             padding: 8, 
@@ -131,7 +131,7 @@ export const UsersPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       align: 'right' as const,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button
             type="text"

@@ -31,9 +31,9 @@ import { auditService as mockAuditService } from '../auditService';
 
 // Service interfaces
 export interface IAuthService {
-  login(credentials: any): Promise<any>;
+  login(credentials: Record<string, unknown>): Promise<Record<string, unknown>>;
   logout(): Promise<void>;
-  getCurrentUser(): any;
+  getCurrentUser(): Record<string, unknown>;
   getToken(): string | null;
   isAuthenticated(): boolean;
   hasRole(role: string): boolean;
@@ -43,95 +43,95 @@ export interface IAuthService {
 }
 
 export interface ICustomerService {
-  getCustomers(filters?: any): Promise<any[]>;
-  getCustomer(id: string): Promise<any>;
-  createCustomer(data: any): Promise<any>;
-  updateCustomer(id: string, data: any): Promise<any>;
+  getCustomers(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  getCustomer(id: string): Promise<Record<string, unknown>>;
+  createCustomer(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateCustomer(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteCustomer(id: string): Promise<void>;
   bulkDeleteCustomers(ids: string[]): Promise<void>;
-  bulkUpdateCustomers(ids: string[], data: any): Promise<void>;
-  getTags(): Promise<any[]>;
+  bulkUpdateCustomers(ids: string[], data: Record<string, unknown>): Promise<void>;
+  getTags(): Promise<Record<string, unknown>[]>;
   exportCustomers(format?: string): Promise<string>;
-  importCustomers(data: string): Promise<any>;
+  importCustomers(data: string): Promise<Record<string, unknown>>;
   getIndustries?(): Promise<string[]>;
   getSizes?(): Promise<string[]>;
-  createTag?(name: string, color: string): Promise<any>;
+  createTag?(name: string, color: string): Promise<Record<string, unknown>>;
   // Add other customer methods as needed
 }
 
 export interface ISalesService {
-  getSales(filters?: any): Promise<any[]>;
-  getSale(id: string): Promise<any>;
-  createSale(data: any): Promise<any>;
-  updateSale(id: string, data: any): Promise<any>;
+  getSales(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  getSale(id: string): Promise<Record<string, unknown>>;
+  createSale(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateSale(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteSale(id: string): Promise<void>;
-  getPipelineStages(): Promise<any[]>;
-  getSalesAnalytics(period?: string): Promise<any>;
+  getPipelineStages(): Promise<Record<string, unknown>[]>;
+  getSalesAnalytics(period?: string): Promise<Record<string, unknown>>;
   // Add other sales methods as needed
 }
 
 export interface ITicketService {
-  getTickets(filters?: any): Promise<any[]>;
-  getTicket(id: string): Promise<any>;
-  createTicket(data: any): Promise<any>;
-  updateTicket(id: string, data: any): Promise<any>;
+  getTickets(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  getTicket(id: string): Promise<Record<string, unknown>>;
+  createTicket(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateTicket(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteTicket(id: string): Promise<void>;
-  getTicketCategories(): Promise<any[]>;
-  getTicketPriorities(): Promise<any[]>;
+  getTicketCategories(): Promise<Record<string, unknown>[]>;
+  getTicketPriorities(): Promise<Record<string, unknown>[]>;
   // Add other ticket methods as needed
 }
 
 export interface IContractService {
-  getContracts(filters?: any): Promise<any[]>;
-  getContract(id: string): Promise<any>;
-  createContract(data: any): Promise<any>;
-  updateContract(id: string, data: any): Promise<any>;
+  getContracts(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  getContract(id: string): Promise<Record<string, unknown>>;
+  createContract(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateContract(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteContract(id: string): Promise<void>;
-  getContractTypes(): Promise<any[]>;
-  getContractAnalytics(): Promise<any>;
+  getContractTypes(): Promise<Record<string, unknown>[]>;
+  getContractAnalytics(): Promise<Record<string, unknown>>;
   // Add other contract methods as needed
 }
 
 export interface IUserService {
-  getUsers(filters?: any): Promise<any[]>;
-  getUser(id: string): Promise<any>;
-  createUser(data: any): Promise<any>;
-  updateUser(id: string, data: any): Promise<any>;
+  getUsers(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  getUser(id: string): Promise<Record<string, unknown>>;
+  createUser(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateUser(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>>;
   deleteUser(id: string): Promise<void>;
-  getRoles(): Promise<any[]>;
-  getPermissions(): Promise<any[]>;
+  getRoles(): Promise<Record<string, unknown>[]>;
+  getPermissions(): Promise<Record<string, unknown>[]>;
   // Add other user methods as needed
 }
 
 export interface IDashboardService {
-  getMetrics(): Promise<any>;
-  getAnalytics(period?: string): Promise<any>;
-  getRecentActivity(): Promise<any[]>;
-  getWidgetData(widgetType: string): Promise<any>;
+  getMetrics(): Promise<Record<string, unknown>>;
+  getAnalytics(period?: string): Promise<Record<string, unknown>>;
+  getRecentActivity(): Promise<Record<string, unknown>[]>;
+  getWidgetData(widgetType: string): Promise<Record<string, unknown>>;
   // Add other dashboard methods as needed
 }
 
 export interface INotificationService {
-  getNotifications(filters?: any): Promise<any[]>;
-  createNotification(data: any): Promise<any>;
+  getNotifications(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  createNotification(data: Record<string, unknown>): Promise<Record<string, unknown>>;
   markAsRead(id: string): Promise<void>;
   deleteNotification(id: string): Promise<void>;
-  getTemplates(): Promise<any[]>;
+  getTemplates(): Promise<Record<string, unknown>[]>;
   // Add other notification methods as needed
 }
 
 export interface IFileService {
-  uploadFile(file: File, options?: any): Promise<any>;
+  uploadFile(file: File, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
   downloadFile(id: string): Promise<void>;
   deleteFile(id: string): Promise<void>;
-  getFileMetadata(id: string): Promise<any>;
+  getFileMetadata(id: string): Promise<Record<string, unknown>>;
   // Add other file methods as needed
 }
 
 export interface IAuditService {
-  getAuditLogs(filters?: any): Promise<any[]>;
-  exportAuditLogs(filters?: any): Promise<string>;
-  searchAuditLogs(query: string): Promise<any[]>;
+  getAuditLogs(filters?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  exportAuditLogs(filters?: Record<string, unknown>): Promise<string>;
+  searchAuditLogs(query: string): Promise<Record<string, unknown>[]>;
   // Add other audit methods as needed
 }
 
@@ -346,7 +346,7 @@ class ApiServiceFactory {
   /**
    * Get all service instances (for debugging)
    */
-  public getServiceInstances(): Record<string, any> {
+  public getServiceInstances(): Record<string, IAuthService | ICustomerService | ISalesService | ITicketService | IContractService | IUserService | IDashboardService | INotificationService | IFileService | IAuditService | null> {
     return {
       auth: this.authServiceInstance,
       customer: this.customerServiceInstance,

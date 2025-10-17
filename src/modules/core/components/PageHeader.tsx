@@ -5,4 +5,3 @@
  */
 
 export { PageHeader, type PageHeaderProps } from '@/components/common/PageHeader';
-export { default } from '@/components/common/PageHeader';

@@ -232,7 +232,7 @@ const SuperAdminTenants: React.FC = () => {
                   <Label htmlFor="plan">Plan</Label>
                   <Select
                     value={formData.plan || ''}
-                    onValueChange={(value) => setFormData({ ...formData, plan: value as any })}
+                    onValueChange={(value) => setFormData({ ...formData, plan: value as 'basic' | 'premium' | 'enterprise' })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select plan" />
@@ -248,7 +248,7 @@ const SuperAdminTenants: React.FC = () => {
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status || ''}
-                    onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+                    onValueChange={(value) => setFormData({ ...formData, status: value as 'active' | 'inactive' | 'suspended' })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -268,7 +268,7 @@ const SuperAdminTenants: React.FC = () => {
                   value={formData.admin_contact?.name || ''}
                   onChange={(e) => setFormData({ 
                     ...formData, 
-                    admin_contact: { ...formData.admin_contact, name: e.target.value } as any
+                    admin_contact: { ...(formData.admin_contact || {}), name: e.target.value } as Record<string, unknown>
                   })}
                   placeholder="John Doe"
                 />
@@ -281,7 +281,7 @@ const SuperAdminTenants: React.FC = () => {
                   value={formData.admin_contact?.email || ''}
                   onChange={(e) => setFormData({ 
                     ...formData, 
-                    admin_contact: { ...formData.admin_contact, email: e.target.value } as any
+                    admin_contact: { ...(formData.admin_contact || {}), email: e.target.value } as Record<string, unknown>
                   })}
                   placeholder="admin@company.com"
                 />
@@ -550,7 +550,7 @@ const SuperAdminTenants: React.FC = () => {
                 <Label htmlFor="edit-plan">Plan</Label>
                 <Select
                   value={formData.plan || ''}
-                  onValueChange={(value) => setFormData({ ...formData, plan: value as any })}
+                  onValueChange={(value) => setFormData({ ...formData, plan: value as 'basic' | 'premium' | 'enterprise' })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -566,7 +566,7 @@ const SuperAdminTenants: React.FC = () => {
                 <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={formData.status || ''}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+                  onValueChange={(value) => setFormData({ ...formData, status: value as 'active' | 'inactive' | 'suspended' })}
                 >
                   <SelectTrigger>
                     <SelectValue />

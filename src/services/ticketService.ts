@@ -282,12 +282,12 @@ class TicketService {
   }
 
   // Interface compliance methods - aliases for existing methods
-  async getTicketCategories(): Promise<any[]> {
+  async getTicketCategories(): Promise<Array<{ id: string; name: string }>> {
     const categories = await this.getCategories();
     return categories.map(category => ({ id: category, name: category }));
   }
 
-  async getTicketPriorities(): Promise<any[]> {
+  async getTicketPriorities(): Promise<Array<{ id: string; name: string }>> {
     const priorities = await this.getPriorities();
     return priorities.map(priority => ({ id: priority, name: priority }));
   }

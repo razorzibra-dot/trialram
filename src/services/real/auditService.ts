@@ -39,8 +39,9 @@ export class RealAuditService implements IAuditService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch audit logs');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch audit logs';
+      throw new Error(message);
     }
   }
 
@@ -54,8 +55,9 @@ export class RealAuditService implements IAuditService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch audit log');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch audit log';
+      throw new Error(message);
     }
   }
 
@@ -83,8 +85,9 @@ export class RealAuditService implements IAuditService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to search audit logs');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to search audit logs';
+      throw new Error(message);
     }
   }
 
@@ -109,7 +112,7 @@ export class RealAuditService implements IAuditService {
 
       const response = await baseApiService.get(
         `${apiConfig.endpoints.audit.export}?${params.toString()}`,
-        { responseType: 'blob' } as any
+        { responseType: 'blob' } as Record<string, unknown>
       );
 
       if (format === 'xlsx') {
@@ -118,8 +121,9 @@ export class RealAuditService implements IAuditService {
       } else {
         return await response.data.text();
       }
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to export audit logs');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export audit logs';
+      throw new Error(message);
     }
   }
 
@@ -150,8 +154,9 @@ export class RealAuditService implements IAuditService {
       }>(`${apiConfig.endpoints.audit.logs}/stats${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch audit statistics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch audit statistics';
+      throw new Error(message);
     }
   }
 
@@ -165,8 +170,9 @@ export class RealAuditService implements IAuditService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch resource audit trail');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch resource audit trail';
+      throw new Error(message);
     }
   }
 
@@ -181,8 +187,9 @@ export class RealAuditService implements IAuditService {
       );
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch user audit trail');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user audit trail';
+      throw new Error(message);
     }
   }
 
@@ -235,8 +242,9 @@ export class RealAuditService implements IAuditService {
       }>(`${apiConfig.endpoints.audit.logs}/compliance?${params.toString()}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to generate compliance report');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to generate compliance report';
+      throw new Error(message);
     }
   }
 
@@ -251,7 +259,7 @@ export class RealAuditService implements IAuditService {
     user?: { id: string; name: string };
     ipAddress: string;
     userAgent: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     createdAt: string;
     resolved: boolean;
     resolvedAt?: string;
@@ -267,7 +275,7 @@ export class RealAuditService implements IAuditService {
         user?: { id: string; name: string };
         ipAddress: string;
         userAgent: string;
-        metadata: Record<string, any>;
+        metadata: Record<string, unknown>;
         createdAt: string;
         resolved: boolean;
         resolvedAt?: string;
@@ -275,8 +283,9 @@ export class RealAuditService implements IAuditService {
       }>>(`${apiConfig.endpoints.audit.logs}/security-events${params}`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch security events');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch security events';
+      throw new Error(message);
     }
   }
 
@@ -289,8 +298,9 @@ export class RealAuditService implements IAuditService {
         `${apiConfig.endpoints.audit.logs}/security-events/${eventId}/resolve`,
         { resolution }
       );
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to resolve security event');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to resolve security event';
+      throw new Error(message);
     }
   }
 
@@ -322,8 +332,9 @@ export class RealAuditService implements IAuditService {
       }>>(`${apiConfig.endpoints.audit.logs}/retention-policies`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to fetch retention policies');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch retention policies';
+      throw new Error(message);
     }
   }
 
@@ -343,8 +354,9 @@ export class RealAuditService implements IAuditService {
       }>(`${apiConfig.endpoints.audit.logs}/retention-policies/${policyId}/apply`);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to apply retention policy');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to apply retention policy';
+      throw new Error(message);
     }
   }
 
@@ -381,8 +393,9 @@ export class RealAuditService implements IAuditService {
       }>(`${apiConfig.endpoints.audit.logs}/verify-integrity`, body);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to verify log integrity');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to verify log integrity';
+      throw new Error(message);
     }
   }
 
@@ -440,8 +453,9 @@ export class RealAuditService implements IAuditService {
       }>(`${apiConfig.endpoints.audit.logs}/alerts`, alertRule);
 
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create audit alert');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create audit alert';
+      throw new Error(message);
     }
   }
 }

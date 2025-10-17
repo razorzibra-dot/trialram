@@ -43,7 +43,6 @@ import {
   DollarSign,
   Clock
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
 import { tenantService } from '@/services/tenantService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -194,16 +193,16 @@ export const TenantConfigurationPage: React.FC = () => {
 
   if (loading) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
           <Spin size="large" />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Tenant Configuration"
         description="Manage your tenant settings, branding, and features"
@@ -750,7 +749,7 @@ export const TenantConfigurationPage: React.FC = () => {
           </Form>
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

@@ -49,7 +49,6 @@ import {
   SettingOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,6 +68,7 @@ export const RoleManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
   const [form] = Form.useForm();
+  const [templateForm] = Form.useForm();
 
   // State
   const [roles, setRoles] = useState<Role[]>([]);
@@ -82,6 +82,7 @@ export const RoleManagementPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Load data
   useEffect(() => {
@@ -117,7 +118,8 @@ export const RoleManagementPage: React.FC = () => {
 
   // Handle create from template
   const handleCreateFromTemplate = () => {
-    form.resetFields();
+    templateForm.resetFields();
+    setSelectedTemplateId(null);
     setIsTemplateModalVisible(true);
   };
 
@@ -200,7 +202,8 @@ export const RoleManagementPage: React.FC = () => {
       });
       message.success('Role created from template successfully');
       setIsTemplateModalVisible(false);
-      form.resetFields();
+      templateForm.resetFields();
+      setSelectedTemplateId(null);
       loadData();
     } catch (error: any) {
       message.error(error.message || 'Failed to create role from template');
@@ -388,7 +391,7 @@ export const RoleManagementPage: React.FC = () => {
     : roles;
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Role Management"
         description="Manage roles and assign permissions"
@@ -613,13 +616,14 @@ export const RoleManagementPage: React.FC = () => {
         open={isTemplateModalVisible}
         onCancel={() => {
           setIsTemplateModalVisible(false);
-          form.resetFields();
+          templateForm.resetFields();
+          setSelectedTemplateId(null);
         }}
         footer={null}
         width={600}
       >
         <Form
-          form={form}
+          form={templateForm}
           layout="vertical"
           onFinish={handleTemplateSubmit}
         >
@@ -633,9 +637,12 @@ export const RoleManagementPage: React.FC = () => {
                 <Card
                   key={template.id}
                   hoverable
-                  onClick={() => form.setFieldsValue({ templateId: template.id })}
+                  onClick={() => {
+                    setSelectedTemplateId(template.id);
+                    templateForm.setFieldsValue({ templateId: template.id });
+                  }}
                   style={{
-                    border: form.getFieldValue('templateId') === template.id
+                    border: selectedTemplateId === template.id
                       ? '2px solid #1890ff'
                       : '1px solid #d9d9d9'
                   }}
@@ -678,7 +685,8 @@ export const RoleManagementPage: React.FC = () => {
               <Button
                 onClick={() => {
                   setIsTemplateModalVisible(false);
-                  form.resetFields();
+                  templateForm.resetFields();
+                  setSelectedTemplateId(null);
                 }}
               >
                 Cancel
@@ -744,7 +752,7 @@ export const RoleManagementPage: React.FC = () => {
           </Space>
         )}
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

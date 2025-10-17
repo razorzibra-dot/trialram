@@ -5,7 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import {
@@ -335,7 +334,7 @@ export const ProductSalesPage: React.FC = () => {
 
   if (!hasPermission('manage_product_sales')) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -344,12 +343,12 @@ export const ProductSalesPage: React.FC = () => {
             showIcon
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Product Sales"
         description="Manage product sales and generate service contracts"
@@ -540,7 +539,7 @@ export const ProductSalesPage: React.FC = () => {
           onSuccess={handleFormSuccess}
         />
       )}
-    </EnterpriseLayout>
+    </>
   );
 };
 

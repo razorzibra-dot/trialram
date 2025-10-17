@@ -123,7 +123,7 @@ export const DashboardPageNew: React.FC = () => {
           <Col xs={24} lg={16}>
             <Card
               title="Recent Activity"
-              bordered={false}
+              variant="borderless"
               loading={activityLoading}
               extra={<Button type="link">View All</Button>}
               style={{
@@ -134,7 +134,7 @@ export const DashboardPageNew: React.FC = () => {
               <List
                 itemLayout="horizontal"
                 dataSource={recentActivity || []}
-                renderItem={(item: any) => (
+                renderItem={(item: { title: string; description: string; type: string; timestamp: string }) => (
                   <List.Item>
                     <List.Item.Meta
                       avatar={
@@ -170,7 +170,7 @@ export const DashboardPageNew: React.FC = () => {
           <Col xs={24} lg={8}>
             <Card
               title="Top Customers"
-              bordered={false}
+              variant="borderless"
               loading={customersLoading}
               extra={<Button type="link">View All</Button>}
               style={{
@@ -181,7 +181,7 @@ export const DashboardPageNew: React.FC = () => {
               <List
                 itemLayout="horizontal"
                 dataSource={topCustomers || []}
-                renderItem={(item: any, index: number) => (
+                renderItem={(item: { name: string; revenue: number }, index: number) => (
                   <List.Item>
                     <List.Item.Meta
                       avatar={
@@ -214,7 +214,7 @@ export const DashboardPageNew: React.FC = () => {
           <Col xs={24} lg={12}>
             <Card
               title="Support Tickets Overview"
-              bordered={false}
+              variant="borderless"
               loading={ticketStatsLoading}
               style={{
                 borderRadius: 8,
@@ -258,7 +258,7 @@ export const DashboardPageNew: React.FC = () => {
           <Col xs={24} lg={12}>
             <Card
               title="Sales Pipeline"
-              bordered={false}
+              variant="borderless"
               style={{
                 borderRadius: 8,
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',

@@ -45,7 +45,6 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import dayjs from 'dayjs';
 
@@ -304,16 +303,16 @@ export const SuperAdminAnalyticsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Platform Analytics"
         description="Comprehensive analytics and insights across all tenants"
@@ -521,7 +520,7 @@ export const SuperAdminAnalyticsPage: React.FC = () => {
           />
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

@@ -29,7 +29,6 @@ import {
   BankOutlined,
   DollarOutlined,
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/modules/core/components/EnterpriseLayout';
 import { PageHeader } from '@/modules/core/components/PageHeader';
 import type { CreateCustomerData } from '../services/customerService';
 
@@ -90,7 +89,7 @@ const CustomerCreatePage: React.FC = () => {
   );
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Create Customer"
         description="Add a new customer to your CRM system"
@@ -416,7 +415,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
         </Form>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

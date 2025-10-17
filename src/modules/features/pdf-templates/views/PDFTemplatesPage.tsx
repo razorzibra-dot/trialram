@@ -44,7 +44,6 @@ import {
   FileSpreadsheet,
   Mail
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { pdfTemplateService, PDFTemplate } from '@/services/pdfTemplateService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -392,7 +391,7 @@ export const PDFTemplatesPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="PDF Templates"
         description="Manage PDF templates for invoices, contracts, and reports"
@@ -707,7 +706,7 @@ export const PDFTemplatesPage: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: previewHtml }}
         />
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

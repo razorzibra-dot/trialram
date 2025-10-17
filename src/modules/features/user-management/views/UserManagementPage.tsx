@@ -49,7 +49,6 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -378,7 +377,7 @@ export const UserManagementPage: React.FC = () => {
   const suspendedUsers = users.filter(u => u.status === 'suspended').length;
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="User Management"
         description="Manage user accounts, roles, and permissions"
@@ -718,7 +717,7 @@ export const UserManagementPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

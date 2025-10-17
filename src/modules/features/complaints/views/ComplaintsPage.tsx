@@ -34,7 +34,6 @@ import {
   User,
   Wrench
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import ComplaintFormModal from '@/components/complaints/ComplaintFormModal';
 import ComplaintDetailModal from '@/components/complaints/ComplaintDetailModal';
@@ -46,13 +45,18 @@ export const ComplaintsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [engineerFilter, setEngineerFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [engineers, setEngineers] = useState<Array<{ id: string; name: string; }>>([]);
 
   useEffect(() => {
     fetchComplaints();
-  }, [searchTerm, statusFilter]);
+    fetchEngineers();
+  }, [searchTerm, statusFilter, typeFilter, priorityFilter, engineerFilter]);
 
   const fetchComplaints = async () => {
     try {
@@ -61,6 +65,9 @@ export const ComplaintsPage: React.FC = () => {
       
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = statusFilter;
+      if (typeFilter !== 'all') filters.type = typeFilter;
+      if (priorityFilter !== 'all') filters.priority = priorityFilter;
+      if (engineerFilter !== 'all') filters.assigned_engineer = engineerFilter;
 
       const data = await complaintService.getComplaints(filters);
       setComplaints(data);
@@ -69,6 +76,15 @@ export const ComplaintsPage: React.FC = () => {
       toast.error('Failed to fetch complaints');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchEngineers = async () => {
+    try {
+      const data = await complaintService.getEngineers();
+      setEngineers(data);
+    } catch (error) {
+      console.error('Failed to fetch engineers:', error);
     }
   };
 
@@ -101,6 +117,21 @@ export const ComplaintsPage: React.FC = () => {
     );
   };
 
+  const getTypeTag = (type: string) => {
+    const colorMap: Record<string, string> = {
+      technical: 'blue',
+      service: 'cyan',
+      billing: 'purple',
+      other: 'default'
+    };
+    
+    return (
+      <Tag color={colorMap[type] || 'default'}>
+        {type.replace('_', ' ').toUpperCase()}
+      </Tag>
+    );
+  };
+
   const handleViewDetails = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
     setShowDetailModal(true);
@@ -108,7 +139,7 @@ export const ComplaintsPage: React.FC = () => {
 
   if (!hasPermission('manage_complaints')) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -117,7 +148,7 @@ export const ComplaintsPage: React.FC = () => {
             showIcon
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
@@ -164,6 +195,12 @@ export const ComplaintsPage: React.FC = () => {
           <span style={{ fontWeight: 500 }}>{text}</span>
         </Space>
       ),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: string) => getTypeTag(type),
     },
     {
       title: 'Status',
@@ -218,7 +255,7 @@ export const ComplaintsPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Complaint Management"
         description="Manage customer complaints with enhanced lifecycle tracking"
@@ -293,29 +330,78 @@ export const ComplaintsPage: React.FC = () => {
         <Card style={{ marginBottom: 16 }}>
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div style={{ fontSize: 16, fontWeight: 500 }}>Search & Filters</div>
-            <Space.Compact style={{ width: '100%' }}>
-              <Input
-                placeholder="Search complaints..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onPressEnter={fetchComplaints}
-                prefix={<SearchOutlined />}
-                style={{ flex: 1 }}
-              />
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                style={{ width: 200 }}
-              >
-                <Select.Option value="all">All Statuses</Select.Option>
-                <Select.Option value="new">New</Select.Option>
-                <Select.Option value="in_progress">In Progress</Select.Option>
-                <Select.Option value="closed">Closed</Select.Option>
-              </Select>
-              <Button type="primary" icon={<SearchOutlined />} onClick={fetchComplaints}>
-                Search
-              </Button>
-            </Space.Compact>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Input
+                  placeholder="Search complaints..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onPressEnter={fetchComplaints}
+                  prefix={<SearchOutlined />}
+                />
+              </Col>
+              <Col xs={12} md={6}>
+                <Select
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  style={{ width: '100%' }}
+                  placeholder="Status"
+                >
+                  <Select.Option value="all">All Statuses</Select.Option>
+                  <Select.Option value="new">New</Select.Option>
+                  <Select.Option value="in_progress">In Progress</Select.Option>
+                  <Select.Option value="closed">Closed</Select.Option>
+                </Select>
+              </Col>
+              <Col xs={12} md={6}>
+                <Select
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  style={{ width: '100%' }}
+                  placeholder="Type"
+                >
+                  <Select.Option value="all">All Types</Select.Option>
+                  <Select.Option value="technical">Technical</Select.Option>
+                  <Select.Option value="service">Service</Select.Option>
+                  <Select.Option value="billing">Billing</Select.Option>
+                  <Select.Option value="other">Other</Select.Option>
+                </Select>
+              </Col>
+              <Col xs={12} md={6}>
+                <Select
+                  value={priorityFilter}
+                  onChange={setPriorityFilter}
+                  style={{ width: '100%' }}
+                  placeholder="Priority"
+                >
+                  <Select.Option value="all">All Priorities</Select.Option>
+                  <Select.Option value="low">Low</Select.Option>
+                  <Select.Option value="medium">Medium</Select.Option>
+                  <Select.Option value="high">High</Select.Option>
+                  <Select.Option value="urgent">Urgent</Select.Option>
+                </Select>
+              </Col>
+              <Col xs={12} md={6}>
+                <Select
+                  value={engineerFilter}
+                  onChange={setEngineerFilter}
+                  style={{ width: '100%' }}
+                  placeholder="Engineer"
+                >
+                  <Select.Option value="all">All Engineers</Select.Option>
+                  {engineers.map(engineer => (
+                    <Select.Option key={engineer.id} value={engineer.id}>
+                      {engineer.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Col>
+              <Col xs={12} md={6}>
+                <Button type="primary" icon={<SearchOutlined />} onClick={fetchComplaints} block>
+                  Search
+                </Button>
+              </Col>
+            </Row>
           </Space>
         </Card>
 
@@ -375,7 +461,7 @@ export const ComplaintsPage: React.FC = () => {
           onSuccess={fetchComplaints}
         />
       )}
-    </EnterpriseLayout>
+    </>
   );
 };
 

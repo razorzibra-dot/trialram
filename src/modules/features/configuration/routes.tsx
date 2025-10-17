@@ -28,6 +28,14 @@ export const configurationRoutes: RouteObject[] = [
     ),
   },
   {
+    path: 'tenant-configuration',
+    element: (
+      <RouteWrapper>
+        <TenantConfigurationPage />
+      </RouteWrapper>
+    ),
+  },
+  {
     path: 'configuration-test',
     element: (
       <RouteWrapper>

@@ -68,68 +68,58 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const getMenuItems = (): MenuProps['items'] => {
     const commonItems: MenuProps['items'] = [
       {
-        key: '/dashboard',
+        key: '/tenant/dashboard',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
-        onClick: () => navigate('/dashboard'),
+        onClick: () => navigate('/tenant/dashboard'),
       },
       {
-        key: '/customers',
+        key: '/tenant/customers',
         icon: <TeamOutlined />,
         label: 'Customers',
-        onClick: () => navigate('/customers'),
+        onClick: () => navigate('/tenant/customers'),
       },
       {
-        key: '/sales',
+        key: '/tenant/sales',
         icon: <ShoppingCartOutlined />,
         label: 'Sales',
-        children: [
-          {
-            key: '/sales/opportunities',
-            label: 'Opportunities',
-            onClick: () => navigate('/sales/opportunities'),
-          },
-          {
-            key: '/sales/product-sales',
-            label: 'Product Sales',
-            onClick: () => navigate('/sales/product-sales'),
-          },
-        ],
+        onClick: () => navigate('/tenant/sales'),
       },
       {
-        key: '/contracts',
+        key: '/tenant/product-sales',
+        icon: <ShoppingCartOutlined />,
+        label: 'Product Sales',
+        onClick: () => navigate('/tenant/product-sales'),
+      },
+      {
+        key: '/tenant/contracts',
         icon: <FileTextOutlined />,
         label: 'Contracts',
-        children: [
-          {
-            key: '/contracts/list',
-            label: 'All Contracts',
-            onClick: () => navigate('/contracts'),
-          },
-          {
-            key: '/contracts/service',
-            label: 'Service Contracts',
-            onClick: () => navigate('/service-contracts'),
-          },
-        ],
+        onClick: () => navigate('/tenant/contracts'),
       },
       {
-        key: '/tickets',
+        key: '/tenant/service-contracts',
+        icon: <FileTextOutlined />,
+        label: 'Service Contracts',
+        onClick: () => navigate('/tenant/service-contracts'),
+      },
+      {
+        key: '/tenant/tickets',
         icon: <CustomerServiceOutlined />,
         label: 'Support Tickets',
-        onClick: () => navigate('/tickets'),
+        onClick: () => navigate('/tenant/tickets'),
       },
       {
-        key: '/complaints',
+        key: '/tenant/complaints',
         icon: <CustomerServiceOutlined />,
         label: 'Complaints',
-        onClick: () => navigate('/complaints'),
+        onClick: () => navigate('/tenant/complaints'),
       },
       {
-        key: '/jobworks',
+        key: '/tenant/job-works',
         icon: <ToolOutlined />,
         label: 'Job Works',
-        onClick: () => navigate('/jobworks'),
+        onClick: () => navigate('/tenant/job-works'),
       },
     ];
 
@@ -141,72 +131,72 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
         type: 'group',
       },
       {
-        key: '/masters',
+        key: '/tenant/masters',
         icon: <DatabaseOutlined />,
         label: 'Masters',
         children: [
           {
-            key: '/masters/companies',
+            key: '/tenant/masters/companies',
             label: 'Companies',
-            onClick: () => navigate('/masters/companies'),
+            onClick: () => navigate('/tenant/masters/companies'),
           },
           {
-            key: '/masters/products',
+            key: '/tenant/masters/products',
             label: 'Products',
-            onClick: () => navigate('/masters/products'),
+            onClick: () => navigate('/tenant/masters/products'),
           },
         ],
       },
       {
-        key: '/users',
+        key: '/tenant/users',
         icon: <UserOutlined />,
         label: 'User Management',
         children: [
           {
-            key: '/users/list',
+            key: '/tenant/users/list',
             label: 'Users',
-            onClick: () => navigate('/users'),
+            onClick: () => navigate('/tenant/users'),
           },
           {
-            key: '/users/roles',
+            key: '/tenant/users/roles',
             label: 'Roles',
-            onClick: () => navigate('/role-management'),
+            onClick: () => navigate('/tenant/role-management'),
           },
           {
-            key: '/users/permissions',
+            key: '/tenant/users/permissions',
             label: 'Permissions',
-            onClick: () => navigate('/permission-matrix'),
+            onClick: () => navigate('/tenant/permission-matrix'),
           },
         ],
       },
       {
-        key: '/configuration',
+        key: '/tenant/configuration',
         icon: <SettingOutlined />,
         label: 'Configuration',
         children: [
           {
-            key: '/configuration/tenant',
+            key: '/tenant/configuration/tenant',
             label: 'Tenant Settings',
-            onClick: () => navigate('/tenant-configuration'),
+            onClick: () => navigate('/tenant/tenant-configuration'),
           },
           {
-            key: '/configuration/pdf-templates',
+            key: '/tenant/configuration/pdf-templates',
             label: 'PDF Templates',
-            onClick: () => navigate('/pdf-templates'),
+            onClick: () => navigate('/tenant/pdf-templates'),
           },
         ],
       },
       {
-        key: '/notifications',
+        key: '/tenant/notifications',
         icon: <BellOutlined />,
         label: 'Notifications',
-        onClick: () => navigate('/notifications'),
+        onClick: () => navigate('/tenant/notifications'),
       },
       {
-        key: '/logs',
+        key: '/tenant/logs',
         icon: <FileTextOutlined />,
         label: 'System Logs',
-        onClick: () => navigate('/logs'),
+        onClick: () => navigate('/tenant/logs'),
       },
     ];
 

@@ -7,10 +7,10 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { moduleRegistry } from '../ModuleRegistry';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 
-// Import existing layouts (we'll keep these for now)
+// Import existing layouts
 import RootLayout from '@/components/layout/RootLayout';
 import SuperAdminLayout from '@/components/layout/SuperAdminLayout';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AppProviders from '@/components/providers/AppProviders';
 
@@ -140,13 +140,19 @@ export function createModularRouter() {
           path: "configuration",
           element: <Navigate to="/tenant/configuration" replace />,
         },
+        {
+          path: "tenant-configuration",
+          element: <Navigate to="/tenant/tenant-configuration" replace />,
+        },
         // Tenant Portal Routes
         {
           path: "tenant",
           element: (
             <ProtectedRoute>
               <AppProviders>
-                <DashboardLayout />
+                <EnterpriseLayout>
+                  <Outlet />
+                </EnterpriseLayout>
               </AppProviders>
             </ProtectedRoute>
           ),
@@ -168,7 +174,9 @@ export function createModularRouter() {
           element: (
             <ProtectedRoute>
               <AppProviders>
-                <Outlet />
+                <EnterpriseLayout>
+                  <Outlet />
+                </EnterpriseLayout>
               </AppProviders>
             </ProtectedRoute>
           ),

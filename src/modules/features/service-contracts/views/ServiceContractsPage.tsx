@@ -5,7 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import {
@@ -371,7 +370,7 @@ export const ServiceContractsPage: React.FC = () => {
 
   if (!hasPermission('manage_service_contracts')) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -380,12 +379,12 @@ export const ServiceContractsPage: React.FC = () => {
             showIcon
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Service Contracts"
         description="Manage service contracts and agreements"
@@ -567,7 +566,7 @@ export const ServiceContractsPage: React.FC = () => {
           />
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

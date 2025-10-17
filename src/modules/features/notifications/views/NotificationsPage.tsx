@@ -42,7 +42,6 @@ import {
   Info,
   XCircle
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { notificationService, Notification, NotificationPreferences } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -259,7 +258,7 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Notifications"
         description="View and manage your notifications"
@@ -628,7 +627,7 @@ export const NotificationsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

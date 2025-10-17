@@ -38,7 +38,6 @@ import {
   RiseOutlined,
   SearchOutlined
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/modules/shared/components/EnterpriseLayout';
 import { PageHeader } from '@/modules/shared/components/PageHeader';
 import { StatCard } from '@/modules/shared/components/StatCard';
 import { useProductStats, useImportProducts, useProducts, useDeleteProduct } from '../hooks/useProducts';
@@ -299,7 +298,7 @@ export const ProductsPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Products"
         description="Manage your product catalog and inventory"
@@ -504,6 +503,6 @@ export const ProductsPage: React.FC = () => {
           </div>
         )}
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };

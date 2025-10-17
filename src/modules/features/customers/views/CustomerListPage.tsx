@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { Users, TrendingUp, DollarSign } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { CustomerList } from '../components/CustomerList';
 import { Customer } from '@/types/crm';
@@ -32,7 +31,7 @@ const CustomerListPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Customers"
         description="Manage your customer relationships"
@@ -105,7 +104,7 @@ const CustomerListPage: React.FC = () => {
           />
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

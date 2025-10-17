@@ -15,7 +15,6 @@ import {
   CheckCircle,
   Calendar
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { ContractsList } from '../components/ContractsList';
 import { useContractStats, useExpiringContracts, useContractsDueForRenewal } from '../hooks/useContracts';
@@ -72,7 +71,7 @@ export const ContractsPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Contracts"
         description="Manage contracts, track renewals, and monitor compliance"
@@ -195,7 +194,7 @@ export const ContractsPage: React.FC = () => {
         {contractStats?.byType && Object.keys(contractStats.byType).length > 0 && (
           <Card
             title="Contract Types"
-            bordered={false}
+            variant="borderless"
             style={{
               marginBottom: 24,
               borderRadius: 8,
@@ -232,7 +231,7 @@ export const ContractsPage: React.FC = () => {
         {/* Contracts Tabs */}
         <Card
           title="Contract Management"
-          bordered={false}
+          variant="borderless"
           style={{
             borderRadius: 8,
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
@@ -275,6 +274,6 @@ export const ContractsPage: React.FC = () => {
           />
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };

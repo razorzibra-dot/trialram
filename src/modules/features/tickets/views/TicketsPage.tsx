@@ -15,7 +15,6 @@ import {
   Calendar
 } from 'lucide-react';
 import { Ticket } from '@/types/crm';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { TicketsList } from '../components/TicketsList';
 import { useTicketStats, useTickets } from '../hooks/useTickets';
@@ -46,7 +45,7 @@ export const TicketsPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Support Tickets"
         description="Manage customer support requests and track resolution progress"
@@ -151,6 +150,6 @@ export const TicketsPage: React.FC = () => {
 
       {/* Modals would go here */}
       {/* TODO: Add CreateTicketModal, EditTicketModal, ViewTicketModal */}
-    </EnterpriseLayout>
+    </>
   );
 };

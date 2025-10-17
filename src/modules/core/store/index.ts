@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { shallow } from 'zustand/shallow';
 
 // Store slices
 import { createAuthSlice, AuthSlice } from './slices/authSlice';
@@ -60,7 +61,7 @@ export const useAuth = () => useStore((state) => ({
   refreshToken: state.refreshToken,
   hasRole: state.hasRole,
   hasPermission: state.hasPermission,
-}));
+}), shallow);
 
 export const useUI = () => useStore((state) => ({
   theme: state.theme,
@@ -71,7 +72,7 @@ export const useUI = () => useStore((state) => ({
   toggleSidebar: state.toggleSidebar,
   setCurrentPortal: state.setCurrentPortal,
   setLoading: state.setLoading,
-}));
+}), shallow);
 
 export const useNotifications = () => useStore((state) => ({
   notifications: state.notifications,
@@ -81,7 +82,7 @@ export const useNotifications = () => useStore((state) => ({
   markAsRead: state.markAsRead,
   markAllAsRead: state.markAllAsRead,
   clearNotifications: state.clearNotifications,
-}));
+}), shallow);
 
 // Store actions for external use
 export const storeActions = {

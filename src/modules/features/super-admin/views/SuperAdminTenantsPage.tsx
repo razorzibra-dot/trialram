@@ -51,7 +51,6 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { tenantService } from '@/services/tenantService';
@@ -221,7 +220,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
 
   if (!canManageTenants) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -235,7 +234,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
             }
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
@@ -381,7 +380,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Tenant Management"
         description="Manage all tenants across the platform"
@@ -834,7 +833,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

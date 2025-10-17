@@ -38,7 +38,6 @@ import {
   CalendarOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { EnterpriseLayout } from '@/modules/core/components/EnterpriseLayout';
 import { PageHeader } from '@/modules/core/components/PageHeader';
 import { StatCard } from '@/modules/core/components/StatCard';
 import { useCustomer } from '../hooks/useCustomers';
@@ -336,17 +335,17 @@ const CustomerDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <Spin size="large" tip="Loading customer details..." />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   if (error || !customer) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <Empty
             description={
@@ -367,7 +366,7 @@ const CustomerDetailPage: React.FC = () => {
             </Button>
           </Empty>
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
@@ -683,7 +682,7 @@ const CustomerDetailPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title={customer.company_name}
         description={`Customer ID: ${customer.id} • ${customer.contact_name}`}
@@ -698,7 +697,7 @@ const CustomerDetailPage: React.FC = () => {
           size="large"
         />
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

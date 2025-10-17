@@ -45,7 +45,6 @@ import {
   MailOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -377,7 +376,7 @@ export const ServiceContractDetailPage: React.FC = () => {
   const showRenewalAlert = daysUntilRenewal <= 30 && daysUntilRenewal > 0;
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title={`Contract ${contract.contract_number}`}
         description={contract.customer_name}
@@ -658,7 +657,7 @@ export const ServiceContractDetailPage: React.FC = () => {
           </Form>
         </Modal>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

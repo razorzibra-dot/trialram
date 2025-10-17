@@ -19,6 +19,8 @@ export interface CustomerFilters {
     start: string;
     end: string;
   };
+  page?: number;
+  pageSize?: number;
 }
 
 export interface CustomerState {
@@ -82,7 +84,10 @@ const initialState = {
   tags: [],
   isLoading: false,
   error: null,
-  filters: {},
+  filters: {
+    page: 1,
+    pageSize: 20,
+  },
   pagination: {
     page: 1,
     pageSize: 20,
@@ -185,7 +190,7 @@ export const useCustomerStore = create<CustomerState>()(
 
         setFilters: (filters) => {
           set((state) => {
-            Object.assign(state.filters, filters);
+            state.filters = { ...state.filters, ...filters };
           });
         },
 

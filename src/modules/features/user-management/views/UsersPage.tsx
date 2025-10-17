@@ -29,7 +29,6 @@ import {
   UserCheck,
   UserX
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { toast } from 'sonner';
 
@@ -57,7 +56,7 @@ export const UsersPage: React.FC = () => {
 
   if (!hasPermission('manage_users')) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -66,7 +65,7 @@ export const UsersPage: React.FC = () => {
             showIcon
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
@@ -163,7 +162,7 @@ export const UsersPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="User Management"
         description="Manage users and their roles"
@@ -261,7 +260,7 @@ export const UsersPage: React.FC = () => {
           )}
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

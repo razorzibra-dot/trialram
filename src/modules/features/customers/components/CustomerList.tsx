@@ -25,14 +25,27 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   onEditCustomer,
   onViewCustomer,
 }) => {
-  const {
-    filters,
-    selectedCustomerIds,
-    setSelectedCustomerIds,
-    setFilters,
-  } = useCustomerStore();
+  // Get individual filter properties to avoid object reference issues
+  const filters = useCustomerStore((state) => state.filters);
+  const selectedCustomerIds = useCustomerStore((state) => state.selectedCustomerIds);
+  const setSelectedCustomerIds = useCustomerStore((state) => state.setSelectedCustomerIds);
+  const setFilters = useCustomerStore((state) => state.setFilters);
 
-  const { customers, pagination, isLoading, refetch } = useCustomers(filters);
+  // Memoize filters to prevent unnecessary re-renders
+  const stableFilters = useMemo(() => filters, [
+    filters.search,
+    filters.status,
+    filters.industry,
+    filters.size,
+    filters.assignedTo,
+    filters.tags?.join(','),
+    filters.dateRange?.start,
+    filters.dateRange?.end,
+    filters.page,
+    filters.pageSize,
+  ]);
+
+  const { customers, pagination, isLoading, refetch } = useCustomers(stableFilters);
   const deleteCustomer = useDeleteCustomer();
   const { bulkDelete } = useBulkCustomerOperations();
 
@@ -157,19 +170,17 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   // Handle pagination
   const handlePaginationChange = useCallback((page: number, pageSize: number) => {
     setFilters({
-      ...filters,
       page,
       pageSize
     });
-  }, [filters, setFilters]);
+  }, [setFilters]);
 
   // Handle search
   const handleSearch = useCallback((search: string) => {
-    setFilters(prevFilters => ({
-      ...prevFilters,
+    setFilters({
       search,
       page: 1 // Reset to first page
-    }));
+    });
   }, [setFilters]);
 
   // Handle selection
@@ -253,7 +264,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
           onChange: handleSelectionChange,
         }}
         search={{
-          value: filters.search || '',
+          value: stableFilters.search || '',
           placeholder: 'Search customers...',
           onChange: handleSearch,
         }}

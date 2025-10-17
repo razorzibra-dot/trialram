@@ -34,7 +34,6 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { Dayjs } from 'dayjs';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
 
 const { RangePicker } = DatePicker;
@@ -428,7 +427,7 @@ export const SuperAdminLogsPage: React.FC = () => {
   }));
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="System Audit Logs"
         description="View and analyze system-wide audit logs across all tenants"
@@ -659,7 +658,7 @@ export const SuperAdminLogsPage: React.FC = () => {
           )}
         </Modal>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

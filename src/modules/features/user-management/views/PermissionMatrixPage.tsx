@@ -34,7 +34,6 @@ import {
   InfoCircleOutlined,
   WarningOutlined
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -318,7 +317,7 @@ export const PermissionMatrixPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Permission Matrix"
         description="View and manage role-permission assignments"
@@ -518,7 +517,7 @@ export const PermissionMatrixPage: React.FC = () => {
           </Row>
         </Card>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

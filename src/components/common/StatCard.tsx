@@ -13,17 +13,17 @@ export interface StatCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon?: LucideIcon | React.ComponentType<any>;
+  icon?: LucideIcon | React.ComponentType<{ size?: number }> | React.ReactNode;
   trend?: {
     value: number;
     isPositive: boolean;
   };
   loading?: boolean;
-  color?: 'primary' | 'success' | 'warning' | 'error' | 'info';
+  color?: 'primary' | 'success' | 'warning' | 'error' | 'danger' | 'info';
   onClick?: () => void;
 }
 
-const colorMap = {
+const colorMap: Record<string, { bg: string; color: string }> = {
   primary: {
     bg: '#EFF6FF',
     color: '#1B7CED',
@@ -40,6 +40,10 @@ const colorMap = {
     bg: '#FEF2F2',
     color: '#EF4444',
   },
+  danger: {
+    bg: '#FEF2F2',
+    color: '#EF4444',
+  },
   info: {
     bg: '#EFF6FF',
     color: '#3B82F6',
@@ -50,18 +54,36 @@ export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   description,
-  icon: Icon,
+  icon,
   trend,
   loading = false,
   color = 'primary',
   onClick,
 }) => {
-  const colors = colorMap[color];
+  const colors = colorMap[color] || colorMap.primary;
+
+  // Helper function to render icon
+  const renderIcon = () => {
+    if (!icon) return null;
+
+    // If it's already a React element (JSX), render it directly
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+
+    // If it's a component, render it with size prop
+    if (typeof icon === 'function') {
+      const IconComponent = icon as React.ComponentType<{ size?: number }>;
+      return <IconComponent size={20} />;
+    }
+
+    return null;
+  };
 
   if (loading) {
     return (
       <Card
-        bordered={false}
+        variant="borderless"
         style={{
           borderRadius: 8,
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
@@ -74,7 +96,7 @@ export const StatCard: React.FC<StatCardProps> = ({
 
   return (
     <Card
-      bordered={false}
+      variant="borderless"
       hoverable={!!onClick}
       onClick={onClick}
       style={{
@@ -110,7 +132,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         >
           {title}
         </span>
-        {Icon && (
+        {icon && (
           <div
             style={{
               width: 40,
@@ -123,7 +145,7 @@ export const StatCard: React.FC<StatCardProps> = ({
               color: colors.color,
             }}
           >
-            <Icon size={20} />
+            {renderIcon()}
           </div>
         )}
       </div>

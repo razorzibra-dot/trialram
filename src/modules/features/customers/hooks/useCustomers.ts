@@ -16,19 +16,31 @@ const getCustomerService = () => inject<CustomerService>('customerService');
  * Hook for fetching customers with pagination and filtering
  */
 export function useCustomers(filters: CustomerFilters = {}) {
-  const {
-    setCustomers,
-    setPagination,
-    setLoading,
-    setError,
-    customers,
-    pagination,
-    isLoading,
-    error,
-  } = useCustomerStore();
+  const setCustomers = useCustomerStore((state) => state.setCustomers);
+  const setPagination = useCustomerStore((state) => state.setPagination);
+  const setError = useCustomerStore((state) => state.setError);
+  const customers = useCustomerStore((state) => state.customers);
+  const pagination = useCustomerStore((state) => state.pagination);
+  const isLoading = useCustomerStore((state) => state.isLoading);
+  const error = useCustomerStore((state) => state.error);
+
+  // Create a stable query key by serializing filter values
+  const queryKey = [
+    'customers',
+    filters.search,
+    filters.status,
+    filters.industry,
+    filters.size,
+    filters.assignedTo,
+    filters.tags?.join(','),
+    filters.dateRange?.start,
+    filters.dateRange?.end,
+    filters.page,
+    filters.pageSize,
+  ];
 
   const query = useQuery(
-    ['customers', filters],
+    queryKey,
     () => getCustomerService().getCustomers(filters),
     {
       onSuccess: (data) => {
@@ -60,7 +72,7 @@ export function useCustomers(filters: CustomerFilters = {}) {
  * Hook for fetching a single customer
  */
 export function useCustomer(id: string) {
-  const { setSelectedCustomer } = useCustomerStore();
+  const setSelectedCustomer = useCustomerStore((state) => state.setSelectedCustomer);
 
   return useQuery(
     ['customer', id],
@@ -79,7 +91,7 @@ export function useCustomer(id: string) {
  * Hook for creating a customer
  */
 export function useCreateCustomer() {
-  const { addCustomer } = useCustomerStore();
+  const addCustomer = useCustomerStore((state) => state.addCustomer);
   const { invalidate } = useInvalidateQueries();
 
   return useMutation(
@@ -99,7 +111,7 @@ export function useCreateCustomer() {
  * Hook for updating a customer
  */
 export function useUpdateCustomer() {
-  const { updateCustomer } = useCustomerStore();
+  const updateCustomer = useCustomerStore((state) => state.updateCustomer);
   const { invalidate } = useInvalidateQueries();
 
   return useMutation(
@@ -121,7 +133,7 @@ export function useUpdateCustomer() {
  * Hook for deleting a customer
  */
 export function useDeleteCustomer() {
-  const { removeCustomer } = useCustomerStore();
+  const removeCustomer = useCustomerStore((state) => state.removeCustomer);
   const { invalidate } = useInvalidateQueries();
 
   return useMutation(
@@ -141,7 +153,9 @@ export function useDeleteCustomer() {
  * Hook for bulk operations
  */
 export function useBulkCustomerOperations() {
-  const { bulkDeleteCustomers, bulkUpdateCustomers, clearSelection } = useCustomerStore();
+  const bulkDeleteCustomers = useCustomerStore((state) => state.bulkDeleteCustomers);
+  const bulkUpdateCustomers = useCustomerStore((state) => state.bulkUpdateCustomers);
+  const clearSelection = useCustomerStore((state) => state.clearSelection);
   const { invalidate } = useInvalidateQueries();
 
   const bulkDelete = useMutation(
@@ -181,7 +195,9 @@ export function useBulkCustomerOperations() {
  * Hook for customer tags
  */
 export function useCustomerTags() {
-  const { setTags, addTag, tags } = useCustomerStore();
+  const setTags = useCustomerStore((state) => state.setTags);
+  const addTag = useCustomerStore((state) => state.addTag);
+  const tags = useCustomerStore((state) => state.tags);
 
   const tagsQuery = useQuery(
     ['customer-tags'],

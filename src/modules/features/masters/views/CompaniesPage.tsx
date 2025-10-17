@@ -34,7 +34,6 @@ import {
   SearchOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useCompanyStats, useImportCompanies, useCompanies, useDeleteCompany } from '../hooks/useCompanies';
@@ -281,7 +280,7 @@ export const CompaniesPage: React.FC = () => {
   ];
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Companies"
         description="Manage your company master data and business relationships"
@@ -460,6 +459,6 @@ export const CompaniesPage: React.FC = () => {
           </div>
         )}
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };

@@ -43,7 +43,6 @@ import {
   CloseCircleOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
 import { ticketService } from '@/services/ticketService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -441,24 +440,24 @@ export const TicketDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <Spin size="large" />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   if (!ticket) {
     return (
-      <EnterpriseLayout>
+      <>
         <Empty description="Ticket not found" />
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title={`Ticket #${ticket.id}`}
         description={ticket.title}
@@ -669,6 +668,6 @@ export const TicketDetailPage: React.FC = () => {
           </Col>
         </Row>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };

@@ -45,7 +45,6 @@ import {
   CloseCircleOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -468,7 +467,7 @@ export const SuperAdminUsersPage: React.FC = () => {
   // Check if user is super admin
   if (!isSuperAdmin) {
     return (
-      <EnterpriseLayout>
+      <>
         <PageHeader
           title="Super Admin Users"
           description="Cross-tenant user management"
@@ -490,12 +489,12 @@ export const SuperAdminUsersPage: React.FC = () => {
             </Empty>
           </Card>
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Super Admin Users"
         description="Cross-tenant user management"
@@ -853,7 +852,7 @@ export const SuperAdminUsersPage: React.FC = () => {
           </Descriptions>
         )}
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

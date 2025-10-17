@@ -12,7 +12,6 @@ import {
   BarChart3
 } from 'lucide-react';
 import { Deal } from '@/types/crm';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { SalesList } from '../components/SalesList';
 import { useSalesStats, useDeals } from '../hooks/useSales';
@@ -80,9 +79,9 @@ export const SalesPage: React.FC = () => {
     const color = stageColors[stage] || 'default';
 
     return (
-      <Card bordered={false} loading={loading}>
+      <Card variant="borderless" loading={loading}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Badge status={color as any} text={stage.replace('_', ' ').toUpperCase()} />
+          <Badge status={color as 'default' | 'processing' | 'warning' | 'success' | 'error'} text={stage.replace('_', ' ').toUpperCase()} />
           <span style={{ fontWeight: 500 }}>{count}</span>
         </div>
         <div style={{ fontSize: 18, fontWeight: 600 }}>{formatCurrency(value)}</div>
@@ -91,7 +90,7 @@ export const SalesPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Sales Dashboard"
         description="Track your sales performance and manage your pipeline"
@@ -172,7 +171,7 @@ export const SalesPage: React.FC = () => {
         )}
 
         {/* Deals List */}
-        <Card bordered={false}>
+        <Card variant="borderless">
           <SalesList
             onCreateDeal={handleCreateDeal}
             onEditDeal={handleEditDeal}
@@ -183,6 +182,6 @@ export const SalesPage: React.FC = () => {
         {/* Modals would go here */}
         {/* TODO: Add CreateDealModal, EditDealModal, ViewDealModal */}
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };

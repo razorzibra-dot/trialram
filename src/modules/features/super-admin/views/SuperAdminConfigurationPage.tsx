@@ -30,7 +30,6 @@ import {
   LockOutlined,
   CloudOutlined,
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader } from '@/components/common';
 
 const { TextArea } = Input;
@@ -239,7 +238,7 @@ export const SuperAdminConfigurationPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Platform Configuration"
         description="Configure platform-wide settings and integrations"
@@ -768,7 +767,7 @@ export const SuperAdminConfigurationPage: React.FC = () => {
           </Space>
         </Form>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

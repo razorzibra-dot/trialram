@@ -36,7 +36,6 @@ import {
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { EnterpriseLayout } from '@/modules/core/components/EnterpriseLayout';
 import { PageHeader } from '@/modules/core/components/PageHeader';
 import { useCustomer } from '../hooks/useCustomers';
 import type { CreateCustomerData } from '../services/customerService';
@@ -168,17 +167,17 @@ const CustomerEditPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <Spin size="large" tip="Loading customer data..." />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   if (error || !customer) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
           <Empty
             description={
@@ -199,7 +198,7 @@ const CustomerEditPage: React.FC = () => {
             </Button>
           </Empty>
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
@@ -227,7 +226,7 @@ const CustomerEditPage: React.FC = () => {
   );
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Edit Customer"
         description={`Editing: ${customer.company_name} (ID: ${customer.id})`}
@@ -603,7 +602,7 @@ const CustomerEditPage: React.FC = () => {
           </Col>
         </Row>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

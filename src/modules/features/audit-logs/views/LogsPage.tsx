@@ -34,7 +34,6 @@ import {
   User,
   AlertCircle
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { auditService, AuditLog } from '@/services/auditService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -229,7 +228,7 @@ export const LogsPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Audit Logs"
         description="View system audit logs and user activity"
@@ -489,7 +488,7 @@ export const LogsPage: React.FC = () => {
           </Space>
         )}
       </Modal>
-    </EnterpriseLayout>
+    </>
   );
 };
 

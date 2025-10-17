@@ -13,7 +13,6 @@ import {
   CheckCircle,
   DollarSign
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { JobWorksList } from '../components/JobWorksList';
 import { useJobWorkStats, useJobWorks } from '../hooks/useJobWorks';
@@ -52,7 +51,7 @@ export const JobWorksPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Job Works"
         description="Manage and track job work assignments and progress"
@@ -157,6 +156,6 @@ export const JobWorksPage: React.FC = () => {
 
       {/* Modals would go here */}
       {/* TODO: Add CreateJobWorkModal, EditJobWorkModal, ViewJobWorkModal */}
-    </EnterpriseLayout>
+    </>
   );
 };

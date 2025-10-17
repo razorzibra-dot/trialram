@@ -19,7 +19,6 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { toast } from 'sonner';
 
@@ -61,7 +60,7 @@ export const SuperAdminDashboardPage: React.FC = () => {
 
   if (!hasPermission('super_admin')) {
     return (
-      <EnterpriseLayout>
+      <>
         <div style={{ padding: 24 }}>
           <Alert
             message="Access Denied"
@@ -70,12 +69,12 @@ export const SuperAdminDashboardPage: React.FC = () => {
             showIcon
           />
         </div>
-      </EnterpriseLayout>
+      </>
     );
   }
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Super Admin Dashboard"
         description="System overview and administration"
@@ -232,7 +231,7 @@ export const SuperAdminDashboardPage: React.FC = () => {
           </Col>
         </Row>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };
 

@@ -20,7 +20,6 @@ import {
   Activity, 
   Target
 } from 'lucide-react';
-import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import { PageHeader, StatCard } from '@/components/common';
 import { 
   RecentActivityWidget, 
@@ -50,7 +49,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <EnterpriseLayout>
+    <>
       <PageHeader
         title="Dashboard"
         description="Welcome back! Here's what's happening with your business today."
@@ -138,7 +137,7 @@ export const DashboardPage: React.FC = () => {
           <Col xs={24} lg={12}>
             <Card
               title="Support Tickets Overview"
-              bordered={false}
+              variant="borderless"
               loading={ticketStatsLoading}
               style={{
                 borderRadius: 8,
@@ -182,7 +181,7 @@ export const DashboardPage: React.FC = () => {
           <Col xs={24} lg={12}>
             <Card
               title="Sales Pipeline"
-              bordered={false}
+              variant="borderless"
               style={{
                 borderRadius: 8,
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
@@ -226,7 +225,7 @@ export const DashboardPage: React.FC = () => {
           <Col xs={24}>
             <Card 
               title="Quick Actions" 
-              bordered={false}
+              variant="borderless"
               style={{
                 borderRadius: 8,
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
@@ -286,6 +285,6 @@ export const DashboardPage: React.FC = () => {
           </Col>
         </Row>
       </div>
-    </EnterpriseLayout>
+    </>
   );
 };

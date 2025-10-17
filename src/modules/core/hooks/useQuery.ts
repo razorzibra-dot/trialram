@@ -13,7 +13,8 @@ import {
   UseMutationOptions,
   MutationFunction,
 } from '@tanstack/react-query';
-import { useNotifications } from '../store';
+import { useEffect, useRef } from 'react';
+import { useStore } from '../store';
 
 // Enhanced query hook with error handling and notifications
 export function useQuery<
@@ -29,7 +30,8 @@ export function useQuery<
     errorMessage?: string;
   }
 ) {
-  const { addNotification } = useNotifications();
+  const addNotification = useStore((state) => state.addNotification);
+  const lastErrorRef = useRef<unknown>(null);
   
   const result = useReactQuery({
     queryKey,
@@ -37,14 +39,17 @@ export function useQuery<
     ...options,
   });
 
-  // Handle errors manually since onError is deprecated
-  if (result.error && options?.showErrorNotification !== false) {
-    addNotification({
-      type: 'error',
-      title: 'Error',
-      message: options?.errorMessage || (result.error as Error)?.message || 'An error occurred',
-    });
-  }
+  // Handle errors in an effect to avoid infinite loops
+  useEffect(() => {
+    if (result.error && result.error !== lastErrorRef.current && options?.showErrorNotification !== false) {
+      lastErrorRef.current = result.error;
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: options?.errorMessage || (result.error as Error)?.message || 'An error occurred',
+      });
+    }
+  }, [result.error, options?.showErrorNotification, options?.errorMessage, addNotification]);
 
   return result;
 }
@@ -64,7 +69,7 @@ export function useMutation<
     errorMessage?: string;
   }
 ) {
-  const { addNotification } = useNotifications();
+  const addNotification = useStore((state) => state.addNotification);
   
   return useReactMutation({
     mutationFn,
@@ -110,7 +115,7 @@ export function useOptimisticMutation<
   }
 ) {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const addNotification = useStore((state) => state.addNotification);
   
   return useReactMutation({
     mutationFn,
@@ -174,7 +179,7 @@ export function useInfiniteQuery<
   queryFn: QueryFunction<TQueryFnData, TQueryKey>,
   options?: any
 ) {
-  const { addNotification } = useNotifications();
+  const addNotification = useStore((state) => state.addNotification);
   
   return useReactQuery({
     queryKey,

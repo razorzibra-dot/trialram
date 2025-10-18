@@ -1,38 +1,78 @@
 /**
- * Service Index
- * Central export point for all services with automatic mock/real API switching
+ * Service Index - Central Service Layer Hub
+ * 
+ * PHASE 4: UNIFIED MULTI-BACKEND SERVICE LAYER
+ * ============================================
  * 
  * ARCHITECTURE:
- * ============
- * This file provides a unified interface for all services in the application.
- * It automatically switches between mock/static data and real .NET Core backend API
- * based on the VITE_USE_MOCK_API environment variable.
+ * =============
+ * This file provides a unified interface for all services in the application
+ * with seamless switching between THREE backend systems:
+ * 
+ * 1. MOCK/STATIC DATA (src/services/*Service.ts)
+ *    - Development and testing with static data
+ *    - Set: VITE_API_MODE=mock or VITE_USE_MOCK_API=true
+ * 
+ * 2. REAL .NET CORE BACKEND (src/services/real/*Service.ts)
+ *    - Production API backend
+ *    - Set: VITE_API_MODE=real or VITE_USE_MOCK_API=false
+ *    - Requires: dotnet backend running at VITE_API_BASE_URL
+ * 
+ * 3. SUPABASE POSTGRESQL (src/services/supabase/*Service.ts - Phase 3)
+ *    - Modern PostgreSQL with real-time capabilities
+ *    - Multi-tenant with Row-Level Security
+ *    - Set: VITE_API_MODE=supabase
+ *    - Requires: Supabase local/cloud setup
+ * 
+ * SWITCHING BACKENDS:
+ * ===================
+ * 1. GLOBAL MODE - All services use same backend:
+ *    Set in .env: VITE_API_MODE=mock|real|supabase
+ * 
+ * 2. PER-SERVICE OVERRIDE - Mix backends as needed:
+ *    Set in .env: 
+ *      VITE_API_MODE=real
+ *      VITE_CUSTOMER_BACKEND=supabase  # Use Supabase for customers only
+ *      VITE_SALES_BACKEND=supabase     # Use Supabase for sales only
+ * 
+ * BACKWARD COMPATIBILITY:
+ * ======================
+ * Legacy VITE_USE_MOCK_API=true|false still works
+ * But VITE_API_MODE takes precedence if set
  * 
  * USAGE:
  * ======
- * Always import services from this file:
- *   import { customerService, authService, salesService } from '@/services';
+ * Always import from this file:
+ *   import { customerService, salesService, ticketService } from '@/services';
  * 
- * SWITCHING BETWEEN MOCK AND REAL API:
- * ====================================
- * 1. Open .env file in the root directory
- * 2. Set VITE_USE_MOCK_API=true for static/mock data
- * 3. Set VITE_USE_MOCK_API=false for .NET Core backend API
- * 4. Restart the development server (npm run dev)
+ * Or use Phase 4 custom hooks (recommended):
+ *   import { useSupabaseCustomers, useSupabaseSales } from '@/hooks';
  * 
- * CONSISTENCY RULES:
- * ==================
- * - All mock services must implement the same interface as real services
- * - All real services must extend IService interfaces from api/apiServiceFactory
- * - Data mapping between backend and frontend models is handled in this file
- * - All new services MUST be added to both mock and real implementations
+ * HOW IT WORKS:
+ * =============
+ * 1. src/config/apiConfig.ts determines current mode: getApiMode()
+ * 2. src/services/api/apiServiceFactory.ts routes requests to correct backend
+ * 3. Services are automatically selected based on configuration
+ * 4. Data transformations handled here for consistency
  * 
  * SERVICE STRUCTURE:
  * ==================
- * - Mock Services: src/services/*Service.ts (e.g., customerService.ts)
- * - Real Services: src/services/real/*Service.ts (e.g., real/customerService.ts)
- * - Service Interfaces: src/services/api/apiServiceFactory.ts
- * - API Configuration: src/config/apiConfig.ts
+ * ├── Mock Services: src/services/*Service.ts
+ * ├── Real Services: src/services/real/*Service.ts
+ * ├── Supabase Services: src/services/supabase/*Service.ts (Phase 3)
+ * ├── Interfaces: src/services/api/apiServiceFactory.ts
+ * ├── Configuration: src/config/apiConfig.ts
+ * └── Custom Hooks: src/hooks/useSupabase*.ts (Phase 4)
+ * 
+ * PHASE 4 FEATURES:
+ * =================
+ * ✅ Seamless backend switching without code changes
+ * ✅ Per-service backend override capability
+ * ✅ Custom React hooks for component integration
+ * ✅ Real-time data synchronization (Supabase)
+ * ✅ Backward compatible with existing code
+ * ✅ Type-safe service interfaces
+ * ✅ Automatic environment detection and logging
  */
 
 import { 
@@ -70,8 +110,17 @@ import apiConfig from '@/config/apiConfig';
 // Type alias for UI user representation
 type UiUser = User;
 
-// Export service instances
-export const authService = getAuthService();
+// Export service instances - lazy load to avoid initialization issues
+export const authService = {
+  login: (credentials: Record<string, unknown>) => getAuthService().login(credentials),
+  logout: () => getAuthService().logout(),
+  getCurrentUser: () => getAuthService().getCurrentUser(),
+  getToken: () => getAuthService().getToken(),
+  isAuthenticated: () => getAuthService().isAuthenticated(),
+  hasRole: (role: string) => getAuthService().hasRole(role),
+  hasPermission: (permission: string) => getAuthService().hasPermission(permission),
+  refreshToken: () => getAuthService().refreshToken(),
+} as unknown as ReturnType<typeof getAuthService>;
 
 // Enhanced mappers: Real -> unified UI shapes
 const mapCustomer = (c: CustomerResponse): Customer => {
@@ -424,9 +473,28 @@ export const userService = {
     ];
   }
 };
-export const dashboardService = getDashboardService();
-export const fileService = getFileService();
-export const auditService = getAuditService();
+// Lazy load dashboard service
+export const dashboardService = {
+  getMetrics: () => getDashboardService().getMetrics(),
+  getAnalytics: (period?: string) => getDashboardService().getAnalytics(period),
+  getRecentActivity: () => getDashboardService().getRecentActivity(),
+  getWidgetData: (widgetType: string) => getDashboardService().getWidgetData(widgetType),
+} as unknown as ReturnType<typeof getDashboardService>;
+
+// Lazy load file service
+export const fileService = {
+  uploadFile: (file: File, options?: Record<string, unknown>) => getFileService().uploadFile(file, options),
+  downloadFile: (id: string) => getFileService().downloadFile(id),
+  deleteFile: (id: string) => getFileService().deleteFile(id),
+  getFileMetadata: (id: string) => getFileService().getFileMetadata(id),
+} as unknown as ReturnType<typeof getFileService>;
+
+// Lazy load audit service
+export const auditService = {
+  getAuditLogs: (filters?: Record<string, unknown>) => getAuditService().getAuditLogs(filters),
+  exportAuditLogs: (filters?: Record<string, unknown>) => getAuditService().exportAuditLogs(filters),
+  searchAuditLogs: (query: string) => getAuditService().searchAuditLogs(query),
+} as unknown as ReturnType<typeof getAuditService>;
 
 // Import and export productService
 import { productService as _productService } from './productService';

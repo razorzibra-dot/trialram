@@ -1,0 +1,108 @@
+# Local Supabase Development Environment
+# Run with: docker-compose -f docker-compose.local.yml up -d
+# 
+# This sets up a complete local Supabase instance with:
+# - PostgreSQL (port 5432)
+# - Supabase API (port 54321)
+# - Supabase Studio (port 54323)
+# - Email testing (port 54324)
+#
+# Note: If you have the Supabase CLI installed, use `supabase start` instead
+#       This docker-compose file is for reference or alternative setup
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: supabase_postgres
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: '-c shared_preload_libraries=pg_stat_statements'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - supabase-network
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-d', 'postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Supabase REST API
+  supabase-api:
+    image: supabase/postgres-meta:v0.75.0
+    container_name: supabase_api
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: postgres
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: postgres
+    ports:
+      - '54321:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - supabase-network
+    restart: unless-stopped
+
+  # Supabase Studio (Web UI)
+  supabase-studio:
+    image: supabase/studio:20240101-ff8f4b4
+    container_name: supabase_studio
+    environment:
+      SUPABASE_URL: http://supabase-api:8080
+      SUPABASE_PUBLIC_URL: http://localhost:54321
+      POSTGRES_PASSWORD: postgres
+      LOGFLARE_APIKEY: fake-key
+      LOGFLARE_URL: http://inbucket:9000
+      NEXT_PUBLIC_ENABLE_LOGS: 'true'
+    ports:
+      - '54323:3000'
+    depends_on:
+      - supabase-api
+    networks:
+      - supabase-network
+    restart: unless-stopped
+
+  # Inbucket (Email testing)
+  inbucket:
+    image: inbucket/inbucket:3.0.0
+    container_name: supabase_inbucket
+    ports:
+      - '54324:9000'
+      - '2500:2500'
+    environment:
+      INBUCKET_MAILBOX_RETENTION: 1440
+    networks:
+      - supabase-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  supabase-network:
+    driver: bridge
+
+# Quick reference:
+# ================
+# Start:  docker-compose -f docker-compose.local.yml up -d
+# Stop:   docker-compose -f docker-compose.local.yml down
+# Logs:   docker-compose -f docker-compose.local.yml logs -f
+# Reset:  docker-compose -f docker-compose.local.yml down -v && docker-compose -f docker-compose.local.yml up -d
+#
+# Access:
+# - PostgreSQL: localhost:5432 (user: postgres, password: postgres)
+# - API:        http://localhost:54321
+# - Studio:     http://localhost:54323
+# - Inbucket:   http://localhost:54324

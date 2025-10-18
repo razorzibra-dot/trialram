@@ -100,6 +100,20 @@ export const useWidgetData = (widgetType: string) => {
 };
 
 /**
+ * Hook for fetching sales pipeline
+ */
+export const useSalesPipeline = () => {
+  const dashboardService = useService<DashboardService>('dashboardService');
+
+  return useQuery({
+    queryKey: [...dashboardKeys.all, 'salesPipeline'],
+    queryFn: () => dashboardService.getSalesPipeline(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+/**
  * Hook for fetching performance metrics
  */
 export const usePerformanceMetrics = () => {

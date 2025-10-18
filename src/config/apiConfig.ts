@@ -1,12 +1,29 @@
 /**
  * Enterprise API Configuration
- * Centralized configuration for switching between mock and real APIs
+ * Centralized configuration for switching between mock, real, and Supabase APIs
+ * 
+ * MULTI-BACKEND SUPPORT:
+ * =====================
+ * 1. VITE_API_MODE=mock      → Mock/Static Data (development/testing)
+ * 2. VITE_API_MODE=real      → .NET Core Backend API (production)
+ * 3. VITE_API_MODE=supabase  → Supabase PostgreSQL (modern production)
+ * 
+ * BACKWARD COMPATIBILITY:
+ * - VITE_USE_MOCK_API=true/false still works (legacy)
+ * - VITE_API_MODE takes precedence if set
+ * 
+ * PER-SERVICE OVERRIDES:
+ * - VITE_CUSTOMER_BACKEND=mock|real|supabase
+ * - VITE_SALES_BACKEND=mock|real|supabase
+ * - etc...
  * 
  * USAGE:
- * - Set VITE_USE_MOCK_API=true in .env to use static/mock data
- * - Set VITE_USE_MOCK_API=false in .env to use .NET Core backend API
- * - All services will automatically switch based on this configuration
+ * - Set VITE_API_MODE in .env to switch globally
+ * - Use VITE_*_BACKEND for per-service overrides
+ * - Restart development server after changing
  */
+
+export type ApiMode = 'mock' | 'real' | 'supabase';
 
 export interface ApiEnvironment {
   name: string;
@@ -210,10 +227,54 @@ export function getApiConfig(): ApiEnvironment {
 }
 
 /**
- * Check if using mock API
+ * Get current API mode with multi-backend support
+ * Priority: VITE_API_MODE > VITE_USE_MOCK_API
+ */
+export function getApiMode(): ApiMode {
+  // Check new VITE_API_MODE first (takes precedence)
+  const apiMode = (import.meta.env.VITE_API_MODE as string | undefined)?.toLowerCase();
+  if (apiMode && ['mock', 'real', 'supabase'].includes(apiMode)) {
+    return apiMode as ApiMode;
+  }
+
+  // Fall back to legacy VITE_USE_MOCK_API for backward compatibility
+  const useMockApi = import.meta.env.VITE_USE_MOCK_API === 'true';
+  return useMockApi ? 'mock' : 'real';
+}
+
+/**
+ * Check if using mock API (legacy - use getApiMode() instead)
  */
 export function isUsingMockApi(): boolean {
-  return import.meta.env.VITE_USE_MOCK_API === 'true';
+  return getApiMode() === 'mock';
+}
+
+/**
+ * Check if using Supabase API
+ */
+export function isUsingSupabaseApi(): boolean {
+  return getApiMode() === 'supabase';
+}
+
+/**
+ * Check if using real .NET Core API
+ */
+export function isUsingRealApi(): boolean {
+  return getApiMode() === 'real';
+}
+
+/**
+ * Get per-service backend override (or global if not set)
+ */
+export function getServiceBackend(serviceType: string): ApiMode {
+  const overrideKey = `VITE_${serviceType.toUpperCase()}_BACKEND`;
+  const override = (import.meta.env as Record<string, string>)[overrideKey]?.toLowerCase();
+  
+  if (override && ['mock', 'real', 'supabase'].includes(override)) {
+    return override as ApiMode;
+  }
+  
+  return getApiMode();
 }
 
 /**
@@ -260,14 +321,19 @@ export const apiConfig = {
  * Log current API mode on initialization
  */
 if (typeof window !== 'undefined') {
-  const mode = isUsingMockApi() ? 'MOCK/STATIC DATA' : 'REAL .NET CORE BACKEND';
+  const apiMode = getApiMode();
+  const modeLabel = {
+    'mock': '🎭 MOCK/STATIC DATA',
+    'real': '🔌 REAL .NET CORE BACKEND',
+    'supabase': '🗄️ SUPABASE POSTGRESQL'
+  }[apiMode];
   const baseUrl = getApiConfig().baseUrl;
   
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║              CRM API CONFIGURATION                         ║
+║              CRM API CONFIGURATION - PHASE 4               ║
 ╠════════════════════════════════════════════════════════════╣
-║  Mode: ${mode.padEnd(48)} ║
+║  Mode: ${(modeLabel || '').padEnd(48)} ║
 ║  Base URL: ${baseUrl.padEnd(44)} ║
 ║  Environment: ${(import.meta.env.VITE_API_ENVIRONMENT || 'development').padEnd(41)} ║
 ╚════════════════════════════════════════════════════════════╝

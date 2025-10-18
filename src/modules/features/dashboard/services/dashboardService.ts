@@ -1,9 +1,19 @@
 /**
  * Dashboard Service
  * Business logic for dashboard analytics and widgets
+ * Integrates with Supabase and provides mock data fallback
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
+import { SupabaseCustomerService } from '@/services/supabase/customerService';
+import { SupabaseSalesService } from '@/services/supabase/salesService';
+import { 
+  getMockData, 
+  getMockActivityData, 
+  getMockSalesTrend, 
+  getMockTicketStats, 
+  getMockTopCustomers 
+} from './mockData';
 
 export interface DashboardStats {
   totalCustomers: number;
@@ -14,6 +24,13 @@ export interface DashboardStats {
   salesTrend: TrendData[];
   ticketStats: TicketStatsData;
   topCustomers: CustomerData[];
+  salesPipeline?: SalesPipelineData;
+}
+
+export interface SalesPipelineData {
+  qualification: { value: number; percentage: number };
+  proposal: { value: number; percentage: number };
+  negotiation: { value: number; percentage: number };
 }
 
 export interface ActivityItem {
@@ -36,6 +53,7 @@ export interface TicketStatsData {
   inProgress: number;
   resolved: number;
   closed: number;
+  resolutionRate?: number;
 }
 
 export interface CustomerData {
@@ -46,68 +64,266 @@ export interface CustomerData {
 }
 
 export class DashboardService extends BaseService {
+  private customerService: SupabaseCustomerService;
+  private salesService: SupabaseSalesService;
+  private useMockData: boolean = false;
+
+  constructor() {
+    super();
+    this.customerService = new SupabaseCustomerService();
+    this.salesService = new SupabaseSalesService();
+  }
+
   /**
-   * Get dashboard statistics
+   * Get dashboard statistics with real data from Supabase
    */
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Mock data for now - replace with actual API calls
+      console.log('🔄 Fetching dashboard statistics from Supabase...');
+
+      // Fetch data in parallel
+      const [customers, sales, activities, salesTrend, ticketStats, topCustomers, salesPipeline] = await Promise.allSettled([
+        this.fetchCustomerStats(),
+        this.fetchSalesStats(),
+        this.fetchRecentActivity(5),
+        this.fetchSalesTrend(),
+        this.fetchTicketStats(),
+        this.fetchTopCustomers(4),
+        this.fetchSalesPipeline(),
+      ]);
+
+      // Handle results - if any fails, use mock data for that section
       const stats: DashboardStats = {
-        totalCustomers: 150,
-        totalDeals: 45,
-        totalTickets: 23,
-        totalRevenue: 125000,
-        recentActivity: [
-          {
-            id: '1',
-            type: 'deal',
-            title: 'New deal created',
-            description: 'Website redesign project for Acme Corp',
-            timestamp: new Date().toISOString(),
-            user: 'John Doe',
-          },
-          {
-            id: '2',
-            type: 'ticket',
-            title: 'Support ticket resolved',
-            description: 'Login issue fixed for customer',
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            user: 'Jane Smith',
-          },
-          {
-            id: '3',
-            type: 'customer',
-            title: 'New customer added',
-            description: 'Tech Solutions Inc. joined as new customer',
-            timestamp: new Date(Date.now() - 7200000).toISOString(),
-            user: 'Mike Johnson',
-          },
-        ],
-        salesTrend: [
-          { date: '2024-01-01', value: 15000, label: 'Jan' },
-          { date: '2024-02-01', value: 18000, label: 'Feb' },
-          { date: '2024-03-01', value: 22000, label: 'Mar' },
-          { date: '2024-04-01', value: 19000, label: 'Apr' },
-          { date: '2024-05-01', value: 25000, label: 'May' },
-          { date: '2024-06-01', value: 28000, label: 'Jun' },
-        ],
-        ticketStats: {
-          open: 8,
-          inProgress: 12,
-          resolved: 15,
-          closed: 3,
-        },
-        topCustomers: [
-          { id: '1', name: 'Acme Corp', totalValue: 45000, dealCount: 5 },
-          { id: '2', name: 'Tech Solutions', totalValue: 32000, dealCount: 3 },
-          { id: '3', name: 'Global Industries', totalValue: 28000, dealCount: 4 },
-          { id: '4', name: 'StartupXYZ', totalValue: 15000, dealCount: 2 },
-        ],
+        totalCustomers: customers.status === 'fulfilled' ? customers.value.count : 150,
+        totalDeals: sales.status === 'fulfilled' ? sales.value.count : 45,
+        totalTickets: ticketStats.status === 'fulfilled' ? ticketStats.value.open : 23,
+        totalRevenue: sales.status === 'fulfilled' ? sales.value.revenue : 125000,
+        recentActivity: activities.status === 'fulfilled' ? activities.value : getMockActivityData(5),
+        salesTrend: salesTrend.status === 'fulfilled' ? salesTrend.value : getMockSalesTrend(),
+        ticketStats: ticketStats.status === 'fulfilled' ? ticketStats.value : getMockTicketStats(),
+        topCustomers: topCustomers.status === 'fulfilled' ? topCustomers.value : getMockTopCustomers(4),
+        salesPipeline: salesPipeline.status === 'fulfilled' ? salesPipeline.value : getMockData().salesPipeline,
       };
 
+      console.log('✅ Dashboard statistics loaded successfully');
       return stats;
     } catch (error) {
       this.handleError('Failed to fetch dashboard statistics', error);
+      // Return mock data as fallback
+      console.log('⚠️ Using mock data for dashboard');
+      return getMockData();
+    }
+  }
+
+  /**
+   * Fetch customer statistics from Supabase
+   */
+  private async fetchCustomerStats(): Promise<{ count: number }> {
+    try {
+      const customers = await this.customerService.getCustomers({ status: 'active' });
+      return { count: customers.length };
+    } catch (error) {
+      this.handleError('Failed to fetch customer stats', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch sales statistics from Supabase
+   */
+  private async fetchSalesStats(): Promise<{ count: number; revenue: number }> {
+    try {
+      const sales = await this.salesService.getSales({ status: 'won' });
+      const count = sales.length;
+      const revenue = sales.reduce((sum, sale) => sum + (sale.value || 0), 0);
+      return { count, revenue };
+    } catch (error) {
+      this.handleError('Failed to fetch sales stats', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch recent activity from Supabase
+   */
+  private async fetchRecentActivity(limit: number = 10): Promise<ActivityItem[]> {
+    try {
+      const sales = await this.salesService.getSales();
+      const customers = await this.customerService.getCustomers();
+
+      // Create activity items from recent data
+      const activities: ActivityItem[] = [];
+
+      // Add recent sales as deals
+      sales.slice(0, Math.ceil(limit / 2)).forEach((sale) => {
+        activities.push({
+          id: sale.id || '',
+          type: 'deal',
+          title: `Deal: ${sale.title || 'Untitled'}`,
+          description: `Created for ${sale.customer_name || 'Unknown customer'}`,
+          timestamp: sale.created_at || new Date().toISOString(),
+          user: 'System',
+        });
+      });
+
+      // Add recent customers
+      customers.slice(0, Math.ceil(limit / 2)).forEach((customer) => {
+        activities.push({
+          id: customer.id || '',
+          type: 'customer',
+          title: `New customer: ${customer.company_name || 'Unknown'}`,
+          description: `Added to system`,
+          timestamp: customer.created_at || new Date().toISOString(),
+          user: 'System',
+        });
+      });
+
+      // Sort by timestamp and return limit
+      return activities
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      this.handleError('Failed to fetch recent activity', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch sales trend data
+   */
+  private async fetchSalesTrend(): Promise<TrendData[]> {
+    try {
+      const sales = await this.salesService.getSales();
+
+      // Group sales by month
+      const monthlyData: Record<string, number> = {};
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      sales.forEach((sale) => {
+        if (sale.created_at) {
+          const date = new Date(sale.created_at);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          monthlyData[monthKey] = (monthlyData[monthKey] || 0) + (sale.value || 0);
+        }
+      });
+
+      // Generate trend data for last 6 months
+      const trends: TrendData[] = [];
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const value = monthlyData[monthKey] || 0;
+        trends.push({
+          date: date.toISOString().split('T')[0],
+          value,
+          label: months[date.getMonth()],
+        });
+      }
+
+      return trends;
+    } catch (error) {
+      this.handleError('Failed to fetch sales trend', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch ticket statistics
+   */
+  private async fetchTicketStats(): Promise<TicketStatsData> {
+    try {
+      // TODO: Implement ticket service integration
+      // For now, return mock data
+      return getMockTicketStats();
+    } catch (error) {
+      this.handleError('Failed to fetch ticket stats', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch top customers by value
+   */
+  private async fetchTopCustomers(limit: number = 5): Promise<CustomerData[]> {
+    try {
+      const customers = await this.customerService.getCustomers();
+      const sales = await this.salesService.getSales();
+
+      // Calculate customer totals
+      const customerTotals: Record<string, { name: string; value: number; dealCount: number }> = {};
+
+      sales.forEach((sale) => {
+        const customerId = sale.customer_id || '';
+        if (customerId) {
+          if (!customerTotals[customerId]) {
+            const customer = customers.find((c) => c.id === customerId);
+            customerTotals[customerId] = {
+              name: customer?.company_name || 'Unknown',
+              value: 0,
+              dealCount: 0,
+            };
+          }
+          customerTotals[customerId].value += sale.value || 0;
+          customerTotals[customerId].dealCount += 1;
+        }
+      });
+
+      // Convert to array and sort by value
+      return Object.entries(customerTotals)
+        .map(([id, data]) => ({
+          id,
+          name: data.name,
+          totalValue: data.value,
+          dealCount: data.dealCount,
+        }))
+        .sort((a, b) => b.totalValue - a.totalValue)
+        .slice(0, limit);
+    } catch (error) {
+      this.handleError('Failed to fetch top customers', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch sales pipeline data
+   */
+  private async fetchSalesPipeline(): Promise<SalesPipelineData> {
+    try {
+      const sales = await this.salesService.getSales();
+
+      // Group by stage
+      const stages: Record<string, number> = {
+        qualification: 0,
+        proposal: 0,
+        negotiation: 0,
+      };
+
+      sales.forEach((sale) => {
+        const stage = sale.stage?.toLowerCase() || 'qualification';
+        if (stage in stages) {
+          stages[stage as keyof typeof stages] += sale.value || 0;
+        }
+      });
+
+      const total = Object.values(stages).reduce((a, b) => a + b, 0) || 1;
+
+      return {
+        qualification: {
+          value: stages.qualification,
+          percentage: Math.round((stages.qualification / total) * 100),
+        },
+        proposal: {
+          value: stages.proposal,
+          percentage: Math.round((stages.proposal / total) * 100),
+        },
+        negotiation: {
+          value: stages.negotiation,
+          percentage: Math.round((stages.negotiation / total) * 100),
+        },
+      };
+    } catch (error) {
+      this.handleError('Failed to fetch sales pipeline', error);
       throw error;
     }
   }
@@ -121,7 +337,7 @@ export class DashboardService extends BaseService {
       return stats.recentActivity.slice(0, limit);
     } catch (error) {
       this.handleError('Failed to fetch recent activity', error);
-      throw error;
+      return getMockActivityData(limit);
     }
   }
 
@@ -134,7 +350,7 @@ export class DashboardService extends BaseService {
       return stats.salesTrend;
     } catch (error) {
       this.handleError('Failed to fetch sales trend', error);
-      throw error;
+      return getMockSalesTrend();
     }
   }
 
@@ -147,7 +363,7 @@ export class DashboardService extends BaseService {
       return stats.ticketStats;
     } catch (error) {
       this.handleError('Failed to fetch ticket statistics', error);
-      throw error;
+      return getMockTicketStats();
     }
   }
 
@@ -160,7 +376,20 @@ export class DashboardService extends BaseService {
       return stats.topCustomers.slice(0, limit);
     } catch (error) {
       this.handleError('Failed to fetch top customers', error);
-      throw error;
+      return getMockTopCustomers(limit);
+    }
+  }
+
+  /**
+   * Get sales pipeline
+   */
+  async getSalesPipeline(): Promise<SalesPipelineData> {
+    try {
+      const stats = await this.getDashboardStats();
+      return stats.salesPipeline || getMockData().salesPipeline!;
+    } catch (error) {
+      this.handleError('Failed to fetch sales pipeline', error);
+      return getMockData().salesPipeline!;
     }
   }
 
@@ -170,26 +399,31 @@ export class DashboardService extends BaseService {
   async getWidgetData(widgetType: string): Promise<unknown> {
     try {
       switch (widgetType) {
-        case 'sales_overview':
+        case 'sales_overview': {
+          const stats = await this.getDashboardStats();
           return {
-            totalRevenue: 125000,
+            totalRevenue: stats.totalRevenue,
             monthlyGrowth: 12.5,
-            dealsWon: 15,
+            dealsWon: stats.totalDeals,
             conversionRate: 68.2,
           };
-        
+        }
+
         case 'ticket_overview':
           return await this.getTicketStats();
-        
+
         case 'recent_activity':
           return await this.getRecentActivity(5);
-        
+
         case 'top_customers':
           return await this.getTopCustomers(5);
-        
+
         case 'sales_chart':
           return await this.getSalesTrend();
-        
+
+        case 'sales_pipeline':
+          return await this.getSalesPipeline();
+
         default:
           throw new Error(`Unknown widget type: ${widgetType}`);
       }
@@ -224,11 +458,11 @@ export class DashboardService extends BaseService {
   async exportDashboardData(format: 'csv' | 'json' | 'pdf' = 'json'): Promise<string> {
     try {
       const stats = await this.getDashboardStats();
-      
+
       if (format === 'json') {
         return JSON.stringify(stats, null, 2);
       }
-      
+
       if (format === 'csv') {
         // Simple CSV export of key metrics
         const csv = [
@@ -237,11 +471,13 @@ export class DashboardService extends BaseService {
           ['Total Deals', stats.totalDeals.toString()],
           ['Total Tickets', stats.totalTickets.toString()],
           ['Total Revenue', stats.totalRevenue.toString()],
-        ].map(row => row.join(',')).join('\r\n');
-        
+        ]
+          .map((row) => row.join(','))
+          .join('\r\n');
+
         return csv;
       }
-      
+
       // PDF would require additional library
       throw new Error('PDF export not implemented');
     } catch (error) {

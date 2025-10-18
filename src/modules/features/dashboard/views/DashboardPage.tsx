@@ -30,7 +30,8 @@ import {
   useDashboardStats, 
   useRecentActivity, 
   useTopCustomers, 
-  useTicketStats 
+  useTicketStats,
+  useSalesPipeline
 } from '../hooks/useDashboard';
 
 export const DashboardPage: React.FC = () => {
@@ -38,6 +39,7 @@ export const DashboardPage: React.FC = () => {
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(5);
   const { data: topCustomers, isLoading: customersLoading } = useTopCustomers(5);
   const { data: ticketStats, isLoading: ticketStatsLoading } = useTicketStats();
+  const { data: salesPipeline, isLoading: pipelineLoading } = useSalesPipeline();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -162,6 +164,24 @@ export const DashboardPage: React.FC = () => {
                   />
                 </Col>
               </Row>
+              <Row gutter={16} style={{ marginTop: 16 }}>
+                <Col span={12}>
+                  <Statistic
+                    title="In Progress"
+                    value={ticketStats?.inProgress || 0}
+                    prefix={<ClockCircleOutlined style={{ color: '#3B82F6' }} />}
+                    valueStyle={{ color: '#3B82F6' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Closed"
+                    value={ticketStats?.closed || 0}
+                    prefix={<CheckCircleOutlined style={{ color: '#6B7280' }} />}
+                    valueStyle={{ color: '#6B7280' }}
+                  />
+                </Col>
+              </Row>
               <div style={{ marginTop: 24 }}>
                 <div style={{ marginBottom: 8 }}>
                   <span style={{ fontSize: 13, color: '#6B7280' }}>Resolution Rate</span>
@@ -182,6 +202,7 @@ export const DashboardPage: React.FC = () => {
             <Card
               title="Sales Pipeline"
               variant="borderless"
+              loading={pipelineLoading}
               style={{
                 borderRadius: 8,
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
@@ -192,28 +213,28 @@ export const DashboardPage: React.FC = () => {
                   <div style={{ marginBottom: 8 }}>
                     <span style={{ fontSize: 13, color: '#6B7280' }}>Qualification</span>
                     <span style={{ float: 'right', fontSize: 13, fontWeight: 500 }}>
-                      {formatCurrency(125000)}
+                      {formatCurrency(salesPipeline?.qualification?.value || 0)}
                     </span>
                   </div>
-                  <Progress percent={75} strokeColor="#1B7CED" showInfo={false} />
+                  <Progress percent={salesPipeline?.qualification?.percentage || 0} strokeColor="#1B7CED" showInfo={false} />
                 </div>
                 <div>
                   <div style={{ marginBottom: 8 }}>
                     <span style={{ fontSize: 13, color: '#6B7280' }}>Proposal</span>
                     <span style={{ float: 'right', fontSize: 13, fontWeight: 500 }}>
-                      {formatCurrency(85000)}
+                      {formatCurrency(salesPipeline?.proposal?.value || 0)}
                     </span>
                   </div>
-                  <Progress percent={60} strokeColor="#3B82F6" showInfo={false} />
+                  <Progress percent={salesPipeline?.proposal?.percentage || 0} strokeColor="#3B82F6" showInfo={false} />
                 </div>
                 <div>
                   <div style={{ marginBottom: 8 }}>
                     <span style={{ fontSize: 13, color: '#6B7280' }}>Negotiation</span>
                     <span style={{ float: 'right', fontSize: 13, fontWeight: 500 }}>
-                      {formatCurrency(45000)}
+                      {formatCurrency(salesPipeline?.negotiation?.value || 0)}
                     </span>
                   </div>
-                  <Progress percent={40} strokeColor="#10B981" showInfo={false} />
+                  <Progress percent={salesPipeline?.negotiation?.percentage || 0} strokeColor="#10B981" showInfo={false} />
                 </div>
               </Space>
             </Card>

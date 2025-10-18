@@ -1,9 +1,21 @@
 /**
  * API Service Factory
- * Factory pattern for creating service instances with mock/real API switching
+ * Factory pattern for creating service instances with multi-backend switching
+ * 
+ * SUPPORTED BACKENDS:
+ * ==================
+ * 1. Mock API - Static/demo data for development
+ * 2. Real API - .NET Core backend
+ * 3. Supabase - PostgreSQL with real-time capabilities (Phase 3)
+ * 
+ * ROUTING LOGIC:
+ * ==============
+ * - Global mode: VITE_API_MODE (mock|real|supabase)
+ * - Per-service override: VITE_*_BACKEND (e.g., VITE_CUSTOMER_BACKEND)
+ * - Backward compatible: VITE_USE_MOCK_API (legacy)
  */
 
-import { isUsingMockApi } from '@/config/apiConfig';
+import { getApiMode, getServiceBackend, type ApiMode } from '@/config/apiConfig';
 
 // Import real API services
 import { RealAuthService } from '../real/authService';
@@ -28,6 +40,16 @@ import { dashboardService as mockDashboardService } from '../dashboardService';
 import { notificationService as mockNotificationService } from '../notificationService';
 import { fileService as mockFileService } from '../fileService';
 import { auditService as mockAuditService } from '../auditService';
+
+// Import Supabase services (Phase 3)
+import { 
+  supabaseAuthService,
+  supabaseCustomerService,
+  supabasesSalesService,
+  supabaseTicketService,
+  supabaseContractService,
+  supabaseNotificationService
+} from '../supabase';
 
 // Service interfaces
 export interface IAuthService {
@@ -137,10 +159,11 @@ export interface IAuditService {
 
 /**
  * Service Factory Class
+ * Manages service instance creation and switching between backends
  */
 class ApiServiceFactory {
   private static instance: ApiServiceFactory;
-  private useMockApi: boolean;
+  private currentMode: ApiMode;
 
   // Service instances
   private authServiceInstance: IAuthService | null = null;
@@ -155,7 +178,10 @@ class ApiServiceFactory {
   private auditServiceInstance: IAuditService | null = null;
 
   private constructor() {
-    this.useMockApi = isUsingMockApi();
+    this.currentMode = getApiMode();
+    
+    // Log initial mode
+    console.log(`[API Factory] Initialized with mode: ${this.currentMode}`);
     
     // Listen for environment changes
     this.setupEnvironmentListener();
@@ -172,29 +198,34 @@ class ApiServiceFactory {
   }
 
   /**
-   * Setup environment change listener
+   * Setup environment change listener for hot-reload support
    */
   private setupEnvironmentListener(): void {
-    // Listen for environment variable changes
-    const originalEnv = import.meta.env.VITE_USE_MOCK_API;
+    const originalMode = this.currentMode;
     
     setInterval(() => {
-      const currentEnv = import.meta.env.VITE_USE_MOCK_API;
-      if (currentEnv !== originalEnv) {
-        this.switchApiMode(currentEnv === 'true');
+      const newMode = getApiMode();
+      if (newMode !== this.currentMode) {
+        this.switchApiMode(newMode);
       }
     }, 1000);
   }
 
   /**
-   * Switch between mock and real API
+   * Switch between backends (mock, real, supabase)
    */
-  public switchApiMode(useMock: boolean): void {
-    if (this.useMockApi !== useMock) {
-      this.useMockApi = useMock;
+  public switchApiMode(newMode: ApiMode): void {
+    if (this.currentMode !== newMode) {
+      this.currentMode = newMode;
       this.clearServiceInstances();
       
-      console.log(`[API Factory] Switched to ${useMock ? 'Mock' : 'Real'} API mode`);
+      const modeLabel = {
+        'mock': '🎭 Mock',
+        'real': '🔌 Real .NET',
+        'supabase': '🗄️ Supabase'
+      }[newMode];
+      
+      console.log(`[API Factory] Switched to ${modeLabel} API mode`);
     }
   }
 
@@ -215,61 +246,111 @@ class ApiServiceFactory {
   }
 
   /**
-   * Get Auth Service
+   * Get Auth Service (Mock | Real | Supabase)
    */
   public getAuthService(): IAuthService {
     if (!this.authServiceInstance) {
-      this.authServiceInstance = this.useMockApi 
-        ? mockAuthService as IAuthService
-        : new RealAuthService();
+      const mode = getServiceBackend('auth');
+      
+      switch (mode) {
+        case 'supabase':
+          this.authServiceInstance = supabaseAuthService as unknown as IAuthService;
+          break;
+        case 'real':
+          this.authServiceInstance = new RealAuthService();
+          break;
+        case 'mock':
+        default:
+          this.authServiceInstance = mockAuthService as IAuthService;
+      }
     }
     return this.authServiceInstance;
   }
 
   /**
-   * Get Customer Service
+   * Get Customer Service (Mock | Real | Supabase)
    */
   public getCustomerService(): ICustomerService {
     if (!this.customerServiceInstance) {
-      this.customerServiceInstance = this.useMockApi 
-        ? mockCustomerService as ICustomerService
-        : new RealCustomerService();
+      const mode = getServiceBackend('customer');
+      
+      switch (mode) {
+        case 'supabase':
+          this.customerServiceInstance = supabaseCustomerService as unknown as ICustomerService;
+          break;
+        case 'real':
+          this.customerServiceInstance = new RealCustomerService();
+          break;
+        case 'mock':
+        default:
+          this.customerServiceInstance = mockCustomerService as ICustomerService;
+      }
     }
     return this.customerServiceInstance;
   }
 
   /**
-   * Get Sales Service
+   * Get Sales Service (Mock | Real | Supabase)
    */
   public getSalesService(): ISalesService {
     if (!this.salesServiceInstance) {
-      this.salesServiceInstance = this.useMockApi 
-        ? mockSalesService as ISalesService
-        : new RealSalesService();
+      const mode = getServiceBackend('sales');
+      
+      switch (mode) {
+        case 'supabase':
+          this.salesServiceInstance = supabasesSalesService as unknown as ISalesService;
+          break;
+        case 'real':
+          this.salesServiceInstance = new RealSalesService();
+          break;
+        case 'mock':
+        default:
+          this.salesServiceInstance = mockSalesService as ISalesService;
+      }
     }
     return this.salesServiceInstance;
   }
 
   /**
-   * Get Ticket Service
+   * Get Ticket Service (Mock | Real | Supabase)
    */
   public getTicketService(): ITicketService {
     if (!this.ticketServiceInstance) {
-      this.ticketServiceInstance = this.useMockApi 
-        ? mockTicketService as ITicketService
-        : new RealTicketService();
+      const mode = getServiceBackend('ticket');
+      
+      switch (mode) {
+        case 'supabase':
+          this.ticketServiceInstance = supabaseTicketService as unknown as ITicketService;
+          break;
+        case 'real':
+          this.ticketServiceInstance = new RealTicketService();
+          break;
+        case 'mock':
+        default:
+          this.ticketServiceInstance = mockTicketService as ITicketService;
+      }
     }
     return this.ticketServiceInstance;
   }
 
   /**
-   * Get Contract Service
+   * Get Contract Service (Mock | Real | Supabase)
    */
   public getContractService(): IContractService {
     if (!this.contractServiceInstance) {
-      this.contractServiceInstance = this.useMockApi 
-        ? mockContractService as IContractService
-        : new RealContractService();
+      const mode = getServiceBackend('contract');
+      
+      switch (mode) {
+        case 'supabase':
+          this.contractServiceInstance = supabaseContractService as unknown as IContractService;
+          break;
+        case 'real':
+          this.contractServiceInstance = new RealContractService();
+          break;
+        case 'mock':
+        default:
+          this.contractServiceInstance = mockContractService as IContractService;
+      }
     }
     return this.contractServiceInstance;
   }
@@ -299,48 +380,81 @@ class ApiServiceFactory {
   }
 
   /**
-   * Get Notification Service
+   * Get Notification Service (Mock | Real | Supabase)
    */
   public getNotificationService(): INotificationService {
     if (!this.notificationServiceInstance) {
-      this.notificationServiceInstance = this.useMockApi 
-        ? mockNotificationService as INotificationService
-        : new RealNotificationService();
+      const mode = getServiceBackend('notification');
+      
+      switch (mode) {
+        case 'supabase':
+          this.notificationServiceInstance = supabaseNotificationService as unknown as INotificationService;
+          break;
+        case 'real':
+          this.notificationServiceInstance = new RealNotificationService();
+          break;
+        case 'mock':
+        default:
+          this.notificationServiceInstance = mockNotificationService as INotificationService;
+      }
     }
     return this.notificationServiceInstance;
   }
 
   /**
-   * Get File Service
+   * Get File Service (Mock | Real)
+   * Note: File service doesn't have Supabase implementation yet
    */
   public getFileService(): IFileService {
     if (!this.fileServiceInstance) {
-      this.fileServiceInstance = this.useMockApi
-        ? mockFileService as IFileService
-        : new RealFileService();
+      const mode = getServiceBackend('file');
+      
+      switch (mode) {
+        case 'real':
+          this.fileServiceInstance = new RealFileService();
+          break;
+        case 'mock':
+        case 'supabase':
+        default:
+          this.fileServiceInstance = mockFileService as IFileService;
+      }
     }
     return this.fileServiceInstance;
   }
 
   /**
-   * Get Audit Service
+   * Get Audit Service (Mock | Real)
+   * Note: Audit service doesn't have Supabase implementation yet
    */
   public getAuditService(): IAuditService {
     if (!this.auditServiceInstance) {
-      this.auditServiceInstance = this.useMockApi
-        ? mockAuditService as IAuditService
-        : new RealAuditService();
+      const mode = getServiceBackend('audit');
+      
+      switch (mode) {
+        case 'real':
+          this.auditServiceInstance = new RealAuditService();
+          break;
+        case 'mock':
+        case 'supabase':
+        default:
+          this.auditServiceInstance = mockAuditService as IAuditService;
+      }
     }
     return this.auditServiceInstance;
   }
-
-
 
   /**
    * Get current API mode
    */
   public isUsingMockApi(): boolean {
-    return this.useMockApi;
+    return this.currentMode === 'mock';
+  }
+
+  /**
+   * Get current API mode
+   */
+  public getApiMode(): ApiMode {
+    return this.currentMode;
   }
 
   /**

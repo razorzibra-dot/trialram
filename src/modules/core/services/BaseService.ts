@@ -23,6 +23,14 @@ export abstract class BaseService {
   }
 
   /**
+   * Handle errors with logging and formatting
+   */
+  protected handleError(message: string, error?: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[${this.constructor.name}] ${message}:`, errorMessage);
+  }
+
+  /**
    * Initialize the service
    * Override this method to perform initialization logic
    */

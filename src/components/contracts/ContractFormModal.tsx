@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Contract, ContractTemplate, ContractFormData, ContractParty } from '@/types/contracts';
 import { Customer } from '@/types/crm';
 import { User } from '@/types/auth';
@@ -31,7 +31,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
   contract,
   onSuccess
 }) => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -86,8 +86,68 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
     signatureRequired: true
   });
 
+  const resetForm = useCallback(() => {
+    setFormData({
+      title: '',
+      description: '',
+      contract_number: '',
+      type: 'service_agreement',
+      customer_id: '',
+      customer_name: '',
+      customer_contact: '',
+      templateId: '',
+      value: 0,
+      total_value: 0,
+      currency: 'USD',
+      payment_terms: '',
+      delivery_terms: '',
+      startDate: '',
+      endDate: '',
+      signed_date: '',
+      next_renewal_date: '',
+      autoRenew: false,
+      renewal_period_months: 12,
+      renewalTerms: '',
+      terms: '',
+      approval_stage: 'draft',
+      compliance_status: 'pending_review',
+      priority: 'medium',
+      reminderDays: [30, 7],
+      next_reminder_date: '',
+      assignedTo: '',
+      content: '',
+      document_path: '',
+      document_url: '',
+      version: 1,
+      tags: [],
+      parties: [],
+      notes: '',
+      signed_by_customer: '',
+      signed_by_company: ''
+    });
+  }, []);
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      const [customersData, usersData] = await Promise.all([
+        customerService.getCustomers(),
+        userService.getUsers()
+      ]);
+      // Mock templates for now
+      setTemplates([]);
+      setCustomers(customersData);
+      setUsers(usersData);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load form data',
+        variant: 'destructive'
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    if (open) {
+    if (open && tenant?.tenantId) {
       loadInitialData();
       if (contract) {
         setFormData({
@@ -132,69 +192,7 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
         resetForm();
       }
     }
-  }, [open, contract]);
-
-  const loadInitialData = async () => {
-    try {
-      const [customersData, usersData] = await Promise.all([
-        customerService.getCustomers(),
-        userService.getUsers()
-      ]);
-      // Mock templates for now
-      setTemplates([]);
-      setCustomers(customersData);
-      setUsers(usersData);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load form data',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      contract_number: '',
-      type: 'service_agreement',
-      customer_id: '',
-      customer_name: '',
-      customer_contact: '',
-      templateId: '',
-      value: 0,
-      total_value: 0,
-      currency: 'USD',
-      payment_terms: '',
-      delivery_terms: '',
-      startDate: '',
-      endDate: '',
-      signed_date: '',
-      next_renewal_date: '',
-      autoRenew: false,
-      renewal_period_months: 12,
-      renewalTerms: '',
-      terms: '',
-      approval_stage: 'draft',
-      compliance_status: 'pending_review',
-      priority: 'medium',
-      reminderDays: [30, 7],
-      next_reminder_date: '',
-      assignedTo: user?.id || '',
-      content: '',
-      document_path: '',
-      document_url: '',
-      version: 1,
-      tags: [],
-      parties: [],
-      notes: '',
-      signed_by_customer: '',
-      signed_by_company: ''
-    });
-    setSelectedTemplate(null);
-    setActiveTab('basic');
-  };
+  }, [open, contract, tenant?.tenantId, resetForm, loadInitialData]);
 
   const handleTemplateSelect = async (templateId: string) => {
     if (!templateId || templateId === 'none') {

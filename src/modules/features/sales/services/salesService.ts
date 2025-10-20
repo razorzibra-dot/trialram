@@ -59,13 +59,31 @@ export class SalesService extends BaseService {
       // Use legacy service for now, but wrap in new interface
       const deals = await legacySalesService.getDeals(filters);
       
+      // Filter and validate deals, ensuring all have required fields
+      const validDeals = (Array.isArray(deals) ? deals : [])
+        .filter((deal) => deal && typeof deal === 'object' && deal.id)
+        .map((deal) => ({
+          ...deal,
+          title: deal.title || 'Untitled Deal',
+          value: Number(deal.value) || 0,
+          stage: deal.stage || 'lead',
+          status: deal.status || 'open',
+          customer_name: deal.customer_name || '',
+          assigned_to_name: deal.assigned_to_name || '',
+          tenant_id: deal.tenant_id || '',
+          created_at: deal.created_at || new Date().toISOString(),
+          updated_at: deal.updated_at || new Date().toISOString(),
+        }));
+
+      const pageSize = filters.pageSize || 20;
+      
       // Transform to paginated response format
       return {
-        data: Array.isArray(deals) ? deals : [],
-        total: Array.isArray(deals) ? deals.length : 0,
+        data: validDeals,
+        total: validDeals.length,
         page: filters.page || 1,
-        pageSize: filters.pageSize || 20,
-        totalPages: Math.ceil((Array.isArray(deals) ? deals.length : 0) / (filters.pageSize || 20)),
+        pageSize: pageSize,
+        totalPages: Math.ceil(validDeals.length / pageSize),
       };
     } catch (error) {
       console.error('Failed to fetch deals:', error);

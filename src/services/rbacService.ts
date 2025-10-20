@@ -18,7 +18,9 @@ class RBACService {
     { id: 'manage_tickets', name: 'Manage Tickets', description: 'Manage support tickets and issues', category: 'module', resource: 'tickets', action: 'manage' },
     { id: 'manage_complaints', name: 'Manage Complaints', description: 'Handle customer complaints', category: 'module', resource: 'complaints', action: 'manage' },
     { id: 'manage_contracts', name: 'Manage Contracts', description: 'Manage service contracts and agreements', category: 'module', resource: 'contracts', action: 'manage' },
+    { id: 'manage_service_contracts', name: 'Manage Service Contracts', description: 'Manage service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'manage' },
     { id: 'manage_products', name: 'Manage Products', description: 'Manage product catalog and inventory', category: 'module', resource: 'products', action: 'manage' },
+    { id: 'manage_product_sales', name: 'Manage Product Sales', description: 'Manage product sales and transactions', category: 'module', resource: 'product_sales', action: 'manage' },
     { id: 'manage_job_works', name: 'Manage Job Works', description: 'Manage job work orders and tasks', category: 'module', resource: 'job_works', action: 'manage' },
     
     // Administrative permissions
@@ -42,7 +44,7 @@ class RBACService {
       name: 'Super Administrator',
       description: 'Full platform administration with all permissions',
       tenant_id: 'platform',
-      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_products', 'manage_job_works', 'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies', 'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring'],
+      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies', 'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -52,7 +54,7 @@ class RBACService {
       name: 'Administrator',
       description: 'Tenant administrator with full tenant permissions',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_products', 'manage_job_works', 'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'],
+      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -62,7 +64,7 @@ class RBACService {
       name: 'Manager',
       description: 'Business operations manager with analytics access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'view_analytics'],
+      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -82,7 +84,7 @@ class RBACService {
       name: 'Engineer',
       description: 'Technical engineer with product and job work access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'manage_products', 'manage_job_works', 'manage_tickets'],
+      permissions: ['read', 'write', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -105,7 +107,7 @@ class RBACService {
       id: 'business_admin',
       name: 'Business Administrator',
       description: 'Complete business operations management',
-      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_contracts', 'view_analytics', 'manage_companies'],
+      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics', 'manage_companies'],
       is_default: true,
       category: 'business'
     },
@@ -113,7 +115,7 @@ class RBACService {
       id: 'sales_manager',
       name: 'Sales Manager',
       description: 'Sales operations and customer management',
-      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_contracts', 'view_analytics'],
+      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'],
       is_default: true,
       category: 'business'
     },
@@ -129,7 +131,7 @@ class RBACService {
       id: 'technical_lead',
       name: 'Technical Lead',
       description: 'Technical operations and product management',
-      permissions: ['read', 'write', 'manage_products', 'manage_job_works', 'manage_tickets'],
+      permissions: ['read', 'write', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'],
       is_default: true,
       category: 'technical'
     },

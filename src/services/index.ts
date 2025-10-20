@@ -94,6 +94,7 @@ import {
   IContractService,
   INotificationService
 } from './api/apiServiceFactory';
+import { productSaleService as factoryProductSaleService } from './serviceFactory';
 import { Customer, CustomerTag, Sale, Deal, Ticket } from '@/types/crm';
 import { User } from '@/types/auth';
 import { 
@@ -423,6 +424,9 @@ export const ticketService = {
 
 // Contract service: passthrough (mock-heavy features); keep direct for now
 
+// Product Sale Service - Routes to Supabase or Mock based on VITE_API_MODE
+export const productSaleService = factoryProductSaleService;
+
 // User service wrapper
 export const userService = {
   async getUsers(filters?: Record<string, unknown>): Promise<UiUser[]> {
@@ -500,9 +504,9 @@ export const auditService = {
 import { productService as _productService } from './productService';
 export const productService = _productService;
 
-// Import and export serviceContractService
-import { serviceContractService as _serviceContractService } from './serviceContractService';
-export const serviceContractService = _serviceContractService;
+// Import and export serviceContractService (factory-routed for Supabase/Mock switching)
+import { serviceContractService as factoryServiceContractService } from './serviceFactory';
+export const serviceContractService = factoryServiceContractService;
 
 // Contract service wrapper
 const mapContractTypeToUi = (t?: string): UiContract['type'] => {
@@ -844,6 +848,7 @@ export default {
   sales: salesService,
   ticket: ticketService,
   contract: contractService,
+  productSale: productSaleService,
   user: userService,
   dashboard: dashboardService,
   notification: notificationService,

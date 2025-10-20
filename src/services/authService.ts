@@ -254,7 +254,9 @@ class AuthService {
     manage_tickets: 'Manage support tickets and issues',
     manage_complaints: 'Handle customer complaints',
     manage_contracts: 'Manage service contracts and agreements',
+    manage_service_contracts: 'Manage service contracts and agreements',
     manage_products: 'Manage product catalog and inventory',
+    manage_product_sales: 'Manage product sales and transactions',
     manage_job_works: 'Manage job work orders and tasks',
     manage_users: 'Manage user accounts and access',
     manage_roles: 'Manage roles and permissions',
@@ -271,20 +273,20 @@ class AuthService {
     super_admin: [
       'read', 'write', 'delete',
       'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 
-      'manage_contracts', 'manage_products', 'manage_job_works',
+      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
       'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies',
       'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring'
     ],
     admin: [
       'read', 'write', 'delete',
       'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints',
-      'manage_contracts', 'manage_products', 'manage_job_works',
+      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
       'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'
     ],
     manager: [
       'read', 'write',
       'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints',
-      'manage_contracts', 'view_analytics'
+      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'
     ],
     agent: [
       'read', 'write',
@@ -292,7 +294,7 @@ class AuthService {
     ],
     engineer: [
       'read', 'write',
-      'manage_products', 'manage_job_works', 'manage_tickets'
+      'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'
     ],
     customer: [
       'read'

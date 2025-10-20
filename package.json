@@ -18,7 +18,13 @@
     "fix:staged": "node scripts/validate-code.cjs --fix --staged",
     "quality:check": "npm run lint && npm run validate:code",
     "quality:fix": "npm run lint --fix && npm run fix:unicode-escapes",
-    "prepare": "husky install || true"
+    "prepare": "husky install || true",
+    "seed:auth": "tsx scripts/seed-auth-users.ts",
+    "seed:sync": "tsx scripts/sync-auth-to-sql.ts",
+    "seed:sql": "tsx scripts/generate-seed-sql.ts > supabase/seed-users.sql",
+    "seed:db": "tsx scripts/seed-database.ts",
+    "seed:reset": "supabase db reset",
+    "seed:all": "npm run seed:auth && npm run seed:sync && npm run seed:db"
   },
   "dependencies": {
     "@ant-design/cssinjs": "^1.24.0",
@@ -65,6 +71,7 @@
     "crypto-browserify": "^3.12.1",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.18",
+    "dotenv": "^17.2.3",
     "events": "^3.3.0",
     "framer-motion": "^12.23.22",
     "idb": "^8.0.3",
@@ -115,6 +122,9 @@
     "postcss": "^8.4.24",
     "supabase": "^2.51.0",
     "tailwindcss": "^3.3.0",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.8.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.0.2",
     "typescript-eslint": "^8.46.1",
     "vite": "^4.4.5"

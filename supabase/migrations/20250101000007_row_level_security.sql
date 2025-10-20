@@ -56,8 +56,27 @@ ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION get_current_user_tenant_id()
 RETURNS UUID AS $$
 BEGIN
-  -- This will be set via JWT claims by Supabase
-  RETURN (auth.jwt() ->> 'tenant_id')::UUID;
+  -- Get tenant_id from users table by matching auth.uid()
+  -- First try JWT claims, fall back to users table lookup
+  DECLARE
+    tenant_id_from_jwt UUID;
+    tenant_id_from_db UUID;
+  BEGIN
+    -- Try to get from JWT claims first
+    tenant_id_from_jwt := (auth.jwt() ->> 'tenant_id')::UUID;
+    
+    IF tenant_id_from_jwt IS NOT NULL THEN
+      RETURN tenant_id_from_jwt;
+    END IF;
+    
+    -- Fall back to querying users table
+    SELECT users.tenant_id INTO tenant_id_from_db
+    FROM users
+    WHERE users.id = auth.uid()
+    LIMIT 1;
+    
+    RETURN tenant_id_from_db;
+  END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

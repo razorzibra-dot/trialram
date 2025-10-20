@@ -42,7 +42,7 @@ import {
   CloseCircleOutlined,
   FilterOutlined
 } from '@ant-design/icons';
-import { serviceContractService } from '@/services/serviceContractService';
+import { serviceContractService } from '@/services';
 import { 
   ServiceContract, 
   ServiceContractFilters,

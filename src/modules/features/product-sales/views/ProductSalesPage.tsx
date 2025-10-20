@@ -39,7 +39,7 @@ import {
   RiseOutlined,
   FilterOutlined
 } from '@ant-design/icons';
-import { productSaleService } from '@/services/productSaleService';
+import { productSaleService } from '@/services';
 import { 
   ProductSale, 
   ProductSaleFilters, 

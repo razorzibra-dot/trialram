@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DashboardService } from '../services/dashboardService';
 import { useService } from '@/modules/core/hooks/useService';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 // Query Keys
 export const dashboardKeys = {
@@ -24,12 +25,14 @@ export const dashboardKeys = {
  */
 export const useDashboardStats = () => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.stats(),
     queryFn: () => dashboardService.getDashboardStats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -38,11 +41,13 @@ export const useDashboardStats = () => {
  */
 export const useRecentActivity = (limit: number = 10) => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.activity(), limit],
     queryFn: () => dashboardService.getRecentActivity(limit),
     staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -51,11 +56,13 @@ export const useRecentActivity = (limit: number = 10) => {
  */
 export const useSalesTrend = (period: 'week' | 'month' | 'quarter' | 'year' = 'month') => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.salesTrend(), period],
     queryFn: () => dashboardService.getSalesTrend(period),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -64,11 +71,13 @@ export const useSalesTrend = (period: 'week' | 'month' | 'quarter' | 'year' = 'm
  */
 export const useTicketStats = () => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.ticketStats(),
     queryFn: () => dashboardService.getTicketStats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -77,11 +86,13 @@ export const useTicketStats = () => {
  */
 export const useTopCustomers = (limit: number = 5) => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.topCustomers(), limit],
     queryFn: () => dashboardService.getTopCustomers(limit),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -90,12 +101,13 @@ export const useTopCustomers = (limit: number = 5) => {
  */
 export const useWidgetData = (widgetType: string) => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.widget(widgetType),
     queryFn: () => dashboardService.getWidgetData(widgetType),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!widgetType,
+    enabled: !!widgetType && isInitialized,
   });
 };
 
@@ -104,12 +116,14 @@ export const useWidgetData = (widgetType: string) => {
  */
 export const useSalesPipeline = () => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.all, 'salesPipeline'],
     queryFn: () => dashboardService.getSalesPipeline(),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isInitialized,
   });
 };
 
@@ -118,11 +132,13 @@ export const useSalesPipeline = () => {
  */
 export const usePerformanceMetrics = () => {
   const dashboardService = useService<DashboardService>('dashboardService');
+  const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.performance(),
     queryFn: () => dashboardService.getPerformanceMetrics(),
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute
+    enabled: isInitialized,
   });
 };

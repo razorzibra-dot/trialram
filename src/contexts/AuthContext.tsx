@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, AuthState } from '@/types/auth';
@@ -5,6 +6,7 @@ import { authService } from '@/services';
 import { sessionManager } from '@/utils/sessionManager';
 import { httpInterceptor } from '@/utils/httpInterceptor';
 import { toast } from '@/hooks/use-toast';
+import { multiTenantService, type TenantContext } from '@/services/supabase/multiTenantService';
 
 interface SessionInfo {
   isValid: boolean;
@@ -19,6 +21,9 @@ interface AuthContextType extends AuthState {
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   sessionInfo: () => SessionInfo;
+  tenantId?: string;
+  getTenantId: () => string | undefined;
+  tenant?: TenantContext | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: false,
     isLoading: true
   });
+
+  const [tenant, setTenant] = useState<TenantContext | null>(null);
 
   const navigate = useNavigate();
 
@@ -87,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       onTokenRefresh: handleTokenRefresh,
     });
 
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const isValidSession = sessionManager.validateSession();
       
       if (isValidSession) {
@@ -101,6 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false
         });
 
+        // Initialize multi-tenant context
+        if (user?.id) {
+          const tenantContext = await multiTenantService.initializeTenantContext(user.id);
+          setTenant(tenantContext);
+        }
+
         sessionManager.startSessionMonitoring(handleSessionExpiry);
       } else {
         setAuthState({
@@ -109,6 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAuthenticated: false,
           isLoading: false
         });
+        multiTenantService.clearTenantContext();
+        setTenant(null);
       }
     };
 
@@ -132,6 +147,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: true,
         isLoading: false
       });
+
+      // Initialize multi-tenant context on login
+      if (response.user?.id) {
+        const tenantContext = await multiTenantService.initializeTenantContext(response.user.id);
+        setTenant(tenantContext);
+      }
 
       sessionManager.startSessionMonitoring(handleSessionExpiry);
 
@@ -162,6 +183,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       await authService.logout();
       
+      // Clear multi-tenant context on logout
+      multiTenantService.clearTenantContext();
+      setTenant(null);
+      
       setAuthState({
         user: null,
         token: null,
@@ -177,6 +202,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Clear multi-tenant context on logout
+      multiTenantService.clearTenantContext();
+      setTenant(null);
       
       setAuthState({
         user: null,
@@ -201,13 +230,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return sessionManager.getSessionInfo();
   };
 
+  const getTenantId = (): string | undefined => {
+    try {
+      return tenant?.tenantId || multiTenantService.getCurrentTenantId();
+    } catch {
+      return undefined;
+    }
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
     logout,
     hasRole,
     hasPermission,
-    sessionInfo
+    sessionInfo,
+    tenantId: tenant?.tenantId,
+    getTenantId,
+    tenant
   };
 
   return (

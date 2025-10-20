@@ -139,12 +139,12 @@ export const SuperAdminDashboardPage: React.FC = () => {
           <Col xs={24} lg={12}>
             <Card 
               title="System Status" 
-              bordered={false}
+              variant="borderless"
               extra={<Badge status="success" text="All Systems Operational" />}
             >
               {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <Spin tip="Loading system status..." />
+                  <Spin spinning tip="Loading system status..." />
                 </div>
               ) : (
                 <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -170,10 +170,10 @@ export const SuperAdminDashboardPage: React.FC = () => {
           </Col>
 
           <Col xs={24} lg={12}>
-            <Card title="Recent Activity" bordered={false}>
+            <Card title="Recent Activity" variant="borderless">
               {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <Spin tip="Loading activity..." />
+                  <Spin spinning tip="Loading activity..." />
                 </div>
               ) : (
                 <Space direction="vertical" style={{ width: '100%' }} size="middle">

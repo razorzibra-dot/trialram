@@ -229,7 +229,7 @@ export const UsersPage: React.FC = () => {
         >
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin tip="Loading users..." />
+              <Spin spinning tip="Loading users..." />
             </div>
           ) : users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,14 +51,9 @@ const ProductSaleDetail: React.FC<ProductSaleDetailProps> = ({
   const [serviceContract, setServiceContract] = useState<ServiceContract | null>(null);
   const [loadingContract, setLoadingContract] = useState(false);
   const [contractError, setContractError] = useState<string | null>(null);
+  const [generatingContract, setGeneratingContract] = useState(false);
 
-  useEffect(() => {
-    if (productSale.service_contract_id) {
-      loadServiceContract();
-    }
-  }, [productSale.service_contract_id]);
-
-  const loadServiceContract = async () => {
+  const loadServiceContract = useCallback(async () => {
     try {
       setLoadingContract(true);
       setContractError(null);
@@ -71,7 +66,13 @@ const ProductSaleDetail: React.FC<ProductSaleDetailProps> = ({
     } finally {
       setLoadingContract(false);
     }
-  };
+  }, [productSale.id]);
+
+  useEffect(() => {
+    if (productSale.service_contract_id) {
+      loadServiceContract();
+    }
+  }, [productSale.service_contract_id, loadServiceContract]);
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -128,6 +129,25 @@ const ProductSaleDetail: React.FC<ProductSaleDetailProps> = ({
     if (serviceContract) {
       // Navigate to service contract detail page
       window.open(`/tenant/service-contracts/${serviceContract.id}`, '_blank');
+    }
+  };
+
+  const handleGenerateServiceContract = async () => {
+    try {
+      setGeneratingContract(true);
+      setContractError(null);
+      
+      // Generate service contract from product sale
+      const contract = await serviceContractService.generateServiceContractFromSale(productSale);
+      setServiceContract(contract);
+      
+      toast.success('Service contract generated successfully');
+    } catch (error) {
+      console.error('Error generating service contract:', error);
+      setContractError('Failed to generate service contract');
+      toast.error('Failed to generate service contract');
+    } finally {
+      setGeneratingContract(false);
     }
   };
 
@@ -380,12 +400,31 @@ const ProductSaleDetail: React.FC<ProductSaleDetailProps> = ({
                 </CardContent>
               </Card>
             ) : (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  No service contract found for this product sale. The contract may still be generating.
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-4">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    No service contract found for this product sale. Click the button below to generate one now.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={handleGenerateServiceContract}
+                  disabled={generatingContract}
+                  className="w-full"
+                >
+                  {generatingContract ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating Service Contract...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Generate Service Contract
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </TabsContent>
 

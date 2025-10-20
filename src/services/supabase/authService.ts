@@ -148,9 +148,24 @@ export class SupabaseAuthService extends BaseSupabaseService {
   }
 
   /**
-   * Get current user
+   * Get current user (synchronous - from localStorage)
+   * Used by AuthContext and other sync code paths
    */
-  async getCurrentUser(): Promise<User | null> {
+  getCurrentUser(): User | null {
+    try {
+      const userStr = localStorage.getItem('sb_current_user');
+      if (!userStr) return null;
+      return JSON.parse(userStr) as User;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get current user (async - from Supabase session)
+   * More reliable for actual server-side user data
+   */
+  async getCurrentUserAsync(): Promise<User | null> {
     try {
       const client = getSupabaseClient();
       const { data } = await client.auth.getSession();
@@ -389,7 +404,71 @@ export class SupabaseAuthService extends BaseSupabaseService {
   }
 
   /**
-   * Check if user has a specific permission
+   * Cache for user permissions (to avoid repeated DB queries)
+   */
+  private permissionCache: Map<string, Set<string>> = new Map();
+
+  /**
+   * Load user permissions from database dynamically
+   */
+  private async loadUserPermissions(userId: string): Promise<Set<string>> {
+    // Check cache first
+    if (this.permissionCache.has(userId)) {
+      return this.permissionCache.get(userId) || new Set();
+    }
+
+    try {
+      const client = getSupabaseClient();
+
+      // Get user with their role
+      const { data: user } = await client
+        .from('users')
+        .select('id, role, tenant_id')
+        .eq('id', userId)
+        .single();
+
+      if (!user) return new Set();
+
+      // Get permissions for user's role
+      const { data: rolePermissions } = await client
+        .from('role_permissions')
+        .select('permission:permissions(name)')
+        .eq('role_id', user.role)
+        .eq('granted_at', user.tenant_id);
+
+      const permissions = new Set<string>();
+
+      if (rolePermissions) {
+        rolePermissions.forEach((rp: any) => {
+          if (rp.permission?.name) {
+            permissions.add(rp.permission.name);
+          }
+        });
+      }
+
+      // Cache the permissions
+      this.permissionCache.set(userId, permissions);
+
+      return permissions;
+    } catch (error) {
+      this.logError('Error loading user permissions', error);
+      return new Set();
+    }
+  }
+
+  /**
+   * Clear permission cache (useful after role changes)
+   */
+  clearPermissionCache(userId?: string): void {
+    if (userId) {
+      this.permissionCache.delete(userId);
+    } else {
+      this.permissionCache.clear();
+    }
+  }
+
+  /**
+   * Check if user has a specific permission (synchronous with fallback)
    */
   hasPermission(permission: string): boolean {
     try {
@@ -401,7 +480,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
       // Super admin has all permissions
       if (user.role === 'super_admin') return true;
       
-      // Define role-based permissions
+      // Define role-based permissions (fallback when DB not available)
       const rolePermissions: Record<string, string[]> = {
         super_admin: ['*'],
         admin: [
@@ -411,7 +490,10 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'manage_sales',
           'manage_tickets',
           'manage_contracts',
+          'manage_service_contracts',
           'manage_products',
+          'manage_product_sales',
+          'manage_complaints',
           'view_reports',
           'export_data',
         ],
@@ -427,6 +509,9 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'create_tickets',
           'edit_tickets',
           'view_contracts',
+          'manage_service_contracts',
+          'manage_product_sales',
+          'manage_complaints',
         ],
         agent: [
           'view_dashboard',
@@ -437,12 +522,14 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'view_tickets',
           'create_tickets',
           'edit_tickets',
+          'manage_complaints',
         ],
         engineer: [
           'view_dashboard',
           'view_tickets',
           'edit_tickets',
           'view_customers',
+          'manage_product_sales',
         ],
         customer: [
           'view_dashboard',
@@ -468,14 +555,70 @@ export class SupabaseAuthService extends BaseSupabaseService {
   }
 
   /**
+   * Check if user has permission (async version - loads from database)
+   * Use this for critical permission checks that need real-time accuracy
+   */
+  async hasPermissionAsync(permission: string): Promise<boolean> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) return false;
+
+      // Super admin has all permissions
+      if (user.role === 'super_admin') return true;
+
+      // Load permissions from database
+      const permissions = await this.loadUserPermissions(user.id);
+      return permissions.has(permission) || permissions.has('*');
+    } catch (error) {
+      this.logError('Error checking permission (async)', error);
+      // Fallback to synchronous check
+      return this.hasPermission(permission);
+    }
+  }
+
+  /**
+   * Get all permissions for current user (from database)
+   */
+  async getCurrentUserPermissions(): Promise<string[]> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) return [];
+
+      const permissions = await this.loadUserPermissions(user.id);
+      return Array.from(permissions);
+    } catch (error) {
+      this.logError('Error getting user permissions', error);
+      return [];
+    }
+  }
+
+  /**
    * Store token and user in localStorage (called after successful login)
+   * Also includes tenant_id for RLS enforcement
    */
   private storeAuthData(token: string, user: User): void {
     try {
       localStorage.setItem('sb_access_token', token);
       localStorage.setItem('sb_current_user', JSON.stringify(user));
+      
+      // Store tenant_id separately for RLS policy enforcement
+      if (user.tenantId) {
+        localStorage.setItem('sb_tenant_id', user.tenantId);
+      }
     } catch (error) {
       this.logError('Failed to store auth data', error);
+    }
+  }
+
+  /**
+   * Get current user's tenant ID (for multi-tenant isolation)
+   */
+  getCurrentTenantId(): string | null {
+    try {
+      const user = this.getCurrentUser();
+      return user?.tenantId || localStorage.getItem('sb_tenant_id');
+    } catch {
+      return null;
     }
   }
 

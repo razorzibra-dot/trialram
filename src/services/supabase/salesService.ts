@@ -29,13 +29,13 @@ export class SupabaseSalesService extends BaseSupabaseService {
     try {
       this.log('Fetching sales', filters);
 
+      // Fetch sales without complex relationships (avoid Supabase RLS issues with multiple foreign keys)
       let query = getSupabaseClient()
         .from('sales')
         .select(
           `*,
           customer:customers(*),
-          items:sales_items(*),
-          assigned_user:users(id, firstName, lastName, email)`
+          items:sale_items(*)`
         );
 
       // Apply filters
@@ -84,8 +84,7 @@ export class SupabaseSalesService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          items:sales_items(*),
-          assigned_user:users(id, firstName, lastName, email)`
+          items:sale_items(*)`
         )
         .eq('id', id)
         .single();
@@ -131,8 +130,7 @@ export class SupabaseSalesService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          items:sales_items(*),
-          assigned_user:users(id, firstName, lastName, email)`
+          items:sale_items(*)`
         )
         .single();
 
@@ -172,8 +170,7 @@ export class SupabaseSalesService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          items:sales_items(*),
-          assigned_user:users(id, firstName, lastName, email)`
+          items:sale_items(*)`
         )
         .single();
 
@@ -333,20 +330,37 @@ export class SupabaseSalesService extends BaseSupabaseService {
 
   /**
    * Map database sale response to UI Sale type
+   * Ensures all fields are safely accessed with proper defaults
    */
   private mapSaleResponse(dbSale: any): Sale {
+    // Safely extract customer name from relationship or fallback to stored value
+    let customerName = '';
+    if (dbSale.customer && typeof dbSale.customer === 'object') {
+      customerName = dbSale.customer.company_name || dbSale.customer.contact_name || '';
+    } else if (typeof dbSale.customer_name === 'string') {
+      customerName = dbSale.customer_name;
+    }
+
+    // Safely extract assigned_to_name
+    let assignedToName = '';
+    if (dbSale.assigned_user && typeof dbSale.assigned_user === 'object') {
+      assignedToName = dbSale.assigned_user.display_name || dbSale.assigned_user.email || '';
+    } else if (typeof dbSale.assigned_to_name === 'string') {
+      assignedToName = dbSale.assigned_to_name;
+    }
+
     return {
-      id: dbSale.id,
-      sale_number: dbSale.sale_number,
-      title: dbSale.title,
+      id: dbSale.id || '',
+      sale_number: dbSale.sale_number || '',
+      title: dbSale.title || 'Untitled Deal',
       description: dbSale.description || '',
-      customer_id: dbSale.customer_id,
-      customer_name: dbSale.customer?.company_name || '',
-      value: dbSale.value || 0,
-      amount: dbSale.amount || dbSale.value || 0,
-      currency: 'USD',
-      probability: dbSale.probability || 50,
-      weighted_amount: (dbSale.value || 0) * ((dbSale.probability || 50) / 100),
+      customer_id: dbSale.customer_id || '',
+      customer_name: customerName,
+      value: Number(dbSale.value) || 0,
+      amount: Number(dbSale.amount || dbSale.value) || 0,
+      currency: dbSale.currency || 'USD',
+      probability: Number(dbSale.probability) || 50,
+      weighted_amount: (Number(dbSale.value) || 0) * ((Number(dbSale.probability) || 50) / 100),
       stage: (dbSale.stage || 'lead') as Sale['stage'],
       status: (dbSale.status || 'open') as Sale['status'],
       source: dbSale.source || '',
@@ -355,28 +369,28 @@ export class SupabaseSalesService extends BaseSupabaseService {
       actual_close_date: dbSale.actual_close_date || '',
       last_activity_date: dbSale.last_activity_date || '',
       next_activity_date: dbSale.next_activity_date || '',
-      assigned_to: dbSale.assigned_to,
-      assigned_to_name: dbSale.assigned_user?.firstName
-        ? `${dbSale.assigned_user.firstName} ${dbSale.assigned_user.lastName}`
-        : '',
+      assigned_to: dbSale.assigned_to || '',
+      assigned_to_name: assignedToName,
       notes: dbSale.notes || '',
-      tags: dbSale.tags || [],
+      tags: Array.isArray(dbSale.tags) ? dbSale.tags : [],
       competitor_info: dbSale.competitor_info || '',
-      items: dbSale.items?.map((item: any) => ({
-        id: item.id,
-        sale_id: item.sale_id,
-        product_id: item.product_id,
-        product_name: item.product_name || '',
-        product_description: item.product_description || '',
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount: item.discount || 0,
-        tax: item.tax || 0,
-        line_total: item.line_total || item.quantity * item.unit_price,
-      })) || [],
-      tenant_id: dbSale.tenant_id,
-      created_at: dbSale.created_at,
-      updated_at: dbSale.updated_at,
+      items: Array.isArray(dbSale.items)
+        ? dbSale.items.map((item: any) => ({
+            id: item.id || '',
+            sale_id: item.sale_id || '',
+            product_id: item.product_id || '',
+            product_name: item.product_name || '',
+            product_description: item.product_description || '',
+            quantity: Number(item.quantity) || 0,
+            unit_price: Number(item.unit_price) || 0,
+            discount: Number(item.discount) || 0,
+            tax: Number(item.tax) || 0,
+            line_total: Number(item.line_total) || Number(item.quantity || 0) * Number(item.unit_price || 0),
+          }))
+        : [],
+      tenant_id: dbSale.tenant_id || '',
+      created_at: dbSale.created_at || new Date().toISOString(),
+      updated_at: dbSale.updated_at || new Date().toISOString(),
       created_by: dbSale.created_by || '',
     };
   }

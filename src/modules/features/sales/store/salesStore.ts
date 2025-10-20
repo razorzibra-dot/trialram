@@ -129,7 +129,19 @@ export const useSalesStore = create<SalesState>()(
         // Data Actions
         setDeals: (deals) => {
           set((state) => {
-            state.deals = deals;
+            // Filter out null/undefined deals and ensure all have required fields
+            state.deals = (Array.isArray(deals) ? deals : [])
+              .filter((deal) => deal && typeof deal === 'object' && deal.id)
+              .map((deal) => ({
+                ...deal,
+                title: deal.title || 'Untitled Deal',
+                value: Number(deal.value) || 0,
+                stage: deal.stage || 'lead',
+                status: deal.status || 'open',
+                tenant_id: deal.tenant_id || '',
+                created_at: deal.created_at || new Date().toISOString(),
+                updated_at: deal.updated_at || new Date().toISOString(),
+              }));
           });
         },
 

@@ -108,7 +108,7 @@ const CustomerCreatePage: React.FC = () => {
           }}
         >
           {/* Basic Information */}
-          <Card title="Basic Information" bordered={false} style={{ marginBottom: 24 }}>
+          <Card title="Basic Information" variant="borderless" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item

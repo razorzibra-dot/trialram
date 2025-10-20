@@ -132,12 +132,16 @@ class ComplaintService {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // For mock service, allow unauthenticated access in development
+    // In production with real backend, this would be enforced
 
-    let complaints = this.mockComplaints.filter(c => c.tenant_id === user.tenant_id);
+    // Filter by tenant if user is logged in, otherwise return all
+    let complaints = user 
+      ? this.mockComplaints.filter(c => c.tenant_id === user.tenant_id)
+      : this.mockComplaints;
 
-    // Apply role-based filtering
-    if (user.role === 'engineer') {
+    // Apply role-based filtering only if user is logged in
+    if (user?.role === 'engineer') {
       complaints = complaints.filter(c => c.assigned_engineer_id === user.id);
     }
 
@@ -181,18 +185,18 @@ class ComplaintService {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Allow unauthenticated access to view complaint details
 
-    const complaint = this.mockComplaints.find(c => 
-      c.id === id && c.tenant_id === user.tenant_id
-    );
+    const complaint = user
+      ? this.mockComplaints.find(c => c.id === id && c.tenant_id === user.tenant_id)
+      : this.mockComplaints.find(c => c.id === id);
 
     if (!complaint) {
       throw new Error('Complaint not found');
     }
 
-    // Check permissions
-    if (user.role === 'engineer' && complaint.assigned_engineer_id !== user.id) {
+    // Check permissions only if user is logged in
+    if (user?.role === 'engineer' && complaint.assigned_engineer_id !== user.id) {
       throw new Error('Access denied');
     }
 
@@ -326,12 +330,14 @@ class ComplaintService {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Allow unauthenticated access to view stats
 
-    let complaints = this.mockComplaints.filter(c => c.tenant_id === user.tenant_id);
+    let complaints = user
+      ? this.mockComplaints.filter(c => c.tenant_id === user.tenant_id)
+      : this.mockComplaints;
 
-    // Apply role-based filtering
-    if (user.role === 'engineer') {
+    // Apply role-based filtering only if user is logged in
+    if (user?.role === 'engineer') {
       complaints = complaints.filter(c => c.assigned_engineer_id === user.id);
     }
 

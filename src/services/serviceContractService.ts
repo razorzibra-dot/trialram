@@ -136,7 +136,7 @@ const mockContractTemplates: ContractTemplate[] = [
   }
 ];
 
-class ServiceContractService {
+export class ServiceContractService {
   private baseUrl = '/api/service-contract';
 
   // Get all service contracts with filtering and pagination
@@ -494,6 +494,52 @@ Contract cancelled on ${new Date().toISOString().split('T')[0]}. Reason: ${reaso
     } catch (error) {
       console.error('Error fetching contract analytics:', error);
       throw new Error('Failed to fetch contract analytics');
+    }
+  }
+
+  // Generate service contract from product sale
+  async generateServiceContractFromSale(productSale: Record<string, unknown>): Promise<ServiceContract> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Generate contract number
+      const contractNumber = `SC-${new Date().getFullYear()}-${String(mockServiceContracts.length + 1).padStart(4, '0')}`;
+
+      // Create service contract
+      const newContract: ServiceContract = {
+        id: `sc-${Date.now()}`,
+        product_sale_id: productSale.id as string,
+        contract_number: contractNumber,
+        customer_id: productSale.customer_id as string,
+        customer_name: productSale.customer_name as string,
+        product_id: productSale.product_id as string,
+        product_name: productSale.product_name as string,
+        start_date: productSale.delivery_date as string,
+        end_date: productSale.warranty_expiry as string,
+        status: 'active',
+        contract_value: productSale.total_cost as number,
+        annual_value: productSale.total_cost as number,
+        terms: 'Standard service contract terms. Service provider will provide technical support and maintenance during the warranty period.',
+        warranty_period: 12,
+        service_level: 'standard',
+        auto_renewal: true,
+        renewal_notice_period: 60,
+        tenant_id: productSale.tenant_id as string,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: productSale.created_by as string
+      };
+
+      // Add to mock contracts
+      mockServiceContracts.unshift(newContract);
+
+      // Generate PDF URL
+      newContract.pdf_url = `/api/contracts/${newContract.id}.pdf`;
+
+      return newContract;
+    } catch (error) {
+      console.error('Error generating service contract from product sale:', error);
+      throw new Error('Failed to generate service contract');
     }
   }
 }

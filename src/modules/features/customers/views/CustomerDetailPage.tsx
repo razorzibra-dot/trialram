@@ -337,7 +337,7 @@ const CustomerDetailPage: React.FC = () => {
     return (
       <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip="Loading customer details..." />
+          <Spin size="large" spinning tip="Loading customer details..." />
         </div>
       </>
     );
@@ -465,7 +465,7 @@ const CustomerDetailPage: React.FC = () => {
           {/* Customer Information */}
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
-              <Card title="Contact Information" bordered={false}>
+              <Card title="Contact Information" variant="borderless">
                 <Descriptions column={1} bordered size="small">
                   <Descriptions.Item label="Company Name">
                     {customer.company_name}
@@ -520,7 +520,7 @@ const CustomerDetailPage: React.FC = () => {
             </Col>
 
             <Col xs={24} lg={12}>
-              <Card title="Business Information" bordered={false}>
+              <Card title="Business Information" variant="borderless">
                 <Descriptions column={1} bordered size="small">
                   <Descriptions.Item label="Status">
                     {getStatusTag(customer.status || 'unknown')}
@@ -564,7 +564,7 @@ const CustomerDetailPage: React.FC = () => {
             </Col>
 
             <Col xs={24}>
-              <Card title="Address Information" bordered={false}>
+              <Card title="Address Information" variant="borderless">
                 <Descriptions column={1} bordered size="small">
                   <Descriptions.Item label="Address">
                     {customer.address ? (
@@ -592,7 +592,7 @@ const CustomerDetailPage: React.FC = () => {
 
             {customer.notes && (
               <Col xs={24}>
-                <Card title="Notes" bordered={false}>
+                <Card title="Notes" variant="borderless">
                   <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{customer.notes}</p>
                 </Card>
               </Col>
@@ -609,7 +609,7 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Table
             columns={salesColumns}
             dataSource={relatedSales}
@@ -635,7 +635,7 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Table
             columns={contractsColumns}
             dataSource={relatedContracts}
@@ -661,7 +661,7 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Table
             columns={ticketsColumns}
             dataSource={relatedTickets}

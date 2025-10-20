@@ -8,6 +8,7 @@ import { useQuery, useMutation, useInvalidateQueries } from '@/modules/core/hook
 import { useCustomerStore } from '../store/customerStore';
 import { CustomerService, CustomerFilters, CreateCustomerData } from '../services/customerService';
 import { inject } from '@/modules/core/services/ServiceContainer';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Get customer service instance
 const getCustomerService = () => inject<CustomerService>('customerService');
@@ -23,6 +24,10 @@ export function useCustomers(filters: CustomerFilters = {}) {
   const pagination = useCustomerStore((state) => state.pagination);
   const isLoading = useCustomerStore((state) => state.isLoading);
   const error = useCustomerStore((state) => state.error);
+  
+  // Get auth state to check if tenant is initialized
+  const auth = useAuth();
+  const isTenantInitialized = !!auth.tenant?.tenantId;
 
   // Create a stable query key by serializing filter values
   const queryKey = [
@@ -43,6 +48,8 @@ export function useCustomers(filters: CustomerFilters = {}) {
     queryKey,
     () => getCustomerService().getCustomers(filters),
     {
+      // Only run query when tenant is initialized
+      enabled: isTenantInitialized,
       onSuccess: (data) => {
         setCustomers(data.data);
         setPagination({
@@ -53,7 +60,11 @@ export function useCustomers(filters: CustomerFilters = {}) {
         setError(null);
       },
       onError: (error) => {
-        setError(error instanceof Error ? error.message : 'Failed to fetch customers');
+        // Only set error if it's not a tenant initialization issue
+        const errorMsg = error instanceof Error ? error.message : 'Failed to fetch customers';
+        if (!errorMsg.includes('Tenant context not initialized')) {
+          setError(errorMsg);
+        }
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
     }
@@ -73,12 +84,14 @@ export function useCustomers(filters: CustomerFilters = {}) {
  */
 export function useCustomer(id: string) {
   const setSelectedCustomer = useCustomerStore((state) => state.setSelectedCustomer);
+  const auth = useAuth();
+  const isTenantInitialized = !!auth.tenant?.tenantId;
 
   return useQuery(
     ['customer', id],
     () => getCustomerService().getCustomer(id),
     {
-      enabled: !!id,
+      enabled: !!id && isTenantInitialized,
       onSuccess: (customer) => {
         setSelectedCustomer(customer);
       },
@@ -232,10 +245,14 @@ export function useCustomerTags() {
  * Hook for customer statistics
  */
 export function useCustomerStats() {
+  const auth = useAuth();
+  const isTenantInitialized = !!auth.tenant?.tenantId;
+
   return useQuery(
     ['customer-stats'],
     () => getCustomerService().getCustomerStats(),
     {
+      enabled: isTenantInitialized,
       staleTime: 5 * 60 * 1000, // 5 minutes
     }
   );

@@ -147,93 +147,116 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'title',
       header: 'Deal Title',
       sortable: true,
-      render: (deal: Deal) => (
-        <div className="font-medium">
-          {deal.title}
-          {deal.description && (
-            <div className="text-sm text-gray-500 truncate max-w-xs">
-              {deal.description}
-            </div>
-          )}
-        </div>
-      ),
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return (
+          <div className="font-medium">
+            {deal.title || 'Untitled Deal'}
+            {deal.description && (
+              <div className="text-sm text-gray-500 truncate max-w-xs">
+                {deal.description}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'customer_name',
       header: 'Customer',
       sortable: true,
-      render: (deal: Deal) => deal.customer_name || 'N/A',
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return deal.customer_name || <span className="text-gray-400">Unassigned</span>;
+      },
     },
     {
       key: 'value',
       header: 'Value',
       sortable: true,
-      render: (deal: Deal) => formatCurrency(deal.value || 0),
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return formatCurrency(deal.value || 0);
+      },
     },
     {
       key: 'stage',
       header: 'Stage',
       sortable: true,
-      render: (deal: Deal) => (
-        <div className="space-y-2">
-          {getStageBadge(deal.stage || 'lead')}
-          <Progress 
-            value={getStageProgress(deal.stage || 'lead')} 
-            className="h-1"
-          />
-        </div>
-      ),
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return (
+          <div className="space-y-2">
+            {getStageBadge(deal.stage || 'lead')}
+            <Progress 
+              value={getStageProgress(deal.stage || 'lead')} 
+              className="h-1"
+            />
+          </div>
+        );
+      },
     },
     {
       key: 'assigned_to_name',
       header: 'Assigned To',
       sortable: true,
-      render: (deal: Deal) => deal.assigned_to_name || 'Unassigned',
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return deal.assigned_to_name || <span className="text-gray-400">Unassigned</span>;
+      },
     },
     {
       key: 'expected_close_date',
       header: 'Expected Close',
       sortable: true,
-      render: (deal: Deal) => {
-        if (!deal.expected_close_date) return 'N/A';
-        return new Date(deal.expected_close_date).toLocaleDateString();
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        if (!deal.expected_close_date) return <span className="text-gray-400">N/A</span>;
+        try {
+          return new Date(deal.expected_close_date).toLocaleDateString();
+        } catch {
+          return <span className="text-gray-400">Invalid Date</span>;
+        }
       },
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (deal: Deal) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onViewDeal?.(deal)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            {hasPermission('write') && (
-              <DropdownMenuItem onClick={() => onEditDeal?.(deal)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Deal
+      render: (deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onViewDeal?.(deal)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
               </DropdownMenuItem>
-            )}
-            {hasPermission('delete') && (
-              <DropdownMenuItem 
-                onClick={() => handleDeleteDeal(deal)}
-                className="text-red-600"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Deal
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+              {hasPermission('write') && (
+                <DropdownMenuItem onClick={() => onEditDeal?.(deal)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Deal
+                </DropdownMenuItem>
+              )}
+              {hasPermission('delete') && (
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteDeal(deal)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Deal
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 

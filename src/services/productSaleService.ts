@@ -9,110 +9,107 @@ import {
 import { pdfTemplateService } from './pdfTemplateService';
 import { PDFGenerationResponse } from '@/types/pdfTemplates';
 
-// Mock data for development
-const mockProductSales: ProductSale[] = [
+import { authService } from './authService';
+
+// Mock data for development - TENANT-AWARE (Aligned with seed.sql data)
+// These UUIDs match the seed.sql sample data for consistency
+const mockProductSalesBase: ProductSale[] = [
   {
-    id: '1',
-    customer_id: 'cust-001',
-    customer_name: 'Acme Corporation',
-    product_id: 'prod-001',
-    product_name: 'Enterprise CRM Suite',
-    units: 5,
-    cost_per_unit: 2500.00,
-    total_cost: 12500.00,
-    delivery_date: '2024-01-15',
-    warranty_expiry: '2025-01-15',
+    id: 'd50e8400-e29b-41d4-a716-446655440001',
+    customer_id: 'a50e8400-e29b-41d4-a716-446655440001',
+    customer_name: 'ABC Manufacturing',
+    product_id: '950e8400-e29b-41d4-a716-446655440003',
+    product_name: 'Hydraulic Press Machine',
+    units: 1.00,
+    cost_per_unit: 75000.00,
+    total_cost: 75000.00,
+    delivery_date: '2024-09-01',
+    warranty_expiry: '2025-09-01',
     status: 'new',
-    notes: 'Initial deployment for sales team. Includes training and setup.',
-    attachments: [
-      {
-        id: 'att-001',
-        name: 'purchase_order.pdf',
-        size: 245760,
-        type: 'application/pdf',
-        url: '/api/files/att-001',
-        uploaded_at: '2024-01-10T10:30:00Z'
-      }
-    ],
-    service_contract_id: 'sc-001',
-    tenant_id: 'tenant-001',
-    created_at: '2024-01-10T10:30:00Z',
-    updated_at: '2024-01-10T10:30:00Z',
-    created_by: 'user-001'
-  },
-  {
-    id: '2',
-    customer_id: 'cust-002',
-    customer_name: 'TechStart Inc',
-    product_id: 'prod-002',
-    product_name: 'Analytics Dashboard Pro',
-    units: 2,
-    cost_per_unit: 1800.00,
-    total_cost: 3600.00,
-    delivery_date: '2024-02-01',
-    warranty_expiry: '2025-02-01',
-    status: 'new',
-    notes: 'Startup package with extended support.',
+    notes: 'Heavy machinery delivery with installation service included.',
     attachments: [],
-    service_contract_id: 'sc-002',
-    tenant_id: 'tenant-001',
-    created_at: '2024-01-25T14:20:00Z',
-    updated_at: '2024-01-25T14:20:00Z',
-    created_by: 'user-002'
+    service_contract_id: 'c50e8400-e29b-41d4-a716-446655440001',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001', // Acme Corporation
+    created_at: '2024-06-15T10:30:00Z',
+    updated_at: '2024-06-15T10:30:00Z',
+    created_by: 'a3c91c65-343d-4ff4-b9ab-f36adb371495'
   },
   {
-    id: '3',
-    customer_id: 'cust-003',
-    customer_name: 'Global Enterprises',
-    product_id: 'prod-001',
-    product_name: 'Enterprise CRM Suite',
-    units: 25,
-    cost_per_unit: 2200.00,
-    total_cost: 55000.00,
-    delivery_date: '2023-12-01',
-    warranty_expiry: '2024-12-01',
+    id: 'd50e8400-e29b-41d4-a716-446655440002',
+    customer_id: 'a50e8400-e29b-41d4-a716-446655440002',
+    customer_name: 'XYZ Logistics',
+    product_id: '950e8400-e29b-41d4-a716-446655440002',
+    product_name: 'Sensor Array Kit',
+    units: 2.00,
+    cost_per_unit: 3500.00,
+    total_cost: 7000.00,
+    delivery_date: '2024-08-01',
+    warranty_expiry: '2025-08-01',
+    status: 'new',
+    notes: 'IoT sensor kit for warehouse monitoring.',
+    attachments: [],
+    service_contract_id: 'c50e8400-e29b-41d4-a716-446655440002',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001', // Acme Corporation
+    created_at: '2024-06-10T14:20:00Z',
+    updated_at: '2024-06-10T14:20:00Z',
+    created_by: 'd078f352-e074-4b26-bd3d-94d5751aa50c'
+  },
+  {
+    id: 'd50e8400-e29b-41d4-a716-446655440003',
+    customer_id: 'a50e8400-e29b-41d4-a716-446655440004',
+    customer_name: 'Innovation Labs',
+    product_id: '950e8400-e29b-41d4-a716-446655440005',
+    product_name: 'Enterprise CRM License',
+    units: 1.00,
+    cost_per_unit: 15000.00,
+    total_cost: 15000.00,
+    delivery_date: '2024-06-01',
+    warranty_expiry: '2025-06-01',
     status: 'expired',
-    notes: 'Large enterprise deployment. Renewal due.',
-    attachments: [
-      {
-        id: 'att-002',
-        name: 'contract_signed.pdf',
-        size: 512000,
-        type: 'application/pdf',
-        url: '/api/files/att-002',
-        uploaded_at: '2023-11-28T16:45:00Z'
-      },
-      {
-        id: 'att-003',
-        name: 'technical_specs.docx',
-        size: 128000,
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        url: '/api/files/att-003',
-        uploaded_at: '2023-11-28T16:45:00Z'
-      }
-    ],
-    service_contract_id: 'sc-003',
-    tenant_id: 'tenant-001',
-    created_at: '2023-11-28T16:45:00Z',
-    updated_at: '2024-01-15T09:30:00Z',
-    created_by: 'user-001'
+    notes: 'CRM software license for startup. Renewal due soon.',
+    attachments: [],
+    service_contract_id: 'c50e8400-e29b-41d4-a716-446655440003',
+    tenant_id: '550e8400-e29b-41d4-a716-446655440002', // Tech Solutions Inc
+    created_at: '2024-06-01T10:00:00Z',
+    updated_at: '2024-06-01T10:00:00Z',
+    created_by: 'e7bf21ab-b09f-450c-a389-081c1f8179b4'
   }
 ];
 
 class ProductSaleService {
   private baseUrl = '/api/product-sale';
 
+  /**
+   * Get tenant ID from context or fallback to auth service
+   * Ensures tenant isolation for multi-tenant security
+   */
+  private getTenantId(tenantId?: string): string {
+    if (tenantId) return tenantId;
+    
+    const user = authService.getCurrentUser();
+    if (user && (user as Record<string, unknown>).tenant_id) {
+      return (user as Record<string, unknown>).tenant_id as string;
+    }
+    
+    throw new Error('Unauthorized: Unable to determine tenant context');
+  }
+
   // Get all product sales with filtering and pagination
   async getProductSales(
     filters: ProductSaleFilters = {},
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    tenantId?: string
   ): Promise<ProductSalesResponse> {
     try {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      let filteredSales = [...mockProductSales];
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+
+      // Filter by tenant first for security
+      let filteredSales = mockProductSalesBase.filter(sale => sale.tenant_id === finalTenantId);
 
       // Apply filters
       if (filters.search) {
@@ -173,11 +170,17 @@ class ProductSaleService {
   }
 
   // Get single product sale by ID
-  async getProductSaleById(id: string): Promise<ProductSale> {
+  async getProductSaleById(id: string, tenantId?: string): Promise<ProductSale> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const sale = mockProductSales.find(s => s.id === id);
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+
+      const sale = mockProductSalesBase.find(
+        s => s.id === id && s.tenant_id === finalTenantId
+      );
+      
       if (!sale) {
         throw new Error('Product sale not found');
       }
@@ -190,9 +193,13 @@ class ProductSaleService {
   }
 
   // Create new product sale
-  async createProductSale(data: ProductSaleFormData): Promise<ProductSale> {
+  async createProductSale(data: ProductSaleFormData, tenantId?: string): Promise<ProductSale> {
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+      const user = authService.getCurrentUser() as Record<string, unknown>;
 
       // Calculate warranty expiry (delivery date + 1 year)
       const deliveryDate = new Date(data.delivery_date);
@@ -220,14 +227,14 @@ class ProductSaleService {
         status,
         notes: data.notes,
         attachments: [], // File uploads would be handled separately
-        tenant_id: 'tenant-001',
+        tenant_id: finalTenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: 'current-user'
+        created_by: (user?.id as string) || 'system'
       };
 
       // Add to mock data
-      mockProductSales.unshift(newSale);
+      mockProductSalesBase.unshift(newSale);
 
       // Auto-generate service contract
       await this.createServiceContract(newSale);
@@ -240,16 +247,22 @@ class ProductSaleService {
   }
 
   // Update existing product sale
-  async updateProductSale(id: string, data: Partial<ProductSaleFormData>): Promise<ProductSale> {
+  async updateProductSale(id: string, data: Partial<ProductSaleFormData>, tenantId?: string): Promise<ProductSale> {
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      const index = mockProductSales.findIndex(s => s.id === id);
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+
+      const index = mockProductSalesBase.findIndex(
+        s => s.id === id && s.tenant_id === finalTenantId
+      );
+      
       if (index === -1) {
         throw new Error('Product sale not found');
       }
 
-      const existingSale = mockProductSales[index];
+      const existingSale = mockProductSalesBase[index];
       const updatedSale: ProductSale = {
         ...existingSale,
         ...data,
@@ -275,7 +288,7 @@ class ProductSaleService {
         }
       }
 
-      mockProductSales[index] = updatedSale;
+      mockProductSalesBase[index] = updatedSale;
       return updatedSale;
     } catch (error) {
       console.error('Error updating product sale:', error);
@@ -284,30 +297,47 @@ class ProductSaleService {
   }
 
   // Delete product sale
-  async deleteProductSale(id: string): Promise<void> {
+  async deleteProductSale(id: string, tenantId?: string): Promise<void> {
     try {
       await new Promise(resolve => setTimeout(resolve, 400));
 
-      const index = mockProductSales.findIndex(s => s.id === id);
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+
+      const index = mockProductSalesBase.findIndex(
+        s => s.id === id && s.tenant_id === finalTenantId
+      );
+      
       if (index === -1) {
         throw new Error('Product sale not found');
       }
 
-      mockProductSales.splice(index, 1);
+      mockProductSalesBase.splice(index, 1);
     } catch (error) {
       console.error('Error deleting product sale:', error);
       throw new Error('Failed to delete product sale');
     }
   }
 
+  // Get product sales analytics
+  async getProductSalesAnalytics(tenantId?: string): Promise<ProductSalesAnalytics> {
+    return this.getAnalytics(tenantId);
+  }
+
   // Get analytics data
-  async getAnalytics(): Promise<ProductSalesAnalytics> {
+  async getAnalytics(tenantId?: string): Promise<ProductSalesAnalytics> {
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      const totalSales = mockProductSales.length;
-      const totalRevenue = mockProductSales.reduce((sum, sale) => sum + sale.total_cost, 0);
-      const averageDealSize = totalRevenue / totalSales;
+      // Get current tenant and validate authorization
+      const finalTenantId = this.getTenantId(tenantId);
+
+      // Filter by tenant
+      const tenantSales = mockProductSalesBase.filter(sale => sale.tenant_id === finalTenantId);
+      
+      const totalSales = tenantSales.length;
+      const totalRevenue = tenantSales.reduce((sum, sale) => sum + sale.total_cost, 0);
+      const averageDealSize = totalSales > 0 ? totalRevenue / totalSales : 0;
 
       // Mock monthly data
       const salesByMonth = [
@@ -334,7 +364,7 @@ class ProductSaleService {
       ];
 
       // Status distribution
-      const statusCounts = mockProductSales.reduce((acc, sale) => {
+      const statusCounts = tenantSales.reduce((acc, sale) => {
         acc[sale.status] = (acc[sale.status] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -342,14 +372,14 @@ class ProductSaleService {
       const statusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
         status,
         count,
-        percentage: (count / totalSales) * 100
+        percentage: totalSales > 0 ? (count / totalSales) * 100 : 0
       }));
 
       // Warranty expiring soon (within 30 days)
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
       
-      const warrantyExpiringSoon = mockProductSales.filter(sale => {
+      const warrantyExpiringSoon = tenantSales.filter(sale => {
         const warrantyDate = new Date(sale.warranty_expiry);
         return warrantyDate <= thirtyDaysFromNow && warrantyDate >= new Date();
       });
@@ -443,19 +473,55 @@ class ProductSaleService {
     }
   }
 
+  // Generate service contract from product sale
+  async generateServiceContract(saleId: string): Promise<any> {
+    try {
+      const sale = await this.getProductSaleById(saleId);
+      
+      // Generate contract number
+      const currentYear = new Date().getFullYear();
+      const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      const contractNumber = `SC-${currentYear}-${randomSuffix}`;
+      
+      // Create service contract data
+      const serviceContractData = {
+        product_sale_id: sale.id,
+        contract_number: contractNumber,
+        customer_id: sale.customer_id,
+        customer_name: sale.customer_name,
+        product_id: sale.product_id,
+        product_name: sale.product_name,
+        start_date: sale.delivery_date,
+        end_date: sale.warranty_expiry,
+        status: 'active',
+        contract_value: sale.total_cost,
+        annual_value: sale.total_cost,
+        terms: 'Standard service contract terms. Service provider will provide technical support and maintenance.',
+        warranty_period: 12,
+        service_level: 'standard' as const,
+        auto_renewal: true,
+        renewal_notice_period: 60,
+        tenant_id: sale.tenant_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: sale.created_by
+      };
+      
+      // In production, this would be saved to the database
+      console.log('Generated service contract:', serviceContractData);
+      
+      return serviceContractData;
+    } catch (error) {
+      console.error('Error generating service contract:', error);
+      throw new Error('Failed to generate service contract');
+    }
+  }
+
   // Private method to auto-create service contract
   private async createServiceContract(productSale: ProductSale): Promise<void> {
     try {
-      // This would call the service contract service
-      // For now, just simulate the creation
-      console.log('Auto-creating service contract for product sale:', productSale.id);
-      
-      // The service contract would be created with:
-      // - Start date: delivery date
-      // - End date: delivery date + 1 year
-      // - Contract value: total cost
-      // - Auto-renewal: true by default
-      // - Service level: standard by default
+      // Auto-generate service contract when product sale is created
+      await this.generateServiceContract(productSale.id);
     } catch (error) {
       console.error('Error creating service contract:', error);
       // Don't throw error here as it shouldn't block the product sale creation

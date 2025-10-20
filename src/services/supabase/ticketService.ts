@@ -34,7 +34,7 @@ export class SupabaseTicketService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          assigned_user:users(id, firstName, lastName, email),
+          assigned_user:assigned_to(id, first_name, last_name, email),
           comments:ticket_comments(*),
           attachments:ticket_attachments(*)`
         );
@@ -85,7 +85,7 @@ export class SupabaseTicketService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          assigned_user:users(id, firstName, lastName, email),
+          assigned_user:assigned_to(id, first_name, last_name, email),
           comments:ticket_comments(*),
           attachments:ticket_attachments(*)`
         )
@@ -132,7 +132,7 @@ export class SupabaseTicketService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          assigned_user:users(id, firstName, lastName, email),
+          assigned_user:assigned_to(id, first_name, last_name, email),
           comments:ticket_comments(*),
           attachments:ticket_attachments(*)`
         )
@@ -177,7 +177,7 @@ export class SupabaseTicketService extends BaseSupabaseService {
         .select(
           `*,
           customer:customers(*),
-          assigned_user:users(id, firstName, lastName, email),
+          assigned_user:assigned_to(id, first_name, last_name, email),
           comments:ticket_comments(*),
           attachments:ticket_attachments(*)`
         )
@@ -390,8 +390,8 @@ export class SupabaseTicketService extends BaseSupabaseService {
       sub_category: dbTicket.sub_category || '',
       source: dbTicket.source || '',
       assigned_to: dbTicket.assigned_to,
-      assigned_to_name: dbTicket.assigned_user?.firstName
-        ? `${dbTicket.assigned_user.firstName} ${dbTicket.assigned_user.lastName}`
+      assigned_to_name: dbTicket.assigned_user?.first_name
+        ? `${dbTicket.assigned_user.first_name} ${dbTicket.assigned_user.last_name}`
         : '',
       reported_by: dbTicket.reported_by || '',
       reported_by_name: dbTicket.reported_by_name || '',

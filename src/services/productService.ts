@@ -91,7 +91,7 @@ class ProductService {
     status?: string;
     search?: string;
     type?: string;
-  }): Promise<{
+  }, tenantId?: string): Promise<{
     data: Product[];
     total: number;
     page: number;
@@ -101,9 +101,11 @@ class ProductService {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
-    let products = this.mockProducts.filter(p => p.tenant_id === user.tenant_id);
+    let products = this.mockProducts.filter(p => p.tenant_id === finalTenantId);
 
     // Apply filters
     if (filters) {
@@ -145,14 +147,16 @@ class ProductService {
     };
   }
 
-  async getProduct(id: string): Promise<Product> {
+  async getProduct(id: string, tenantId?: string): Promise<Product> {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
     const product = this.mockProducts.find(p => 
-      p.id === id && p.tenant_id === user.tenant_id
+      p.id === id && p.tenant_id === finalTenantId
     );
 
     if (!product) {
@@ -162,15 +166,17 @@ class ProductService {
     return product;
   }
 
-  async createProduct(data: ProductFormData): Promise<Product> {
+  async createProduct(data: ProductFormData, tenantId?: string): Promise<Product> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
     // Check if SKU already exists
     const existingSku = this.mockProducts.find(p => 
-      p.sku === data.sku && p.tenant_id === user.tenant_id
+      p.sku === data.sku && p.tenant_id === finalTenantId
     );
     if (existingSku) {
       throw new Error('SKU already exists');
@@ -198,7 +204,7 @@ class ProductService {
       warranty_period: data.warranty_period || 0,
       service_contract_available: data.service_contract_available || false,
       tags: [],
-      tenant_id: user.tenant_id,
+      tenant_id: finalTenantId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -207,14 +213,16 @@ class ProductService {
     return newProduct;
   }
 
-  async updateProduct(id: string, data: Partial<ProductFormData>): Promise<Product> {
+  async updateProduct(id: string, data: Partial<ProductFormData>, tenantId?: string): Promise<Product> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
     const index = this.mockProducts.findIndex(p => 
-      p.id === id && p.tenant_id === user.tenant_id
+      p.id === id && p.tenant_id === finalTenantId
     );
 
     if (index === -1) {
@@ -223,7 +231,7 @@ class ProductService {
 
     // Check if SKU already exists (excluding current product)
     const existingSku = this.mockProducts.find(p => 
-      p.sku === data.sku && p.tenant_id === user.tenant_id && p.id !== id
+      p.sku === data.sku && p.tenant_id === finalTenantId && p.id !== id
     );
     if (existingSku) {
       throw new Error('SKU already exists');
@@ -248,14 +256,16 @@ class ProductService {
     return updatedProduct;
   }
 
-  async deleteProduct(id: string): Promise<void> {
+  async deleteProduct(id: string, tenantId?: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
     const index = this.mockProducts.findIndex(p => 
-      p.id === id && p.tenant_id === user.tenant_id
+      p.id === id && p.tenant_id === finalTenantId
     );
 
     if (index === -1) {
@@ -269,13 +279,15 @@ class ProductService {
     category?: string;
     status?: string;
     search?: string;
-  }): Promise<Blob> {
+  }, tenantId?: string): Promise<Blob> {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
-    let products = this.mockProducts.filter(p => p.tenant_id === user.tenant_id);
+    let products = this.mockProducts.filter(p => p.tenant_id === finalTenantId);
 
     // Apply filters
     if (filters) {

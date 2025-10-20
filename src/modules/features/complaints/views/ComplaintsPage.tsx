@@ -412,7 +412,7 @@ export const ComplaintsPage: React.FC = () => {
         >
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin tip="Loading complaints..." />
+              <Spin spinning tip="Loading complaints..." />
             </div>
           ) : complaints.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>

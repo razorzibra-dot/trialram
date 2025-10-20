@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,13 +51,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { productSaleService } from '@/services/productSaleService';
-import { customerService } from '@/services';
+import { productSaleService, customerService } from '@/services';
 import { productService } from '@/services/productService';
 import { ProductSale, ProductSaleFormData } from '@/types/productSales';
 import { Customer } from '@/types/crm';
 import { Product } from '@/types/masters';
 import MasterDataSelect from '@/components/masters/MasterDataSelect';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Form validation schema
 const productSaleSchema = z.object({
@@ -84,6 +85,7 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
   productSale
 }) => {
   const isEditing = !!productSale;
+  const { tenant } = useAuth();
 
   // State management
   const [loading, setLoading] = useState(false);
@@ -111,10 +113,46 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
   const { watch, setValue, getValues } = form;
   const watchedValues = watch(['units', 'cost_per_unit', 'delivery_date']);
 
-  // Load initial data
+  const loadInitialData = useCallback(async () => {
+    try {
+      setLoadingData(true);
+      
+      // Load customers and products with tenant context
+      const tenantId = tenant?.tenantId || 'tenant_1'; // Fallback to default tenant
+      const [customersResponse, productsResponse] = await Promise.all([
+        customerService.getCustomers({}, 1, 100, tenantId),
+        productService.getProducts(1, 100, {}, tenantId)
+      ]);
+
+      // Handle both array and paginated response formats
+      const customerData = Array.isArray(customersResponse) ? customersResponse : customersResponse.data;
+      const productData = productsResponse.data;
+
+      setCustomers(customerData);
+      setProducts(productData);
+
+      // Set selected items if editing
+      if (productSale) {
+        const customer = customerData.find(c => c.id === productSale.customer_id);
+        const product = productData.find(p => p.id === productSale.product_id);
+        
+        setSelectedCustomer(customer || null);
+        setSelectedProduct(product || null);
+      }
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      toast.error('Failed to load form data');
+    } finally {
+      setLoadingData(false);
+    }
+  }, [tenant?.tenantId, productSale]);
+
+  // Load initial data (only when tenant context is ready)
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (tenant?.tenantId) {
+      loadInitialData();
+    }
+  }, [tenant?.tenantId, loadInitialData]);
 
   // Calculate totals when units or cost changes
   useEffect(() => {
@@ -130,35 +168,6 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
       setValue('cost_per_unit', selectedProduct.price);
     }
   }, [selectedProduct, setValue, isEditing]);
-
-  const loadInitialData = async () => {
-    try {
-      setLoadingData(true);
-      
-      // Load customers and products
-      const [customersResponse, productsResponse] = await Promise.all([
-        customerService.getCustomers({}, 1, 100),
-        productService.getProducts({}, 1, 100)
-      ]);
-
-      setCustomers(customersResponse.data);
-      setProducts(productsResponse.data);
-
-      // Set selected items if editing
-      if (productSale) {
-        const customer = customersResponse.data.find(c => c.id === productSale.customer_id);
-        const product = productsResponse.data.find(p => p.id === productSale.product_id);
-        
-        setSelectedCustomer(customer || null);
-        setSelectedProduct(product || null);
-      }
-    } catch (error) {
-      console.error('Error loading initial data:', error);
-      toast.error('Failed to load form data');
-    } finally {
-      setLoadingData(false);
-    }
-  };
 
   const handleCustomerChange = (customerId: string) => {
     const customer = customers.find(c => c.id === customerId);

@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ComplaintFormModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
   onOpenChange,
   onSuccess
 }) => {
+  const { tenant } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [engineers, setEngineers] = useState<Array<{ id: string; name: string; }>>([]);
@@ -49,11 +51,11 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
   });
 
   useEffect(() => {
-    if (open) {
+    if (open && tenant?.tenantId) {
       fetchCustomers();
       fetchEngineers();
     }
-  }, [open]);
+  }, [open, tenant?.tenantId]);
 
   const fetchCustomers = async () => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ServiceContract, ServiceContractFormData } from '@/types/productSales';
 import { Customer } from '@/types/crm';
 import { Product } from '@/types/masters';
@@ -30,7 +30,7 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
   productSaleId,
   onSuccess
 }) => {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -55,8 +55,50 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
     renewal_notice_period: 60
   });
 
+  const resetForm = useCallback(() => {
+    setFormData({
+      product_sale_id: productSaleId || '',
+      contract_number: '',
+      customer_id: '',
+      customer_name: '',
+      product_id: '',
+      product_name: '',
+      start_date: '',
+      end_date: '',
+      status: 'active',
+      contract_value: 0,
+      annual_value: 0,
+      terms: '',
+      warranty_period: 12,
+      service_level: 'standard',
+      auto_renewal: true,
+      renewal_notice_period: 60
+    });
+    setActiveTab('basic');
+  }, [productSaleId]);
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      const [customersData, productsResponse] = await Promise.all([
+        customerService.getCustomers(),
+        productService.getProducts()
+      ]);
+      setCustomers(Array.isArray(customersData) ? customersData : []);
+      setProducts(Array.isArray(productsResponse?.data) ? productsResponse.data : []);
+    } catch (error) {
+      console.error('Error loading form data:', error);
+      setCustomers([]);
+      setProducts([]);
+      toast({
+        title: 'Error',
+        description: 'Failed to load form data',
+        variant: 'destructive'
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    if (open) {
+    if (open && tenant?.tenantId) {
       loadInitialData();
       if (serviceContract) {
         setFormData({
@@ -81,49 +123,7 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
         resetForm();
       }
     }
-  }, [open, serviceContract, productSaleId]);
-
-  const loadInitialData = async () => {
-    try {
-      const [customersData, productsResponse] = await Promise.all([
-        customerService.getCustomers(),
-        productService.getProducts()
-      ]);
-      setCustomers(Array.isArray(customersData) ? customersData : []);
-      setProducts(Array.isArray(productsResponse?.data) ? productsResponse.data : []);
-    } catch (error) {
-      console.error('Error loading form data:', error);
-      setCustomers([]);
-      setProducts([]);
-      toast({
-        title: 'Error',
-        description: 'Failed to load form data',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      product_sale_id: productSaleId || '',
-      contract_number: '',
-      customer_id: '',
-      customer_name: '',
-      product_id: '',
-      product_name: '',
-      start_date: '',
-      end_date: '',
-      status: 'active',
-      contract_value: 0,
-      annual_value: 0,
-      terms: '',
-      warranty_period: 12,
-      service_level: 'standard',
-      auto_renewal: true,
-      renewal_notice_period: 60
-    });
-    setActiveTab('basic');
-  };
+  }, [open, serviceContract, productSaleId, tenant?.tenantId, loadInitialData, resetForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

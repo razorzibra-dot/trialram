@@ -132,6 +132,33 @@ export function DataTable<T extends Record<string, unknown>>({
     return record[rowKey] || index.toString();
   };
 
+  // Helper to get column key - handles both custom Column and TanStack ColumnDef formats
+  const getColumnKey = (column: unknown, index: number): string => {
+    if (column && typeof column === 'object') {
+      const col = column as Record<string, unknown>;
+      return (col.key as string) || (col.id as string) || `col-${index}`;
+    }
+    return `col-${index}`;
+  };
+
+  // Helper to get column title - handles both custom Column and TanStack ColumnDef formats
+  const getColumnTitle = (column: unknown): string => {
+    if (column && typeof column === 'object') {
+      const col = column as Record<string, unknown>;
+      return (col.title as string) || (col.header as string) || '';
+    }
+    return '';
+  };
+
+  // Helper to get column property - handles both formats
+  const getColumnProperty = (column: unknown, property: string): unknown => {
+    if (column && typeof column === 'object') {
+      const col = column as Record<string, unknown>;
+      return col[property];
+    }
+    return undefined;
+  };
+
   // Handle search
   const handleSearch = (value: string) => {
     setSearchValue(value);
@@ -139,25 +166,29 @@ export function DataTable<T extends Record<string, unknown>>({
   };
 
   // Handle sorting
-  const handleSort = (column: Column<T>) => {
-    if (!column.sortable || !sorting) return;
+  const handleSort = (column: Column<T> | unknown) => {
+    const isSortable = getColumnProperty(column, 'sortable');
+    if (!isSortable || !sorting) return;
 
+    const columnKey = getColumnKey(column, 0);
     const { sortBy, sortOrder } = sorting;
     let newSortOrder: 'asc' | 'desc' = 'asc';
 
-    if (sortBy === column.key) {
+    if (sortBy === columnKey) {
       newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     }
 
-    sorting.onChange(column.key, newSortOrder);
+    sorting.onChange(columnKey, newSortOrder);
   };
 
   // Render sort icon
-  const renderSortIcon = (column: Column<T>) => {
-    if (!column.sortable) return null;
+  const renderSortIcon = (column: Column<T> | unknown) => {
+    const isSortable = getColumnProperty(column, 'sortable');
+    if (!isSortable) return null;
 
+    const columnKey = getColumnKey(column, 0);
     const { sortBy, sortOrder } = sorting || {};
-    const isActive = sortBy === column.key;
+    const isActive = sortBy === columnKey;
 
     if (isActive) {
       return sortOrder === 'asc' ? (
@@ -172,10 +203,20 @@ export function DataTable<T extends Record<string, unknown>>({
 
   // Render cell content
   const renderCell = (column: Column<T>, record: T, index: number) => {
-    const value = column.dataIndex ? record[column.dataIndex] : record[column.key];
+    const dataIndex = getColumnProperty(column, 'dataIndex') || getColumnProperty(column, 'accessorKey');
+    const key = getColumnProperty(column, 'key');
+    const value = dataIndex ? record[dataIndex as keyof T] : (key ? record[key as keyof T] : undefined);
+    
+    const renderFn = getColumnProperty(column, 'render');
+    if (renderFn && typeof renderFn === 'function') {
+      return renderFn(value, record, index);
+    }
 
-    if (column.render) {
-      return column.render(value, record, index);
+    const cellFn = getColumnProperty(column, 'cell');
+    if (cellFn && typeof cellFn === 'function') {
+      // TanStack React Table cell renderer
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return cellFn({ row: { original: record, getValue: () => value }, getValue: () => value } as any);
     }
 
     return value;
@@ -292,7 +333,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     checked={
                       data.length > 0 &&
                       data.every((record) =>
-                        selection.selectedRowKeys.includes(getRowKey(record, 0))
+                        selection.selectedRowKeys?.includes(getRowKey(record, 0))
                       )
                     }
                     onCheckedChange={(checked) => {
@@ -306,30 +347,39 @@ export function DataTable<T extends Record<string, unknown>>({
                   />
                 </TableHead>
               )}
-              {columns.map((column) => (
-                <TableHead
-                  key={column.key}
-                  className={cn(
-                    column.className,
-                    column.sortable && 'cursor-pointer select-none',
-                    column.align === 'center' && 'text-center',
-                    column.align === 'right' && 'text-right'
-                  )}
-                  style={{ width: column.width }}
-                  onClick={() => handleSort(column)}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>{column.title}</span>
-                    {renderSortIcon(column)}
-                  </div>
-                </TableHead>
-              ))}
+              {columns.map((column, idx) => {
+                const columnKey = getColumnKey(column, idx);
+                const columnTitle = getColumnTitle(column);
+                const isSortable = getColumnProperty(column, 'sortable');
+                const align = getColumnProperty(column, 'align');
+                const width = getColumnProperty(column, 'width');
+                const className = getColumnProperty(column, 'className');
+                
+                return (
+                  <TableHead
+                    key={columnKey}
+                    className={cn(
+                      className as string,
+                      isSortable && 'cursor-pointer select-none',
+                      align === 'center' && 'text-center',
+                      align === 'right' && 'text-right'
+                    )}
+                    style={{ width: width as string | number }}
+                    onClick={() => handleSort(column)}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>{columnTitle}</span>
+                      {renderSortIcon(column)}
+                    </div>
+                  </TableHead>
+                );
+              })}
               {actions?.rowActions && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
-              <TableRow>
+              <TableRow key="empty-row">
                 <TableCell
                   colSpan={columns.length + (selection ? 1 : 0) + (actions?.rowActions ? 1 : 0)}
                   className="text-center py-8 text-gray-500"
@@ -340,7 +390,7 @@ export function DataTable<T extends Record<string, unknown>>({
             ) : (
               data.map((record, index) => {
                 const key = getRowKey(record, index);
-                const isSelected = selection?.selectedRowKeys.includes(key);
+                const isSelected = selection?.selectedRowKeys?.includes(key) ?? false;
 
                 return (
                   <TableRow
@@ -356,9 +406,10 @@ export function DataTable<T extends Record<string, unknown>>({
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => {
+                            const currentKeys = selection.selectedRowKeys ?? [];
                             const newSelectedKeys = checked
-                              ? [...selection.selectedRowKeys, key]
-                              : selection.selectedRowKeys.filter((k) => k !== key);
+                              ? [...currentKeys, key]
+                              : currentKeys.filter((k) => k !== key);
                             const newSelectedRows = data.filter((r, i) =>
                               newSelectedKeys.includes(getRowKey(r, i))
                             );
@@ -368,18 +419,24 @@ export function DataTable<T extends Record<string, unknown>>({
                         />
                       </TableCell>
                     )}
-                    {columns.map((column) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          column.className,
-                          column.align === 'center' && 'text-center',
-                          column.align === 'right' && 'text-right'
-                        )}
-                      >
-                        {renderCell(column, record, index)}
-                      </TableCell>
-                    ))}
+                    {columns.map((column, colIdx) => {
+                      const columnKey = getColumnKey(column, colIdx);
+                      const align = getColumnProperty(column, 'align');
+                      const cellClassName = getColumnProperty(column, 'className');
+                      
+                      return (
+                        <TableCell
+                          key={columnKey}
+                          className={cn(
+                            cellClassName as string,
+                            align === 'center' && 'text-center',
+                            align === 'right' && 'text-right'
+                          )}
+                        >
+                          {renderCell(column, record, index)}
+                        </TableCell>
+                      );
+                    })}
                     {actions?.rowActions && (
                       <TableCell>
                         <DropdownMenu>

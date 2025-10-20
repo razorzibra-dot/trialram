@@ -29,6 +29,11 @@ import {
   Typography,
   Alert,
   Divider,
+  Tabs,
+  Skeleton,
+  Empty,
+  Tooltip,
+  Badge,
 } from 'antd';
 import {
   EditOutlined,
@@ -43,35 +48,17 @@ import {
   UserOutlined,
   DownloadOutlined,
   MailOutlined,
+  ReloadOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { PageHeader } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
+import { serviceContractService } from '@/services';
+import { ServiceContract } from '@/types/productSales';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
-
-interface ServiceContract {
-  id: string;
-  contract_number: string;
-  customer_id: string;
-  customer_name: string;
-  product_id: string;
-  product_name: string;
-  start_date: string;
-  end_date: string;
-  renewal_date: string;
-  status: 'active' | 'expired' | 'pending' | 'cancelled';
-  contract_type: 'annual' | 'monthly' | 'quarterly';
-  contract_value: number;
-  payment_terms: string;
-  billing_cycle: string;
-  auto_renewal: boolean;
-  description: string;
-  terms_conditions: string;
-  created_at: string;
-  created_by: string;
-}
 
 interface ContractActivity {
   id: string;
@@ -83,18 +70,17 @@ interface ContractActivity {
 }
 
 interface EditContractValues {
-  contract_number?: string;
-  customer_name?: string;
-  product_name?: string;
-  payment_terms?: string;
-  billing_cycle?: string;
-  contract_value?: number;
-  description?: string;
+  service_level?: 'basic' | 'standard' | 'premium' | 'enterprise';
+  auto_renewal?: boolean;
+  renewal_notice_period?: number;
+  terms?: string;
 }
 
 interface RenewContractValues {
   renewal_period: string;
   new_end_date?: string;
+  service_level?: 'basic' | 'standard' | 'premium' | 'enterprise';
+  auto_renewal?: boolean;
 }
 
 interface AddNoteValues {
@@ -123,102 +109,70 @@ export const ServiceContractDetailPage: React.FC = () => {
   const [renewModalVisible, setRenewModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [renewForm] = Form.useForm();
   const [noteForm] = Form.useForm();
 
   const loadContractDetails = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!id) {
+        throw new Error('Contract ID is required');
+      }
 
-      const mockContract: ServiceContract = {
-        id: id || '1',
-        contract_number: 'SC-2024-001',
-        customer_id: 'cust-1',
-        customer_name: 'Acme Corporation',
-        product_id: 'prod-1',
-        product_name: 'Enterprise CRM License',
-        start_date: '2024-01-01',
-        end_date: '2024-12-31',
-        renewal_date: '2024-12-01',
-        status: 'active',
-        contract_type: 'annual',
-        contract_value: 50000,
-        payment_terms: 'Net 30',
-        billing_cycle: 'Monthly',
-        auto_renewal: true,
-        description: 'Annual enterprise CRM license with premium support',
-        terms_conditions: 'Standard terms and conditions apply. See attached document for details.',
-        created_at: '2023-12-15T10:00:00Z',
-        created_by: 'John Doe',
-      };
+      // Fetch contract from service
+      const contractData = await serviceContractService.getServiceContractById(id);
 
+      // Create activities timeline
       const mockActivities: ContractActivity[] = [
         {
           id: '1',
           type: 'created',
           title: 'Contract Created',
-          description: 'Service contract SC-2024-001 was created',
-          timestamp: '2023-12-15T10:00:00Z',
-          user: 'John Doe',
-        },
-        {
-          id: '2',
-          type: 'payment',
-          title: 'Payment Received',
-          description: 'Payment of $4,166.67 received for January 2024',
-          timestamp: '2024-01-05T14:30:00Z',
-          user: 'System',
-        },
-        {
-          id: '3',
-          type: 'note',
-          title: 'Note Added',
-          description: 'Customer requested additional user licenses',
-          timestamp: '2024-01-10T09:15:00Z',
-          user: 'Jane Smith',
-        },
-        {
-          id: '4',
-          type: 'modified',
-          title: 'Contract Modified',
-          description: 'Updated billing contact information',
-          timestamp: '2024-01-12T11:20:00Z',
-          user: 'John Doe',
+          description: `Service contract ${contractData.contract_number} was created`,
+          timestamp: contractData.created_at,
+          user: contractData.created_by,
         },
       ];
 
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          invoice_number: 'INV-2024-001',
-          amount: 4166.67,
-          due_date: '2024-01-31',
-          paid_date: '2024-01-05',
-          status: 'paid',
-        },
-        {
-          id: '2',
-          invoice_number: 'INV-2024-002',
-          amount: 4166.67,
-          due_date: '2024-02-28',
-          paid_date: '2024-02-03',
-          status: 'paid',
-        },
-        {
-          id: '3',
-          invoice_number: 'INV-2024-003',
-          amount: 4166.67,
-          due_date: '2024-03-31',
-          status: 'pending',
-        },
-      ];
+      // Generate mock invoices (monthly breakdown)
+      const mockInvoices: Invoice[] = [];
+      const monthlyValue = contractData.annual_value / 12;
+      const startDate = dayjs(contractData.start_date);
+      const endDate = dayjs(contractData.end_date);
 
-      setContract(mockContract);
+      let currentDate = startDate;
+      let invoiceCount = 1;
+      while (currentDate.isBefore(endDate)) {
+        const dueDate = currentDate.add(1, 'month').subtract(1, 'day');
+        const invoiceId = invoiceCount;
+        
+        mockInvoices.push({
+          id: `inv-${invoiceId}`,
+          invoice_number: `INV-${dayjs().format('YYYY')}-${String(invoiceId).padStart(3, '0')}`,
+          amount: monthlyValue,
+          due_date: dueDate.format('YYYY-MM-DD'),
+          status: dueDate.isBefore(dayjs()) ? 'paid' : 'pending',
+          paid_date: dueDate.isBefore(dayjs()) ? dueDate.format('YYYY-MM-DD') : undefined,
+        });
+
+        currentDate = currentDate.add(1, 'month');
+        invoiceCount++;
+      }
+
+      setContract(contractData as unknown as any);
       setActivities(mockActivities);
       setInvoices(mockInvoices);
-      form.setFieldsValue(mockContract);
+      form.setFieldsValue({
+        service_level: contractData.service_level,
+        auto_renewal: contractData.auto_renewal,
+        renewal_notice_period: contractData.renewal_notice_period,
+        terms: contractData.terms,
+      } as any);
+      renewForm.setFieldsValue({
+        service_level: contractData.service_level,
+        auto_renewal: contractData.auto_renewal,
+      } as any);
     } catch (error) {
       if (error instanceof Error) {
         message.error('Failed to load contract details');
@@ -227,7 +181,7 @@ export const ServiceContractDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, form, renewForm]);
 
   useEffect(() => {
     if (id) {
@@ -237,10 +191,16 @@ export const ServiceContractDetailPage: React.FC = () => {
 
   const handleEdit = async (values: EditContractValues) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!contract?.id) {
+        throw new Error('Contract ID is required');
+      }
 
-      setContract({ ...contract!, ...values });
+      const updatedContract = await serviceContractService.updateServiceContract(
+        contract.id,
+        values
+      );
+
+      setContract(updatedContract as any);
       setEditModalVisible(false);
       message.success('Contract updated successfully');
 
@@ -256,17 +216,28 @@ export const ServiceContractDetailPage: React.FC = () => {
       setActivities([newActivity, ...activities]);
     } catch (error) {
       if (error instanceof Error) {
-        message.error('Failed to update contract');
+        message.error(`Failed to update contract: ${error.message}`);
       }
     }
   };
 
   const handleRenew = async (values: RenewContractValues) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!contract?.id) {
+        throw new Error('Contract ID is required');
+      }
 
-      message.success('Contract renewed successfully');
+      const renewalData: Partial<any> = {
+        auto_renewal: values.auto_renewal,
+        service_level: values.service_level,
+      };
+
+      const renewedContract = await serviceContractService.renewServiceContract(
+        contract.id,
+        renewalData
+      );
+
+      message.success(`Contract renewed successfully! New contract: ${renewedContract.contract_number}`);
       setRenewModalVisible(false);
 
       // Add activity
@@ -274,7 +245,7 @@ export const ServiceContractDetailPage: React.FC = () => {
         id: Date.now().toString(),
         type: 'renewed',
         title: 'Contract Renewed',
-        description: `Contract renewed for ${values.renewal_period}`,
+        description: `Contract renewed. New contract: ${renewedContract.contract_number}`,
         timestamp: new Date().toISOString(),
         user: 'Current User',
       };
@@ -283,7 +254,7 @@ export const ServiceContractDetailPage: React.FC = () => {
       void loadContractDetails();
     } catch (error) {
       if (error instanceof Error) {
-        message.error('Failed to renew contract');
+        message.error(`Failed to renew contract: ${error.message}`);
       }
     }
   };
@@ -315,19 +286,73 @@ export const ServiceContractDetailPage: React.FC = () => {
 
   const handleDelete = () => {
     Modal.confirm({
-      title: 'Delete Contract',
-      content: 'Are you sure you want to delete this contract? This action cannot be undone.',
-      okText: 'Delete',
+      title: 'Cancel Contract',
+      content: (
+        <>
+          <p>Are you sure you want to cancel this contract?</p>
+          <p style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
+            This action will mark the contract as cancelled and cannot be undone. 
+            Please provide a reason for cancellation.
+          </p>
+        </>
+      ),
+      okText: 'Cancel Contract',
       okType: 'danger',
       onOk: async () => {
+        const reason = await new Promise<string>((resolve) => {
+          Modal.confirm({
+            title: 'Cancellation Reason',
+            content: (
+              <Input.TextArea
+                placeholder="Enter reason for cancellation"
+                onChange={(e) => {
+                  (e.target as any).cancellationReason = e.target.value;
+                }}
+              />
+            ),
+            okText: 'Confirm',
+            okType: 'danger',
+            onOk: () => {
+              const input = document.querySelector('textarea[placeholder="Enter reason for cancellation"]') as HTMLTextAreaElement;
+              resolve(input?.value || 'No reason provided');
+            },
+            onCancel: () => {
+              resolve('');
+            },
+          });
+        });
+
+        if (!reason) return;
+
         try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 500));
-          message.success('Contract deleted successfully');
-          navigate('/tenant/service-contracts');
+          if (!contract?.id) {
+            throw new Error('Contract ID is required');
+          }
+
+          await serviceContractService.cancelServiceContract(
+            contract.id,
+            reason
+          );
+
+          message.success('Contract cancelled successfully');
+
+          // Add activity
+          const newActivity: ContractActivity = {
+            id: Date.now().toString(),
+            type: 'cancelled',
+            title: 'Contract Cancelled',
+            description: `Contract cancelled. Reason: ${reason}`,
+            timestamp: new Date().toISOString(),
+            user: 'Current User',
+          };
+          setActivities([newActivity, ...activities]);
+
+          setTimeout(() => {
+            navigate('/tenant/service-contracts');
+          }, 1000);
         } catch (error) {
           if (error instanceof Error) {
-            message.error('Failed to delete contract');
+            message.error(`Failed to cancel contract: ${error.message}`);
           }
         }
       },
@@ -376,10 +401,30 @@ export const ServiceContractDetailPage: React.FC = () => {
     return Math.min(Math.round((elapsed / total) * 100), 100);
   };
 
+  if (loading) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Skeleton active paragraph={{ rows: 4 }} />
+      </div>
+    );
+  }
+
+  if (!contract) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Empty description="Contract not found" />
+      </div>
+    );
+  }
+
+  const daysUntilEnd = dayjs(contract.end_date).diff(dayjs(), 'day');
+  const contractProgress = getContractProgress();
+  const showRenewalAlert = daysUntilEnd <= 30 && daysUntilEnd > 0;
+
   const actionMenu = (
     <Menu>
       <Menu.Item key="edit" icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
-        Edit Contract
+        Edit Settings
       </Menu.Item>
       <Menu.Item key="renew" icon={<CheckCircleOutlined />} onClick={() => setRenewModalVisible(true)}>
         Renew Contract
@@ -391,18 +436,11 @@ export const ServiceContractDetailPage: React.FC = () => {
         Send Reminder
       </Menu.Item>
       <Menu.Divider />
-      <Menu.Item key="delete" icon={<DeleteOutlined />} danger onClick={handleDelete}>
-        Delete Contract
+      <Menu.Item key="cancel" icon={<DeleteOutlined />} danger onClick={handleDelete}>
+        Cancel Contract
       </Menu.Item>
     </Menu>
   );
-
-  if (!contract) {
-    return <div>Loading...</div>;
-  }
-
-  const daysUntilRenewal = getDaysUntilRenewal();
-  const showRenewalAlert = daysUntilRenewal <= 30 && daysUntilRenewal > 0;
 
   return (
     <>
@@ -419,6 +457,9 @@ export const ServiceContractDetailPage: React.FC = () => {
           <Button key="note" onClick={() => setNoteModalVisible(true)}>
             Add Note
           </Button>,
+          <Button key="renew" onClick={() => setRenewModalVisible(true)}>
+            Renew
+          </Button>,
           <Button key="edit" type="primary" icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
             Edit
           </Button>,
@@ -431,68 +472,98 @@ export const ServiceContractDetailPage: React.FC = () => {
       <div style={{ padding: 24 }}>
         {showRenewalAlert && (
           <Alert
-            message="Renewal Reminder"
-            description={`This contract is due for renewal in ${daysUntilRenewal} days. Please contact the customer to discuss renewal options.`}
+            message="Renewal Alert"
+            description={`This contract expires in ${daysUntilEnd} days (${dayjs(contract.end_date).format('YYYY-MM-DD')}). Consider renewing to ensure uninterrupted service.`}
             type="warning"
             showIcon
-            icon={<CalendarOutlined />}
+            icon={<WarningOutlined />}
             action={
               <Button size="small" type="primary" onClick={() => setRenewModalVisible(true)}>
                 Renew Now
               </Button>
             }
             style={{ marginBottom: 24 }}
+            closable
           />
         )}
+
+        {contract.status === 'cancelled' && (
+          <Alert
+            message="Contract Cancelled"
+            description="This contract has been cancelled and is no longer active."
+            type="error"
+            showIcon
+            style={{ marginBottom: 24 }}
+            closable
+          />
+        )}
+
+        {/* Key Metrics */}
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Contract Value"
+                value={contract.contract_value}
+                prefix="$"
+                precision={2}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Service Level"
+                value={contract.service_level?.toUpperCase()}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Days Until End"
+                value={daysUntilEnd}
+                valueStyle={{ color: daysUntilEnd <= 30 ? '#cf1322' : '#3f8600' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Progress"
+                value={contractProgress}
+                suffix="%"
+              />
+              <Progress percent={contractProgress} showInfo={false} size="small" />
+            </Card>
+          </Col>
+        </Row>
 
         <Row gutter={16}>
           {/* Main Content */}
           <Col xs={24} lg={16}>
-            {/* Contract Statistics */}
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col xs={24} sm={8}>
-                <Card>
-                  <Statistic
-                    title="Contract Value"
-                    value={contract.contract_value}
-                    prefix={<DollarOutlined />}
-                    precision={2}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Card>
-                  <Statistic
-                    title="Days Until Renewal"
-                    value={daysUntilRenewal}
-                    prefix={<CalendarOutlined />}
-                    valueStyle={{ color: daysUntilRenewal <= 30 ? '#cf1322' : '#3f8600' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Card>
-                  <Statistic
-                    title="Contract Progress"
-                    value={getContractProgress()}
-                    suffix="%"
-                    prefix={<ClockCircleOutlined />}
-                  />
-                  <Progress percent={getContractProgress()} showInfo={false} />
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Contract Details */}
-            <Card title="Contract Information" style={{ marginBottom: 16 }}>
-              <Descriptions column={{ xs: 1, sm: 2 }} bordered>
+            {/* Contract Information Card */}
+            <Card title="Contract Details" style={{ marginBottom: 16 }}>
+              <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
                 <Descriptions.Item label="Contract Number">
-                  {contract.contract_number}
+                  <Space>
+                    <span>{contract.contract_number}</span>
+                    <Tooltip title="Copy to clipboard">
+                      <CopyOutlined 
+                        style={{ cursor: 'pointer' }} 
+                        onClick={() => {
+                          navigator.clipboard.writeText(contract.contract_number);
+                          message.success('Copied!');
+                        }}
+                      />
+                    </Tooltip>
+                  </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
-                  <Tag color={getStatusColor(contract.status)}>
-                    {contract.status.toUpperCase()}
-                  </Tag>
+                  <Badge 
+                    status={contract.status === 'active' ? 'success' : contract.status === 'expired' ? 'error' : 'default'} 
+                    text={<Tag color={getStatusColor(contract.status)}>{contract.status.toUpperCase()}</Tag>} 
+                  />
                 </Descriptions.Item>
                 <Descriptions.Item label="Customer">
                   {contract.customer_name}
@@ -501,147 +572,175 @@ export const ServiceContractDetailPage: React.FC = () => {
                   {contract.product_name}
                 </Descriptions.Item>
                 <Descriptions.Item label="Start Date">
-                  {dayjs(contract.start_date).format('YYYY-MM-DD')}
+                  <CalendarOutlined /> {dayjs(contract.start_date).format('YYYY-MM-DD')}
                 </Descriptions.Item>
                 <Descriptions.Item label="End Date">
-                  {dayjs(contract.end_date).format('YYYY-MM-DD')}
+                  <CalendarOutlined /> {dayjs(contract.end_date).format('YYYY-MM-DD')}
                 </Descriptions.Item>
-                <Descriptions.Item label="Renewal Date">
-                  {dayjs(contract.renewal_date).format('YYYY-MM-DD')}
+                <Descriptions.Item label="Warranty Period">
+                  {contract.warranty_period} months
                 </Descriptions.Item>
-                <Descriptions.Item label="Contract Type">
-                  <Tag>{contract.contract_type.toUpperCase()}</Tag>
+                <Descriptions.Item label="Annual Value">
+                  <DollarOutlined /> ${contract.annual_value.toFixed(2)}
                 </Descriptions.Item>
-                <Descriptions.Item label="Payment Terms">
-                  {contract.payment_terms}
+                <Descriptions.Item label="Service Level">
+                  <Tag color="blue">{contract.service_level}</Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Billing Cycle">
-                  {contract.billing_cycle}
-                </Descriptions.Item>
-                <Descriptions.Item label="Auto Renewal">
+                <Descriptions.Item label="Auto-Renewal">
                   <Tag color={contract.auto_renewal ? 'success' : 'default'}>
                     {contract.auto_renewal ? 'Enabled' : 'Disabled'}
                   </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Created">
-                  {dayjs(contract.created_at).format('YYYY-MM-DD')} by {contract.created_by}
+                <Descriptions.Item label="Renewal Notice Period">
+                  {contract.renewal_notice_period} days
                 </Descriptions.Item>
-                <Descriptions.Item label="Description" span={2}>
-                  {contract.description}
+                <Descriptions.Item label="Created By">
+                  {contract.created_by} on {dayjs(contract.created_at).format('YYYY-MM-DD')}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
 
+            {/* Terms Card */}
+            <Card title="Terms & Conditions" style={{ marginBottom: 16 }}>
+              <div style={{ maxHeight: 300, overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+                <Text>{contract.terms}</Text>
+              </div>
+            </Card>
+
             {/* Invoices */}
-            <Card title="Invoices" style={{ marginBottom: 16 }}>
-              <List
-                dataSource={invoices}
-                renderItem={(invoice) => (
-                  <List.Item
-                    actions={[
-                      <Button type="link" icon={<DownloadOutlined />}>
-                        Download
-                      </Button>,
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={
-                        <Space>
-                          {invoice.invoice_number}
-                          <Tag
-                            color={
-                              invoice.status === 'paid'
-                                ? 'success'
-                                : invoice.status === 'overdue'
-                                ? 'error'
-                                : 'warning'
-                            }
-                          >
-                            {invoice.status.toUpperCase()}
-                          </Tag>
-                        </Space>
-                      }
-                      description={
-                        <Space direction="vertical" size={0}>
-                          <Text>Amount: ${invoice.amount.toFixed(2)}</Text>
-                          <Text type="secondary">
-                            Due: {dayjs(invoice.due_date).format('YYYY-MM-DD')}
-                          </Text>
-                          {invoice.paid_date && (
-                            <Text type="success">
-                              Paid: {dayjs(invoice.paid_date).format('YYYY-MM-DD')}
+            <Card title={`Invoices (${invoices.length})`} style={{ marginBottom: 16 }}>
+              {invoices.length > 0 ? (
+                <List
+                  dataSource={invoices}
+                  renderItem={(invoice) => (
+                    <List.Item
+                      actions={[
+                        <Button type="link" icon={<DownloadOutlined />}>
+                          Download
+                        </Button>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={
+                          <Space>
+                            <strong>{invoice.invoice_number}</strong>
+                            <Tag
+                              color={
+                                invoice.status === 'paid'
+                                  ? 'success'
+                                  : invoice.status === 'overdue'
+                                  ? 'red'
+                                  : 'orange'
+                              }
+                            >
+                              {invoice.status.toUpperCase()}
+                            </Tag>
+                          </Space>
+                        }
+                        description={
+                          <Space direction="vertical" size={0}>
+                            <Text>
+                              <DollarOutlined /> ${invoice.amount.toFixed(2)}
                             </Text>
-                          )}
-                        </Space>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
+                            <Text type="secondary">
+                              Due: {dayjs(invoice.due_date).format('YYYY-MM-DD')}
+                            </Text>
+                            {invoice.paid_date && (
+                              <Text type="success">
+                                Paid: {dayjs(invoice.paid_date).format('YYYY-MM-DD')}
+                              </Text>
+                            )}
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <Empty description="No invoices yet" />
+              )}
             </Card>
           </Col>
 
-          {/* Sidebar */}
+          {/* Sidebar - Activity Timeline */}
           <Col xs={24} lg={8}>
             <Card title="Activity Timeline">
-              <Timeline>
-                {activities.map((activity) => (
-                  <Timeline.Item key={activity.id} dot={getActivityIcon(activity.type)}>
-                    <Space direction="vertical" size={0}>
-                      <Text strong>{activity.title}</Text>
-                      <Text>{activity.description}</Text>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {dayjs(activity.timestamp).format('YYYY-MM-DD HH:mm')} by {activity.user}
-                      </Text>
-                    </Space>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+              {activities.length > 0 ? (
+                <Timeline>
+                  {activities.map((activity) => (
+                    <Timeline.Item key={activity.id} dot={getActivityIcon(activity.type)}>
+                      <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                        <Text strong>{activity.title}</Text>
+                        <Text style={{ fontSize: '13px' }}>{activity.description}</Text>
+                        <Text type="secondary" style={{ fontSize: '11px' }}>
+                          {dayjs(activity.timestamp).format('YYYY-MM-DD HH:mm')} 
+                          {' by '} <strong>{activity.user}</strong>
+                        </Text>
+                      </Space>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              ) : (
+                <Empty description="No activities yet" />
+              )}
             </Card>
           </Col>
         </Row>
 
         {/* Edit Modal */}
         <Modal
-          title="Edit Contract"
+          title="Edit Contract Settings"
           open={editModalVisible}
           onCancel={() => setEditModalVisible(false)}
           onOk={() => form.submit()}
-          width={800}
+          width={700}
         >
           <Form form={form} layout="vertical" onFinish={handleEdit}>
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label="Status" name="status" rules={[{ required: true }]}>
-                  <Select>
-                    <Select.Option value="active">Active</Select.Option>
-                    <Select.Option value="pending">Pending</Select.Option>
-                    <Select.Option value="expired">Expired</Select.Option>
-                    <Select.Option value="cancelled">Cancelled</Select.Option>
+                <Form.Item 
+                  label="Service Level" 
+                  name="service_level" 
+                  rules={[{ required: true, message: 'Please select a service level' }]}
+                >
+                  <Select placeholder="Select service level">
+                    <Select.Option value="basic">Basic</Select.Option>
+                    <Select.Option value="standard">Standard</Select.Option>
+                    <Select.Option value="premium">Premium</Select.Option>
+                    <Select.Option value="enterprise">Enterprise</Select.Option>
                   </Select>
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item label="Contract Value" name="contract_value" rules={[{ required: true }]}>
-                  <InputNumber style={{ width: '100%' }} prefix="$" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label="Payment Terms" name="payment_terms">
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label="Auto Renewal" name="auto_renewal" valuePropName="checked">
-                  <Select>
-                    <Select.Option value={true}>Enabled</Select.Option>
-                    <Select.Option value={false}>Disabled</Select.Option>
-                  </Select>
+                <Form.Item 
+                  label="Renewal Notice Period (days)" 
+                  name="renewal_notice_period"
+                  rules={[{ required: true, message: 'Please enter renewal notice period' }]}
+                >
+                  <InputNumber min={1} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col span={24}>
-                <Form.Item label="Description" name="description">
-                  <TextArea rows={4} />
+                <Form.Item 
+                  label="Auto-Renewal" 
+                  name="auto_renewal" 
+                  valuePropName="checked"
+                >
+                  <div>
+                    <Select placeholder="Select auto-renewal status">
+                      <Select.Option value={true}>Enabled</Select.Option>
+                      <Select.Option value={false}>Disabled</Select.Option>
+                    </Select>
+                  </div>
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item 
+                  label="Terms & Conditions" 
+                  name="terms"
+                  rules={[{ required: true, message: 'Please enter terms and conditions' }]}
+                >
+                  <TextArea rows={6} placeholder="Enter contract terms and conditions" />
                 </Form.Item>
               </Col>
             </Row>
@@ -650,25 +749,73 @@ export const ServiceContractDetailPage: React.FC = () => {
 
         {/* Renew Modal */}
         <Modal
-          title="Renew Contract"
+          title="Renew Service Contract"
           open={renewModalVisible}
           onCancel={() => setRenewModalVisible(false)}
-          onOk={() => form.submit()}
+          onOk={() => renewForm.submit()}
+          width={700}
         >
-          <Form layout="vertical" onFinish={handleRenew}>
-            <Form.Item label="Renewal Period" name="renewal_period" rules={[{ required: true }]}>
-              <Select>
-                <Select.Option value="1 year">1 Year</Select.Option>
-                <Select.Option value="2 years">2 Years</Select.Option>
-                <Select.Option value="3 years">3 Years</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item label="New Contract Value" name="new_value" rules={[{ required: true }]}>
-              <InputNumber style={{ width: '100%' }} prefix="$" />
-            </Form.Item>
-            <Form.Item label="Notes" name="notes">
-              <TextArea rows={3} />
-            </Form.Item>
+          <Form form={renewForm} layout="vertical" onFinish={handleRenew}>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Alert 
+                  message="Renewal Information" 
+                  description={`Current contract ends on ${dayjs(contract?.end_date).format('YYYY-MM-DD')}. A new contract will be created starting from ${dayjs(contract?.end_date).add(1, 'day').format('YYYY-MM-DD')}.`}
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              </Col>
+              <Col span={12}>
+                <Form.Item 
+                  label="Renewal Period" 
+                  name="renewal_period" 
+                  rules={[{ required: true, message: 'Please select a renewal period' }]}
+                  initialValue="1 year"
+                >
+                  <Select>
+                    <Select.Option value="1 year">1 Year</Select.Option>
+                    <Select.Option value="2 years">2 Years</Select.Option>
+                    <Select.Option value="3 years">3 Years</Select.Option>
+                    <Select.Option value="custom">Custom</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item 
+                  label="Service Level" 
+                  name="service_level"
+                  initialValue={contract?.service_level}
+                >
+                  <Select>
+                    <Select.Option value="basic">Basic</Select.Option>
+                    <Select.Option value="standard">Standard</Select.Option>
+                    <Select.Option value="premium">Premium</Select.Option>
+                    <Select.Option value="enterprise">Enterprise</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item 
+                  label="Auto-Renewal" 
+                  name="auto_renewal"
+                  initialValue={contract?.auto_renewal}
+                >
+                  <Select placeholder="Select auto-renewal status">
+                    <Select.Option value={true}>Enabled</Select.Option>
+                    <Select.Option value={false}>Disabled</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item 
+                  label="New End Date" 
+                  name="new_end_date"
+                >
+                  <DatePicker />
+                </Form.Item>
+              </Col>
+            </Row>
           </Form>
         </Modal>
 

@@ -169,7 +169,7 @@ const CustomerEditPage: React.FC = () => {
     return (
       <>
         <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip="Loading customer data..." />
+          <Spin size="large" spinning tip="Loading customer data..." />
         </div>
       </>
     );

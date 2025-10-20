@@ -54,22 +54,38 @@ export class CustomerService extends BaseService {
    */
   async getCustomers(filters: CustomerFilters = {}): Promise<PaginatedResponse<Customer>> {
     try {
-      // For now, use the legacy service
-      const customers = await legacyCustomerService.getCustomers(filters);
-      
-      // Transform to paginated response
-      const { page = 1, pageSize = 20 } = filters;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedData = customers.slice(startIndex, endIndex);
-      
-      return {
-        data: paginatedData,
-        total: customers.length,
-        page,
-        pageSize,
-        totalPages: Math.ceil(customers.length / pageSize),
-      };
+      try {
+        // For now, use the legacy service
+        const customers = await legacyCustomerService.getCustomers(filters);
+        
+        // Transform to paginated response
+        const { page = 1, pageSize = 20 } = filters;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedData = customers.slice(startIndex, endIndex);
+        
+        return {
+          data: paginatedData,
+          total: customers.length,
+          page,
+          pageSize,
+          totalPages: Math.ceil(customers.length / pageSize),
+        };
+      } catch (error) {
+        // Handle tenant context not initialized gracefully
+        if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+          // Return empty response instead of throwing
+          const { page = 1, pageSize = 20 } = filters;
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
+        throw error;
+      }
     } catch (error) {
       console.error('Error fetching customers:', error);
       throw error;
@@ -250,38 +266,55 @@ export class CustomerService extends BaseService {
     recentlyAdded: number;
   }> {
     try {
-      const customers = await legacyCustomerService.getCustomers();
-      
-      const stats = {
-        total: customers.length,
-        active: customers.filter(c => c.status === 'active').length,
-        inactive: customers.filter(c => c.status === 'inactive').length,
-        prospects: customers.filter(c => c.status === 'prospect').length,
-        byIndustry: {} as Record<string, number>,
-        bySize: {} as Record<string, number>,
-        recentlyAdded: 0,
-      };
+      try {
+        const customers = await legacyCustomerService.getCustomers();
+        
+        const stats = {
+          total: customers.length,
+          active: customers.filter(c => c.status === 'active').length,
+          inactive: customers.filter(c => c.status === 'inactive').length,
+          prospects: customers.filter(c => c.status === 'prospect').length,
+          byIndustry: {} as Record<string, number>,
+          bySize: {} as Record<string, number>,
+          recentlyAdded: 0,
+        };
 
-      // Calculate industry distribution
-      customers.forEach(customer => {
-        const industry = customer.industry || 'Unknown';
-        stats.byIndustry[industry] = (stats.byIndustry[industry] || 0) + 1;
-      });
+        // Calculate industry distribution
+        customers.forEach(customer => {
+          const industry = customer.industry || 'Unknown';
+          stats.byIndustry[industry] = (stats.byIndustry[industry] || 0) + 1;
+        });
 
-      // Calculate size distribution
-      customers.forEach(customer => {
-        const size = customer.size || 'Unknown';
-        stats.bySize[size] = (stats.bySize[size] || 0) + 1;
-      });
+        // Calculate size distribution
+        customers.forEach(customer => {
+          const size = customer.size || 'Unknown';
+          stats.bySize[size] = (stats.bySize[size] || 0) + 1;
+        });
 
-      // Calculate recently added (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      stats.recentlyAdded = customers.filter(c => 
-        new Date(c.created_at) > thirtyDaysAgo
-      ).length;
+        // Calculate recently added (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        stats.recentlyAdded = customers.filter(c => 
+          new Date(c.created_at) > thirtyDaysAgo
+        ).length;
 
-      return stats;
+        return stats;
+      } catch (error) {
+        // Handle tenant context not initialized gracefully
+        if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+          // Return empty stats instead of throwing
+          return {
+            total: 0,
+            active: 0,
+            inactive: 0,
+            prospects: 0,
+            byIndustry: {},
+            bySize: {},
+            recentlyAdded: 0,
+          };
+        }
+        throw error;
+      }
     } catch (error) {
       console.error('Error fetching customer stats:', error);
       throw error;

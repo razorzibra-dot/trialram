@@ -103,18 +103,26 @@ class CustomerService {
     assigned_to?: string;
     search?: string;
     tags?: string[];
-  }): Promise<Customer[]> {
+  }, page?: number, limit?: number, tenantId?: string): Promise<{
+    data: Customer[];
+    total: number;
+    page: number;
+    limit: number;
+  } | Customer[]> {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    const userId = user?.id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
-    let customers = this.mockCustomers.filter(c => c.tenant_id === user.tenant_id);
+    let customers = this.mockCustomers.filter(c => c.tenant_id === finalTenantId);
 
     // Apply role-based filtering
-    if (user.role === 'agent') {
-      customers = customers.filter(c => c.assigned_to === user.id);
+    if (user && user.role === 'agent') {
+      customers = customers.filter(c => c.assigned_to === userId);
     }
 
     // Apply filters
@@ -151,17 +159,35 @@ class CustomerService {
       }
     }
 
+    // Handle pagination
+    if (page && limit) {
+      const total = customers.length;
+      const totalPages = Math.ceil(total / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const data = customers.slice(startIndex, endIndex);
+      
+      return {
+        data,
+        total,
+        page,
+        limit
+      };
+    }
+
     return customers;
   }
 
-  async getCustomer(id: string): Promise<Customer> {
+  async getCustomer(id: string, tenantId?: string): Promise<Customer> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    const finalTenantId = tenantId || user?.tenant_id;
+    
+    if (!finalTenantId) throw new Error('Unauthorized');
 
     const customer = this.mockCustomers.find(c => 
-      c.id === id && c.tenant_id === user.tenant_id
+      c.id === id && c.tenant_id === finalTenantId
     );
 
     if (!customer) {

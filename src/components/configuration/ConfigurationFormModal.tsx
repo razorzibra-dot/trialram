@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Separator } from '../ui/separator';
 import { AlertTriangle, Save, X, Info } from 'lucide-react';
 import { ConfigurationSetting, ValidationSchema, configurationService } from '../../services/configurationService';
-import { notificationService } from '@/services/notificationService';
+import { notificationService } from '@/services/uiNotificationService';
 
 interface ConfigurationFormModalProps {
   isOpen: boolean;

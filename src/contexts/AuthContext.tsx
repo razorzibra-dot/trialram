@@ -6,7 +6,7 @@ import { authService } from '@/services';
 import { sessionManager } from '@/utils/sessionManager';
 import { sessionConfigService } from '@/services/sessionConfigService';
 import { httpInterceptor } from '@/utils/httpInterceptor';
-import { notificationService } from '@/services/notificationService';
+import { uiNotificationService } from '@/services/uiNotificationService';
 import { multiTenantService, type TenantContext } from '@/services/supabase/multiTenantService';
 
 interface SessionInfo {
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading: false
     });
 
-    notificationService.errorNotify(
+    uiNotificationService.errorNotify(
       'Session Expired',
       'Your session has expired. Please log in again.'
     );
@@ -176,14 +176,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleSessionExtension
       );
 
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Welcome back!',
         `Logged in as ${response.user.name}`
       );
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
       
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Login Failed',
         error instanceof Error ? error.message : 'Invalid credentials'
       );
@@ -241,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] State update delay completed');
 
       // Step 7: Show success notification
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Logged out',
         'You have been successfully logged out.'
       );

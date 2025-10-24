@@ -3,7 +3,7 @@ import { X, Save, Eye, Code, HelpCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { notificationService } from '../../services/notificationService';
+import { uiNotificationService } from '../../services/uiNotificationService';
 import { PDFTemplate } from '../../types/pdfTemplates';
 import { pdfTemplateService } from '../../services/pdfTemplateService';
 
@@ -133,16 +133,16 @@ export const PDFTemplateFormModal: React.FC<PDFTemplateFormModalProps> = ({
 
       if (template) {
         await pdfTemplateService.updateTemplate(template.id, templateData);
-        notificationService.successNotify('Success', 'Template updated successfully');
+        uiNotificationService.successNotify('Success', 'Template updated successfully');
       } else {
         await pdfTemplateService.createTemplate(templateData);
-        notificationService.successNotify('Success', 'Template created successfully');
+        uiNotificationService.successNotify('Success', 'Template created successfully');
       }
 
       onSave();
       onClose();
     } catch (error) {
-      notificationService.errorNotify('Error', 'Failed to save template');
+      uiNotificationService.errorNotify('Error', 'Failed to save template');
     } finally {
       setLoading(false);
     }

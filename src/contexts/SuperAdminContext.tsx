@@ -10,7 +10,7 @@ import {
 } from '@/types/superAdmin';
 import { superAdminService } from '@/services/superAdminService';
 import { useAuth } from './AuthContext';
-import { notificationService } from '@/services/notificationService';
+import { uiNotificationService } from '@/services/uiNotificationService';
 
 interface SuperAdminContextType {
   // State
@@ -82,7 +82,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getTenants(filters);
       setTenants(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load tenants'
       );
@@ -98,12 +98,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const newTenant = await superAdminService.createTenant(tenantData);
       setTenants(prev => [...prev, newTenant]);
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'Tenant created successfully'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to create tenant'
       );
@@ -120,12 +120,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedTenant = await superAdminService.updateTenant(id, updates);
       setTenants(prev => prev.map(t => t.id === id ? updatedTenant : t));
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'Tenant updated successfully'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to update tenant'
       );
@@ -142,12 +142,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await superAdminService.deleteTenant(id);
       setTenants(prev => prev.filter(t => t.id !== id));
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'Tenant deleted successfully'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to delete tenant'
       );
@@ -166,7 +166,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getGlobalUsers(filters);
       setGlobalUsers(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load users'
       );
@@ -182,12 +182,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedUser = await superAdminService.updateGlobalUser(id, updates);
       setGlobalUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'User updated successfully'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to update user'
       );
@@ -206,7 +206,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getRoleRequests(filters);
       setRoleRequests(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load role requests'
       );
@@ -222,12 +222,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedRequest = await superAdminService.approveRoleRequest(id, comments);
       setRoleRequests(prev => prev.map(r => r.id === id ? updatedRequest : r));
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'Role request approved successfully'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to approve role request'
       );
@@ -244,12 +244,12 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedRequest = await superAdminService.rejectRoleRequest(id, comments);
       setRoleRequests(prev => prev.map(r => r.id === id ? updatedRequest : r));
-      notificationService.successNotify(
+      uiNotificationService.successNotify(
         'Success',
         'Role request rejected'
       );
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to reject role request'
       );
@@ -267,7 +267,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getPlatformUsage();
       setPlatformUsage(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load platform usage'
       );
@@ -281,7 +281,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getSystemHealth();
       setSystemHealth(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load system health'
       );
@@ -295,7 +295,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getAnalyticsData();
       setAnalyticsData(data);
     } catch (error) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to load analytics data'
       );

@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { notificationService } from '@/services/notificationService';
+import { notificationService } from '@/services/uiNotificationService';
 import { Loader2, Package } from 'lucide-react';
 import { Product, ProductFormData, PRODUCT_TYPES, PRODUCT_CATEGORIES, CURRENCIES } from '@/types/masters';
 import { productService } from '@/services/productService';

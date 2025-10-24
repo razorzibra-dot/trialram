@@ -3,7 +3,7 @@ import { X, Download, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { PDFTemplate } from '../../types/pdfTemplates';
 import { pdfTemplateService } from '../../services/pdfTemplateService';
-import { notificationService } from '../../services/notificationService';
+import { uiNotificationService } from '../../services/uiNotificationService';
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
@@ -52,12 +52,12 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         fileName: `preview_${template.name.toLowerCase().replace(/\s+/g, '_')}.pdf`
       });
       
-      notificationService.successNotify('Success', 'PDF generated successfully');
+      uiNotificationService.successNotify('Success', 'PDF generated successfully');
       
       // In a real implementation, this would trigger a download
       console.log('Generated PDF:', response);
     } catch (error) {
-      notificationService.errorNotify('Error', 'Failed to generate PDF');
+      uiNotificationService.errorNotify('Error', 'Failed to generate PDF');
     } finally {
       setLoading(false);
     }

@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { notificationService } from '@/services/notificationService';
+import { uiNotificationService } from '@/services/uiNotificationService';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -79,7 +79,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.description.trim() || !formData.customer_id) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Validation Error',
         'Please fill in all required fields'
       );
@@ -89,14 +89,14 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
     setIsLoading(true);
     try {
       await complaintService.createComplaint(formData);
-      notificationService.successNotify('Success', 'Complaint created successfully');
+      uiNotificationService.successNotify('Success', 'Complaint created successfully');
       onSuccess();
       onOpenChange(false);
       resetForm();
     } catch (error: unknown) {
       console.error('Failed to create complaint:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create complaint';
-      notificationService.errorNotify('Error', errorMessage);
+      uiNotificationService.errorNotify('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -252,3 +252,4 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
 };
 
 export default ComplaintFormModal;
+

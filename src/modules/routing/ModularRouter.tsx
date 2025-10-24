@@ -251,5 +251,9 @@ export function createModularRouter() {
     },
   ];
 
-  return createBrowserRouter(routes);
+  return createBrowserRouter(routes, {
+    future: {
+      v7_startTransition: true,
+    },
+  });
 }

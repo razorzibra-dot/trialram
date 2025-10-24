@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
-import type { Notification, NotificationPreferences } from '@/services/notificationService';
+import type { Notification, NotificationPreferences } from '@/services/uiNotificationService';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDetailPanel } from '../components/NotificationDetailPanel';
 import { NotificationPreferencesPanel } from '../components/NotificationPreferencesPanel';

@@ -5,8 +5,8 @@
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
-import { SupabaseCustomerService } from '@/services/supabase/customerService';
-import { SupabaseSalesService } from '@/services/supabase/salesService';
+import { supabaseCustomerService } from '@/services/supabase/customerService';
+import { supabasesSalesService } from '@/services/supabase/salesService';
 import { 
   getMockData, 
   getMockActivityData, 
@@ -64,14 +64,12 @@ export interface CustomerData {
 }
 
 export class DashboardService extends BaseService {
-  private customerService: SupabaseCustomerService;
-  private salesService: SupabaseSalesService;
+  private customerService = supabaseCustomerService;
+  private salesService = supabasesSalesService;
   private useMockData: boolean = false;
 
   constructor() {
     super();
-    this.customerService = new SupabaseCustomerService();
-    this.salesService = new SupabaseSalesService();
   }
 
   /**

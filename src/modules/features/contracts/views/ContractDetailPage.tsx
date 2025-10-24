@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { notificationService } from '@/services/notificationService';
+import { notificationService } from '@/services/uiNotificationService';
 import {
   ArrowLeft,
   FileText,
@@ -696,3 +696,4 @@ export const ContractDetailPage: React.FC = () => {
 };
 
 export default ContractDetailPage;
+

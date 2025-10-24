@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { notificationService } from '@/services/notificationService';
+import { uiNotificationService } from '@/services/uiNotificationService';
 import { 
   Loader2, 
   MessageSquare, 
@@ -105,10 +105,10 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
       await complaintService.addComment(complaint.id, newComment);
       setNewComment('');
       onSuccess();
-      notificationService.successNotify('Success', 'Comment added successfully');
+      uiNotificationService.successNotify('Success', 'Comment added successfully');
     } catch (error: unknown) {
       console.error('Failed to add comment:', error);
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to add comment'
       );
@@ -119,7 +119,7 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
   const handleUpdateComplaint = async () => {
     if (updateData.status === 'closed' && !updateData.engineer_resolution?.trim()) {
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Validation Error',
         'Engineer resolution is required to close a complaint'
       );
@@ -130,10 +130,10 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
     try {
       await complaintService.updateComplaint(complaint.id, updateData);
       onSuccess();
-      notificationService.successNotify('Success', 'Complaint updated successfully');
+      uiNotificationService.successNotify('Success', 'Complaint updated successfully');
     } catch (error: unknown) {
       console.error('Failed to update complaint:', error);
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to update complaint'
       );
@@ -159,10 +159,10 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
     try {
       await complaintService.reopenComplaint(complaint.id);
       onSuccess();
-      notificationService.successNotify('Success', 'Complaint reopened successfully');
+      uiNotificationService.successNotify('Success', 'Complaint reopened successfully');
     } catch (error: unknown) {
       console.error('Failed to reopen complaint:', error);
-      notificationService.errorNotify(
+      uiNotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to reopen complaint'
       );

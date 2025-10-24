@@ -5,7 +5,7 @@
 import React from 'react';
 import { Drawer, Descriptions, Button, Space, Divider, Tag, Badge } from 'antd';
 import { DeleteOutlined, CheckOutlined, CalendarOutlined } from '@ant-design/icons';
-import { Notification } from '@/services/notificationService';
+import { Notification } from '@/services/uiNotificationService';
 import { Bell, CheckCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
 
 interface NotificationDetailPanelProps {

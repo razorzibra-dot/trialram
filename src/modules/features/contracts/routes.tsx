@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load components for code splitting
-const ContractsPage = lazy(() => import('./views/ContractsPage').then(m => ({ default: m.ContractsPage })));
+const ContractsPage = lazy(() => import('./views/ContractsPage'));
 const ContractDetailPage = lazy(() => import('./views/ContractDetailPage').then(m => ({ default: m.ContractDetailPage })));
 
 // Route wrapper with error boundary and suspense

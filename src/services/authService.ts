@@ -1,10 +1,12 @@
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 import { Tenant, TenantUser } from '@/types/rbac';
+import { supabase } from '@/services/database';
 
 class AuthService {
   private baseUrl = '/api/auth';
   private tokenKey = 'crm_auth_token';
   private userKey = 'crm_user';
+  private sessionKey = 'supabase_session';
 
   private mockTenants: Tenant[] = [
     {
@@ -302,31 +304,137 @@ class AuthService {
   };
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      console.log('[AUTH] Starting login for:', credentials.email);
+      
+      // Step 1: Authenticate with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
 
-    const user = this.mockUsers.find(u => u.email === credentials.email);
-    
-    if (!user || credentials.password !== 'password123') {
-      throw new Error('Invalid credentials');
+      if (error) {
+        console.error('[AUTH] Supabase auth error:', error.message);
+        throw new Error(error.message || 'Invalid credentials');
+      }
+
+      if (!data.user || !data.session) {
+        throw new Error('No session returned from authentication');
+      }
+
+      console.log('[AUTH] Auth successful, user ID:', data.user.id);
+
+      // Step 2: Get user from app database (linked by auth.uid)
+      console.log('[AUTH] Fetching user from database with ID:', data.user.id);
+      const { data: appUser, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (userError) {
+        console.error('[AUTH] User fetch error:', userError);
+        throw new Error('User profile not found. Contact administrator.');
+      }
+
+      if (!appUser) {
+        throw new Error('User profile not found in database.');
+      }
+
+      console.log('[AUTH] User found:', appUser.email);
+
+      // Step 3: Convert to app User type
+      const user: User = {
+        id: appUser.id,
+        email: appUser.email,
+        name: `${appUser.firstName} ${appUser.lastName}`,
+        firstName: appUser.firstName,
+        lastName: appUser.lastName,
+        role: appUser.role,
+        tenantId: appUser.tenant_id,
+        tenant_id: appUser.tenant_id,
+        createdAt: appUser.created_at,
+        lastLogin: new Date().toISOString(),
+      };
+
+      // Step 4: Store session and user
+      localStorage.setItem(this.sessionKey, JSON.stringify(data.session));
+      localStorage.setItem(this.tokenKey, data.session.access_token);
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+
+      console.log('[AUTH] Login successful, session stored');
+
+      return {
+        user,
+        token: data.session.access_token,
+        expires_in: data.session.expires_in || 3600
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      console.error('[AUTH] Login failed:', message);
+      throw new Error(message);
     }
-
-    user.lastLogin = new Date().toISOString();
-
-    const token = this.generateMockToken(user);
-    
-    localStorage.setItem(this.tokenKey, token);
-    localStorage.setItem(this.userKey, JSON.stringify(user));
-
-    return {
-      user,
-      token,
-      expires_in: 3600 
-    };
   }
 
   async logout(): Promise<void> {
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Supabase logout error:', err);
+    }
+
+    // Clear local storage
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.sessionKey);
+  }
+
+  async restoreSession(): Promise<User | null> {
+    try {
+      // Check if session exists in localStorage
+      const sessionStr = localStorage.getItem(this.sessionKey);
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        await supabase.auth.setSession(session);
+      }
+
+      // Get current Supabase session
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        return null;
+      }
+
+      // Get user from app database
+      const { data: appUser, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .single();
+
+      if (userError || !appUser) {
+        return null;
+      }
+
+      const user: User = {
+        id: appUser.id,
+        email: appUser.email,
+        name: `${appUser.firstName} ${appUser.lastName}`,
+        firstName: appUser.firstName,
+        lastName: appUser.lastName,
+        role: appUser.role,
+        tenantId: appUser.tenant_id,
+        tenant_id: appUser.tenant_id,
+        createdAt: appUser.created_at,
+        lastLogin: appUser.lastLogin,
+      };
+
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      return user;
+    } catch (err) {
+      console.error('Session restore error:', err);
+      return null;
+    }
   }
 
   getCurrentUser(): User | null {

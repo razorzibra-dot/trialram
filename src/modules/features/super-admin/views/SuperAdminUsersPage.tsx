@@ -65,7 +65,7 @@ interface UserFormData {
   tenantId: string;
 }
 
-export const SuperAdminUsersPage: React.FC = () => {
+const SuperAdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, user: currentUser } = useAuth();
   const [form] = Form.useForm();

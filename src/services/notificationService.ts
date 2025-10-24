@@ -1,314 +1,360 @@
 /**
- * Notification Service
- * Manages user notifications and preferences
+ * Mock Notification Service
+ * Handles user notifications, preferences, and alerts (Mock Implementation)
  */
+
+import { authService } from './authService';
 
 export interface Notification {
   id: string;
+  user_id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  category: 'system' | 'user' | 'alert' | 'reminder';
-  is_read: boolean;
-  user_id: string;
-  link?: string;
-  created_at: string;
-  read_at?: string;
-}
-
-export interface NotificationFilters {
+  data?: Record<string, any>;
   is_read?: boolean;
-  type?: string;
+  read?: boolean;
+  read_at?: string;
+  action_url?: string;
+  action_label?: string;
   category?: string;
-  search?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface NotificationPreferences {
-  email_notifications: boolean;
-  sms_notifications: boolean;
-  push_notifications: boolean;
-  notification_types: {
-    system: boolean;
-    user: boolean;
-    alert: boolean;
-    reminder: boolean;
-  };
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  in_app: boolean;
+  categories?: Record<string, {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    in_app: boolean;
+  }>;
 }
 
-class NotificationService {
+export interface NotificationFilters {
+  search?: string;
+  is_read?: boolean;
+  category?: string;
+  userId?: string;
+  read?: boolean;
+}
+
+class MockNotificationService {
   private mockNotifications: Notification[] = [
     {
       id: '1',
-      title: 'New Customer Added',
-      message: 'A new customer "Acme Corp" has been added to the system.',
-      type: 'success',
-      category: 'user',
-      is_read: false,
       user_id: 'user_1',
-      link: '/customers',
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
+      type: 'success',
+      title: 'Welcome Back',
+      message: 'You have successfully logged in',
+      category: 'system',
+      is_read: false,
+      read: false,
+      tenant_id: 'tenant_1',
+      created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
+      updated_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     },
     {
       id: '2',
-      title: 'System Maintenance Scheduled',
-      message: 'System maintenance is scheduled for tonight at 2:00 AM EST.',
-      type: 'warning',
-      category: 'system',
-      is_read: false,
       user_id: 'user_1',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+      type: 'info',
+      title: 'New Customer Added',
+      message: 'Customer TechCorp Solutions has been added to your list',
+      category: 'customer',
+      is_read: false,
+      read: false,
+      tenant_id: 'tenant_1',
+      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 minutes ago
+      updated_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     },
     {
       id: '3',
-      title: 'Contract Expiring Soon',
-      message: 'Service contract #SC-001 will expire in 7 days.',
-      type: 'warning',
-      category: 'alert',
-      is_read: true,
       user_id: 'user_1',
-      link: '/service-contracts',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-      read_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString()
+      type: 'warning',
+      title: 'Order Pending Review',
+      message: 'Order #12345 is waiting for your approval',
+      category: 'order',
+      is_read: false,
+      read: false,
+      action_url: '/orders/12345',
+      action_label: 'Review Order',
+      tenant_id: 'tenant_1',
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+      updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     },
     {
       id: '4',
-      title: 'New Support Ticket',
-      message: 'New support ticket #TKT-1234 has been assigned to you.',
-      type: 'info',
-      category: 'user',
-      is_read: false,
       user_id: 'user_1',
-      link: '/tickets',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString() // 8 hours ago
+      type: 'error',
+      title: 'Payment Failed',
+      message: 'Payment for invoice #INV-001 failed. Please retry.',
+      category: 'payment',
+      is_read: true,
+      read: true,
+      read_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      tenant_id: 'tenant_1',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
+      updated_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
     },
     {
       id: '5',
-      title: 'Payment Received',
-      message: 'Payment of $5,000 received from customer "Tech Solutions Inc".',
-      type: 'success',
-      category: 'user',
-      is_read: true,
       user_id: 'user_1',
-      link: '/sales/product-sales',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-      read_at: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString()
-    },
-    {
-      id: '6',
-      title: 'Failed Login Attempt',
-      message: 'Multiple failed login attempts detected from IP 192.168.1.100.',
-      type: 'error',
-      category: 'alert',
-      is_read: false,
-      user_id: 'user_1',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2 days ago
-    },
-    {
-      id: '7',
-      title: 'Task Reminder',
-      message: 'You have 3 pending tasks due today.',
       type: 'info',
-      category: 'reminder',
+      title: 'Report Generated',
+      message: 'Your monthly sales report has been generated',
+      category: 'report',
       is_read: true,
-      user_id: 'user_1',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-      read_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
+      read: true,
+      read_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      tenant_id: 'tenant_1',
+      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+      updated_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     },
-    {
-      id: '8',
-      title: 'Database Backup Completed',
-      message: 'Automated database backup completed successfully.',
-      type: 'success',
-      category: 'system',
-      is_read: true,
-      user_id: 'user_1',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days ago
-      read_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString()
-    }
   ];
 
   private mockPreferences: NotificationPreferences = {
-    email_notifications: true,
-    sms_notifications: false,
-    push_notifications: true,
-    notification_types: {
-      system: true,
-      user: true,
-      alert: true,
-      reminder: true
-    }
+    email: true,
+    sms: false,
+    push: true,
+    in_app: true,
+    categories: {
+      customer: { email: true, sms: false, push: true, in_app: true },
+      order: { email: true, sms: true, push: true, in_app: true },
+      payment: { email: true, sms: true, push: true, in_app: true },
+      system: { email: false, sms: false, push: true, in_app: true },
+      report: { email: true, sms: false, push: false, in_app: true },
+    },
   };
 
+  private unsubscribeCallbacks: Array<(notification: Notification) => void> = [];
+
+  /**
+   * Get notifications for current user with optional filters
+   */
   async getNotifications(filters?: NotificationFilters): Promise<Notification[]> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    let filtered = [...this.mockNotifications];
+    try {
+      let result = [...this.mockNotifications];
 
-    if (filters?.is_read !== undefined) {
-      filtered = filtered.filter(n => n.is_read === filters.is_read);
-    }
-
-    if (filters?.type) {
-      filtered = filtered.filter(n => n.type === filters.type);
-    }
-
-    if (filters?.category) {
-      filtered = filtered.filter(n => n.category === filters.category);
-    }
-
-    if (filters?.search) {
-      const search = filters.search.toLowerCase();
-      filtered = filtered.filter(n => 
-        n.title.toLowerCase().includes(search) ||
-        n.message.toLowerCase().includes(search)
-      );
-    }
-
-    // Sort by created_at descending (newest first)
-    filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    return filtered;
-  }
-
-  async getNotification(id: string): Promise<Notification> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const notification = this.mockNotifications.find(n => n.id === id);
-    if (!notification) {
-      throw new Error('Notification not found');
-    }
-
-    return notification;
-  }
-
-  async markAsRead(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const notification = this.mockNotifications.find(n => n.id === id);
-    if (notification) {
-      notification.is_read = true;
-      notification.read_at = new Date().toISOString();
-    }
-  }
-
-  async markAsUnread(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const notification = this.mockNotifications.find(n => n.id === id);
-    if (notification) {
-      notification.is_read = false;
-      notification.read_at = undefined;
-    }
-  }
-
-  async markAllAsRead(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const now = new Date().toISOString();
-    this.mockNotifications.forEach(n => {
-      if (!n.is_read) {
-        n.is_read = true;
-        n.read_at = now;
+      // Apply search filter
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        result = result.filter(n =>
+          n.title.toLowerCase().includes(searchLower) ||
+          n.message.toLowerCase().includes(searchLower)
+        );
       }
-    });
-  }
 
-  async deleteNotification(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const index = this.mockNotifications.findIndex(n => n.id === id);
-    if (index !== -1) {
-      this.mockNotifications.splice(index, 1);
+      // Apply read filter
+      if (filters?.is_read !== undefined) {
+        result = result.filter(n => (n.read || n.is_read) === filters.is_read);
+      } else if (filters?.read !== undefined) {
+        result = result.filter(n => (n.read || n.is_read) === filters.read);
+      }
+
+      // Apply category filter
+      if (filters?.category) {
+        result = result.filter(n => n.category === filters.category);
+      }
+
+      // Sort by created_at descending
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
     }
   }
 
-  async deleteAllRead(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    this.mockNotifications = this.mockNotifications.filter(n => !n.is_read);
-  }
-
-  async getUnreadCount(): Promise<number> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    return this.mockNotifications.filter(n => !n.is_read).length;
-  }
-
+  /**
+   * Get notification preferences for current user
+   */
   async getNotificationPreferences(): Promise<NotificationPreferences> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    return { ...this.mockPreferences };
+    try {
+      return this.mockPreferences;
+    } catch (error) {
+      console.error('Error fetching notification preferences:', error);
+      throw error;
+    }
   }
 
-  async updateNotificationPreferences(preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    this.mockPreferences = {
-      ...this.mockPreferences,
-      ...preferences
-    };
-
-    return { ...this.mockPreferences };
-  }
-
-  async createNotification(data: Omit<Notification, 'id' | 'created_at' | 'is_read'>): Promise<Notification> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const newNotification: Notification = {
-      ...data,
-      id: `notification_${Date.now()}`,
-      is_read: false,
-      created_at: new Date().toISOString()
-    };
-
-    this.mockNotifications.unshift(newNotification);
-    return newNotification;
-  }
-
-  // Real-time notification simulation
-  subscribeToNotifications(callback: (notification: Notification) => void): () => void {
-    // Simulate receiving a new notification every 30 seconds
-    const interval = setInterval(() => {
-      const randomNotifications = [
-        {
-          title: 'New Message',
-          message: 'You have a new message from a customer.',
-          type: 'info' as const,
-          category: 'user' as const,
-          user_id: 'user_1'
-        },
-        {
-          title: 'Task Completed',
-          message: 'Your scheduled task has been completed.',
-          type: 'success' as const,
-          category: 'system' as const,
-          user_id: 'user_1'
-        },
-        {
-          title: 'Reminder',
-          message: 'You have a meeting in 15 minutes.',
-          type: 'warning' as const,
-          category: 'reminder' as const,
-          user_id: 'user_1'
-        }
-      ];
-
-      const randomNotification = randomNotifications[Math.floor(Math.random() * randomNotifications.length)];
-      
-      const notification: Notification = {
-        ...randomNotification,
-        id: `notification_${Date.now()}`,
-        is_read: false,
-        created_at: new Date().toISOString()
+  /**
+   * Update notification preferences
+   */
+  async updateNotificationPreferences(preferences: Partial<NotificationPreferences>): Promise<void> {
+    try {
+      this.mockPreferences = {
+        ...this.mockPreferences,
+        ...preferences,
       };
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      throw error;
+    }
+  }
 
-      this.mockNotifications.unshift(notification);
-      callback(notification);
-    }, 30000); // Every 30 seconds
+  /**
+   * Mark a notification as read
+   */
+  async markAsRead(id: string): Promise<Notification> {
+    try {
+      const notification = this.mockNotifications.find(n => n.id === id);
+      if (notification) {
+        notification.read = true;
+        notification.is_read = true;
+        notification.read_at = new Date().toISOString();
+        notification.updated_at = new Date().toISOString();
+      }
+      return notification || {} as Notification;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  async markAllAsRead(): Promise<number> {
+    try {
+      let count = 0;
+      this.mockNotifications.forEach(n => {
+        if (!n.read && !n.is_read) {
+          n.read = true;
+          n.is_read = true;
+          n.read_at = new Date().toISOString();
+          n.updated_at = new Date().toISOString();
+          count++;
+        }
+      });
+      return count;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a notification
+   */
+  async deleteNotification(id: string): Promise<void> {
+    try {
+      const index = this.mockNotifications.findIndex(n => n.id === id);
+      if (index > -1) {
+        this.mockNotifications.splice(index, 1);
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all notifications for current user
+   */
+  async clearAllNotifications(): Promise<number> {
+    try {
+      const count = this.mockNotifications.length;
+      this.mockNotifications = [];
+      return count;
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to new notifications
+   * In mock mode, simulates periodic checks or manual triggers
+   */
+  subscribeToNotifications(callback: (notification: Notification) => void): () => void {
+    // Store callback
+    this.unsubscribeCallbacks.push(callback);
 
     // Return unsubscribe function
-    return () => clearInterval(interval);
+    return () => {
+      const index = this.unsubscribeCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.unsubscribeCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Simulate receiving a new notification (for testing/demo purposes)
+   */
+  simulateNewNotification(notification: Partial<Notification>): void {
+    const newNotification: Notification = {
+      id: Date.now().toString(),
+      user_id: 'user_1',
+      type: (notification.type || 'info') as Notification['type'],
+      title: notification.title || 'New Notification',
+      message: notification.message || '',
+      category: notification.category || 'system',
+      is_read: false,
+      read: false,
+      tenant_id: 'tenant_1',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...notification,
+    };
+
+    // Add to list
+    this.mockNotifications.unshift(newNotification);
+
+    // Notify all subscribers
+    this.unsubscribeCallbacks.forEach(cb => cb(newNotification));
+  }
+
+  /**
+   * Get unread count
+   */
+  async getUnreadCount(): Promise<number> {
+    try {
+      return this.mockNotifications.filter(n => !n.read && !n.is_read).length;
+    } catch (error) {
+      console.error('Error getting unread count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get notification statistics
+   */
+  async getNotificationStats(): Promise<{
+    total: number;
+    unread: number;
+    byType: Record<string, number>;
+    byCategory: Record<string, number>;
+  }> {
+    try {
+      const stats = {
+        total: this.mockNotifications.length,
+        unread: this.mockNotifications.filter(n => !n.read && !n.is_read).length,
+        byType: {} as Record<string, number>,
+        byCategory: {} as Record<string, number>,
+      };
+
+      this.mockNotifications.forEach(n => {
+        stats.byType[n.type] = (stats.byType[n.type] || 0) + 1;
+        if (n.category) {
+          stats.byCategory[n.category] = (stats.byCategory[n.category] || 0) + 1;
+        }
+      });
+
+      return stats;
+    } catch (error) {
+      console.error('Error getting notification stats:', error);
+      throw error;
+    }
   }
 }
 
-export const notificationService = new NotificationService();
+export const notificationService = new MockNotificationService();
+
+export default notificationService;

@@ -94,7 +94,7 @@ import {
   IContractService,
   INotificationService
 } from './api/apiServiceFactory';
-import { productSaleService as factoryProductSaleService } from './serviceFactory';
+import { productSaleService as factoryProductSaleService, jobWorkService as factoryJobWorkService, notificationService as factoryNotificationService } from './serviceFactory';
 import { Customer, CustomerTag, Sale, Deal, Ticket } from '@/types/crm';
 import { User } from '@/types/auth';
 import { 
@@ -107,6 +107,7 @@ import type { Contract as UiContract, ContractAnalytics as UiContractAnalytics }
 import type { ContractResponse } from './api/interfaces';
 import { baseApiService } from './api/baseApiService';
 import apiConfig from '@/config/apiConfig';
+import { uiNotificationService } from './uiNotificationService';
 
 // Type alias for UI user representation
 type UiUser = User;
@@ -500,13 +501,20 @@ export const auditService = {
   searchAuditLogs: (query: string) => getAuditService().searchAuditLogs(query),
 } as unknown as ReturnType<typeof getAuditService>;
 
-// Import and export productService
-import { productService as _productService } from './productService';
-export const productService = _productService;
+// Export productService from factory (supports mock/supabase/real backends)
+import { productService as factoryProductService } from './serviceFactory';
+export const productService = factoryProductService;
+
+// Export jobWorkService from factory (supports mock/supabase/real backends)
+export const jobWorkService = factoryJobWorkService;
 
 // Import and export serviceContractService (factory-routed for Supabase/Mock switching)
 import { serviceContractService as factoryServiceContractService } from './serviceFactory';
 export const serviceContractService = factoryServiceContractService;
+
+// Import and export companyService (factory-routed for Supabase/Mock switching)
+import { companyService as factoryCompanyService } from './serviceFactory';
+export const companyService = factoryCompanyService;
 
 // Contract service wrapper
 const mapContractTypeToUi = (t?: string): UiContract['type'] => {
@@ -655,8 +663,8 @@ export const contractService = {
   }
 };
 
-// Notification service wrapper
-export const notificationService = {
+// Notification API service wrapper (for managing notification queue, not for UI notifications)
+export const notificationApiService = {
   async getNotificationStats(): Promise<import('@/types/notifications').NotificationStats> {
     const base: INotificationService = getNotificationService();
     if (apiServiceFactory.isUsingMockApi()) return base.getNotifications() as Promise<import('@/types/notifications').NotificationStats>;
@@ -841,6 +849,12 @@ export function getServiceHealth(): {
   };
 }
 
+// Named exports for individual services
+// Export the UI notification service
+export { uiNotificationService };
+// Export the data notification service from factory
+export { notificationService } from './serviceFactory';
+
 // Default export for convenience
 export default {
   auth: authService,
@@ -851,7 +865,8 @@ export default {
   productSale: productSaleService,
   user: userService,
   dashboard: dashboardService,
-  notification: notificationService,
+  notification: factoryNotificationService,  // Data notification service from factory
+  uiNotification: uiNotificationService,      // UI notification (messages/alerts)
   file: fileService,
   audit: auditService,
   factory: apiServiceFactory,

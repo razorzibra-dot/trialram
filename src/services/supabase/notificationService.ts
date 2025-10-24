@@ -18,6 +18,8 @@ export interface Notification {
   read_at?: string;
   action_url?: string;
   action_label?: string;
+  category?: string;
+  is_read?: boolean;
   tenant_id: string;
   created_at: string;
   updated_at: string;
@@ -396,9 +398,164 @@ export class SupabaseNotificationService extends BaseSupabaseService {
   }
 
   /**
-   * Subscribe to notifications for a user
+   * Get aggregated notification preferences for current user
+   * Returns preferences in the format expected by NotificationsPage
    */
-  subscribeToNotifications(
+  async getNotificationPreferences(): Promise<any> {
+    try {
+      this.log('Fetching aggregated notification preferences');
+
+      // Get current user from auth context
+      const { data: { user }, error: authError } = await getSupabaseClient().auth.getUser();
+      if (authError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      const preferences = await this.getPreferences(user.id);
+
+      // Aggregate preferences into the expected format
+      const aggregated = {
+        email: true,
+        sms: false,
+        push: true,
+        in_app: true,
+        categories: {} as Record<string, any>,
+      };
+
+      // Group preferences by notification type
+      const typeMap: Record<string, Record<string, boolean>> = {};
+
+      preferences.forEach((pref) => {
+        if (!typeMap[pref.notification_type]) {
+          typeMap[pref.notification_type] = {};
+        }
+        typeMap[pref.notification_type][pref.channel] = pref.enabled;
+      });
+
+      // Build categories from aggregated preferences
+      Object.entries(typeMap).forEach(([type, channels]) => {
+        aggregated.categories[type] = {
+          email: channels.email ?? true,
+          sms: channels.sms ?? false,
+          push: channels.push ?? true,
+          in_app: channels.in_app ?? true,
+        };
+      });
+
+      return aggregated;
+    } catch (error) {
+      this.logError('Error fetching aggregated notification preferences', error);
+      // Return defaults on error
+      return {
+        email: true,
+        sms: false,
+        push: true,
+        in_app: true,
+        categories: {},
+      };
+    }
+  }
+
+  /**
+   * Update notification preferences for current user
+   */
+  async updateNotificationPreferences(preferences: Partial<any>): Promise<void> {
+    try {
+      this.log('Updating notification preferences', preferences);
+
+      // Get current user from auth context
+      const { data: { user }, error: authError } = await getSupabaseClient().auth.getUser();
+      if (authError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Update global preferences
+      const updates: Array<Promise<any>> = [];
+
+      if (preferences.email !== undefined) {
+        updates.push(
+          this.updatePreference(user.id, 'all', 'email', preferences.email)
+        );
+      }
+      if (preferences.sms !== undefined) {
+        updates.push(
+          this.updatePreference(user.id, 'all', 'sms', preferences.sms)
+        );
+      }
+      if (preferences.push !== undefined) {
+        updates.push(
+          this.updatePreference(user.id, 'all', 'push', preferences.push)
+        );
+      }
+      if (preferences.in_app !== undefined) {
+        updates.push(
+          this.updatePreference(user.id, 'all', 'in_app', preferences.in_app)
+        );
+      }
+
+      // Update category preferences
+      if (preferences.categories) {
+        Object.entries(preferences.categories).forEach(([category, channels]) => {
+          const channelsObj = channels as Record<string, boolean>;
+          if (channelsObj.email !== undefined) {
+            updates.push(
+              this.updatePreference(user.id, category, 'email', channelsObj.email)
+            );
+          }
+          if (channelsObj.sms !== undefined) {
+            updates.push(
+              this.updatePreference(user.id, category, 'sms', channelsObj.sms)
+            );
+          }
+          if (channelsObj.push !== undefined) {
+            updates.push(
+              this.updatePreference(user.id, category, 'push', channelsObj.push)
+            );
+          }
+          if (channelsObj.in_app !== undefined) {
+            updates.push(
+              this.updatePreference(user.id, category, 'in_app', channelsObj.in_app)
+            );
+          }
+        });
+      }
+
+      await Promise.all(updates);
+      this.log('Notification preferences updated successfully');
+    } catch (error) {
+      this.logError('Error updating notification preferences', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to notifications for current user
+   * Automatically gets user ID from auth context
+   */
+  subscribeToNotifications(callback: (notification: any) => void): () => void {
+    let unsubscribeFn: (() => void) | null = null;
+
+    // Get current user and subscribe
+    getSupabaseClient().auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        unsubscribeFn = this.subscribeToChangesForUser(user.id, callback);
+      }
+    }).catch((error) => {
+      this.logError('Error getting current user for notification subscription', error);
+    });
+
+    // Return unsubscribe function that will be set when subscription is ready
+    return () => {
+      if (unsubscribeFn) {
+        unsubscribeFn();
+      }
+    };
+  }
+
+  /**
+   * Subscribe to notifications for a specific user
+   */
+  private subscribeToChangesForUser(
     userId: string,
     callback: (payload: any) => void
   ): () => void {
@@ -413,6 +570,16 @@ export class SupabaseNotificationService extends BaseSupabaseService {
   }
 
   /**
+   * Subscribe to notifications for a user (legacy method)
+   */
+  subscribeToNotificationsForUser(
+    userId: string,
+    callback: (payload: any) => void
+  ): () => void {
+    return this.subscribeToChangesForUser(userId, callback);
+  }
+
+  /**
    * Map database notification response to Notification type
    */
   private mapNotificationResponse(dbNotification: any): Notification {
@@ -424,9 +591,11 @@ export class SupabaseNotificationService extends BaseSupabaseService {
       message: dbNotification.message,
       data: dbNotification.data || {},
       read: dbNotification.read || false,
+      is_read: dbNotification.read || false,
       read_at: dbNotification.read_at,
       action_url: dbNotification.action_url,
       action_label: dbNotification.action_label,
+      category: dbNotification.category || dbNotification.notification_type || 'system',
       tenant_id: dbNotification.tenant_id,
       created_at: dbNotification.created_at,
       updated_at: dbNotification.updated_at,

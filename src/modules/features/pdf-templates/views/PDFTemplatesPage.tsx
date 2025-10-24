@@ -13,7 +13,6 @@ import {
   Input, 
   Select, 
   Modal, 
-  Form, 
   Tag, 
   Space, 
   Dropdown, 
@@ -47,9 +46,10 @@ import {
 import { PageHeader, StatCard } from '@/components/common';
 import { pdfTemplateService, PDFTemplate } from '@/services/pdfTemplateService';
 import { useAuth } from '@/contexts/AuthContext';
+import { PDFTemplateDetailPanel } from '../components/PDFTemplateDetailPanel';
+import { PDFTemplateFormPanel } from '../components/PDFTemplateFormPanel';
 
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 
 // Form values interface for PDF templates
 interface TemplateFormValues {
@@ -63,16 +63,13 @@ interface TemplateFormValues {
 
 export const PDFTemplatesPage: React.FC = () => {
   const { hasPermission } = useAuth();
-  const [form] = Form.useForm();
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
 
   const fetchTemplates = useCallback(async (): Promise<void> => {
@@ -97,48 +94,61 @@ export const PDFTemplatesPage: React.FC = () => {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  const handleCreate = async (values: TemplateFormValues): Promise<void> => {
-    try {
-      await pdfTemplateService.createTemplate({
-        name: values.name,
-        category: values.category,
-        description: values.description,
-        content: values.content,
-        variables: values.variables?.split(',').map((v: string) => v.trim()) || [],
-        is_default: false,
-        is_active: true,
-        created_by: 'current_user'
-      });
-      message.success('Template created successfully');
-      setShowCreateModal(false);
-      form.resetFields();
-      fetchTemplates();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create template';
-      message.error(errorMessage);
-    }
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setSelectedTemplate(null);
   };
 
-  const handleEdit = async (values: TemplateFormValues): Promise<void> => {
-    if (!selectedTemplate) return;
+  const handleOpenCreate = () => {
+    setSelectedTemplate(null);
+    setDrawerMode('create');
+  };
 
+  const handleOpenEdit = (template: PDFTemplate) => {
+    setSelectedTemplate(template);
+    setDrawerMode('edit');
+  };
+
+  const handleOpenView = (template: PDFTemplate) => {
+    setSelectedTemplate(template);
+    setDrawerMode('view');
+  };
+
+  const handleFormSave = async (values: TemplateFormValues): Promise<void> => {
     try {
-      await pdfTemplateService.updateTemplate(selectedTemplate.id, {
-        name: values.name,
-        category: values.category,
-        description: values.description,
-        content: values.content,
-        variables: values.variables?.split(',').map((v: string) => v.trim()) || [],
-        is_active: values.is_active
-      });
-      message.success('Template updated successfully');
-      setShowEditModal(false);
-      setSelectedTemplate(null);
-      form.resetFields();
+      setIsSaving(true);
+      
+      if (drawerMode === 'create') {
+        await pdfTemplateService.createTemplate({
+          name: values.name,
+          category: values.category,
+          description: values.description,
+          content: values.content,
+          variables: values.variables?.split(',').map((v: string) => v.trim()) || [],
+          is_default: false,
+          is_active: true,
+          created_by: 'current_user'
+        });
+        message.success('Template created successfully');
+      } else if (drawerMode === 'edit' && selectedTemplate) {
+        await pdfTemplateService.updateTemplate(selectedTemplate.id, {
+          name: values.name,
+          category: values.category,
+          description: values.description,
+          content: values.content,
+          variables: values.variables?.split(',').map((v: string) => v.trim()) || [],
+          is_active: values.is_active
+        });
+        message.success('Template updated successfully');
+      }
+      
+      closeDrawer();
       fetchTemplates();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update template';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save template';
       message.error(errorMessage);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -232,23 +242,7 @@ export const PDFTemplatesPage: React.FC = () => {
     }
   };
 
-  const openEditModal = (template: PDFTemplate) => {
-    setSelectedTemplate(template);
-    form.setFieldsValue({
-      name: template.name,
-      category: template.category,
-      description: template.description,
-      content: template.content,
-      variables: template.variables.join(', '),
-      is_active: template.is_active
-    });
-    setShowEditModal(true);
-  };
 
-  const openViewModal = (template: PDFTemplate) => {
-    setSelectedTemplate(template);
-    setShowViewModal(true);
-  };
 
   const getActionMenu = (template: PDFTemplate): MenuProps => ({
     items: [
@@ -256,7 +250,7 @@ export const PDFTemplatesPage: React.FC = () => {
         key: 'view',
         label: 'View Details',
         icon: <EyeOutlined />,
-        onClick: () => openViewModal(template)
+        onClick: () => handleOpenView(template)
       },
       {
         key: 'preview',
@@ -268,7 +262,7 @@ export const PDFTemplatesPage: React.FC = () => {
         key: 'edit',
         label: 'Edit',
         icon: <EditOutlined />,
-        onClick: () => openEditModal(template),
+        onClick: () => handleOpenEdit(template),
         disabled: !hasPermission('manage_templates')
       },
       {
@@ -434,7 +428,7 @@ export const PDFTemplatesPage: React.FC = () => {
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleOpenCreate}
               disabled={!hasPermission('manage_templates')}
             >
               New Template
@@ -534,180 +528,38 @@ export const PDFTemplatesPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Create/Edit Modal */}
-      <Modal
-        title={showCreateModal ? 'Create Template' : 'Edit Template'}
-        open={showCreateModal || showEditModal}
-        onCancel={() => {
-          setShowCreateModal(false);
-          setShowEditModal(false);
-          setSelectedTemplate(null);
-          form.resetFields();
-        }}
-        onOk={() => form.submit()}
-        width={800}
-        okText="Save"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={showCreateModal ? handleCreate : handleEdit}
-        >
-          <Form.Item
-            label="Template Name"
-            name="name"
-            rules={[{ required: true, message: 'Please enter template name' }]}
-          >
-            <Input placeholder="Enter template name" />
-          </Form.Item>
+      {/* PDF Template Detail Drawer */}
+      {drawerMode === 'view' && selectedTemplate && (
+        <PDFTemplateDetailPanel
+          template={selectedTemplate}
+          open={true}
+          onClose={closeDrawer}
+          onEdit={handleOpenEdit}
+        />
+      )}
 
-          <Form.Item
-            label="Category"
-            name="category"
-            rules={[{ required: true, message: 'Please select category' }]}
-          >
-            <Select placeholder="Select category">
-              <Select.Option value="invoice">Invoice</Select.Option>
-              <Select.Option value="contract">Contract</Select.Option>
-              <Select.Option value="report">Report</Select.Option>
-              <Select.Option value="letter">Letter</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
-            </Select>
-          </Form.Item>
+      {/* PDF Template Form Drawer - Create/Edit */}
+      {(drawerMode === 'create' || drawerMode === 'edit') && (
+        <PDFTemplateFormPanel
+          open={true}
+          mode={drawerMode}
+          template={selectedTemplate}
+          onClose={closeDrawer}
+          onSave={handleFormSave}
+          loading={isSaving}
+        />
+      )}
 
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[{ required: true, message: 'Please enter description' }]}
-          >
-            <TextArea rows={2} placeholder="Enter template description" />
-          </Form.Item>
-
-          <Form.Item
-            label="Variables"
-            name="variables"
-            help="Comma-separated list of variables (e.g., customer_name, date, total)"
-          >
-            <Input placeholder="customer_name, date, total" />
-          </Form.Item>
-
-          <Form.Item
-            label="Template Content (HTML)"
-            name="content"
-            rules={[{ required: true, message: 'Please enter template content' }]}
-          >
-            <TextArea 
-              rows={10} 
-              placeholder="Enter HTML template content with {{variables}}"
-              style={{ fontFamily: 'monospace' }}
-            />
-          </Form.Item>
-
-          {showEditModal && (
-            <Form.Item
-              label="Status"
-              name="is_active"
-              valuePropName="checked"
-            >
-              <Select>
-                <Select.Option value={true}>Active</Select.Option>
-                <Select.Option value={false}>Inactive</Select.Option>
-              </Select>
-            </Form.Item>
-          )}
-        </Form>
-      </Modal>
-
-      {/* View Modal */}
-      <Modal
-        title="Template Details"
-        open={showViewModal}
-        onCancel={() => {
-          setShowViewModal(false);
-          setSelectedTemplate(null);
-        }}
-        footer={[
-          <Button key="close" onClick={() => setShowViewModal(false)}>
-            Close
-          </Button>
-        ]}
-        width={800}
-      >
-        {selectedTemplate && (
-          <Tabs defaultActiveKey="info">
-            <TabPane tab="Information" key="info">
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                <div>
-                  <strong>Name:</strong> {selectedTemplate.name}
-                </div>
-                <div>
-                  <strong>Category:</strong>{' '}
-                  <Tag color={getCategoryColor(selectedTemplate.category)}>
-                    {selectedTemplate.category.toUpperCase()}
-                  </Tag>
-                </div>
-                <div>
-                  <strong>Description:</strong> {selectedTemplate.description}
-                </div>
-                <div>
-                  <strong>Status:</strong>{' '}
-                  <Tag color={selectedTemplate.is_active ? 'success' : 'default'}>
-                    {selectedTemplate.is_active ? 'Active' : 'Inactive'}
-                  </Tag>
-                </div>
-                <div>
-                  <strong>Default:</strong>{' '}
-                  {selectedTemplate.is_default ? (
-                    <Tag color="gold">Default Template</Tag>
-                  ) : (
-                    <Tag>Not Default</Tag>
-                  )}
-                </div>
-                <div>
-                  <strong>Created:</strong> {new Date(selectedTemplate.created_at).toLocaleString()}
-                </div>
-                <div>
-                  <strong>Updated:</strong> {new Date(selectedTemplate.updated_at).toLocaleString()}
-                </div>
-              </Space>
-            </TabPane>
-            <TabPane tab="Variables" key="variables">
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <p><strong>Available Variables:</strong></p>
-                {selectedTemplate.variables.map(variable => (
-                  <Tag key={variable} color="blue">
-                    {`{{${variable}}}`}
-                  </Tag>
-                ))}
-              </Space>
-            </TabPane>
-            <TabPane tab="Content" key="content">
-              <pre style={{ 
-                background: '#f5f5f5', 
-                padding: 16, 
-                borderRadius: 4,
-                maxHeight: 400,
-                overflow: 'auto',
-                fontSize: 12
-              }}>
-                {selectedTemplate.content}
-              </pre>
-            </TabPane>
-          </Tabs>
-        )}
-      </Modal>
-
-      {/* Preview Modal */}
+      {/* Preview Modal - Keep for preview functionality */}
       <Modal
         title={`Preview: ${selectedTemplate?.name}`}
-        open={showPreviewModal}
+        open={previewHtml !== ''}
         onCancel={() => {
-          setShowPreviewModal(false);
-          setSelectedTemplate(null);
           setPreviewHtml('');
+          setSelectedTemplate(null);
         }}
         footer={[
-          <Button key="close" onClick={() => setShowPreviewModal(false)}>
+          <Button key="close" onClick={() => setPreviewHtml('')}>
             Close
           </Button>
         ]}

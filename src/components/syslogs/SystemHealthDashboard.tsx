@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { notificationService } from '@/services/notificationService';
 
 interface SystemMetrics {
   uptime: string;

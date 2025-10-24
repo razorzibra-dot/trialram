@@ -18,8 +18,9 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,11 +41,24 @@ export const LoginPage: React.FC = () => {
         setError('Your session has expired. Please log in again.');
       }
     }
+  }, [location.search]);
 
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+  // Redirect authenticated users ONLY if:
+  // 1. User is authenticated (isAuthenticated = true)
+  // 2. Auth system is NOT loading (isLoading = false) - to avoid race conditions
+  // 3. We haven't already started redirecting (to prevent double redirects)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !isRedirecting) {
+      console.log('[LoginPage] User already authenticated, redirecting to:', from);
+      setIsRedirecting(true);
+      // Use a small delay to ensure all state is settled
+      const redirectTimer = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 50);
+      
+      return () => clearTimeout(redirectTimer);
     }
-  }, [isAuthenticated, navigate, from, location.search]);
+  }, [isAuthenticated, authLoading, isRedirecting, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,17 +197,20 @@ export const LoginPage: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-11" 
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden group"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-transparent opacity-0 group-hover:opacity-20 transition-opacity"></span>
+                  <span className="relative flex items-center justify-center gap-2">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Signing in...</span>
+                      </>
+                    ) : (
+                      <span>Sign In</span>
+                    )}
+                  </span>
                 </Button>
               </form>
 
@@ -220,16 +237,18 @@ export const LoginPage: React.FC = () => {
                         setError('');
                         setSessionExpired(false);
                       }}
-                      className="w-full p-3 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="w-full p-4 text-left border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group cursor-pointer"
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium text-sm">{account.role}</div>
-                          <div className="text-xs text-gray-500">{account.email}</div>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm text-gray-900 group-hover:text-blue-700">{account.role}</div>
+                          <div className="text-xs text-gray-600">{account.email}</div>
                         </div>
-                        <div className="text-xs text-gray-400">Click to use</div>
+                        <div className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded group-hover:bg-blue-200 whitespace-nowrap">
+                          Use Demo
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">{account.description}</div>
+                      <div className="text-xs text-gray-600 mt-2 group-hover:text-gray-700">{account.description}</div>
                     </button>
                   ))}
                 </div>

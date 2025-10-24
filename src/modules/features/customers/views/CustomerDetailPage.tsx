@@ -38,10 +38,10 @@ import {
   CalendarOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { PageHeader } from '@/modules/core/components/PageHeader';
-import { StatCard } from '@/modules/core/components/StatCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatCard } from '@/components/common/StatCard';
 import { useCustomer } from '../hooks/useCustomers';
-import { useAuth } from '@/modules/core/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock data for related entities (will be replaced with real API calls)
 interface RelatedSale {

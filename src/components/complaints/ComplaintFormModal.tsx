@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/components/ui/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -79,32 +79,24 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.description.trim() || !formData.customer_id) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      });
+      notificationService.errorNotify(
+        'Validation Error',
+        'Please fill in all required fields'
+      );
       return;
     }
 
     setIsLoading(true);
     try {
       await complaintService.createComplaint(formData);
-      toast({
-        title: 'Success',
-        description: 'Complaint created successfully'
-      });
+      notificationService.successNotify('Success', 'Complaint created successfully');
       onSuccess();
       onOpenChange(false);
       resetForm();
     } catch (error: unknown) {
       console.error('Failed to create complaint:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create complaint';
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      });
+      notificationService.errorNotify('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

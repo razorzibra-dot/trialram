@@ -6,8 +6,7 @@
 import { BaseService } from '@/modules/core/services/BaseService';
 import { PaginatedResponse } from '@/modules/core/types';
 import { Company, CompanyFormData, CompanyFilters } from '@/types/masters';
-// Import legacy service - will be replaced with actual API calls
-// import { companyService as legacyCompanyService } from '@/services/companyService';
+import { companyService as factoryCompanyService } from '@/services/serviceFactory';
 
 export interface CompanyStats {
   total: number;
@@ -26,81 +25,33 @@ export class CompanyService extends BaseService {
    */
   async getCompanies(filters: CompanyFilters = {}): Promise<PaginatedResponse<Company>> {
     try {
-      // Mock data for now - replace with actual API calls
-      const mockCompanies: Company[] = [
-        {
-          id: '1',
-          name: 'Acme Corporation',
-          address: '123 Business St, City, State 12345',
-          phone: '+1-555-0123',
-          email: 'contact@acme.com',
-          website: 'https://acme.com',
-          industry: 'Technology',
-          size: 'large',
-          status: 'active',
-          description: 'Leading technology solutions provider',
-          tenant_id: 'tenant1',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          created_by: 'user1',
-        },
-        {
-          id: '2',
-          name: 'Tech Solutions Inc',
-          address: '456 Innovation Ave, Tech City, TC 67890',
-          phone: '+1-555-0456',
-          email: 'info@techsolutions.com',
-          website: 'https://techsolutions.com',
-          industry: 'Software',
-          size: 'medium',
-          status: 'active',
-          description: 'Custom software development company',
-          tenant_id: 'tenant1',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          created_by: 'user1',
-        },
-      ];
-
-      // Apply filters
-      let filteredCompanies = mockCompanies;
-
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        filteredCompanies = filteredCompanies.filter(company =>
-          company.name.toLowerCase().includes(search) ||
-          company.email.toLowerCase().includes(search) ||
-          company.industry.toLowerCase().includes(search)
-        );
-      }
-
-      if (filters.status) {
-        filteredCompanies = filteredCompanies.filter(company => company.status === filters.status);
-      }
-
-      if (filters.size) {
-        filteredCompanies = filteredCompanies.filter(company => company.size === filters.size);
-      }
-
-      if (filters.industry) {
-        filteredCompanies = filteredCompanies.filter(company => company.industry === filters.industry);
-      }
-
-      // Apply pagination
+      // Delegate to factory service
+      const companies = await factoryCompanyService.getCompanies(filters);
+      
+      // Transform to paginated response format if needed
       const page = filters.page || 1;
       const pageSize = filters.pageSize || 20;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedData = filteredCompanies.slice(startIndex, endIndex);
-
+      const total = Array.isArray(companies) ? companies.length : companies.total || 0;
+      const data = Array.isArray(companies) ? companies : companies.data || [];
+      
       return {
-        data: paginatedData,
-        total: filteredCompanies.length,
+        data,
+        total,
         page,
         pageSize,
-        totalPages: Math.ceil(filteredCompanies.length / pageSize),
+        totalPages: Math.ceil(total / pageSize),
       };
     } catch (error) {
+      // Graceful error handling for tenant context
+      if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+        return {
+          data: [],
+          total: 0,
+          page: 1,
+          pageSize: 20,
+          totalPages: 0,
+        };
+      }
       this.handleError('Failed to fetch companies', error);
       throw error;
     }
@@ -111,11 +62,9 @@ export class CompanyService extends BaseService {
    */
   async getCompany(id: string): Promise<Company> {
     try {
-      // Mock implementation - replace with actual API call
-      const companies = await this.getCompanies();
-      const company = companies.data.find(c => c.id === id);
+      const company = await factoryCompanyService.getCompany(id);
       if (!company) {
-        throw new Error(`Company with ID ${id} not found`);
+        throw new Error(`Company ${id} not found`);
       }
       return company;
     } catch (error) {
@@ -129,16 +78,7 @@ export class CompanyService extends BaseService {
    */
   async createCompany(data: CompanyFormData): Promise<Company> {
     try {
-      // Mock implementation - replace with actual API call
-      const newCompany: Company = {
-        id: Date.now().toString(),
-        ...data,
-        tenant_id: 'tenant1',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        created_by: 'current_user',
-      };
-      return newCompany;
+      return await factoryCompanyService.createCompany(data);
     } catch (error) {
       this.handleError('Failed to create company', error);
       throw error;
@@ -150,14 +90,7 @@ export class CompanyService extends BaseService {
    */
   async updateCompany(id: string, data: Partial<CompanyFormData>): Promise<Company> {
     try {
-      // Mock implementation - replace with actual API call
-      const company = await this.getCompany(id);
-      const updatedCompany: Company = {
-        ...company,
-        ...data,
-        updated_at: new Date().toISOString(),
-      };
-      return updatedCompany;
+      return await factoryCompanyService.updateCompany(id, data);
     } catch (error) {
       this.handleError(`Failed to update company ${id}`, error);
       throw error;
@@ -169,9 +102,7 @@ export class CompanyService extends BaseService {
    */
   async deleteCompany(id: string): Promise<void> {
     try {
-      // Mock implementation - replace with actual API call
-      // In real implementation, this would make a DELETE request to the API
-      console.log(`Deleting company ${id}`);
+      await factoryCompanyService.deleteCompany(id);
     } catch (error) {
       this.handleError(`Failed to delete company ${id}`, error);
       throw error;
@@ -277,6 +208,10 @@ export class CompanyService extends BaseService {
    */
   async searchCompanies(query: string): Promise<Company[]> {
     try {
+      if (factoryCompanyService.searchCompanies) {
+        return await factoryCompanyService.searchCompanies(query);
+      }
+      // Fallback to filter-based search
       const response = await this.getCompanies({ search: query });
       return response.data;
     } catch (error) {

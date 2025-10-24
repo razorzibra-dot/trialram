@@ -37,7 +37,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { rbacService } from '@/services/rbacService';
+import { rbacService } from '@/services/serviceFactory';
 import { Role, Permission } from '@/types/rbac';
 
 interface PermissionMatrixRow {

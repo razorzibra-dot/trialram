@@ -10,7 +10,7 @@ import {
 } from '@/types/superAdmin';
 import { superAdminService } from '@/services/superAdminService';
 import { useAuth } from './AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { notificationService } from '@/services/notificationService';
 
 interface SuperAdminContextType {
   // State
@@ -82,11 +82,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getTenants(filters);
       setTenants(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load tenants',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load tenants'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -99,16 +98,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const newTenant = await superAdminService.createTenant(tenantData);
       setTenants(prev => [...prev, newTenant]);
-      toast({
-        title: 'Success',
-        description: 'Tenant created successfully',
-      });
+      notificationService.successNotify(
+        'Success',
+        'Tenant created successfully'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create tenant',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to create tenant'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -122,16 +120,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedTenant = await superAdminService.updateTenant(id, updates);
       setTenants(prev => prev.map(t => t.id === id ? updatedTenant : t));
-      toast({
-        title: 'Success',
-        description: 'Tenant updated successfully',
-      });
+      notificationService.successNotify(
+        'Success',
+        'Tenant updated successfully'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update tenant',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to update tenant'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -145,16 +142,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await superAdminService.deleteTenant(id);
       setTenants(prev => prev.filter(t => t.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Tenant deleted successfully',
-      });
+      notificationService.successNotify(
+        'Success',
+        'Tenant deleted successfully'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete tenant',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to delete tenant'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -170,11 +166,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getGlobalUsers(filters);
       setGlobalUsers(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load users',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load users'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -187,16 +182,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedUser = await superAdminService.updateGlobalUser(id, updates);
       setGlobalUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
-      toast({
-        title: 'Success',
-        description: 'User updated successfully',
-      });
+      notificationService.successNotify(
+        'Success',
+        'User updated successfully'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update user',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to update user'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -212,11 +206,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getRoleRequests(filters);
       setRoleRequests(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load role requests',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load role requests'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -229,16 +222,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedRequest = await superAdminService.approveRoleRequest(id, comments);
       setRoleRequests(prev => prev.map(r => r.id === id ? updatedRequest : r));
-      toast({
-        title: 'Success',
-        description: 'Role request approved successfully',
-      });
+      notificationService.successNotify(
+        'Success',
+        'Role request approved successfully'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to approve role request',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to approve role request'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -252,16 +244,15 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedRequest = await superAdminService.rejectRoleRequest(id, comments);
       setRoleRequests(prev => prev.map(r => r.id === id ? updatedRequest : r));
-      toast({
-        title: 'Success',
-        description: 'Role request rejected',
-      });
+      notificationService.successNotify(
+        'Success',
+        'Role request rejected'
+      );
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to reject role request',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to reject role request'
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -276,11 +267,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getPlatformUsage();
       setPlatformUsage(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load platform usage',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load platform usage'
+      );
     }
   };
 
@@ -291,11 +281,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getSystemHealth();
       setSystemHealth(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load system health',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load system health'
+      );
     }
   };
 
@@ -306,11 +295,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superAdminService.getAnalyticsData();
       setAnalyticsData(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load analytics data',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to load analytics data'
+      );
     }
   };
 

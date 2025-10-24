@@ -23,6 +23,8 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
       const userId = multiTenantService.getCurrentUserId();
 
+      console.log('[SupabaseCustomerService] getCustomers called with tenantId:', tenantId, 'filters:', filters);
+
       let query = supabaseClient
         .from('customers')
         .select(`
@@ -68,25 +70,33 @@ class SupabaseCustomerService {
         );
       }
 
+      console.log('[SupabaseCustomerService] Executing Supabase query...');
       const { data, error } = await retryQuery(async () => query);
+
+      console.log('[SupabaseCustomerService] Query result - data rows:', data?.length || 0, 'error:', error);
 
       if (error) throw handleSupabaseError(error);
 
       // Map database rows to Customer interface
       const mappedCustomers = (data || []).map(row => this.mapToCustomer(row));
 
+      console.log('[SupabaseCustomerService] Mapped customers count:', mappedCustomers.length);
+
       // Filter by tags if provided
       if (filters?.tags && filters.tags.length > 0) {
-        return mappedCustomers.filter(customer =>
+        const filtered = mappedCustomers.filter(customer =>
           filters.tags!.some(tagId => 
             customer.tags.some(tag => tag.id === tagId)
           )
         );
+        console.log('[SupabaseCustomerService] After tag filter count:', filtered.length);
+        return filtered;
       }
 
+      console.log('[SupabaseCustomerService] Returning customers:', mappedCustomers.length);
       return mappedCustomers;
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('[SupabaseCustomerService] Error fetching customers:', error);
       throw error instanceof Error ? error : new Error('Failed to fetch customers');
     }
   }

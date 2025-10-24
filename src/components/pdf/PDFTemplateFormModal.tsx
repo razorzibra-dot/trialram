@@ -3,7 +3,7 @@ import { X, Save, Eye, Code, HelpCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { useToast } from '../../hooks/use-toast';
+import { notificationService } from '../../services/notificationService';
 import { PDFTemplate } from '../../types/pdfTemplates';
 import { pdfTemplateService } from '../../services/pdfTemplateService';
 
@@ -29,7 +29,6 @@ export const PDFTemplateFormModal: React.FC<PDFTemplateFormModalProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (template) {
@@ -134,26 +133,16 @@ export const PDFTemplateFormModal: React.FC<PDFTemplateFormModalProps> = ({
 
       if (template) {
         await pdfTemplateService.updateTemplate(template.id, templateData);
-        toast({
-          title: 'Success',
-          description: 'Template updated successfully',
-        });
+        notificationService.successNotify('Success', 'Template updated successfully');
       } else {
         await pdfTemplateService.createTemplate(templateData);
-        toast({
-          title: 'Success',
-          description: 'Template created successfully',
-        });
+        notificationService.successNotify('Success', 'Template created successfully');
       }
 
       onSave();
       onClose();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save template',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify('Error', 'Failed to save template');
     } finally {
       setLoading(false);
     }

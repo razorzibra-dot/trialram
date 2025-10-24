@@ -27,11 +27,29 @@ export const contractKeys = {
 export const useContracts = (filters: ContractFilters = {}) => {
   const contractService = useService<ContractService>('contractService');
 
-  return useQuery({
+  const query = useQuery({
     queryKey: contractKeys.list(filters),
     queryFn: () => contractService.getContracts(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Extract data from paginated response and flatten for component compatibility
+  const data = query.data;
+  const contracts = data?.data || [];
+  const pagination = {
+    page: data?.page || 1,
+    pageSize: data?.pageSize || 20,
+    total: data?.total || 0,
+    totalPages: data?.totalPages || 1,
+  };
+
+  return {
+    contracts,
+    pagination,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };
 
 /**

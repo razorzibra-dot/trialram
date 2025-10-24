@@ -1,7 +1,14 @@
 /**
  * Ant Design Config Provider
- * Wraps the entire application with Ant Design theme configuration
- * Ensures consistent styling across all components
+ * 
+ * Wraps the entire application with Ant Design theme configuration.
+ * Ensures consistent styling across all components, including notifications
+ * and messages which are now powered by Ant Design.
+ * 
+ * Migration Note (Phase 5):
+ * - Replaced legacy toast system with Ant Design Message and Notification
+ * - Automatic global configuration for all notifications and messages
+ * - See notificationService.ts for usage
  */
 
 import React from 'react';

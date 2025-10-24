@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
-import { Toaster } from '@/components/ui/toaster';
 import { moduleRegistry, initializeModules } from './ModuleRegistry';
 import { createModularRouter } from './routing/ModularRouter';
 import { registerCoreModules } from './bootstrap';
@@ -111,7 +110,6 @@ const ModularApp: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-gray-50">
           <RouterProvider router={router} />
-          <Toaster />
         </div>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

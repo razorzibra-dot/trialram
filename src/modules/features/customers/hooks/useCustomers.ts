@@ -8,7 +8,7 @@ import { useQuery, useMutation, useInvalidateQueries } from '@/modules/core/hook
 import { useCustomerStore } from '../store/customerStore';
 import { CustomerService, CustomerFilters, CreateCustomerData } from '../services/customerService';
 import { inject } from '@/modules/core/services/ServiceContainer';
-import { useAuth } from '@/contexts/AuthContext';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 // Get customer service instance
 const getCustomerService = () => inject<CustomerService>('customerService');
@@ -25,9 +25,9 @@ export function useCustomers(filters: CustomerFilters = {}) {
   const isLoading = useCustomerStore((state) => state.isLoading);
   const error = useCustomerStore((state) => state.error);
   
-  // Get auth state to check if tenant is initialized
-  const auth = useAuth();
-  const isTenantInitialized = !!auth.tenant?.tenantId;
+  // Get tenant context to check if tenant is initialized
+  // Uses the same reliable pattern as Dashboard hooks
+  const { isInitialized: isTenantInitialized, tenantId } = useTenantContext();
 
   // Create a stable query key by serializing filter values
   const queryKey = [
@@ -44,13 +44,31 @@ export function useCustomers(filters: CustomerFilters = {}) {
     filters.pageSize,
   ];
 
+  console.log('[useCustomers] Query state:', { 
+    isTenantInitialized, 
+    tenantId,
+    enabled: isTenantInitialized,
+    customersCount: customers.length
+  });
+
   const query = useQuery(
     queryKey,
-    () => getCustomerService().getCustomers(filters),
+    async () => {
+      console.log('[useCustomers] Query function executing with filters:', filters);
+      try {
+        const result = await getCustomerService().getCustomers(filters);
+        console.log('[useCustomers] Query function resolved with result:', result);
+        return result;
+      } catch (err) {
+        console.error('[useCustomers] Query function caught error:', err);
+        throw err;
+      }
+    },
     {
       // Only run query when tenant is initialized
       enabled: isTenantInitialized,
       onSuccess: (data) => {
+        console.log('[useCustomers] onSuccess callback triggered with data:', data);
         setCustomers(data.data);
         setPagination({
           page: data.page,
@@ -60,6 +78,7 @@ export function useCustomers(filters: CustomerFilters = {}) {
         setError(null);
       },
       onError: (error) => {
+        console.log('[useCustomers] onError callback triggered with error:', error);
         // Only set error if it's not a tenant initialization issue
         const errorMsg = error instanceof Error ? error.message : 'Failed to fetch customers';
         if (!errorMsg.includes('Tenant context not initialized')) {
@@ -84,8 +103,7 @@ export function useCustomers(filters: CustomerFilters = {}) {
  */
 export function useCustomer(id: string) {
   const setSelectedCustomer = useCustomerStore((state) => state.setSelectedCustomer);
-  const auth = useAuth();
-  const isTenantInitialized = !!auth.tenant?.tenantId;
+  const { isInitialized: isTenantInitialized } = useTenantContext();
 
   return useQuery(
     ['customer', id],
@@ -245,8 +263,7 @@ export function useCustomerTags() {
  * Hook for customer statistics
  */
 export function useCustomerStats() {
-  const auth = useAuth();
-  const isTenantInitialized = !!auth.tenant?.tenantId;
+  const { isInitialized: isTenantInitialized } = useTenantContext();
 
   return useQuery(
     ['customer-stats'],

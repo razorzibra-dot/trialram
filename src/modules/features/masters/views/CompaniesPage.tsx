@@ -16,7 +16,6 @@ import {
   Select, 
   Popconfirm,
   Empty,
-  Modal,
   message,
   Upload as AntUpload
 } from 'antd';
@@ -39,6 +38,10 @@ import { StatCard } from '@/components/common/StatCard';
 import { useCompanyStats, useImportCompanies, useCompanies, useDeleteCompany } from '../hooks/useCompanies';
 import { useAuth } from '@/contexts/AuthContext';
 import { Company, CompanyFilters } from '@/types/masters';
+import { CompaniesDetailPanel } from '../components/CompaniesDetailPanel';
+import { CompaniesFormPanel } from '../components/CompaniesFormPanel';
+
+type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 const { Search } = Input;
 const { Option } = Select;
@@ -52,8 +55,9 @@ export const CompaniesPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Queries and mutations
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useCompanyStats();
@@ -69,20 +73,43 @@ export const CompaniesPage: React.FC = () => {
 
   const handleCreate = () => {
     setSelectedCompany(null);
-    setModalMode('create');
-    setIsModalVisible(true);
+    setDrawerMode('create');
   };
 
   const handleEdit = (company: Company) => {
     setSelectedCompany(company);
-    setModalMode('edit');
-    setIsModalVisible(true);
+    setDrawerMode('edit');
   };
 
   const handleView = (company: Company) => {
     setSelectedCompany(company);
-    setModalMode('view');
-    setIsModalVisible(true);
+    setDrawerMode('view');
+  };
+
+  const handleDrawerClose = () => {
+    setDrawerMode(null);
+    setSelectedCompany(null);
+  };
+
+  const handleEditFromDetail = () => {
+    setDrawerMode('edit');
+  };
+
+  const handleFormSave = async (values: Partial<Company>) => {
+    try {
+      setIsSaving(true);
+      // TODO: Implement actual save logic using useUpdateCompany or useCreateCompany
+      console.log('Saving company:', values);
+      message.success(`Company ${drawerMode === 'create' ? 'created' : 'updated'} successfully`);
+      await refetchCompanies();
+      await refetchStats();
+      handleDrawerClose();
+    } catch (error) {
+      console.error('Error saving company:', error);
+      message.error('Failed to save company');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (company: Company) => {
@@ -429,37 +456,29 @@ export const CompaniesPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Company Modal (Create/Edit/View) */}
-      <Modal
-        title={
-          modalMode === 'create' 
-            ? 'Add New Company' 
-            : modalMode === 'edit' 
-            ? 'Edit Company' 
-            : 'Company Details'
-        }
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={modalMode === 'view' ? [
-          <Button key="close" onClick={() => setIsModalVisible(false)}>
-            Close
-          </Button>
-        ] : null}
-        width={800}
-      >
-        {/* TODO: Implement company form */}
-        <p>Company form will be implemented here</p>
-        {selectedCompany && (
-          <div>
-            <p><strong>Name:</strong> {selectedCompany.name}</p>
-            <p><strong>Industry:</strong> {selectedCompany.industry}</p>
-            <p><strong>Email:</strong> {selectedCompany.email}</p>
-            <p><strong>Phone:</strong> {selectedCompany.phone}</p>
-            <p><strong>Status:</strong> {selectedCompany.status}</p>
-            <p><strong>Size:</strong> {getSizeLabel(selectedCompany.size)}</p>
-          </div>
-        )}
-      </Modal>
+      {/* Detail Drawer (Read-only) */}
+      {drawerMode === 'view' && (
+        <CompaniesDetailPanel
+          company={selectedCompany}
+          isOpen={drawerMode === 'view'}
+          isLoading={isLoading}
+          onClose={handleDrawerClose}
+          onEdit={handleEditFromDetail}
+        />
+      )}
+
+      {/* Form Drawer (Create/Edit) */}
+      {(drawerMode === 'create' || drawerMode === 'edit') && (
+        <CompaniesFormPanel
+          company={selectedCompany}
+          isOpen={drawerMode === 'create' || drawerMode === 'edit'}
+          mode={drawerMode === 'create' ? 'create' : 'edit'}
+          isLoading={isLoading}
+          isSaving={isSaving}
+          onClose={handleDrawerClose}
+          onSave={handleFormSave}
+        />
+      )}
     </>
   );
 };

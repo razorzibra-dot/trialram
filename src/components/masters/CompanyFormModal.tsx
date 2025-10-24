@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { Loader2, Building2 } from 'lucide-react';
 import { Company, CompanyFormData, COMPANY_INDUSTRIES, COMPANY_SIZES } from '@/types/masters';
 import { companyService } from '@/services/companyService';

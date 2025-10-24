@@ -2,9 +2,19 @@
  * Enterprise Layout Component
  * Salesforce-inspired professional layout with sidebar navigation
  * Consistent across all pages (Admin, Super Admin, Regular Users)
+ * 
+ * Features:
+ * - Permission-based navigation filtering
+ * - Role-based access control
+ * - Dynamic section visibility (only shows when children are visible)
+ * - Full RBAC integration with AuthContext
+ * - Responsive design with collapsed sidebar
+ * 
+ * @see src/config/navigationPermissions.ts for navigation configuration
+ * @see src/utils/navigationFilter.ts for filtering logic
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Badge, Button, Breadcrumb, Space, Divider } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -29,6 +39,13 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { navigationConfig } from '@/config/navigationPermissions';
+import {
+  filterNavigationItems,
+  createNavigationFilterContext,
+  getPermissionAwareBreadcrumbs,
+} from '@/utils/navigationFilter';
+import type { FilteredNavigationItem } from '@/utils/navigationFilter';
 
 const { Header, Sider, Content } = Layout;
 
@@ -40,229 +57,184 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole, hasPermission } = useAuth();
 
-  // Generate breadcrumb from current path
-  const pathSnippets = location.pathname.split('/').filter((i) => i);
-  const breadcrumbItems = [
-    {
-      title: (
-        <span>
-          <HomeOutlined style={{ marginRight: 4 }} />
-          Home
-        </span>
-      ),
-      href: '/',
-    },
-    ...pathSnippets.map((snippet, index) => {
-      const url = `/${pathSnippets.slice(0, index + 1).join('/')}`;
-      const title = snippet.charAt(0).toUpperCase() + snippet.slice(1).replace(/-/g, ' ');
-      return {
-        title,
-        href: url,
-      };
-    }),
-  ];
+  /**
+   * Get user permissions based on role
+   * Maps role to their permissions for navigation purposes
+   * This determines which menu items are visible
+   * 
+   * Note: In production, this should fetch from the actual permission system
+   */
+  const getUserPermissions = (role: string): string[] => {
+    // Map roles to their permissions for navigation purposes
+    // This determines which menu items are visible
+    const rolePermissionMap: Record<string, string[]> = {
+      super_admin: [
+        'read',
+        'write',
+        'delete',
+        'manage_customers',
+        'manage_sales',
+        'manage_tickets',
+        'manage_complaints',
+        'manage_contracts',
+        'manage_service_contracts',
+        'manage_products',
+        'manage_product_sales',
+        'manage_job_works',
+        'manage_users',
+        'manage_roles',
+        'view_analytics',
+        'manage_settings',
+        'manage_companies',
+        'platform_admin',
+        'super_admin',
+        'manage_tenants',
+        'system_monitoring',
+      ],
+      admin: [
+        'read',
+        'write',
+        'delete',
+        'manage_customers',
+        'manage_sales',
+        'manage_tickets',
+        'manage_complaints',
+        'manage_contracts',
+        'manage_service_contracts',
+        'manage_products',
+        'manage_product_sales',
+        'manage_job_works',
+        'manage_users',
+        'manage_roles',
+        'view_analytics',
+        'manage_settings',
+        'manage_companies',
+      ],
+      manager: [
+        'read',
+        'write',
+        'manage_customers',
+        'manage_sales',
+        'manage_tickets',
+        'manage_complaints',
+        'manage_contracts',
+        'manage_service_contracts',
+        'manage_products',
+        'manage_product_sales',
+        'view_analytics',
+      ],
+      engineer: [
+        'read',
+        'write',
+        'manage_products',
+        'manage_product_sales',
+        'manage_job_works',
+        'manage_tickets',
+      ],
+      agent: ['read', 'write', 'manage_customers', 'manage_tickets', 'manage_complaints'],
+      customer: ['read'],
+    };
 
-  // Menu items based on user role
+    return rolePermissionMap[role] || ['read'];
+  };
+
+  /**
+   * Get permission-filtered navigation items
+   * 
+   * Memoized computation to avoid recalculating on every render.
+   * Filters navigation items based on user permissions and roles.
+   * Only includes items the user has access to.
+   */
+  const filteredNavItems = useMemo(() => {
+    if (!user) return [];
+
+    // Get user permissions from role mapping
+    const userPermissions = getUserPermissions(user.role);
+
+    const filterContext = createNavigationFilterContext(user.role, userPermissions);
+    return filterNavigationItems(navigationConfig, filterContext);
+  }, [user]);
+
+  /**
+   * Get permission-aware breadcrumbs
+   */
+  const breadcrumbItems = useMemo(() => {
+    if (!user) return [];
+
+    const userPermissions = getUserPermissions(user.role);
+    const filterContext = createNavigationFilterContext(user.role, userPermissions);
+
+    const breadcrumbs = [
+      {
+        title: (
+          <span>
+            <HomeOutlined style={{ marginRight: 4 }} />
+            Home
+          </span>
+        ),
+        href: '/',
+      },
+    ];
+
+    return breadcrumbs;
+  }, [user, location.pathname]);
+
+  /**
+   * Convert filtered navigation config to Ant Design menu items
+   */
   const getMenuItems = (): MenuProps['items'] => {
-    const commonItems: MenuProps['items'] = [
-      {
-        key: '/tenant/dashboard',
-        icon: <DashboardOutlined />,
-        label: 'Dashboard',
-        onClick: () => navigate('/tenant/dashboard'),
-      },
-      {
-        key: '/tenant/customers',
-        icon: <TeamOutlined />,
-        label: 'Customers',
-        onClick: () => navigate('/tenant/customers'),
-      },
-      {
-        key: '/tenant/sales',
-        icon: <ShoppingCartOutlined />,
-        label: 'Sales',
-        onClick: () => navigate('/tenant/sales'),
-      },
-      {
-        key: '/tenant/product-sales',
-        icon: <ShoppingCartOutlined />,
-        label: 'Product Sales',
-        onClick: () => navigate('/tenant/product-sales'),
-      },
-      {
-        key: '/tenant/contracts',
-        icon: <FileTextOutlined />,
-        label: 'Contracts',
-        onClick: () => navigate('/tenant/contracts'),
-      },
-      {
-        key: '/tenant/service-contracts',
-        icon: <FileTextOutlined />,
-        label: 'Service Contracts',
-        onClick: () => navigate('/tenant/service-contracts'),
-      },
-      {
-        key: '/tenant/tickets',
-        icon: <CustomerServiceOutlined />,
-        label: 'Support Tickets',
-        onClick: () => navigate('/tenant/tickets'),
-      },
-      {
-        key: '/tenant/complaints',
-        icon: <CustomerServiceOutlined />,
-        label: 'Complaints',
-        onClick: () => navigate('/tenant/complaints'),
-      },
-      {
-        key: '/tenant/job-works',
-        icon: <ToolOutlined />,
-        label: 'Job Works',
-        onClick: () => navigate('/tenant/job-works'),
-      },
-    ];
+    const iconMap: Record<string, React.ReactNode> = {
+      '/tenant/dashboard': <DashboardOutlined />,
+      '/tenant/customers': <TeamOutlined />,
+      '/tenant/sales': <ShoppingCartOutlined />,
+      '/tenant/product-sales': <ShoppingCartOutlined />,
+      '/tenant/contracts': <FileTextOutlined />,
+      '/tenant/service-contracts': <FileTextOutlined />,
+      '/tenant/tickets': <CustomerServiceOutlined />,
+      '/tenant/complaints': <CustomerServiceOutlined />,
+      '/tenant/job-works': <ToolOutlined />,
+      '/tenant/masters': <DatabaseOutlined />,
+      '/tenant/users': <UserOutlined />,
+      '/tenant/configuration': <SettingOutlined />,
+      '/tenant/notifications': <BellOutlined />,
+      '/tenant/logs': <FileTextOutlined />,
+      '/super-admin': <SafetyOutlined />,
+    };
 
-    const adminItems: MenuProps['items'] = [
-      { type: 'divider' },
-      {
-        key: 'admin-section',
-        label: 'Administration',
-        type: 'group',
-      },
-      {
-        key: '/tenant/masters',
-        icon: <DatabaseOutlined />,
-        label: 'Masters',
-        children: [
-          {
-            key: '/tenant/masters/companies',
-            label: 'Companies',
-            onClick: () => navigate('/tenant/masters/companies'),
-          },
-          {
-            key: '/tenant/masters/products',
-            label: 'Products',
-            onClick: () => navigate('/tenant/masters/products'),
-          },
-        ],
-      },
-      {
-        key: '/tenant/users',
-        icon: <UserOutlined />,
-        label: 'User Management',
-        children: [
-          {
-            key: '/tenant/users/list',
-            label: 'Users',
-            onClick: () => navigate('/tenant/users'),
-          },
-          {
-            key: '/tenant/users/roles',
-            label: 'Roles',
-            onClick: () => navigate('/tenant/role-management'),
-          },
-          {
-            key: '/tenant/users/permissions',
-            label: 'Permissions',
-            onClick: () => navigate('/tenant/permission-matrix'),
-          },
-        ],
-      },
-      {
-        key: '/tenant/configuration',
-        icon: <SettingOutlined />,
-        label: 'Configuration',
-        children: [
-          {
-            key: '/tenant/configuration/tenant',
-            label: 'Tenant Settings',
-            onClick: () => navigate('/tenant/tenant-configuration'),
-          },
-          {
-            key: '/tenant/configuration/pdf-templates',
-            label: 'PDF Templates',
-            onClick: () => navigate('/tenant/pdf-templates'),
-          },
-        ],
-      },
-      {
-        key: '/tenant/notifications',
-        icon: <BellOutlined />,
-        label: 'Notifications',
-        onClick: () => navigate('/tenant/notifications'),
-      },
-      {
-        key: '/tenant/logs',
-        icon: <FileTextOutlined />,
-        label: 'System Logs',
-        onClick: () => navigate('/tenant/logs'),
-      },
-    ];
+    const convertToMenuItems = (items: FilteredNavigationItem[]): MenuProps['items'] => {
+      return items.map((item) => {
+        // Section items become groups
+        if (item.isSection) {
+          return {
+            type: 'group',
+            key: item.key,
+            label: item.label,
+          };
+        }
 
-    const superAdminItems: MenuProps['items'] = [
-      { type: 'divider' },
-      {
-        key: 'superadmin-section',
-        label: 'Super Admin',
-        type: 'group',
-      },
-      {
-        key: '/super-admin',
-        icon: <SafetyOutlined />,
-        label: 'Super Admin',
-        children: [
-          {
-            key: '/super-admin/dashboard',
-            label: 'Dashboard',
-            onClick: () => navigate('/super-admin/dashboard'),
-          },
-          {
-            key: '/super-admin/tenants',
-            label: 'Tenants',
-            onClick: () => navigate('/super-admin/tenants'),
-          },
-          {
-            key: '/super-admin/users',
-            label: 'All Users',
-            onClick: () => navigate('/super-admin/users'),
-          },
-          {
-            key: '/super-admin/analytics',
-            label: 'Analytics',
-            onClick: () => navigate('/super-admin/analytics'),
-          },
-          {
-            key: '/super-admin/health',
-            label: 'System Health',
-            onClick: () => navigate('/super-admin/health'),
-          },
-          {
-            key: '/super-admin/configuration',
-            label: 'Configuration',
-            onClick: () => navigate('/super-admin/configuration'),
-          },
-          {
-            key: '/super-admin/role-requests',
-            label: 'Role Requests',
-            onClick: () => navigate('/super-admin/role-requests'),
-          },
-        ],
-      },
-    ];
+        // Items with children become submenus
+        if (item.filteredChildren && item.filteredChildren.length > 0) {
+          return {
+            key: item.key,
+            icon: iconMap[item.key] || <AppstoreOutlined />,
+            label: item.label,
+            children: convertToMenuItems(item.filteredChildren),
+          };
+        }
 
-    // Build menu based on user role
-    let menuItems = [...commonItems];
-    
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
-      menuItems = [...menuItems, ...adminItems];
-    }
-    
-    if (user?.role === 'super_admin') {
-      menuItems = [...menuItems, ...superAdminItems];
-    }
+        // Regular items
+        return {
+          key: item.key,
+          icon: iconMap[item.key] || <AppstoreOutlined />,
+          label: item.label,
+          onClick: () => navigate(item.key),
+        };
+      });
+    };
 
-    return menuItems;
+    return convertToMenuItems(filteredNavItems);
   };
 
   // User dropdown menu

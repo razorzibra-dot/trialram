@@ -102,7 +102,7 @@ interface PlatformConfig {
   };
 }
 
-export const SuperAdminConfigurationPage: React.FC = () => {
+const SuperAdminConfigurationPage: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

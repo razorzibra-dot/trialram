@@ -59,7 +59,6 @@ import { TenantSettings } from '@/types/rbac';
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 
 interface TenantFormData {
   name: string;
@@ -71,7 +70,7 @@ interface TenantFormData {
   contactPhone?: string;
 }
 
-export const SuperAdminTenantsPage: React.FC = () => {
+const SuperAdminTenantsPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
   const [form] = Form.useForm();
   const [settingsForm] = Form.useForm();
@@ -720,110 +719,129 @@ export const SuperAdminTenantsPage: React.FC = () => {
           layout="vertical"
           onFinish={handleSettingsSubmit}
         >
-          <Tabs defaultActiveKey="general">
-            <TabPane tab="General" key="general">
-              <Form.Item
-                name="timezone"
-                label="Timezone"
-              >
-                <Select placeholder="Select timezone">
-                  <Option value="UTC">UTC</Option>
-                  <Option value="America/New_York">America/New_York</Option>
-                  <Option value="America/Los_Angeles">America/Los_Angeles</Option>
-                  <Option value="Europe/London">Europe/London</Option>
-                  <Option value="Asia/Tokyo">Asia/Tokyo</Option>
-                </Select>
-              </Form.Item>
+          <Tabs
+            defaultActiveKey="general"
+            items={[
+              {
+                label: 'General',
+                key: 'general',
+                children: (
+                  <>
+                    <Form.Item
+                      name="timezone"
+                      label="Timezone"
+                    >
+                      <Select placeholder="Select timezone">
+                        <Option value="UTC">UTC</Option>
+                        <Option value="America/New_York">America/New_York</Option>
+                        <Option value="America/Los_Angeles">America/Los_Angeles</Option>
+                        <Option value="Europe/London">Europe/London</Option>
+                        <Option value="Asia/Tokyo">Asia/Tokyo</Option>
+                      </Select>
+                    </Form.Item>
 
-              <Form.Item
-                name="dateFormat"
-                label="Date Format"
-              >
-                <Select placeholder="Select date format">
-                  <Option value="MM/DD/YYYY">MM/DD/YYYY</Option>
-                  <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
-                  <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
-                </Select>
-              </Form.Item>
+                    <Form.Item
+                      name="dateFormat"
+                      label="Date Format"
+                    >
+                      <Select placeholder="Select date format">
+                        <Option value="MM/DD/YYYY">MM/DD/YYYY</Option>
+                        <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
+                        <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
+                      </Select>
+                    </Form.Item>
 
-              <Form.Item
-                name="currency"
-                label="Currency"
-              >
-                <Select placeholder="Select currency">
-                  <Option value="USD">USD - US Dollar</Option>
-                  <Option value="EUR">EUR - Euro</Option>
-                  <Option value="GBP">GBP - British Pound</Option>
-                  <Option value="JPY">JPY - Japanese Yen</Option>
-                </Select>
-              </Form.Item>
-            </TabPane>
+                    <Form.Item
+                      name="currency"
+                      label="Currency"
+                    >
+                      <Select placeholder="Select currency">
+                        <Option value="USD">USD - US Dollar</Option>
+                        <Option value="EUR">EUR - Euro</Option>
+                        <Option value="GBP">GBP - British Pound</Option>
+                        <Option value="JPY">JPY - Japanese Yen</Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              },
+              {
+                label: 'Features',
+                key: 'features',
+                children: (
+                  <>
+                    <Form.Item
+                      name="enableTickets"
+                      label="Enable Tickets"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
 
-            <TabPane tab="Features" key="features">
-              <Form.Item
-                name="enableTickets"
-                label="Enable Tickets"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
+                    <Form.Item
+                      name="enableContracts"
+                      label="Enable Contracts"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
 
-              <Form.Item
-                name="enableContracts"
-                label="Enable Contracts"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
+                    <Form.Item
+                      name="enableReports"
+                      label="Enable Reports"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
 
-              <Form.Item
-                name="enableReports"
-                label="Enable Reports"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
+                    <Form.Item
+                      name="enableAPI"
+                      label="Enable API Access"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
+                  </>
+                )
+              },
+              {
+                label: 'Security',
+                key: 'security',
+                children: (
+                  <>
+                    <Form.Item
+                      name="requireMFA"
+                      label="Require Multi-Factor Authentication"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
 
-              <Form.Item
-                name="enableAPI"
-                label="Enable API Access"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-            </TabPane>
+                    <Form.Item
+                      name="passwordExpiry"
+                      label="Password Expiry (days)"
+                    >
+                      <Input type="number" min={0} placeholder="90" />
+                    </Form.Item>
 
-            <TabPane tab="Security" key="security">
-              <Form.Item
-                name="requireMFA"
-                label="Require Multi-Factor Authentication"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
+                    <Form.Item
+                      name="sessionTimeout"
+                      label="Session Timeout (minutes)"
+                    >
+                      <Input type="number" min={5} placeholder="30" />
+                    </Form.Item>
 
-              <Form.Item
-                name="passwordExpiry"
-                label="Password Expiry (days)"
-              >
-                <Input type="number" min={0} placeholder="90" />
-              </Form.Item>
-
-              <Form.Item
-                name="sessionTimeout"
-                label="Session Timeout (minutes)"
-              >
-                <Input type="number" min={5} placeholder="30" />
-              </Form.Item>
-
-              <Form.Item
-                name="ipWhitelist"
-                label="IP Whitelist"
-              >
-                <TextArea rows={3} placeholder="Enter IP addresses (one per line)" />
-              </Form.Item>
-            </TabPane>
-          </Tabs>
+                    <Form.Item
+                      name="ipWhitelist"
+                      label="IP Whitelist"
+                    >
+                      <TextArea rows={3} placeholder="Enter IP addresses (one per line)" />
+                    </Form.Item>
+                  </>
+                )
+              }
+            ]}
+          />
 
           <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>

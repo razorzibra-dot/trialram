@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load components for code splitting
-const JobWorksPage = lazy(() => import('./views/JobWorksPage').then(m => ({ default: m.JobWorksPage })));
+const JobWorksPage = lazy(() => import('./views/JobWorksPage'));
 
 // Route wrapper with error boundary and suspense
 const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

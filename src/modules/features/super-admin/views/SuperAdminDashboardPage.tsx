@@ -22,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader, StatCard } from '@/components/common';
 import { toast } from 'sonner';
 
-export const SuperAdminDashboardPage: React.FC = () => {
+const SuperAdminDashboardPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const [stats, setStats] = useState({
     totalTenants: 0,

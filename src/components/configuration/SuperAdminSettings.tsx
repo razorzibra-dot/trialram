@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { ConfigurationSetting, ConfigurationAudit, configurationService } from '../../services/configurationService';
 import ConfigurationFormModal from './ConfigurationFormModal';
-import { toast } from '../ui/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 
 const SuperAdminSettings: React.FC = () => {

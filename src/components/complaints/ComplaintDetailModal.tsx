@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from '@/components/ui/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { 
   Loader2, 
   MessageSquare, 
@@ -105,17 +105,13 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
       await complaintService.addComment(complaint.id, newComment);
       setNewComment('');
       onSuccess();
-      toast({
-        title: 'Success',
-        description: 'Comment added successfully'
-      });
+      notificationService.successNotify('Success', 'Comment added successfully');
     } catch (error: unknown) {
       console.error('Failed to add comment:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add comment',
-        variant: 'destructive'
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to add comment'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -123,11 +119,10 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
   const handleUpdateComplaint = async () => {
     if (updateData.status === 'closed' && !updateData.engineer_resolution?.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Engineer resolution is required to close a complaint',
-        variant: 'destructive'
-      });
+      notificationService.errorNotify(
+        'Validation Error',
+        'Engineer resolution is required to close a complaint'
+      );
       return;
     }
 
@@ -135,17 +130,13 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
     try {
       await complaintService.updateComplaint(complaint.id, updateData);
       onSuccess();
-      toast({
-        title: 'Success',
-        description: 'Complaint updated successfully'
-      });
+      notificationService.successNotify('Success', 'Complaint updated successfully');
     } catch (error: unknown) {
       console.error('Failed to update complaint:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update complaint',
-        variant: 'destructive'
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to update complaint'
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -168,17 +159,13 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
     try {
       await complaintService.reopenComplaint(complaint.id);
       onSuccess();
-      toast({
-        title: 'Success',
-        description: 'Complaint reopened successfully'
-      });
+      notificationService.successNotify('Success', 'Complaint reopened successfully');
     } catch (error: unknown) {
       console.error('Failed to reopen complaint:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to reopen complaint',
-        variant: 'destructive'
-      });
+      notificationService.errorNotify(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to reopen complaint'
+      );
     }
   };
 

@@ -1,6 +1,7 @@
 /**
  * JobWorks Module
- * Job work management and tracking
+ * Job work management and tracking with enterprise-grade architecture
+ * Pattern: Service → Hook → Component (3-layer architecture)
  */
 
 // Service exports
@@ -9,8 +10,9 @@ export * from './services/jobWorksService';
 // Hook exports
 export * from './hooks/useJobWorks';
 
-// Component exports
-export * from './components/JobWorksList';
+// Component exports (new drawer-based UI)
+export { JobWorksDetailPanel } from './components/JobWorksDetailPanel';
+export { JobWorksFormPanel } from './components/JobWorksFormPanel';
 
 // Routes
 export { jobWorksRoutes } from './routes';

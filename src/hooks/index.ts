@@ -37,6 +37,8 @@ export { useSupabaseContracts } from './useSupabaseContracts';
 // Existing utility hooks
 export { useAuth } from '@/contexts/AuthContext';
 export { useToast } from './use-toast';
+export { useNotification } from './useNotification';
+export { useToastCompat } from './useToastCompat';
 export { useMobile } from './use-mobile';
 export { useLocalStorage } from './useLocalStorage';
 export { useScrollRestoration } from './useScrollRestoration';

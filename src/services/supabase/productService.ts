@@ -5,7 +5,8 @@
  */
 
 import { BaseSupabaseService } from './baseService';
-import { getSupabaseClient } from './client';
+import { getSupabaseClient, supabaseClient } from './client';
+import { multiTenantService } from './multiTenantService';
 
 export interface Product {
   id: string;
@@ -46,7 +47,11 @@ export class SupabaseProductService extends BaseSupabaseService {
     try {
       this.log('Fetching products', filters);
 
-      let query = getSupabaseClient()
+      const tenant = await this.ensureTenantContext();
+
+      const client = getSupabaseClient();
+
+      let query = client
         .from('products')
         .select(
           `*,
@@ -56,6 +61,8 @@ export class SupabaseProductService extends BaseSupabaseService {
       // Apply filters
       if (filters?.tenantId) {
         query = query.eq('tenant_id', filters.tenantId);
+      } else {
+        query = query.eq('tenant_id', tenant.tenantId);
       }
       if (filters?.status) {
         query = query.eq('status', filters.status);
@@ -86,6 +93,8 @@ export class SupabaseProductService extends BaseSupabaseService {
     try {
       this.log('Fetching product', { id });
 
+      await this.ensureTenantContext();
+
       const { data, error } = await getSupabaseClient()
         .from('products')
         .select(
@@ -111,6 +120,8 @@ export class SupabaseProductService extends BaseSupabaseService {
     try {
       this.log('Creating product', { name: data.name });
 
+      const tenant = await this.ensureTenantContext();
+
       const { data: created, error } = await getSupabaseClient()
         .from('products')
         .insert([
@@ -128,7 +139,7 @@ export class SupabaseProductService extends BaseSupabaseService {
             image_url: data.image_url,
             specifications: data.specifications,
             tags: data.tags,
-            tenant_id: data.tenant_id,
+            tenant_id: data.tenant_id || tenant.tenantId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -156,6 +167,8 @@ export class SupabaseProductService extends BaseSupabaseService {
     try {
       this.log('Updating product', { id });
 
+      const tenant = await this.ensureTenantContext();
+
       const { data, error } = await getSupabaseClient()
         .from('products')
         .update({
@@ -172,6 +185,7 @@ export class SupabaseProductService extends BaseSupabaseService {
           image_url: updates.image_url,
           specifications: updates.specifications,
           tags: updates.tags,
+          tenant_id: updates.tenant_id || tenant.tenantId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -197,6 +211,8 @@ export class SupabaseProductService extends BaseSupabaseService {
   async deleteProduct(id: string): Promise<void> {
     try {
       this.log('Deleting product', { id });
+
+      await this.ensureTenantContext();
 
       const { error } = await getSupabaseClient()
         .from('products')
@@ -363,6 +379,24 @@ export class SupabaseProductService extends BaseSupabaseService {
       },
       callback
     );
+  }
+
+  private async ensureTenantContext() {
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) {
+      this.logError('No tenant context available');
+      throw new Error('Unauthorized');
+    }
+
+    await supabaseClient.auth.updateUser({
+      data: {
+        tenant_id: tenant.tenantId,
+        role: tenant.role,
+        user_id: tenant.userId,
+      },
+    });
+
+    return tenant;
   }
 
   /**

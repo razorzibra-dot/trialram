@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { User, AuthState } from '@/types/auth';
 import { authService } from '@/services';
 import { sessionManager } from '@/utils/sessionManager';
+import { sessionConfigService } from '@/services/sessionConfigService';
 import { httpInterceptor } from '@/utils/httpInterceptor';
-import { toast } from '@/hooks/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { multiTenantService, type TenantContext } from '@/services/supabase/multiTenantService';
 
 interface SessionInfo {
@@ -56,14 +57,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading: false
     });
 
-    toast({
-      title: 'Session Expired',
-      description: 'Your session has expired. Please log in again.',
-      variant: 'destructive',
-    });
+    notificationService.errorNotify(
+      'Session Expired',
+      'Your session has expired. Please log in again.'
+    );
 
     navigate('/login');
   }, [navigate]);
+
+  const handleSessionExtension = React.useCallback(() => {
+    console.log('[AuthContext] Session extended - user resumed work');
+  }, []);
 
   const handleUnauthorized = React.useCallback(() => {
     setAuthState({
@@ -114,7 +118,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTenant(tenantContext);
         }
 
-        sessionManager.startSessionMonitoring(handleSessionExpiry);
+        // Initialize session manager with config
+        sessionManager.initialize(sessionConfigService.getConfig());
+        
+        // Start session monitoring with enhanced callbacks
+        sessionManager.startSessionMonitoring(
+          handleSessionExpiry,
+          undefined, // onIdleWarning - handled by SessionProvider component
+          handleSessionExtension
+        );
       } else {
         setAuthState({
           user: null,
@@ -133,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionManager.stopSessionMonitoring();
       httpInterceptor.destroy();
     };
-  }, [handleSessionExpiry, handleUnauthorized, handleForbidden, handleTokenRefresh]);
+  }, [handleSessionExpiry, handleSessionExtension, handleUnauthorized, handleForbidden, handleTokenRefresh]);
 
   const login = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
@@ -154,59 +166,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTenant(tenantContext);
       }
 
-      sessionManager.startSessionMonitoring(handleSessionExpiry);
+      // Initialize session manager with config
+      sessionManager.initialize(sessionConfigService.getConfig());
+      
+      // Start session monitoring
+      sessionManager.startSessionMonitoring(
+        handleSessionExpiry,
+        undefined, // onIdleWarning - handled by SessionProvider component
+        handleSessionExtension
+      );
 
-      toast({
-        title: 'Welcome back!',
-        description: `Logged in as ${response.user.name}`,
-      });
+      notificationService.successNotify(
+        'Welcome back!',
+        `Logged in as ${response.user.name}`
+      );
     } catch (error) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
       
-      toast({
-        title: 'Login Failed',
-        description: error instanceof Error ? error.message : 'Invalid credentials',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify(
+        'Login Failed',
+        error instanceof Error ? error.message : 'Invalid credentials'
+      );
       
       throw error;
     }
   };
 
   const logout = async () => {
-    setAuthState(prev => ({ ...prev, isLoading: true }));
-    
     try {
+      console.log('[AuthContext] Starting logout sequence...');
+      
+      // Step 1: Stop session monitoring immediately
       sessionManager.stopSessionMonitoring();
+      console.log('[AuthContext] Session monitoring stopped');
       
+      // Step 2: Clear session data from storage (BEFORE state changes)
       sessionManager.clearSession();
+      console.log('[AuthContext] Session data cleared from storage');
       
-      await authService.logout();
+      // Step 3: Call backend logout
+      try {
+        await authService.logout();
+        console.log('[AuthContext] Backend logout completed');
+      } catch (backendError) {
+        console.error('[AuthContext] Backend logout error (continuing):', backendError);
+        // Continue even if backend logout fails - client-side cleanup is most important
+      }
       
-      // Clear multi-tenant context on logout
-      multiTenantService.clearTenantContext();
-      setTenant(null);
-      
+      // Step 4: Clear multi-tenant context on logout
+      try {
+        multiTenantService.clearTenantContext();
+        setTenant(null);
+        console.log('[AuthContext] Tenant context cleared');
+      } catch (tenantError) {
+        console.error('[AuthContext] Error clearing tenant context:', tenantError);
+        setTenant(null);
+      }
+
+      // Step 5: CRITICAL - Update auth state to unauthenticated
+      // Set isLoading: true during the transition to prevent race conditions
       setAuthState({
         user: null,
         token: null,
         isAuthenticated: false,
-        isLoading: false
+        isLoading: true  // Keep loading to prevent redirect loops during transition
       });
+      
+      console.log('[AuthContext] Auth state cleared (isLoading=true)');
 
-      toast({
-        title: 'Logged out',
-        description: 'You have been successfully logged out.',
+      // Step 6: Wait for React state updates to be processed and DOM re-renders
+      // This ensures all components see isAuthenticated=false before navigation
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      console.log('[AuthContext] State update delay completed');
+
+      // Step 7: Show success notification
+      notificationService.successNotify(
+        'Logged out',
+        'You have been successfully logged out.'
+      );
+
+      // Step 8: Set isLoading to false now that we're about to navigate
+      setAuthState({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: false  // Now set to false so LoginPage can render
       });
+      
+      console.log('[AuthContext] Auth state updated (isLoading=false)');
+      
+      // Step 9: Small additional delay to ensure state is fully processed
+      await new Promise(resolve => setTimeout(resolve, 50));
 
-      navigate('/login');
+      // Step 10: Navigate to login with replace to prevent back button issues
+      console.log('[AuthContext] Navigating to login page');
+      navigate('/login', { replace: true });
+      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[AuthContext] Logout error:', error);
       
-      // Clear multi-tenant context on logout
-      multiTenantService.clearTenantContext();
+      // Ensure cleanup happens even on error
+      try {
+        multiTenantService.clearTenantContext();
+      } catch (e) {
+        console.error('[AuthContext] Error clearing tenant context in error handler:', e);
+      }
+      
       setTenant(null);
       
+      // Clear auth state immediately on error
       setAuthState({
         user: null,
         token: null,
@@ -214,7 +283,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false
       });
       
-      navigate('/login');
+      // Wait for state update
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      console.log('[AuthContext] Error recovery: navigating to login');
+      // Navigate with replace to ensure clean history
+      navigate('/login', { replace: true });
     }
   };
 

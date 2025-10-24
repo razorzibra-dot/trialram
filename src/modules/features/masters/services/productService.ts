@@ -6,8 +6,7 @@
 import { BaseService } from '@/modules/core/services/BaseService';
 import { PaginatedResponse } from '@/modules/core/types';
 import { Product, ProductFormData, ProductFilters } from '@/types/masters';
-// Import legacy service - will be replaced with actual API calls
-// import { productService as legacyProductService } from '@/services/productService';
+import { productService as factoryProductService } from '@/services/serviceFactory';
 
 export interface ProductStats {
   total: number;
@@ -28,116 +27,33 @@ export class ProductService extends BaseService {
    */
   async getProducts(filters: ProductFilters = {}): Promise<PaginatedResponse<Product>> {
     try {
-      // Mock data for now - replace with actual API calls
-      const mockProducts: Product[] = [
-        {
-          id: '1',
-          name: 'Professional Software License',
-          description: 'Annual software license for professional use',
-          category: 'Software',
-          brand: 'TechCorp',
-          type: 'Subscription',
-          sku: 'SW-PRO-001',
-          price: 299.99,
-          cost_price: 150.00,
-          currency: 'USD',
-          status: 'active',
-          is_active: true,
-          is_service: false,
-          stock_quantity: 100,
-          min_stock_level: 10,
-          max_stock_level: 500,
-          reorder_level: 20,
-          track_stock: true,
-          unit: 'license',
-          min_order_quantity: 1,
-          weight: 0,
-          dimensions: 'Digital',
-          supplier_id: 'sup1',
-          supplier_name: 'Software Supplier Inc',
-          tags: ['software', 'license', 'professional'],
-          warranty_period: 12,
-          service_contract_available: true,
-          tenant_id: 'tenant1',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          created_by: 'user1',
-        },
-        {
-          id: '2',
-          name: 'Hardware Maintenance Service',
-          description: 'Annual hardware maintenance and support service',
-          category: 'Services',
-          brand: 'ServicePro',
-          type: 'Service',
-          sku: 'SRV-HW-001',
-          price: 199.99,
-          cost_price: 100.00,
-          currency: 'USD',
-          status: 'active',
-          is_active: true,
-          is_service: true,
-          stock_quantity: 50,
-          min_stock_level: 5,
-          max_stock_level: 200,
-          reorder_level: 10,
-          track_stock: true,
-          unit: 'contract',
-          min_order_quantity: 1,
-          weight: 0,
-          dimensions: 'Service',
-          supplier_id: 'sup2',
-          supplier_name: 'Hardware Services Ltd',
-          tags: ['service', 'maintenance', 'hardware'],
-          warranty_period: 12,
-          service_contract_available: false,
-          tenant_id: 'tenant1',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          created_by: 'user1',
-        },
-      ];
-
-      // Apply filters
-      let filteredProducts = mockProducts;
-
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        filteredProducts = filteredProducts.filter(product =>
-          product.name.toLowerCase().includes(search) ||
-          product.sku.toLowerCase().includes(search) ||
-          product.category.toLowerCase().includes(search) ||
-          (product.description && product.description.toLowerCase().includes(search))
-        );
-      }
-
-      if (filters.status) {
-        filteredProducts = filteredProducts.filter(product => product.status === filters.status);
-      }
-
-      if (filters.category) {
-        filteredProducts = filteredProducts.filter(product => product.category === filters.category);
-      }
-
-      if (filters.type) {
-        filteredProducts = filteredProducts.filter(product => product.type === filters.type);
-      }
-
-      // Apply pagination
+      // Delegate to factory service (which routes to Supabase or Mock based on API mode)
+      const products = await factoryProductService.getProducts(filters);
+      
+      // Transform to paginated response format if needed
       const page = filters.page || 1;
       const pageSize = filters.pageSize || 20;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedData = filteredProducts.slice(startIndex, endIndex);
-
+      const total = Array.isArray(products) ? products.length : products.total || 0;
+      const data = Array.isArray(products) ? products : products.data || [];
+      
       return {
-        data: paginatedData,
-        total: filteredProducts.length,
+        data,
+        total,
         page,
         pageSize,
-        totalPages: Math.ceil(filteredProducts.length / pageSize),
+        totalPages: Math.ceil(total / pageSize),
       };
     } catch (error) {
+      // Graceful error handling for tenant context
+      if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+        return {
+          data: [],
+          total: 0,
+          page: 1,
+          pageSize: 20,
+          totalPages: 0,
+        };
+      }
       this.handleError('Failed to fetch products', error);
       throw error;
     }
@@ -148,7 +64,11 @@ export class ProductService extends BaseService {
    */
   async getProduct(id: string): Promise<Product> {
     try {
-      return await legacyProductService.getProduct(id);
+      const product = await factoryProductService.getProduct(id);
+      if (!product) {
+        throw new Error('Product not found');
+      }
+      return product;
     } catch (error) {
       this.handleError(`Failed to fetch product ${id}`, error);
       throw error;
@@ -160,7 +80,7 @@ export class ProductService extends BaseService {
    */
   async createProduct(data: ProductFormData): Promise<Product> {
     try {
-      return await legacyProductService.createProduct(data);
+      return await factoryProductService.createProduct(data);
     } catch (error) {
       this.handleError('Failed to create product', error);
       throw error;
@@ -172,7 +92,7 @@ export class ProductService extends BaseService {
    */
   async updateProduct(id: string, data: Partial<ProductFormData>): Promise<Product> {
     try {
-      return await legacyProductService.updateProduct(id, data);
+      return await factoryProductService.updateProduct(id, data);
     } catch (error) {
       this.handleError(`Failed to update product ${id}`, error);
       throw error;
@@ -184,7 +104,7 @@ export class ProductService extends BaseService {
    */
   async deleteProduct(id: string): Promise<void> {
     try {
-      await legacyProductService.deleteProduct(id);
+      await factoryProductService.deleteProduct(id);
     } catch (error) {
       this.handleError(`Failed to delete product ${id}`, error);
       throw error;
@@ -247,7 +167,7 @@ export class ProductService extends BaseService {
    */
   async getProductStats(): Promise<ProductStats> {
     try {
-      // Get all products for stats calculation
+      // Get all products for stats calculation using factory service
       const response = await this.getProducts({ pageSize: 1000 });
       const products = response.data;
 
@@ -359,15 +279,22 @@ export class ProductService extends BaseService {
    */
   async getLowStockProducts(): Promise<Product[]> {
     try {
-      const response = await this.getProducts({ pageSize: 1000 });
-      return response.data.filter(product => {
-        const stockQuantity = product.stock_quantity || 0;
-        const reorderLevel = product.reorder_level || 0;
-        return stockQuantity <= reorderLevel && stockQuantity > 0;
-      });
+      // Get low stock products from factory service
+      const lowStockProducts = await factoryProductService.getLowStockProducts('');
+      return lowStockProducts || [];
     } catch (error) {
-      this.handleError('Failed to fetch low stock products', error);
-      throw error;
+      // Graceful fallback if service doesn't support it
+      try {
+        const response = await this.getProducts({ pageSize: 1000 });
+        return response.data.filter(product => {
+          const stockQuantity = product.stock_quantity || 0;
+          const reorderLevel = product.reorder_level || 0;
+          return stockQuantity <= reorderLevel && stockQuantity > 0;
+        });
+      } catch (fallbackError) {
+        this.handleError('Failed to fetch low stock products', error);
+        throw error;
+      }
     }
   }
 

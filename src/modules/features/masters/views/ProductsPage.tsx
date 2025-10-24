@@ -17,9 +17,6 @@ import {
   Popconfirm,
   Alert,
   Empty,
-  Modal,
-  Form,
-  InputNumber,
   message,
   Upload as AntUpload
 } from 'antd';
@@ -32,17 +29,21 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  PackageOutlined,
+  ShoppingOutlined,
   DollarOutlined,
   WarningOutlined,
   RiseOutlined,
   SearchOutlined
 } from '@ant-design/icons';
-import { PageHeader } from '@/modules/shared/components/PageHeader';
-import { StatCard } from '@/modules/shared/components/StatCard';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatCard } from '@/components/common/StatCard';
 import { useProductStats, useImportProducts, useProducts, useDeleteProduct } from '../hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product, ProductFilters } from '@/types/masters';
+import { ProductsDetailPanel } from '../components/ProductsDetailPanel';
+import { ProductsFormPanel } from '../components/ProductsFormPanel';
+
+type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 const { Search } = Input;
 const { Option } = Select;
@@ -56,8 +57,9 @@ export const ProductsPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Queries and mutations
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useProductStats();
@@ -73,20 +75,43 @@ export const ProductsPage: React.FC = () => {
 
   const handleCreate = () => {
     setSelectedProduct(null);
-    setModalMode('create');
-    setIsModalVisible(true);
+    setDrawerMode('create');
   };
 
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
-    setModalMode('edit');
-    setIsModalVisible(true);
+    setDrawerMode('edit');
   };
 
   const handleView = (product: Product) => {
     setSelectedProduct(product);
-    setModalMode('view');
-    setIsModalVisible(true);
+    setDrawerMode('view');
+  };
+
+  const handleDrawerClose = () => {
+    setDrawerMode(null);
+    setSelectedProduct(null);
+  };
+
+  const handleEditFromDetail = () => {
+    setDrawerMode('edit');
+  };
+
+  const handleFormSave = async (values: Partial<Product>) => {
+    try {
+      setIsSaving(true);
+      // TODO: Implement actual save logic using useUpdateProduct or useCreateProduct
+      console.log('Saving product:', values);
+      message.success(`Product ${drawerMode === 'create' ? 'created' : 'updated'} successfully`);
+      await refetchProducts();
+      await refetchStats();
+      handleDrawerClose();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      message.error('Failed to save product');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (product: Product) => {
@@ -186,7 +211,7 @@ export const ProductsPage: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <PackageOutlined style={{ color: '#1890ff' }} />
+            <ShoppingOutlined style={{ color: '#1890ff' }} />
           </div>
           <div>
             <div style={{ fontWeight: 500 }}>{text}</div>
@@ -348,7 +373,7 @@ export const ProductsPage: React.FC = () => {
             <StatCard
               title="Total Products"
               value={stats?.total || 0}
-              icon={<PackageOutlined />}
+              icon={<ShoppingOutlined />}
               color="primary"
               loading={statsLoading}
               suffix="products"
@@ -474,36 +499,29 @@ export const ProductsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Product Modal (Create/Edit/View) */}
-      <Modal
-        title={
-          modalMode === 'create' 
-            ? 'Add New Product' 
-            : modalMode === 'edit' 
-            ? 'Edit Product' 
-            : 'Product Details'
-        }
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={modalMode === 'view' ? [
-          <Button key="close" onClick={() => setIsModalVisible(false)}>
-            Close
-          </Button>
-        ] : null}
-        width={800}
-      >
-        {/* TODO: Implement product form */}
-        <p>Product form will be implemented here</p>
-        {selectedProduct && (
-          <div>
-            <p><strong>Name:</strong> {selectedProduct.name}</p>
-            <p><strong>SKU:</strong> {selectedProduct.sku}</p>
-            <p><strong>Price:</strong> {formatCurrency(selectedProduct.price)}</p>
-            <p><strong>Stock:</strong> {selectedProduct.stock_quantity || 0}</p>
-            <p><strong>Status:</strong> {selectedProduct.status}</p>
-          </div>
-        )}
-      </Modal>
+      {/* Detail Drawer (Read-only) */}
+      {drawerMode === 'view' && (
+        <ProductsDetailPanel
+          product={selectedProduct}
+          isOpen={drawerMode === 'view'}
+          isLoading={isLoading}
+          onClose={handleDrawerClose}
+          onEdit={handleEditFromDetail}
+        />
+      )}
+
+      {/* Form Drawer (Create/Edit) */}
+      {(drawerMode === 'create' || drawerMode === 'edit') && (
+        <ProductsFormPanel
+          product={selectedProduct}
+          isOpen={drawerMode === 'create' || drawerMode === 'edit'}
+          mode={drawerMode === 'create' ? 'create' : 'edit'}
+          isLoading={isLoading}
+          isSaving={isSaving}
+          onClose={handleDrawerClose}
+          onSave={handleFormSave}
+        />
+      )}
     </>
   );
 };

@@ -3,7 +3,7 @@ import { X, Download, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { PDFTemplate } from '../../types/pdfTemplates';
 import { pdfTemplateService } from '../../services/pdfTemplateService';
-import { useToast } from '../../hooks/use-toast';
+import { notificationService } from '../../services/notificationService';
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
@@ -18,7 +18,6 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
 }) => {
   const [previewHtml, setPreviewHtml] = useState('');
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (template && isOpen) {
@@ -53,19 +52,12 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         fileName: `preview_${template.name.toLowerCase().replace(/\s+/g, '_')}.pdf`
       });
       
-      toast({
-        title: 'Success',
-        description: 'PDF generated successfully',
-      });
+      notificationService.successNotify('Success', 'PDF generated successfully');
       
       // In a real implementation, this would trigger a download
       console.log('Generated PDF:', response);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to generate PDF',
-        variant: 'destructive',
-      });
+      notificationService.errorNotify('Error', 'Failed to generate PDF');
     } finally {
       setLoading(false);
     }

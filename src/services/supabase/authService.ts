@@ -30,7 +30,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
       const email = credentials.email as string;
       const password = credentials.password as string;
       
-      this.log('Authenticating user', { email });
+      console.log('[SUPABASE_AUTH] Starting login for:', email);
 
       const client = getSupabaseClient();
       const { data, error } = await client.auth.signInWithPassword({
@@ -38,27 +38,45 @@ export class SupabaseAuthService extends BaseSupabaseService {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[SUPABASE_AUTH] Auth error:', error.message);
+        throw error;
+      }
+
+      if (!data.session) {
+        throw new Error('No session returned from Supabase');
+      }
+
+      console.log('[SUPABASE_AUTH] Auth successful, user ID:', data.session.user.id);
 
       // Fetch user details from users table
       const user = await this.getUserByEmail(email);
       if (!user) throw new Error('User not found in database');
 
-      // Store auth data in localStorage
-      const token = data.session?.access_token || '';
-      this.storeAuthData(token, user);
+      console.log('[SUPABASE_AUTH] User found:', user.email);
 
-      this.log('User authenticated successfully', { email });
+      // Store BOTH the session object and auth data
+      const session = {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_in: data.session.expires_in || 3600,
+        user: data.session.user,
+      };
+
+      this.storeAuthData(session, user);
+
+      console.log('[SUPABASE_AUTH] Login successful, session stored');
 
       return {
         user,
         session: {
-          access_token: token,
-          refresh_token: data.session?.refresh_token || '',
-          expires_in: data.session?.expires_in || 3600,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_in: session.expires_in,
         },
       };
     } catch (error) {
+      console.error('[SUPABASE_AUTH] Login failed:', error);
       this.logError('Login failed', error);
       throw error;
     }
@@ -596,15 +614,27 @@ export class SupabaseAuthService extends BaseSupabaseService {
    * Store token and user in localStorage (called after successful login)
    * Also includes tenant_id for RLS enforcement
    */
-  private storeAuthData(token: string, user: User): void {
+  private storeAuthData(session: any, user: User): void {
     try {
-      localStorage.setItem('sb_access_token', token);
+      // Store session for Supabase auth restoration
+      localStorage.setItem('supabase_session', JSON.stringify(session));
+      
+      // Store individual tokens and user for compatibility
+      localStorage.setItem('sb_access_token', session.access_token);
       localStorage.setItem('sb_current_user', JSON.stringify(user));
+      localStorage.setItem('crm_auth_token', session.access_token);
+      localStorage.setItem('crm_user', JSON.stringify(user));
       
       // Store tenant_id separately for RLS policy enforcement
       if (user.tenantId) {
         localStorage.setItem('sb_tenant_id', user.tenantId);
+        localStorage.setItem('crm_tenant_id', user.tenantId);
+        console.log('[SUPABASE_AUTH] Tenant ID stored:', user.tenantId);
+      } else {
+        console.warn('[SUPABASE_AUTH] WARNING: No tenantId found in user object!', user);
       }
+      
+      console.log('[SUPABASE_AUTH] Auth data stored in localStorage');
     } catch (error) {
       this.logError('Failed to store auth data', error);
     }
@@ -627,8 +657,16 @@ export class SupabaseAuthService extends BaseSupabaseService {
    */
   private clearAuthData(): void {
     try {
+      // Clear all auth storage keys
+      localStorage.removeItem('supabase_session');
       localStorage.removeItem('sb_access_token');
       localStorage.removeItem('sb_current_user');
+      localStorage.removeItem('sb_tenant_id');
+      localStorage.removeItem('crm_auth_token');
+      localStorage.removeItem('crm_user');
+      localStorage.removeItem('crm_tenant_id');
+      
+      console.log('[SUPABASE_AUTH] Auth data cleared from localStorage');
     } catch (error) {
       this.logError('Failed to clear auth data', error);
     }
@@ -636,19 +674,30 @@ export class SupabaseAuthService extends BaseSupabaseService {
 
   /**
    * Map database user response to UI User type
+   * Converts snake_case database fields to camelCase
    */
   private mapUserResponse(dbUser: any): User {
+    // Handle both camelCase (from cache) and snake_case (from database)
+    const tenantId = dbUser.tenantId || dbUser.tenant_id;
+    const firstName = dbUser.firstName || dbUser.first_name || '';
+    const lastName = dbUser.lastName || dbUser.last_name || '';
+    const tenantName = dbUser.tenantName || dbUser.tenant_name || '';
+    const lastLogin = dbUser.lastLogin || dbUser.last_login || '';
+    const createdAt = dbUser.createdAt || dbUser.created_at || new Date().toISOString();
+
+    console.log('[SUPABASE_AUTH] Mapping user - tenantId:', tenantId, 'from:', { dbUser });
+
     return {
       id: dbUser.id,
       email: dbUser.email,
-      firstName: dbUser.firstName || '',
-      lastName: dbUser.lastName || '',
+      firstName,
+      lastName,
       role: (dbUser.role || 'viewer') as User['role'],
       status: (dbUser.status || 'active') as User['status'],
-      tenantId: dbUser.tenantId,
-      tenantName: dbUser.tenantName || '',
-      lastLogin: dbUser.lastLogin || '',
-      createdAt: dbUser.created_at || new Date().toISOString(),
+      tenantId,
+      tenantName,
+      lastLogin,
+      createdAt,
       avatar: dbUser.avatar || '',
       phone: dbUser.phone || '',
     };

@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/components/ui/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { Plus, X, FileText, Users, Calendar, DollarSign, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

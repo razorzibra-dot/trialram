@@ -4,6 +4,7 @@ import { Product } from '@/types/masters';
 import { authService } from './authService';
 import { customerService } from './index';
 import { productService } from './productService';
+import { multiTenantService } from './supabase/multiTenantService';
 
 class JobWorkService {
   private baseUrl = '/api/job-works';
@@ -27,7 +28,7 @@ class JobWorkService {
       receiver_engineer_name: 'Mike Engineer',
       comments: 'Urgent delivery required for production line repair',
       status: 'in_progress',
-      tenant_id: 'tenant_1',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440001',
       created_at: '2024-01-28T09:00:00Z',
       updated_at: '2024-01-28T10:30:00Z'
     },
@@ -47,7 +48,7 @@ class JobWorkService {
       receiver_engineer_name: 'Sarah Engineer',
       comments: 'Standard maintenance replacement parts',
       status: 'completed',
-      tenant_id: 'tenant_1',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440001',
       created_at: '2024-01-27T14:00:00Z',
       updated_at: '2024-01-28T16:00:00Z',
       completed_at: '2024-01-28T16:00:00Z'
@@ -68,7 +69,7 @@ class JobWorkService {
       receiver_engineer_name: 'Mike Engineer',
       comments: 'Custom configuration required',
       status: 'delivered',
-      tenant_id: 'tenant_1',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440001',
       created_at: '2024-01-26T10:00:00Z',
       updated_at: '2024-01-27T18:00:00Z',
       completed_at: '2024-01-27T15:00:00Z',
@@ -90,7 +91,7 @@ class JobWorkService {
       receiver_engineer_name: 'Sarah Engineer',
       comments: 'Quality inspection required before delivery',
       status: 'pending',
-      tenant_id: 'tenant_1',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440001',
       created_at: '2024-01-25T09:00:00Z',
       updated_at: '2024-01-25T09:00:00Z'
     }
@@ -99,14 +100,15 @@ class JobWorkService {
   async getJobWorks(filters?: JobWorkFilters): Promise<JobWork[]> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
-    let jobWorks = this.mockJobWorks.filter(jw => jw.tenant_id === user.tenant_id);
+    let jobWorks = this.mockJobWorks.filter(jw => jw.tenant_id === tenant.tenantId);
 
     // Apply role-based filtering
-    if (user.role === 'engineer') {
-      jobWorks = jobWorks.filter(jw => jw.receiver_engineer_id === user.id);
+    if (tenant?.role === 'engineer') {
+      jobWorks = jobWorks.filter(jw => jw.receiver_engineer_id === tenant.userId);
     }
 
     // Apply filters
@@ -146,11 +148,12 @@ class JobWorkService {
   async getJobWork(id: string): Promise<JobWork> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
     const jobWork = this.mockJobWorks.find(jw => 
-      jw.id === id && jw.tenant_id === user.tenant_id
+      jw.id === id && jw.tenant_id === tenant.tenantId
     );
 
     if (!jobWork) {
@@ -158,7 +161,7 @@ class JobWorkService {
     }
 
     // Check permissions
-    if (user.role === 'engineer' && jobWork.receiver_engineer_id !== user.id) {
+    if (tenant?.role === 'engineer' && jobWork.receiver_engineer_id !== tenant.userId) {
       throw new Error('Access denied');
     }
 
@@ -168,8 +171,9 @@ class JobWorkService {
   async createJobWork(jobWorkData: JobWorkFormData): Promise<JobWork> {
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
     if (!authService.hasPermission('write')) {
       throw new Error('Insufficient permissions');
@@ -201,7 +205,7 @@ class JobWorkService {
       receiver_engineer_id: jobWorkData.receiver_engineer_id,
       comments: jobWorkData.comments,
       status: 'pending',
-      tenant_id: user.tenant_id,
+      tenant_id: tenant.tenantId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -213,15 +217,16 @@ class JobWorkService {
   async updateJobWork(id: string, updates: JobWorkUpdateData): Promise<JobWork> {
     await new Promise(resolve => setTimeout(resolve, 600));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
     if (!authService.hasPermission('write')) {
       throw new Error('Insufficient permissions');
     }
 
     const jobWorkIndex = this.mockJobWorks.findIndex(jw => 
-      jw.id === id && jw.tenant_id === user.tenant_id
+      jw.id === id && jw.tenant_id === tenant.tenantId
     );
 
     if (jobWorkIndex === -1) {
@@ -231,7 +236,7 @@ class JobWorkService {
     const jobWork = this.mockJobWorks[jobWorkIndex];
 
     // Check permissions for engineers
-    if (user.role === 'engineer' && jobWork.receiver_engineer_id !== user.id) {
+    if (tenant?.role === 'engineer' && jobWork.receiver_engineer_id !== tenant.userId) {
       throw new Error('Access denied');
     }
 
@@ -264,15 +269,16 @@ class JobWorkService {
   async deleteJobWork(id: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
     if (!authService.hasPermission('delete')) {
       throw new Error('Insufficient permissions');
     }
 
     const jobWorkIndex = this.mockJobWorks.findIndex(jw => 
-      jw.id === id && jw.tenant_id === user.tenant_id
+      jw.id === id && jw.tenant_id === tenant.tenantId
     );
 
     if (jobWorkIndex === -1) {
@@ -331,14 +337,15 @@ class JobWorkService {
   async getJobWorkStats(): Promise<JobWorkStats> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+    // Use multiTenantService to get the current tenant context
+    const tenant = multiTenantService.getCurrentTenant();
+    if (!tenant?.tenantId) throw new Error('Unauthorized');
 
-    let jobWorks = this.mockJobWorks.filter(jw => jw.tenant_id === user.tenant_id);
+    let jobWorks = this.mockJobWorks.filter(jw => jw.tenant_id === tenant.tenantId);
 
     // Apply role-based filtering
-    if (user.role === 'engineer') {
-      jobWorks = jobWorks.filter(jw => jw.receiver_engineer_id === user.id);
+    if (tenant?.role === 'engineer') {
+      jobWorks = jobWorks.filter(jw => jw.receiver_engineer_id === tenant.userId);
     }
 
     const stats: JobWorkStats = {

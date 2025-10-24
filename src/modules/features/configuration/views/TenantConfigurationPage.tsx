@@ -49,7 +49,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TenantSettings } from '@/types/rbac';
 import type { Color } from 'antd/es/color-picker';
 
-const { TabPane } = Tabs;
 const { TextArea } = Input;
 
 export const TenantConfigurationPage: React.FC = () => {
@@ -242,18 +241,20 @@ export const TenantConfigurationPage: React.FC = () => {
             layout="vertical"
             autoComplete="off"
           >
-            <Tabs activeKey={activeTab} onChange={setActiveTab}>
-              {/* General Settings Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <SettingOutlined />
-                    General
-                  </span>
-                }
-                key="general"
-              >
-                <Row gutter={[24, 16]}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  label: (
+                    <span>
+                      <SettingOutlined />
+                      General
+                    </span>
+                  ),
+                  key: 'general',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <Globe size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -349,20 +350,19 @@ export const TenantConfigurationPage: React.FC = () => {
                       </Select>
                     </Form.Item>
                   </Col>
-                </Row>
-              </TabPane>
-
-              {/* Branding Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <BgColorsOutlined />
-                    Branding
-                  </span>
-                }
-                key="branding"
-              >
-                <Row gutter={[24, 16]}>
+                    </Row>
+                  )
+                },
+                {
+                  label: (
+                    <span>
+                      <BgColorsOutlined />
+                      Branding
+                    </span>
+                  ),
+                  key: 'branding',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <Palette size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -422,20 +422,19 @@ export const TenantConfigurationPage: React.FC = () => {
                       Make sure to use high-quality images and accessible color combinations.
                     </p>
                   </Col>
-                </Row>
-              </TabPane>
-
-              {/* Features Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <AppstoreOutlined />
-                    Features
-                  </span>
-                }
-                key="features"
-              >
-                <Row gutter={[24, 16]}>
+                    </Row>
+                  )
+                },
+                {
+                  label: (
+                    <span>
+                      <AppstoreOutlined />
+                      Features
+                    </span>
+                  ),
+                  key: 'features',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <Zap size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -541,20 +540,19 @@ export const TenantConfigurationPage: React.FC = () => {
                       </p>
                     </Card>
                   </Col>
-                </Row>
-              </TabPane>
-
-              {/* Email Settings Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <MailOutlined />
-                    Email
-                  </span>
-                }
-                key="email"
-              >
-                <Row gutter={[24, 16]}>
+                    </Row>
+                  )
+                },
+                {
+                  label: (
+                    <span>
+                      <MailOutlined />
+                      Email
+                    </span>
+                  ),
+                  key: 'email',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <Mail size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -616,20 +614,19 @@ export const TenantConfigurationPage: React.FC = () => {
                       <Input placeholder="noreply@example.com" />
                     </Form.Item>
                   </Col>
-                </Row>
-              </TabPane>
-
-              {/* SMS Settings Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <MessageOutlined />
-                    SMS
-                  </span>
-                }
-                key="sms"
-              >
-                <Row gutter={[24, 16]}>
+                    </Row>
+                  )
+                },
+                {
+                  label: (
+                    <span>
+                      <MessageOutlined />
+                      SMS
+                    </span>
+                  ),
+                  key: 'sms',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <MessageSquare size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -678,20 +675,19 @@ export const TenantConfigurationPage: React.FC = () => {
                       <Input placeholder="Enter sender ID" />
                     </Form.Item>
                   </Col>
-                </Row>
-              </TabPane>
-
-              {/* Security Tab */}
-              <TabPane
-                tab={
-                  <span>
-                    <LockOutlined />
-                    Security
-                  </span>
-                }
-                key="security"
-              >
-                <Row gutter={[24, 16]}>
+                    </Row>
+                  )
+                },
+                {
+                  label: (
+                    <span>
+                      <LockOutlined />
+                      Security
+                    </span>
+                  ),
+                  key: 'security',
+                  children: (
+                    <Row gutter={[24, 16]}>
                   <Col span={24}>
                     <h3 style={{ marginBottom: 16 }}>
                       <Shield size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -749,9 +745,11 @@ export const TenantConfigurationPage: React.FC = () => {
                       />
                     </Form.Item>
                   </Col>
-                </Row>
-              </TabPane>
-            </Tabs>
+                    </Row>
+                  )
+                }
+              ]}
+            />
           </Form>
         </Card>
       </div>

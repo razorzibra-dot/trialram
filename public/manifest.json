@@ -1,7 +1,7 @@
 {
-  "name": "Altan",
-  "short_name": "Altan",
-  "description": "Altan Application",
+  "name": "CRM Pro",
+  "short_name": "CRM Pro",
+  "description": "CRM Pro Application",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

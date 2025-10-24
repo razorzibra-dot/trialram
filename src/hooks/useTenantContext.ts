@@ -13,11 +13,13 @@ export const useTenantContext = () => {
   useEffect(() => {
     // Set initial tenant context
     const currentTenant = multiTenantService.getCurrentTenant();
+    console.log('[useTenantContext] Initialized with tenant:', currentTenant);
     setTenant(currentTenant);
     setIsLoading(false);
 
     // Subscribe to tenant changes
     const unsubscribe = multiTenantService.subscribe((newTenant) => {
+      console.log('[useTenantContext] Tenant changed:', newTenant);
       setTenant(newTenant);
       setIsLoading(false);
     });
@@ -25,9 +27,12 @@ export const useTenantContext = () => {
     return unsubscribe;
   }, []);
 
+  const isInitialized = !!tenant;
+  console.log('[useTenantContext] Returning:', { isInitialized, tenantId: tenant?.tenantId, isLoading });
+
   return {
     tenant,
-    isInitialized: !!tenant,
+    isInitialized,
     tenantId: tenant?.tenantId,
     userId: tenant?.userId,
     role: tenant?.role,

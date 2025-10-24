@@ -8,8 +8,20 @@ import { ServiceContractService } from './serviceContractService'; // Mock imple
 import { supabaseServiceContractService } from './supabase/serviceContractService'; // Supabase implementation
 import { supabaseProductSaleService } from './supabase/productSaleService';
 import { supabaseCustomerService } from './supabase/customerService';
+import { supabaseJobWorkService } from './supabase/jobWorkService';
+import { supabaseProductService } from './supabase/productService';
+import { supabaseCompanyService } from './supabase/companyService';
+import { supabaseUserService } from './api/supabase/userService';
+import { supabaseRbacService } from './api/supabase/rbacService';
+import { supabaseNotificationService } from './supabase/notificationService';
 import { productSaleService as mockProductSaleService } from './productSaleService';
 import { customerService as mockCustomerService } from './customerService';
+import { jobWorkService as mockJobWorkService } from './jobWorkService';
+import { productService as mockProductService } from './productService';
+import { companyService as mockCompanyService } from './companyService';
+import { userService as mockUserService } from './userService';
+import { rbacService as mockRbacService } from './rbacService';
+import { notificationService as mockNotificationService } from './notificationService';
 
 type ApiMode = 'mock' | 'supabase' | 'real';
 
@@ -98,6 +110,108 @@ class ServiceFactory {
   }
 
   /**
+   * Get Job Work Service
+   */
+  getJobWorkService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseJobWorkService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseJobWorkService;
+      case 'mock':
+      default:
+        return mockJobWorkService;
+    }
+  }
+
+  /**
+   * Get Product Service
+   */
+  getProductService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseProductService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseProductService;
+      case 'mock':
+      default:
+        return mockProductService;
+    }
+  }
+
+  /**
+   * Get Company Service
+   */
+  getCompanyService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseCompanyService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseCompanyService;
+      case 'mock':
+      default:
+        return mockCompanyService;
+    }
+  }
+
+  /**
+   * Get User Service
+   */
+  getUserService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseUserService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseUserService;
+      case 'mock':
+      default:
+        return mockUserService;
+    }
+  }
+
+  /**
+   * Get RBAC Service
+   */
+  getRbacService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseRbacService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseRbacService;
+      case 'mock':
+      default:
+        return mockRbacService;
+    }
+  }
+
+  /**
+   * Get Notification Service
+   */
+  getNotificationService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseNotificationService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseNotificationService;
+      case 'mock':
+      default:
+        return mockNotificationService;
+    }
+  }
+
+  /**
    * Get Service (generic method for future extensibility)
    */
   getService(serviceName: string) {
@@ -109,6 +223,24 @@ class ServiceFactory {
         return this.getProductSaleService();
       case 'customer':
         return this.getCustomerService();
+      case 'jobwork':
+      case 'job_work':
+        return this.getJobWorkService();
+      case 'product':
+      case 'products':
+        return this.getProductService();
+      case 'company':
+      case 'companies':
+        return this.getCompanyService();
+      case 'user':
+      case 'users':
+        return this.getUserService();
+      case 'rbac':
+      case 'role_based_access_control':
+        return this.getRbacService();
+      case 'notification':
+      case 'notifications':
+        return this.getNotificationService();
       // Add other services as needed
       default:
         throw new Error(`Unknown service: ${serviceName}`);
@@ -223,6 +355,172 @@ export const customerService = {
     serviceFactory.getCustomerService().getIndustries(...args),
   getSizes: (...args: Parameters<typeof supabaseCustomerService.getSizes>) =>
     serviceFactory.getCustomerService().getSizes(...args),
+};
+
+// Export for convenience - Job Work Service
+export const jobWorkService = {
+  get instance() {
+    return serviceFactory.getJobWorkService();
+  },
+  getJobWorks: (...args: Parameters<typeof supabaseJobWorkService.getJobWorks>) =>
+    serviceFactory.getJobWorkService().getJobWorks(...args),
+  getJobWork: (...args: Parameters<typeof supabaseJobWorkService.getJobWork>) =>
+    serviceFactory.getJobWorkService().getJobWork(...args),
+  createJobWork: (...args: Parameters<typeof supabaseJobWorkService.createJobWork>) =>
+    serviceFactory.getJobWorkService().createJobWork(...args),
+  updateJobWork: (...args: Parameters<typeof supabaseJobWorkService.updateJobWork>) =>
+    serviceFactory.getJobWorkService().updateJobWork(...args),
+  deleteJobWork: (...args: Parameters<typeof supabaseJobWorkService.deleteJobWork>) =>
+    serviceFactory.getJobWorkService().deleteJobWork(...args),
+  getJobWorkStats: (...args: Parameters<typeof supabaseJobWorkService.getJobWorkStats>) =>
+    serviceFactory.getJobWorkService().getJobWorkStats(...args),
+};
+
+// Export for convenience - Product Service
+export const productService = {
+  get instance() {
+    return serviceFactory.getProductService();
+  },
+  getProducts: (...args: Parameters<typeof supabaseProductService.getProducts>) =>
+    serviceFactory.getProductService().getProducts(...args),
+  getProduct: (...args: Parameters<typeof supabaseProductService.getProduct>) =>
+    serviceFactory.getProductService().getProduct(...args),
+  createProduct: (...args: Parameters<typeof supabaseProductService.createProduct>) =>
+    serviceFactory.getProductService().createProduct(...args),
+  updateProduct: (...args: Parameters<typeof supabaseProductService.updateProduct>) =>
+    serviceFactory.getProductService().updateProduct(...args),
+  deleteProduct: (...args: Parameters<typeof supabaseProductService.deleteProduct>) =>
+    serviceFactory.getProductService().deleteProduct(...args),
+  searchProducts: (...args: Parameters<typeof supabaseProductService.searchProducts>) =>
+    serviceFactory.getProductService().searchProducts(...args),
+  getLowStockProducts: (...args: Parameters<typeof supabaseProductService.getLowStockProducts>) =>
+    serviceFactory.getProductService().getLowStockProducts(...args),
+  updateStock: (...args: Parameters<typeof supabaseProductService.updateStock>) =>
+    serviceFactory.getProductService().updateStock(...args),
+  getProductStats: (...args: Parameters<typeof supabaseProductService.getProductStats>) =>
+    serviceFactory.getProductService().getProductStats(...args),
+  subscribeToProducts: (...args: Parameters<typeof supabaseProductService.subscribeToProducts>) =>
+    serviceFactory.getProductService().subscribeToProducts(...args),
+};
+
+// Export for convenience - Company Service
+export const companyService = {
+  get instance() {
+    return serviceFactory.getCompanyService();
+  },
+  getCompanies: (...args: Parameters<typeof supabaseCompanyService.getCompanies>) =>
+    serviceFactory.getCompanyService().getCompanies(...args),
+  getCompany: (...args: Parameters<typeof supabaseCompanyService.getCompany>) =>
+    serviceFactory.getCompanyService().getCompany(...args),
+  getCompanyByDomain: (...args: Parameters<typeof supabaseCompanyService.getCompanyByDomain>) =>
+    serviceFactory.getCompanyService().getCompanyByDomain(...args),
+  createCompany: (...args: Parameters<typeof supabaseCompanyService.createCompany>) =>
+    serviceFactory.getCompanyService().createCompany(...args),
+  updateCompany: (...args: Parameters<typeof supabaseCompanyService.updateCompany>) =>
+    serviceFactory.getCompanyService().updateCompany(...args),
+  deleteCompany: (...args: Parameters<typeof supabaseCompanyService.deleteCompany>) =>
+    serviceFactory.getCompanyService().deleteCompany(...args),
+  searchCompanies: (...args: Parameters<typeof supabaseCompanyService.searchCompanies>) =>
+    serviceFactory.getCompanyService().searchCompanies(...args),
+  updateSubscription: (...args: Parameters<typeof supabaseCompanyService.updateSubscription>) =>
+    serviceFactory.getCompanyService().updateSubscription(...args),
+  getCompanyStats: (...args: Parameters<typeof supabaseCompanyService.getCompanyStats>) =>
+    serviceFactory.getCompanyService().getCompanyStats(...args),
+  subscribeToCompanies: (...args: Parameters<typeof supabaseCompanyService.subscribeToCompanies>) =>
+    serviceFactory.getCompanyService().subscribeToCompanies(...args),
+};
+
+// Export for convenience - User Service
+export const userService = {
+  get instance() {
+    return serviceFactory.getUserService();
+  },
+  getUsers: (...args: Parameters<typeof mockUserService.getUsers>) =>
+    serviceFactory.getUserService().getUsers(...args),
+  getUser: (...args: Parameters<typeof mockUserService.getUser>) =>
+    serviceFactory.getUserService().getUser(...args),
+  createUser: (...args: Parameters<typeof mockUserService.createUser>) =>
+    serviceFactory.getUserService().createUser(...args),
+  updateUser: (...args: Parameters<typeof mockUserService.updateUser>) =>
+    serviceFactory.getUserService().updateUser(...args),
+  deleteUser: (...args: Parameters<typeof mockUserService.deleteUser>) =>
+    serviceFactory.getUserService().deleteUser(...args),
+  resetPassword: (...args: Parameters<typeof mockUserService.resetPassword>) =>
+    serviceFactory.getUserService().resetPassword(...args),
+  getRoles: (...args: Parameters<typeof mockUserService.getRoles>) =>
+    serviceFactory.getUserService().getRoles(...args),
+  getPermissions: (...args: Parameters<typeof mockUserService.getPermissions>) =>
+    serviceFactory.getUserService().getPermissions(...args),
+  getStatuses: (...args: Parameters<typeof mockUserService.getStatuses>) =>
+    serviceFactory.getUserService().getStatuses(...args),
+  getTenants: (...args: Parameters<typeof mockUserService.getTenants>) =>
+    serviceFactory.getUserService().getTenants(...args),
+};
+
+// Export for convenience - RBAC Service
+export const rbacService = {
+  get instance() {
+    return serviceFactory.getRbacService();
+  },
+  getPermissions: (...args: Parameters<typeof mockRbacService.getPermissions>) =>
+    serviceFactory.getRbacService().getPermissions(...args),
+  getRoles: (...args: Parameters<typeof mockRbacService.getRoles>) =>
+    serviceFactory.getRbacService().getRoles(...args),
+  createRole: (...args: Parameters<typeof mockRbacService.createRole>) =>
+    serviceFactory.getRbacService().createRole(...args),
+  updateRole: (...args: Parameters<typeof mockRbacService.updateRole>) =>
+    serviceFactory.getRbacService().updateRole(...args),
+  deleteRole: (...args: Parameters<typeof mockRbacService.deleteRole>) =>
+    serviceFactory.getRbacService().deleteRole(...args),
+  assignUserRole: (...args: Parameters<typeof mockRbacService.assignUserRole>) =>
+    serviceFactory.getRbacService().assignUserRole(...args),
+  removeUserRole: (...args: Parameters<typeof mockRbacService.removeUserRole>) =>
+    serviceFactory.getRbacService().removeUserRole(...args),
+  getPermissionMatrix: (...args: Parameters<typeof mockRbacService.getPermissionMatrix>) =>
+    serviceFactory.getRbacService().getPermissionMatrix(...args),
+  getRoleTemplates: (...args: Parameters<typeof mockRbacService.getRoleTemplates>) =>
+    serviceFactory.getRbacService().getRoleTemplates(...args),
+  createRoleFromTemplate: (...args: Parameters<typeof mockRbacService.createRoleFromTemplate>) =>
+    serviceFactory.getRbacService().createRoleFromTemplate(...args),
+  getAuditLogs: (...args: Parameters<typeof mockRbacService.getAuditLogs>) =>
+    serviceFactory.getRbacService().getAuditLogs(...args),
+  logAction: (...args: Parameters<typeof mockRbacService.logAction>) =>
+    serviceFactory.getRbacService().logAction(...args),
+  getUsersByRole: (...args: Parameters<typeof mockRbacService.getUsersByRole>) =>
+    serviceFactory.getRbacService().getUsersByRole(...args),
+  bulkAssignRole: (...args: Parameters<typeof mockRbacService.bulkAssignRole>) =>
+    serviceFactory.getRbacService().bulkAssignRole(...args),
+  bulkRemoveRole: (...args: Parameters<typeof mockRbacService.bulkRemoveRole>) =>
+    serviceFactory.getRbacService().bulkRemoveRole(...args),
+  validateRolePermissions: (...args: Parameters<typeof mockRbacService.validateRolePermissions>) =>
+    serviceFactory.getRbacService().validateRolePermissions(...args),
+};
+
+// Export for convenience - Notification Service
+export const notificationService = {
+  get instance() {
+    return serviceFactory.getNotificationService();
+  },
+  getNotifications: (...args: Parameters<typeof mockNotificationService.getNotifications>) =>
+    serviceFactory.getNotificationService().getNotifications(...args),
+  getNotificationPreferences: (...args: Parameters<typeof mockNotificationService.getNotificationPreferences>) =>
+    serviceFactory.getNotificationService().getNotificationPreferences(...args),
+  updateNotificationPreferences: (...args: Parameters<typeof mockNotificationService.updateNotificationPreferences>) =>
+    serviceFactory.getNotificationService().updateNotificationPreferences(...args),
+  markAsRead: (...args: Parameters<typeof mockNotificationService.markAsRead>) =>
+    serviceFactory.getNotificationService().markAsRead(...args),
+  markAllAsRead: (...args: Parameters<typeof mockNotificationService.markAllAsRead>) =>
+    serviceFactory.getNotificationService().markAllAsRead(...args),
+  deleteNotification: (...args: Parameters<typeof mockNotificationService.deleteNotification>) =>
+    serviceFactory.getNotificationService().deleteNotification(...args),
+  clearAllNotifications: (...args: Parameters<typeof mockNotificationService.clearAllNotifications>) =>
+    serviceFactory.getNotificationService().clearAllNotifications(...args),
+  subscribeToNotifications: (...args: Parameters<typeof mockNotificationService.subscribeToNotifications>) =>
+    serviceFactory.getNotificationService().subscribeToNotifications(...args),
+  getUnreadCount: (...args: Parameters<typeof mockNotificationService.getUnreadCount>) =>
+    serviceFactory.getNotificationService().getUnreadCount(...args),
+  getNotificationStats: (...args: Parameters<typeof mockNotificationService.getNotificationStats>) =>
+    serviceFactory.getNotificationService().getNotificationStats(...args),
 };
 
 export type { ApiMode };

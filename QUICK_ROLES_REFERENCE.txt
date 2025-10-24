@@ -1,0 +1,305 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    QUICK ROLES & ACCESS REFERENCE                           ║
+║                                                                              ║
+║  Use this quick reference to understand what each role can access in the    ║
+║  PDS-CRM application.                                                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 1. SUPER ADMINISTRATOR 👑 (Level 5 - Highest)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ COMMON MODULES:
+  • Dashboard (View)
+  • Customers (Full CRUD)
+  • Sales (Full CRUD)
+  • Product Sales (Full CRUD)
+  • Contracts (Full CRUD)
+  • Service Contracts (Full CRUD)
+  • Support Tickets (Full CRUD)
+  • Complaints (Full CRUD)
+  • Job Works (Full CRUD)
+
+✓ ADMINISTRATION:
+  • Masters (Companies, Products)
+  • User Management (Users, Roles, Permissions)
+  • Configuration (Tenant Settings, PDF Templates)
+  • Notifications
+  • System Logs
+
+✓ SUPER ADMIN (Platform-wide):
+  • Super Admin Dashboard
+  • Tenants Management (All tenants)
+  • All Users (Across all tenants)
+  • Platform Analytics
+  • System Health Monitoring
+  • Platform Configuration
+  • Role Requests
+
+Can CREATE, READ, UPDATE, DELETE everything
+Can MANAGE all tenants and users
+Can MANAGE all roles and permissions
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 2. ADMINISTRATOR 🔐 (Level 4 - Second Highest)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ COMMON MODULES:
+  • Dashboard (View)
+  • Customers (Full CRUD)
+  • Sales (Full CRUD)
+  • Product Sales (Full CRUD)
+  • Contracts (Full CRUD)
+  • Service Contracts (Full CRUD)
+  • Support Tickets (Full CRUD)
+  • Complaints (Full CRUD)
+  • Job Works (Full CRUD)
+
+✓ ADMINISTRATION:
+  • Masters (Companies, Products)
+  • User Management (Users, Roles, Permissions)
+  • Configuration (Tenant Settings, PDF Templates)
+  • Notifications
+  • System Logs
+
+✗ CANNOT ACCESS:
+  • Super Admin section
+  • Platform-level tenant management
+  • System health monitoring
+
+Can CREATE, READ, UPDATE, DELETE within their tenant
+Can MANAGE users and roles for their tenant
+Can MANAGE tenant settings and configuration
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 3. MANAGER 📊 (Level 3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ COMMON MODULES:
+  • Dashboard (View)
+  • Customers (Full operations - CRM focus)
+  • Sales (Full operations)
+  • Product Sales (Full operations)
+  • Contracts (Full operations)
+  • Service Contracts (Full operations)
+  • Support Tickets (Full operations)
+  • Complaints (Full operations)
+  • Analytics (View reports)
+
+✗ CANNOT ACCESS:
+  • Job Works
+  • Administration section
+  • User Management
+  • System Logs
+  • Super Admin section
+
+Can READ, CREATE, UPDATE (no delete)
+Focused on business operations and analytics
+Perfect for team leads and department heads
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 4. AGENT 🎫 (Level 1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ LIMITED ACCESS:
+  • Dashboard (View only)
+  • Customers (Customer service focus)
+  • Support Tickets (Full operations)
+  • Complaints (Full operations)
+
+✗ CANNOT ACCESS:
+  • Sales
+  • Product Sales
+  • Contracts
+  • Service Contracts
+  • Job Works
+  • Administration
+  • Analytics
+  • Super Admin
+
+Can READ, CREATE, UPDATE (no delete)
+Specialized for support and complaint handling
+Perfect for customer service team
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 5. ENGINEER 🛠️ (Level 2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ TECHNICAL FOCUS:
+  • Dashboard (View only)
+  • Product Sales (Full operations)
+  • Job Works (Full operations - PRIMARY ACCESS)
+  • Support Tickets (Incident tracking)
+  • Products (Technical info)
+
+✗ CANNOT ACCESS:
+  • Customers (full CRM)
+  • Sales
+  • Contracts
+  • Service Contracts
+  • Complaints
+  • Administration
+  • Analytics
+  • Super Admin
+
+Can READ, CREATE, UPDATE (no delete)
+Specialized for technical operations
+Perfect for engineers and technical teams
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 6. CUSTOMER 👥 (Level 0 - Lowest)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ LIMITED READ-ONLY ACCESS:
+  • Dashboard (Summary only)
+  • Profile/Account (Own information)
+
+✗ CANNOT ACCESS:
+  • Everything else (read-only on own data)
+
+Can ONLY READ their own information
+NO CREATE, UPDATE, or DELETE capabilities
+Perfect for external customers or guests
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        PERMISSION CATEGORIES                               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+CORE (3):
+  • read      - View and read data
+  • write     - Create and edit data
+  • delete    - Delete data
+
+MODULES (9):
+  • manage_customers       - Customers module
+  • manage_sales           - Sales module
+  • manage_tickets         - Support Tickets module
+  • manage_complaints      - Complaints module
+  • manage_contracts       - Contracts module
+  • manage_service_contracts - Service Contracts
+  • manage_products        - Products/Masters module
+  • manage_product_sales   - Product Sales module
+  • manage_job_works       - Job Works module
+
+ADMINISTRATIVE (5):
+  • manage_users           - User management
+  • manage_roles           - Role management
+  • view_analytics         - Analytics/Reports
+  • manage_settings        - Configuration
+  • manage_companies       - Company information
+
+SYSTEM (4):
+  • platform_admin         - Platform admin access
+  • super_admin            - Full system admin
+  • manage_tenants         - Tenant management
+  • system_monitoring      - System health
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     ROLE PERMISSION BREAKDOWN                              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+SUPER ADMIN:
+  21/21 permissions ✓
+  All features enabled
+
+ADMIN:
+  18/21 permissions ✓
+  Cannot: platform_admin, manage_tenants, system_monitoring
+
+MANAGER:
+  11/21 permissions ✓
+  Can: read, write, manage business operations, view analytics
+  Cannot: delete, user management, system operations
+
+AGENT:
+  5/21 permissions ✓
+  Can: read, write, customer service operations
+  Cannot: delete, sales, contracts, job works, administration
+
+ENGINEER:
+  6/21 permissions ✓
+  Can: read, write, technical operations
+  Cannot: delete, customer CRM, sales, contracts, administration
+
+CUSTOMER:
+  1/21 permissions ✓
+  Can: read only
+  Cannot: write, delete, any management features
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                      FILES TO MODIFY ROLES                                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+1. ADD NEW PERMISSION:
+   → src/services/rbacService.ts
+     Add to: mockPermissions array
+
+2. CREATE NEW ROLE:
+   → src/services/rbacService.ts
+     Add to: mockRoles array
+   → src/config/navigationPermissions.ts
+     Update: roleHierarchy if needed
+
+3. CHANGE ROLE PERMISSIONS:
+   → src/services/rbacService.ts
+     Edit: permissions array in the role object
+
+4. UPDATE NAVIGATION ACCESS:
+   → src/config/navigationPermissions.ts
+     Update: requiredRole or permission fields
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                      NAVIGATION STRUCTURE                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+SECTION 1: COMMON (All with permission)
+  ├─ Dashboard
+  ├─ Customers
+  ├─ Sales
+  ├─ Product Sales
+  ├─ Contracts
+  ├─ Service Contracts
+  ├─ Support Tickets
+  ├─ Complaints
+  └─ Job Works
+
+SECTION 2: ADMINISTRATION (Admin + Super Admin)
+  ├─ Masters
+  │  ├─ Companies
+  │  └─ Products
+  ├─ User Management
+  │  ├─ Users
+  │  ├─ Roles
+  │  └─ Permissions
+  ├─ Configuration
+  │  ├─ Tenant Settings
+  │  └─ PDF Templates
+  ├─ Notifications
+  └─ System Logs
+
+SECTION 3: SUPER ADMIN (Super Admin only)
+  ├─ Dashboard
+  ├─ Tenants
+  ├─ All Users
+  ├─ Analytics
+  ├─ System Health
+  ├─ Configuration
+  └─ Role Requests
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+For detailed reference, see: ROLES_AND_PERMISSIONS_MATRIX.md
+For implementation details, see: .zencoder/rules/repo.md
+
+Last Updated: 2024
+Status: ✅ Production Ready

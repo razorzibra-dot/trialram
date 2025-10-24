@@ -25,7 +25,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { LogFilters } from '@/types/logs';
-import { toast } from '@/hooks/use-toast';
+import { notificationService } from '@/services/notificationService';
 import { format } from 'date-fns';
 
 interface LogExportDialogProps {

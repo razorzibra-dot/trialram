@@ -13,7 +13,7 @@ import {
   UseMutationOptions,
   MutationFunction,
 } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store';
 
 // Enhanced query hook with error handling and notifications
@@ -32,14 +32,64 @@ export function useQuery<
 ) {
   const addNotification = useStore((state) => state.addNotification);
   const lastErrorRef = useRef<unknown>(null);
+  const lastDataRef = useRef<{ data: TData; processed: boolean }>({ data: undefined as unknown as TData, processed: false });
+  const callbackFiredRef = useRef<boolean>(false);
   
+  console.log('[useQuery wrapper] Creating query with key:', queryKey, 'enabled:', options?.enabled);
+  
+  // Extract callbacks from options to prevent them from being overridden
+  const { onSuccess: userOnSuccess, onError: userOnError, ...restOptions } = options || {};
+  
+  console.log('[useQuery wrapper] User callbacks extracted - onSuccess exists:', !!userOnSuccess, 'onError exists:', !!userOnError);
+  
+  // Memoize the callback functions to ensure React Query recognizes them
+  const handleSuccess = useCallback((data: TData) => {
+    console.log('[useQuery wrapper] ⭐ onSuccess FIRED (React Query) with data:', data);
+    callbackFiredRef.current = true;
+    userOnSuccess?.(data);
+  }, [userOnSuccess]);
+
+  const handleError = useCallback((error: TError) => {
+    console.log('[useQuery wrapper] ⭐ onError FIRED (React Query) with error:', error);
+    userOnError?.(error);
+  }, [userOnError]);
+  
+  // Explicitly handle onSuccess and onError callbacks to ensure they're always called
   const result = useReactQuery({
     queryKey,
-    queryFn,
-    ...options,
+    queryFn: async (...args) => {
+      console.log('[useQuery wrapper] queryFn executing...');
+      try {
+        const data = await queryFn(...args);
+        console.log('[useQuery wrapper] queryFn completed, returning data');
+        return data;
+      } catch (error) {
+        console.error('[useQuery wrapper] queryFn threw error:', error);
+        throw error;
+      }
+    },
+    ...restOptions,
+    onSuccess: handleSuccess,
+    onError: handleError,
   });
 
-  // Handle errors in an effect to avoid infinite loops
+  console.log('[useQuery wrapper] Query state - isLoading:', result.isLoading, 'isSuccess:', result.isSuccess, 'isError:', result.isError);
+
+  // Fallback: Manual callback triggering if React Query doesn't fire it
+  useEffect(() => {
+    if (result.isSuccess && result.data && !callbackFiredRef.current) {
+      console.log('[useQuery wrapper] 🔄 FALLBACK: React Query callback did not fire, calling manually');
+      callbackFiredRef.current = true;
+      handleSuccess(result.data as TData);
+    }
+  }, [result.isSuccess, result.data, handleSuccess]);
+
+  // Reset callback flag when query changes
+  useEffect(() => {
+    callbackFiredRef.current = false;
+  }, [queryKey]);
+
+  // Handle error notifications in an effect to avoid infinite loops
   useEffect(() => {
     if (result.error && result.error !== lastErrorRef.current && options?.showErrorNotification !== false) {
       lastErrorRef.current = result.error;

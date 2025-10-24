@@ -72,7 +72,7 @@ interface TenantUsage {
   status: string;
 }
 
-export const SuperAdminAnalyticsPage: React.FC = () => {
+const SuperAdminAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [tenantUsage, setTenantUsage] = useState<TenantUsage[]>([]);

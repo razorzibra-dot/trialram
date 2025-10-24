@@ -35,7 +35,7 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approvals(*)`
+          approvals:contract_approval_records(*)`
         );
 
       // Apply filters
@@ -83,7 +83,7 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approvals(*)`
+          approvals:contract_approval_records(*)`
         )
         .eq('id', id)
         .single();
@@ -133,7 +133,7 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approvals(*)`
+          approvals:contract_approval_records(*)`
         )
         .single();
 
@@ -176,7 +176,7 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approvals(*)`
+          approvals:contract_approval_records(*)`
         )
         .single();
 

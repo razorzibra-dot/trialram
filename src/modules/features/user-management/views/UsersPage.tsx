@@ -14,14 +14,30 @@ import {
   Space, 
   Spin,
   Alert,
-  Popconfirm
+  Modal,
+  Avatar,
+  Tooltip,
+  Dropdown,
+  Input,
+  message,
+  Empty,
+  type MenuProps,
+  type ColumnsType
 } from 'antd';
 import { 
   PlusOutlined,
   ReloadOutlined,
-  EyeOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  ClockCircleOutlined,
+  LockOutlined,
+  MoreOutlined,
+  CrownOutlined,
+  SafetyOutlined,
+  TeamOutlined,
+  UserOutlined as UserAntIcon
 } from '@ant-design/icons';
 import { 
   Users as UsersIcon,
@@ -30,236 +46,521 @@ import {
   UserX
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { toast } from 'sonner';
+import { userService } from '@/services/serviceFactory';
+import { User as UserType } from '@/types/crm';
+import { UserDetailPanel } from '../components/UserDetailPanel';
+import { UserFormPanel } from '../components/UserFormPanel';
+
+interface UserFormData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  phone?: string;
+  status: string;
+  tenantId: string;
+}
 
 export const UsersPage: React.FC = () => {
-  const { hasPermission } = useAuth();
-  const [users, setUsers] = useState<Array<Record<string, unknown>>>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { hasPermission, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // State
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [allTenants, setAllTenants] = useState<Array<{ id: string; name: string }>>([]);
+  const [allRoles, setAllRoles] = useState<string[]>(['Admin', 'Manager', 'Viewer']);
+  const [allStatuses] = useState<string[]>(['active', 'inactive', 'suspended']);
 
+  // Load users and metadata on component mount
+  // Note: Service layer handles authorization via RLS (Supabase) or database rules (mock)
   useEffect(() => {
-    fetchUsers();
+    loadUsers();
+    loadMetadata();
   }, []);
 
-  const fetchUsers = async () => {
+  const loadMetadata = async () => {
     try {
-      setIsLoading(true);
-      // TODO: Implement actual user fetching
-      setUsers([]);
+      const tenants = await userService.getTenants();
+      const roles = await userService.getRoles();
+      setAllTenants(tenants || []);
+      setAllRoles(roles || ['Admin', 'Manager', 'Viewer']);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      toast.error('Failed to fetch users');
-    } finally {
-      setIsLoading(false);
+      console.error('Error loading metadata:', error);
     }
   };
 
-  if (!hasPermission('manage_users')) {
-    return (
-      <>
-        <div style={{ padding: 24 }}>
-          <Alert
-            message="Access Denied"
-            description="You don't have permission to access user management."
-            type="error"
-            showIcon
-          />
-        </div>
-      </>
-    );
-  }
-
-  const stats = {
-    total: users.length,
-    active: users.filter((u) => (u as Record<string, unknown>).status === 'active').length,
-    inactive: users.filter((u) => (u as Record<string, unknown>).status === 'inactive').length,
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getUsers();
+      setUsers(data || []);
+    } catch (error) {
+      message.error('Failed to load users');
+      console.error('Error loading users:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const columns = [
+  // Handle create user
+  const handleCreate = () => {
+    setSelectedUser(null);
+    setDrawerMode('create');
+  };
+
+  // Handle view user
+  const handleView = (user: UserType) => {
+    setSelectedUser(user);
+    setDrawerMode('view');
+  };
+
+  // Handle edit user
+  const handleEdit = (user: UserType) => {
+    setSelectedUser(user);
+    setDrawerMode('edit');
+  };
+
+  // Close drawer
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setSelectedUser(null);
+  };
+
+  // Handle delete user
+  const handleDelete = async (userId: string, userName: string) => {
+    Modal.confirm({
+      title: 'Delete User',
+      content: `Are you sure you want to delete ${userName}?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await userService.deleteUser(userId);
+          message.success('User deleted successfully');
+          loadUsers();
+        } catch (error: unknown) {
+          const error_msg = error instanceof Error ? error.message : 'Failed to delete user';
+          message.error(error_msg);
+        }
+      }
+    });
+  };
+
+  // Handle reset password
+  const handleResetPassword = async (userId: string) => {
+    try {
+      await userService.resetPassword(userId);
+      message.success('Password reset email sent');
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to reset password';
+      message.error(error_msg);
+    }
+  };
+
+  // Handle form save
+  const handleFormSave = async (values: UserFormData) => {
+    try {
+      setIsSaving(true);
+      if (drawerMode === 'edit' && selectedUser) {
+        await userService.updateUser(selectedUser.id, values);
+        message.success('User updated successfully');
+      } else if (drawerMode === 'create') {
+        await userService.createUser(values);
+        message.success('User created successfully');
+      }
+      closeDrawer();
+      loadUsers();
+    } catch (error: unknown) {
+      const error_msg = error instanceof Error ? error.message : 'Failed to save user';
+      message.error(error_msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Get role icon
+  const getRoleIcon = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return <CrownOutlined />;
+      case 'manager':
+        return <SafetyOutlined />;
+      case 'viewer':
+        return <UserAntIcon />;
+      default:
+        return <TeamOutlined />;
+    }
+  };
+
+  // Get role color
+  const getRoleColor = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'red';
+      case 'manager':
+        return 'blue';
+      case 'viewer':
+        return 'default';
+      default:
+        return 'green';
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'success';
+      case 'inactive':
+        return 'default';
+      case 'suspended':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  // Action menu items
+  const getActionMenu = (user: UserType): MenuProps['items'] => [
+    {
+      key: 'view',
+      label: 'View Profile',
+      onClick: () => handleView(user)
+    },
+    {
+      key: 'edit',
+      label: 'Edit User',
+      icon: <EditOutlined />,
+      onClick: () => handleEdit(user),
+      disabled: !hasPermission('manage_users')
+    },
+    {
+      key: 'reset',
+      label: 'Reset Password',
+      icon: <LockOutlined />,
+      onClick: () => handleResetPassword(user.id),
+      disabled: !hasPermission('manage_users')
+    },
+    {
+      type: 'divider'
+    },
+    {
+      key: 'delete',
+      label: 'Delete User',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: () => handleDelete(user.id, `${user.firstName} ${user.lastName}`),
+      disabled: !hasPermission('manage_users')
+    }
+  ];
+
+  // Filtered users
+  const filteredUsers = users.filter(user =>
+    user.email.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.firstName.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.lastName.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  // Table columns
+  const columns: ColumnsType<UserType> = [
     {
       title: 'User',
-      dataIndex: 'name',
-      key: 'name',
-      render: (_: unknown, record: Record<string, unknown>) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ 
-            padding: 8, 
-            background: '#DBEAFE', 
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <User size={16} color="#1E40AF" />
-          </div>
+      key: 'user',
+      fixed: 'left',
+      width: 280,
+      render: (_, record) => (
+        <Space>
+          <Avatar
+            size={40}
+            src={record.avatar}
+            icon={<UserAntIcon />}
+            style={{ backgroundColor: '#1890ff' }}
+          />
           <div>
-            <div style={{ fontWeight: 500 }}>{record.name}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{record.email}</div>
+            <div style={{ fontWeight: 500, color: '#2C3E50' }}>
+              {record.firstName} {record.lastName}
+            </div>
+            <div style={{ fontSize: 12, color: '#7A8691' }}>
+              <MailOutlined style={{ marginRight: 4 }} />
+              {record.email}
+            </div>
           </div>
-        </div>
-      ),
+        </Space>
+      )
     },
     {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
-      render: (role: string) => <Tag color="blue">{role}</Tag>,
+      width: 120,
+      render: (role: string) => (
+        <Tag icon={getRoleIcon(role)} color={getRoleColor(role)}>
+          {role}
+        </Tag>
+      )
+    },
+    {
+      title: 'Tenant',
+      dataIndex: 'tenantName',
+      key: 'tenantName',
+      width: 180,
+      render: (tenantName: string) => (
+        <span style={{ color: '#2C3E50' }}>{tenantName}</span>
+      )
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 150,
+      render: (phone: string) => (
+        phone ? (
+          <span style={{ color: '#7A8691' }}>
+            <PhoneOutlined style={{ marginRight: 4 }} />
+            {phone}
+          </span>
+        ) : (
+          <span style={{ color: '#9EAAB7' }}>-</span>
+        )
+      )
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: 100,
       render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'default'}>
+        <Tag color={getStatusColor(status)}>
           {status.toUpperCase()}
         </Tag>
-      ),
+      )
+    },
+    {
+      title: 'Last Login',
+      dataIndex: 'lastLogin',
+      key: 'lastLogin',
+      width: 180,
+      render: (lastLogin: string) => (
+        <span style={{ color: '#7A8691' }}>
+          <ClockCircleOutlined style={{ marginRight: 4 }} />
+          {lastLogin ? new Date(lastLogin).toLocaleString() : 'Never'}
+        </span>
+      )
     },
     {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: 'Last Active',
-      dataIndex: 'lastActive',
-      key: 'lastActive',
-      render: (date: string) => date ? new Date(date).toLocaleDateString() : 'Never',
+      width: 120,
+      render: (createdAt: string) => (
+        <span style={{ color: '#7A8691' }}>
+          {new Date(createdAt).toLocaleDateString()}
+        </span>
+      )
     },
     {
       title: 'Actions',
       key: 'actions',
-      align: 'right' as const,
-      render: (_: unknown, record: Record<string, unknown>) => (
+      fixed: 'right',
+      width: 100,
+      render: (_, record) => (
         <Space>
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            onClick={() => console.log('View user:', record.id)}
-          />
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => console.log('Edit user:', record.id)}
-          />
-          <Popconfirm
-            title="Delete user"
-            description="Are you sure you want to delete this user?"
-            onConfirm={() => console.log('Delete user:', record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
+          {hasPermission('manage_users') && (
+            <>
+              <Tooltip title="Edit">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(record)}
+                />
+              </Tooltip>
+              <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
+                <Button type="text" size="small" icon={<MoreOutlined />} />
+              </Dropdown>
+            </>
+          )}
         </Space>
-      ),
-    },
+      )
+    }
   ];
+
+  // Calculate stats
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.status === 'active').length;
+  const adminUsers = users.filter(u => u.role === 'Admin').length;
+  const suspendedUsers = users.filter(u => u.status === 'suspended').length;
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Spin size="large" tip="Loading authentication..." />
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Authentication Required"
+          description="Please log in to access user management."
+          type="warning"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  if (!hasPermission('manage_users')) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Access Denied"
+          description="You don't have permission to access user management."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
 
   return (
     <>
       <PageHeader
         title="User Management"
-        description="Manage users and their roles"
+        description="Manage user accounts and access control"
         breadcrumbs={[
-          { label: 'Dashboard', path: '/dashboard' },
-          { label: 'User Management' }
+          { title: 'Home', path: '/' },
+          { title: 'User Management' }
         ]}
         extra={
-          <Space>
-            <Button
-              icon={<ReloadOutlined spin={isLoading} />}
-              onClick={fetchUsers}
-              loading={isLoading}
-            >
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => console.log('Create user')}
-            >
-              Create User
-            </Button>
-          </Space>
+          hasPermission('manage_users') ? (
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadUsers}
+              >
+                Refresh
+              </Button>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+              >
+                Create User
+              </Button>
+            </Space>
+          ) : null
         }
       />
 
       <div style={{ padding: 24 }}>
-        {/* Stats Cards */}
+        {/* Statistics */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Users"
-              value={stats.total}
-              icon={UsersIcon}
+              value={totalUsers}
+              icon={<UsersIcon />}
               color="primary"
-              loading={isLoading}
             />
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Active Users"
-              value={stats.active}
-              icon={UserCheck}
+              value={activeUsers}
+              icon={<UserCheck />}
               color="success"
-              loading={isLoading}
             />
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <StatCard
-              title="Inactive Users"
-              value={stats.inactive}
-              icon={UserX}
+              title="Admin Users"
+              value={adminUsers}
+              icon={<CrownOutlined />}
+              color="warning"
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatCard
+              title="Suspended"
+              value={suspendedUsers}
+              icon={<UserX />}
               color="error"
-              loading={isLoading}
             />
           </Col>
         </Row>
 
         {/* Users Table */}
-        <Card 
-          title={`Users (${users.length})`}
-          extra={<span style={{ color: '#6B7280', fontWeight: 'normal' }}>Manage all users in the system</span>}
+        <Card
+          title="Users"
+          extra={
+            <Space>
+              <Input.Search
+                placeholder="Search by name or email..."
+                allowClear
+                style={{ width: 250 }}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </Space>
+          }
         >
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin spinning tip="Loading users..." />
-            </div>
-          ) : users.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <UsersIcon size={48} color="#9CA3AF" style={{ marginBottom: 16 }} />
-              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No users found</h3>
-              <p style={{ color: '#6B7280', marginBottom: 16 }}>
-                Get started by creating your first user
-              </p>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => console.log('Create user')}
-              >
-                Create User
-              </Button>
-            </div>
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={users}
-              rowKey="id"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => `Total ${total} users`,
-              }}
-            />
-          )}
+          <Spin spinning={loading} tip="Loading users...">
+            {filteredUsers.length === 0 && !loading ? (
+              <Empty
+                description="No users found"
+                style={{ padding: '40px 0' }}
+              />
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={filteredUsers}
+                rowKey="id"
+                loading={loading}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showTotal: (total) => `Total ${total} users`
+                }}
+                scroll={{ x: 1200 }}
+              />
+            )}
+          </Spin>
         </Card>
       </div>
+
+      {/* User Detail Drawer */}
+      {drawerMode === 'view' && selectedUser && (
+        <UserDetailPanel
+          user={selectedUser}
+          open={true}
+          onClose={closeDrawer}
+          onEdit={handleEdit}
+        />
+      )}
+
+      {/* User Form Drawer - Create/Edit */}
+      {(drawerMode === 'create' || drawerMode === 'edit') && (
+        <UserFormPanel
+          open={true}
+          mode={drawerMode}
+          user={selectedUser}
+          onClose={closeDrawer}
+          onSave={handleFormSave}
+          loading={isSaving}
+          allRoles={allRoles}
+          allTenants={allTenants}
+          allStatuses={allStatuses}
+        />
+      )}
     </>
   );
 };

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { JobWorksService, JobWorksFilters, CreateJobWorkData } from '../services/jobWorksService';
 import { useService } from '@/modules/core/hooks/useService';
 import { useToast } from '@/hooks/use-toast';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 // Query Keys
 export const jobWorksKeys = {
@@ -21,12 +22,15 @@ export const jobWorksKeys = {
  */
 export const useJobWorks = (filters: JobWorksFilters = {}) => {
   const jobWorksService = useService<JobWorksService>('jobWorksService');
+  const { isInitialized: isTenantInitialized, tenantId } = useTenantContext();
 
   return useQuery({
-    queryKey: [...jobWorksKeys.jobworks(), filters],
+    queryKey: [...jobWorksKeys.jobworks(), filters, tenantId],
     queryFn: () => jobWorksService.getJobWorks(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isTenantInitialized, // Wait for tenant to be initialized
+    retry: 3, // Retry failed requests 3 times
   });
 };
 
@@ -35,12 +39,14 @@ export const useJobWorks = (filters: JobWorksFilters = {}) => {
  */
 export const useJobWork = (id: string) => {
   const jobWorksService = useService<JobWorksService>('jobWorksService');
+  const { isInitialized: isTenantInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: jobWorksKeys.jobwork(id),
     queryFn: () => jobWorksService.getJobWork(id),
-    enabled: !!id,
+    enabled: !!id && isTenantInitialized, // Wait for tenant and have ID
     staleTime: 5 * 60 * 1000,
+    retry: 3,
   });
 };
 
@@ -49,11 +55,14 @@ export const useJobWork = (id: string) => {
  */
 export const useJobWorkStats = () => {
   const jobWorksService = useService<JobWorksService>('jobWorksService');
+  const { isInitialized: isTenantInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: jobWorksKeys.stats(),
     queryFn: () => jobWorksService.getJobWorkStats(),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isTenantInitialized, // Wait for tenant to be initialized
+    retry: 3, // Retry failed requests 3 times
   });
 };
 

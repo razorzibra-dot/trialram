@@ -3,7 +3,17 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 import { PortalProvider } from "@/contexts/PortalContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { Toaster } from "@/components/ui/toaster";
+
+/**
+ * RootLayout Component
+ * 
+ * Updated to use Ant Design notifications instead of legacy toast system.
+ * Ant Design's message and notification APIs are global and don't require
+ * explicit component rendering - they work automatically with AntdConfigProvider.
+ * 
+ * NOTE: The legacy Toaster component has been removed.
+ * Use notificationService or useNotification hook for displaying messages.
+ */
 
 const RootLayout = () => {
   return (
@@ -13,7 +23,6 @@ const RootLayout = () => {
           <SuperAdminProvider>
             <div className="min-h-screen">
               <Outlet />
-              <Toaster />
             </div>
           </SuperAdminProvider>
         </AuthProvider>

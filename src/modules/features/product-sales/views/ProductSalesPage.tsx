@@ -20,7 +20,6 @@ import {
   Popconfirm,
   Alert,
   Empty,
-  Modal,
   message,
   Tooltip
 } from 'antd';
@@ -46,8 +45,7 @@ import {
   PRODUCT_SALE_STATUSES,
   ProductSalesAnalytics 
 } from '@/types/productSales';
-import ProductSaleForm from '@/components/product-sales/ProductSaleForm';
-import ProductSaleDetail from '@/components/product-sales/ProductSaleDetail';
+import { ProductSaleFormPanel, ProductSaleDetailPanel } from '../components';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -141,9 +139,11 @@ export const ProductSalesPage: React.FC = () => {
   const handleFormSuccess = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
+    setShowDetailModal(false);
     setSelectedSale(null);
     loadProductSales();
     loadAnalytics();
+    message.success('Operation completed successfully');
   };
 
   const handleSearch = (value: string) => {
@@ -515,30 +515,32 @@ export const ProductSalesPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Create Product Sale Modal */}
-      <ProductSaleForm
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+      {/* Product Sale Form Side Panel - Create */}
+      <ProductSaleFormPanel
+        visible={showCreateModal}
+        productSale={null}
+        onClose={() => setShowCreateModal(false)}
         onSuccess={handleFormSuccess}
       />
 
-      {/* Edit Product Sale Modal */}
-      <ProductSaleForm
-        open={showEditModal}
-        onOpenChange={setShowEditModal}
+      {/* Product Sale Form Side Panel - Edit */}
+      <ProductSaleFormPanel
+        visible={showEditModal}
         productSale={selectedSale}
+        onClose={() => setShowEditModal(false)}
         onSuccess={handleFormSuccess}
       />
 
-      {/* Product Sale Detail Modal */}
-      {selectedSale && (
-        <ProductSaleDetail
-          open={showDetailModal}
-          onOpenChange={setShowDetailModal}
-          productSale={selectedSale}
-          onSuccess={handleFormSuccess}
-        />
-      )}
+      {/* Product Sale Detail Side Panel */}
+      <ProductSaleDetailPanel
+        visible={showDetailModal}
+        productSale={selectedSale}
+        onClose={() => setShowDetailModal(false)}
+        onEdit={() => {
+          setShowDetailModal(false);
+          setShowEditModal(true);
+        }}
+      />
     </>
   );
 };

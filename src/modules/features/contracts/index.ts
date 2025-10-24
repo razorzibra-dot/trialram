@@ -1,22 +1,40 @@
 /**
- * Contracts Module
- * Contract management and lifecycle tracking
+ * Contracts Module Exports
+ * Central export point for contracts module
  */
 
+// Store exports
+export { 
+  useContractStore, 
+  useContractFilters, 
+  useContractPagination,
+  useContractSelection
+} from './store/contractStore';
+export type { ContractFilters, ContractState } from './store/contractStore';
+
 // Service exports
-export * from './services/contractService';
-export * from './services/serviceContractService';
+export { ContractService } from './services/contractService';
+export type { ContractFormData } from './services/contractService';
 
 // Hook exports
-export * from './hooks/useContracts';
-export * from './hooks/useServiceContracts';
+export { 
+  useContracts, 
+  useContract, 
+  useContractStats,
+  useExpiringContracts,
+  useContractsDueForRenewal,
+  useCreateContract,
+  useUpdateContract,
+  useDeleteContract,
+  useUpdateContractStatus,
+  useApproveContract,
+  useExportContracts
+} from './hooks/useContracts';
 
 // Component exports
-export * from './components/ContractsList';
-
-// View exports
-export { ContractsPage } from './views/ContractsPage';
-export { ContractDetailPage } from './views/ContractDetailPage';
+export { ContractFormPanel } from './components/ContractFormPanel';
+export { ContractDetailPanel } from './components/ContractDetailPanel';
+export { ContractsList } from './components/ContractsList';
 
 // Routes
 export { contractsRoutes } from './routes';
@@ -29,7 +47,6 @@ export const contractsModule = {
   services: ['contractService', 'serviceContractService'],
   dependencies: ['core', 'shared'],
   routes: contractsRoutes,
-  components: {},
   
   // Initialize the module
   async initialize() {

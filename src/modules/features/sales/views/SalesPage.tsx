@@ -1,33 +1,40 @@
 /**
- * Sales Page
+ * Sales Page - Enterprise Design
  * Main sales dashboard with statistics and deal management
+ * Unified grid control with side drawer panels for CRUD operations
  */
 
 import React, { useState } from 'react';
-import { Row, Col, Card, Badge, Typography } from 'antd';
-import { 
-  TrendingUp,
-  DollarSign,
-  Target,
-  BarChart3
-} from 'lucide-react';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { TrendingUp, DollarSign, Target, BarChart3 } from 'lucide-react';
 import { Deal } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
-import { SalesList } from '../components/SalesList';
-import { useSalesStats, useDeals } from '../hooks/useSales';
+import { SalesDealDetailPanel } from '../components/SalesDealDetailPanel';
+import { SalesDealFormPanel } from '../components/SalesDealFormPanel';
+import { useSalesStats, useDeals, useDeleteDeal } from '../hooks/useSales';
 import { useSalesStore } from '../store/salesStore';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
+const { Search } = Input;
+const { Option } = Select;
 
 export const SalesPage: React.FC = () => {
-  const { filters } = useSalesStore();
-  const { data: stats, isLoading: statsLoading } = useSalesStats();
-  const { isLoading: dealsLoading } = useDeals(filters);
-  
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
+  const { hasPermission } = useAuth();
+  const { filters, setFilters } = useSalesStore();
+  const [searchText, setSearchText] = useState('');
+  const [stageFilter, setStageFilter] = useState<string>('all');
+
+  // Drawer states
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
+
+  // Queries
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useSalesStats();
+  const { data: dealsData, isLoading: dealsLoading, refetch: refetchDeals } = useDeals(filters);
+  const deleteDeal = useDeleteDeal();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -38,56 +45,140 @@ export const SalesPage: React.FC = () => {
     }).format(amount);
   };
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+  const handleRefresh = () => {
+    refetchStats();
+    refetchDeals();
+    message.success('Data refreshed successfully');
   };
 
-  const handleCreateDeal = () => {
-    setShowCreateModal(true);
+  const handleCreate = () => {
+    setSelectedDeal(null);
+    setDrawerMode('create');
   };
 
-  const handleEditDeal = (deal: Deal) => {
+  const handleEdit = (deal: Deal) => {
     setSelectedDeal(deal);
-    setShowEditModal(true);
+    setDrawerMode('edit');
   };
 
-  const handleViewDeal = (deal: Deal) => {
+  const handleView = (deal: Deal) => {
     setSelectedDeal(deal);
-    setShowViewModal(true);
+    setDrawerMode('view');
   };
 
-  const StageCard = ({ 
-    stage, 
-    count, 
-    value, 
-    loading = false 
-  }: {
-    stage: string;
-    count: number;
-    value: number;
-    loading?: boolean;
-  }) => {
-    const stageColors: Record<string, string> = {
-      lead: 'default',
-      qualified: 'processing',
-      proposal: 'warning',
-      negotiation: 'warning',
-      closed_won: 'success',
-      closed_lost: 'error'
-    };
-
-    const color = stageColors[stage] || 'default';
-
-    return (
-      <Card variant="borderless" loading={loading}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Badge status={color as 'default' | 'processing' | 'warning' | 'success' | 'error'} text={stage.replace('_', ' ').toUpperCase()} />
-          <span style={{ fontWeight: 500 }}>{count}</span>
-        </div>
-        <div style={{ fontSize: 18, fontWeight: 600 }}>{formatCurrency(value)}</div>
-      </Card>
-    );
+  const handleDelete = async (deal: Deal) => {
+    try {
+      await deleteDeal.mutateAsync(deal.id);
+      message.success(`Deal "${deal.name}" deleted successfully`);
+      refetchDeals();
+      refetchStats();
+    } catch (error) {
+      message.error('Failed to delete deal');
+    }
   };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    setFilters({ ...filters, search: value, page: 1 });
+  };
+
+  const handleStageFilterChange = (value: string) => {
+    setStageFilter(value);
+    const stageValue: string | undefined = value === 'all' ? undefined : value;
+    setFilters({ ...filters, stage: stageValue, page: 1 });
+  };
+
+  const getStageColor = (stage: string) => {
+    switch (stage) {
+      case 'lead': return 'default';
+      case 'qualified': return 'processing';
+      case 'proposal': return 'warning';
+      case 'negotiation': return 'warning';
+      case 'closed_won': return 'green';
+      case 'closed_lost': return 'red';
+      default: return 'default';
+    }
+  };
+
+  // Table columns
+  const columns: ColumnsType<Deal> = [
+    {
+      title: 'Deal Name',
+      key: 'name',
+      dataIndex: 'name',
+      width: 200,
+      render: (text) => <div style={{ fontWeight: 500 }}>{text}</div>,
+    },
+    {
+      title: 'Customer',
+      key: 'customer',
+      dataIndex: 'customer_name',
+      width: 150,
+    },
+    {
+      title: 'Value',
+      key: 'value',
+      dataIndex: 'amount',
+      width: 120,
+      render: (amount) => <div style={{ fontWeight: 500 }}>{formatCurrency(amount)}</div>,
+    },
+    {
+      title: 'Stage',
+      key: 'stage',
+      dataIndex: 'stage',
+      width: 120,
+      render: (stage) => (
+        <Tag color={getStageColor(stage)}>
+          {stage?.replace('_', ' ').toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Owner',
+      key: 'owner',
+      dataIndex: 'owner_name',
+      width: 130,
+    },
+    {
+      title: 'Expected Close',
+      key: 'expected_close',
+      dataIndex: 'expected_close_date',
+      width: 130,
+      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      width: 150,
+      render: (_, record) => (
+        <Space size="small">
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>
+            View
+          </Button>
+          {hasPermission('sales:update') && (
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+              Edit
+            </Button>
+          )}
+          {hasPermission('sales:delete') && (
+            <Popconfirm
+              title="Delete Deal"
+              description={`Are you sure you want to delete "${record.name}"?`}
+              onConfirm={() => handleDelete(record)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -100,6 +191,18 @@ export const SalesPage: React.FC = () => {
             { title: 'Sales' }
           ]
         }}
+        extra={
+          <>
+            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
+              Refresh
+            </Button>
+            {hasPermission('sales:create') && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+                New Deal
+              </Button>
+            )}
+          </>
+        }
       />
 
       <div style={{ padding: 24 }}>
@@ -128,14 +231,10 @@ export const SalesPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Conversion Rate"
-              value={formatPercentage(stats?.conversionRate || 0)}
+              value={`${(stats?.conversionRate || 0).toFixed(1)}%`}
               description="Deals closed won"
               icon={TrendingUp}
               color={stats?.conversionRate && stats.conversionRate > 20 ? 'success' : 'warning'}
-              trend={stats?.conversionRate ? { 
-                value: stats.conversionRate, 
-                isPositive: stats.conversionRate > 20 
-              } : undefined}
               loading={statsLoading}
             />
           </Col>
@@ -152,36 +251,109 @@ export const SalesPage: React.FC = () => {
         </Row>
 
         {/* Stage Breakdown */}
-        {stats && (
+        {stats?.byStage && (
           <div style={{ marginBottom: 24 }}>
             <Title level={4} style={{ marginBottom: 16 }}>Pipeline by Stage</Title>
             <Row gutter={[16, 16]}>
               {Object.entries(stats.byStage).map(([stage, count]) => (
                 <Col xs={24} sm={12} md={8} lg={4} key={stage}>
-                  <StageCard
-                    stage={stage}
-                    count={count}
-                    value={stats.byStageValue[stage] || 0}
-                    loading={statsLoading}
-                  />
+                  <Card
+                    style={{
+                      borderRadius: 8,
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <Tag color={getStageColor(stage)}>{stage.replace('_', ' ').toUpperCase()}</Tag>
+                      <span style={{ fontWeight: 600, fontSize: 16 }}>{count}</span>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1890ff' }}>
+                      {formatCurrency(stats.byStageValue?.[stage] || 0)}
+                    </div>
+                  </Card>
                 </Col>
               ))}
             </Row>
           </div>
         )}
 
-        {/* Deals List */}
-        <Card variant="borderless">
-          <SalesList
-            onCreateDeal={handleCreateDeal}
-            onEditDeal={handleEditDeal}
-            onViewDeal={handleViewDeal}
+        {/* Deals Table */}
+        <Card
+          style={{
+            borderRadius: 8,
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {/* Search and Filters */}
+          <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
+            <Space.Compact style={{ width: '100%' }}>
+              <Search
+                placeholder="Search deals by name, customer, or owner..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                size="large"
+                onSearch={handleSearch}
+                style={{ flex: 1 }}
+              />
+              <Select
+                value={stageFilter}
+                onChange={handleStageFilterChange}
+                style={{ width: 150 }}
+                size="large"
+              >
+                <Option value="all">All Stages</Option>
+                <Option value="lead">Lead</Option>
+                <Option value="qualified">Qualified</Option>
+                <Option value="proposal">Proposal</Option>
+                <Option value="negotiation">Negotiation</Option>
+                <Option value="closed_won">Closed Won</Option>
+                <Option value="closed_lost">Closed Lost</Option>
+              </Select>
+            </Space.Compact>
+          </Space>
+
+          {/* Table */}
+          <Table
+            columns={columns}
+            dataSource={dealsData?.data || []}
+            loading={dealsLoading}
+            pagination={{
+              current: filters.page || 1,
+              pageSize: filters.pageSize || 20,
+              total: dealsData?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              onChange: (page, pageSize) => {
+                setFilters({ ...filters, page, pageSize });
+              },
+            }}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty description="No deals found" style={{ marginTop: 48, marginBottom: 48 }} />,
+            }}
           />
         </Card>
-
-        {/* Modals would go here */}
-        {/* TODO: Add CreateDealModal, EditDealModal, ViewDealModal */}
       </div>
+
+      {/* Detail Panel (View) */}
+      <SalesDealDetailPanel
+        visible={drawerMode === 'view'}
+        deal={selectedDeal}
+        onClose={() => setDrawerMode(null)}
+        onEdit={() => setDrawerMode('edit')}
+      />
+
+      {/* Form Panel (Create/Edit) */}
+      <SalesDealFormPanel
+        visible={drawerMode === 'create' || drawerMode === 'edit'}
+        deal={drawerMode === 'edit' ? selectedDeal : null}
+        onClose={() => setDrawerMode(null)}
+        onSuccess={() => {
+          setDrawerMode(null);
+          refetchDeals();
+          refetchStats();
+        }}
+      />
     </>
   );
 };

@@ -1,12 +1,13 @@
 /**
  * Customer Service
  * Business logic for customer operations
+ * Uses the API Service Factory to respect VITE_API_MODE configuration
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { Customer, CustomerTag } from '@/types/crm';
 import { FilterOptions, PaginatedResponse } from '@/modules/core/types';
-import { customerService as legacyCustomerService } from '@/services';
+import { apiServiceFactory } from '@/services/api/apiServiceFactory';
 
 export interface CreateCustomerData {
   company_name: string;
@@ -55,14 +56,20 @@ export class CustomerService extends BaseService {
   async getCustomers(filters: CustomerFilters = {}): Promise<PaginatedResponse<Customer>> {
     try {
       try {
-        // For now, use the legacy service
-        const customers = await legacyCustomerService.getCustomers(filters);
+        console.log('[CustomerService] getCustomers called with filters:', filters);
+        
+        // Use the API Service Factory to respect VITE_API_MODE configuration
+        const customers = await apiServiceFactory.getCustomerService().getCustomers(filters);
+        
+        console.log('[CustomerService] Received customers from factory:', customers.length);
         
         // Transform to paginated response
         const { page = 1, pageSize = 20 } = filters;
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         const paginatedData = customers.slice(startIndex, endIndex);
+        
+        console.log('[CustomerService] Returning paginated response - total:', customers.length, 'page:', page, 'data:', paginatedData.length);
         
         return {
           data: paginatedData,
@@ -76,6 +83,7 @@ export class CustomerService extends BaseService {
         if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
           // Return empty response instead of throwing
           const { page = 1, pageSize = 20 } = filters;
+          console.log('[CustomerService] Tenant not initialized, returning empty response');
           return {
             data: [],
             total: 0,
@@ -87,7 +95,7 @@ export class CustomerService extends BaseService {
         throw error;
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('[CustomerService] Error fetching customers:', error);
       throw error;
     }
   }
@@ -97,7 +105,7 @@ export class CustomerService extends BaseService {
    */
   async getCustomer(id: string): Promise<Customer> {
     try {
-      return await legacyCustomerService.getCustomer(id);
+      return await apiServiceFactory.getCustomerService().getCustomer(id);
     } catch (error) {
       console.error('Error fetching customer:', error);
       throw error;
@@ -109,7 +117,7 @@ export class CustomerService extends BaseService {
    */
   async createCustomer(data: CreateCustomerData): Promise<Customer> {
     try {
-      return await legacyCustomerService.createCustomer(data);
+      return await apiServiceFactory.getCustomerService().createCustomer(data);
     } catch (error) {
       console.error('Error creating customer:', error);
       throw error;
@@ -121,7 +129,7 @@ export class CustomerService extends BaseService {
    */
   async updateCustomer(id: string, data: Partial<CreateCustomerData>): Promise<Customer> {
     try {
-      return await legacyCustomerService.updateCustomer(id, data);
+      return await apiServiceFactory.getCustomerService().updateCustomer(id, data);
     } catch (error) {
       console.error('Error updating customer:', error);
       throw error;
@@ -133,7 +141,7 @@ export class CustomerService extends BaseService {
    */
   async deleteCustomer(id: string): Promise<void> {
     try {
-      await legacyCustomerService.deleteCustomer(id);
+      await apiServiceFactory.getCustomerService().deleteCustomer(id);
     } catch (error) {
       console.error('Error deleting customer:', error);
       throw error;
@@ -172,7 +180,7 @@ export class CustomerService extends BaseService {
    */
   async getTags(): Promise<CustomerTag[]> {
     try {
-      return await legacyCustomerService.getTags();
+      return await apiServiceFactory.getCustomerService().getTags();
     } catch (error) {
       console.error('Error fetching customer tags:', error);
       throw error;
@@ -184,7 +192,7 @@ export class CustomerService extends BaseService {
    */
   async createTag(name: string, color: string): Promise<CustomerTag> {
     try {
-      return await legacyCustomerService.createTag(name, color);
+      return await apiServiceFactory.getCustomerService().createTag(name, color);
     } catch (error) {
       console.error('Error creating customer tag:', error);
       throw error;
@@ -196,7 +204,7 @@ export class CustomerService extends BaseService {
    */
   async getIndustries(): Promise<string[]> {
     try {
-      return await legacyCustomerService.getIndustries();
+      return await apiServiceFactory.getCustomerService().getIndustries();
     } catch (error) {
       console.error('Error fetching industries:', error);
       throw error;
@@ -208,7 +216,7 @@ export class CustomerService extends BaseService {
    */
   async getSizes(): Promise<string[]> {
     try {
-      return await legacyCustomerService.getSizes();
+      return await apiServiceFactory.getCustomerService().getSizes();
     } catch (error) {
       console.error('Error fetching company sizes:', error);
       throw error;
@@ -220,7 +228,7 @@ export class CustomerService extends BaseService {
    */
   async exportCustomers(format: 'csv' | 'json' = 'csv'): Promise<string> {
     try {
-      return await legacyCustomerService.exportCustomers(format);
+      return await apiServiceFactory.getCustomerService().exportCustomers(format);
     } catch (error) {
       console.error('Error exporting customers:', error);
       throw error;
@@ -232,7 +240,7 @@ export class CustomerService extends BaseService {
    */
   async importCustomers(csv: string): Promise<{ success: number; errors: string[] }> {
     try {
-      return await legacyCustomerService.importCustomers(csv);
+      return await apiServiceFactory.getCustomerService().importCustomers(csv);
     } catch (error) {
       console.error('Error importing customers:', error);
       throw error;
@@ -267,7 +275,7 @@ export class CustomerService extends BaseService {
   }> {
     try {
       try {
-        const customers = await legacyCustomerService.getCustomers();
+        const customers = await apiServiceFactory.getCustomerService().getCustomers();
         
         const stats = {
           total: customers.length,

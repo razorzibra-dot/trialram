@@ -1,0 +1,184 @@
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                    ROLES & PERMISSIONS ACCESS MATRIX - TABLE VIEW
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+This table shows what each role can access. ✓ = Full Access | ✗ = No Access | R = Read-Only | CRU = Create/Read/Update
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+MODULE / FEATURE                         | CUSTOMER | AGENT | ENGINEER | MANAGER | ADMIN | SUPER_ADMIN
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+COMMON MODULES (Based on Permission):
+
+Dashboard                                |    R     |   ✓   |    ✓     |    ✓    |   ✓   |     ✓
+Customers Module                         |    ✗     |   ✓   |    ✗     |    ✓    |   ✓   |     ✓
+Sales Module                             |    ✗     |   ✗   |    ✗     |    ✓    |   ✓   |     ✓
+Product Sales Module                     |    ✗     |   ✗   |    ✓     |    ✓    |   ✓   |     ✓
+Contracts Module                         |    ✗     |   ✗   |    ✗     |    ✓    |   ✓   |     ✓
+Service Contracts Module                 |    ✗     |   ✗   |    ✗     |    ✓    |   ✓   |     ✓
+Support Tickets Module                   |    ✗     |   ✓   |    ✓     |    ✓    |   ✓   |     ✓
+Complaints Module                        |    ✗     |   ✓   |    ✗     |    ✓    |   ✓   |     ✓
+Job Works Module                         |    ✗     |   ✗   |    ✓     |    ✗    |   ✓   |     ✓
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ANALYTICS & REPORTING:
+
+Analytics / Reports                      |    ✗     |   ✗   |    ✗     |    ✓    |   ✓   |     ✓
+Platform Analytics (All tenants)         |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ADMINISTRATION SECTION (Admin Only):
+
+Masters - Companies                      |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+Masters - Products                       |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+User Management                          |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+  ├─ Users                               |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+  ├─ Roles                               |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+  └─ Permissions                         |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+Configuration                            |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+  ├─ Tenant Settings                     |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+  └─ PDF Templates                       |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+Notifications                            |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+System Logs                              |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+SUPER ADMIN SECTION (Super Admin Only):
+
+Super Admin Dashboard                    |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+Tenants Management                       |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+All Users (Across Tenants)               |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+Platform Analytics                       |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+System Health Monitoring                 |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+Platform Configuration                   |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+Role Requests                            |    ✗     |   ✗   |    ✗     |    ✗    |   ✗   |     ✓
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+CRUD OPERATIONS (for modules they can access):
+
+Create (Write)                           |    ✗     |  CRU  |   CRU    |   CRU   |  CRU  |    CRU
+Read (View)                              |    R     |  CRU  |   CRU    |   CRU   |  CRU  |    CRU
+Update (Edit)                            |    ✗     |  CRU  |   CRU    |   CRU   |  CRU  |    CRU
+Delete                                   |    ✗     |   ✗   |    ✗     |    ✗    |   ✓   |     ✓
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                              PERMISSIONS SUMMARY BY ROLE
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+CUSTOMER ROLE (1/21 permissions):
+  ✓ read
+  Modules: Dashboard (read-only), Profile
+
+AGENT ROLE (5/21 permissions):
+  ✓ read
+  ✓ write
+  ✓ manage_customers
+  ✓ manage_tickets
+  ✓ manage_complaints
+  Modules: Dashboard, Customers, Support Tickets, Complaints
+
+ENGINEER ROLE (6/21 permissions):
+  ✓ read
+  ✓ write
+  ✓ manage_products
+  ✓ manage_product_sales
+  ✓ manage_job_works
+  ✓ manage_tickets
+  Modules: Dashboard, Product Sales, Job Works, Support Tickets, Products
+
+MANAGER ROLE (11/21 permissions):
+  ✓ read
+  ✓ write
+  ✓ manage_customers
+  ✓ manage_sales
+  ✓ manage_tickets
+  ✓ manage_complaints
+  ✓ manage_contracts
+  ✓ manage_service_contracts
+  ✓ manage_products
+  ✓ manage_product_sales
+  ✓ view_analytics
+  Modules: Dashboard, Customers, Sales, Product Sales, Contracts, Service Contracts, Tickets, Complaints, Analytics
+
+ADMINISTRATOR ROLE (18/21 permissions):
+  ✓ read
+  ✓ write
+  ✓ delete
+  ✓ manage_customers
+  ✓ manage_sales
+  ✓ manage_tickets
+  ✓ manage_complaints
+  ✓ manage_contracts
+  ✓ manage_service_contracts
+  ✓ manage_products
+  ✓ manage_product_sales
+  ✓ manage_job_works
+  ✓ manage_users
+  ✓ manage_roles
+  ✓ view_analytics
+  ✓ manage_settings
+  ✓ manage_companies
+  Modules: All common modules + Administration section (Masters, User Management, Configuration, Notifications, Logs)
+
+SUPER ADMINISTRATOR ROLE (21/21 permissions):
+  ✓ read
+  ✓ write
+  ✓ delete
+  ✓ manage_customers
+  ✓ manage_sales
+  ✓ manage_tickets
+  ✓ manage_complaints
+  ✓ manage_contracts
+  ✓ manage_service_contracts
+  ✓ manage_products
+  ✓ manage_product_sales
+  ✓ manage_job_works
+  ✓ manage_users
+  ✓ manage_roles
+  ✓ view_analytics
+  ✓ manage_settings
+  ✓ manage_companies
+  ✓ platform_admin
+  ✓ super_admin
+  ✓ manage_tenants
+  ✓ system_monitoring
+  Modules: All modules + Super Admin section (Tenants, Platform Analytics, System Health, Configuration)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                    PERMISSION CATEGORIES
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+CATEGORY              | COUNT | PERMISSION ID                    | DESCRIPTION
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+CORE                  |  3    | read                             | View and read data
+                      |       | write                            | Create and edit data
+                      |       | delete                           | Delete data
+
+MODULES               |  9    | manage_customers                 | Manage customer data and relationships
+                      |       | manage_sales                     | Manage sales processes and deals
+                      |       | manage_tickets                   | Manage support tickets and issues
+                      |       | manage_complaints                | Handle customer complaints
+                      |       | manage_contracts                 | Manage service contracts and agreements
+                      |       | manage_service_contracts         | Manage service contracts
+                      |       | manage_products                  | Manage product catalog and inventory
+                      |       | manage_product_sales             | Manage product sales and transactions
+                      |       | manage_job_works                 | Manage job work orders and tasks
+
+ADMINISTRATIVE        |  5    | manage_users                     | Manage user accounts and access
+                      |       | manage_roles                     | Manage roles and permissions
+                      |       | view_analytics                   | Access analytics and reports
+                      |       | manage_settings                  | Configure system settings
+                      |       | manage_companies                 | Manage company information
+
+SYSTEM                |  4    | platform_admin                   | Platform administration access
+                      |       | super_admin                      | Full system administration
+                      |       | manage_tenants                   | Manage tenant accounts
+                      |       | system_monitoring                | Monitor system health and performance
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Total Permissions:     21
+Total Roles:           6
+Total Modules:         9
+Total Admin Features:  5+7 (Administration + Super Admin sections)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

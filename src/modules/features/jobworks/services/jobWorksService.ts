@@ -5,6 +5,7 @@
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { PaginatedResponse } from '@/modules/core/types';
+import { jobWorkService as legacyJobWorkService } from '@/services';
 
 export interface JobWork {
   id: string;
@@ -59,83 +60,41 @@ export class JobWorksService extends BaseService {
    */
   async getJobWorks(filters: JobWorksFilters = {}): Promise<PaginatedResponse<JobWork>> {
     try {
-      // Mock data for now - replace with actual API call
-      const mockJobWorks: JobWork[] = [
-        {
-          id: '1',
-          title: 'Website Maintenance',
-          description: 'Regular maintenance and updates',
-          status: 'in_progress',
-          priority: 'medium',
-          customer_id: '1',
-          customer_name: 'Acme Corp',
-          assigned_to: '1',
-          assigned_to_name: 'John Doe',
-          start_date: '2024-01-15',
-          due_date: '2024-01-30',
-          estimated_hours: 20,
-          actual_hours: 15,
-          cost: 2000,
-          created_at: '2024-01-10',
-          updated_at: '2024-01-20',
-        },
-        {
-          id: '2',
-          title: 'Database Migration',
-          description: 'Migrate legacy database to new system',
-          status: 'pending',
-          priority: 'high',
-          customer_id: '2',
-          customer_name: 'Tech Solutions',
-          assigned_to: '2',
-          assigned_to_name: 'Jane Smith',
-          start_date: '2024-02-01',
-          due_date: '2024-02-15',
-          estimated_hours: 40,
-          cost: 5000,
-          created_at: '2024-01-25',
-          updated_at: '2024-01-25',
-        },
-      ];
-
-      // Apply filters
-      let filteredData = mockJobWorks;
-      
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        filteredData = filteredData.filter(job => 
-          job.title.toLowerCase().includes(search) ||
-          job.description?.toLowerCase().includes(search) ||
-          job.customer_name?.toLowerCase().includes(search)
-        );
+      try {
+        // Use the legacy service to fetch real data
+        const jobWorks = await legacyJobWorkService.getJobWorks(filters as any);
+        
+        // Transform to paginated response
+        const { page = 1, pageSize = 20 } = filters;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedData = (Array.isArray(jobWorks) ? jobWorks : []).slice(startIndex, endIndex);
+        
+        return {
+          data: paginatedData,
+          total: Array.isArray(jobWorks) ? jobWorks.length : 0,
+          page,
+          pageSize,
+          totalPages: Math.ceil((Array.isArray(jobWorks) ? jobWorks.length : 0) / pageSize),
+        };
+      } catch (error) {
+        // Handle authentication/authorization errors gracefully
+        if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('Tenant context not initialized'))) {
+          // Return empty response instead of throwing
+          const { page = 1, pageSize = 20 } = filters;
+          console.warn('[JobWorksService] Auth error, returning empty response:', error.message);
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
+        throw error;
       }
-
-      if (filters.status && filters.status !== 'all') {
-        filteredData = filteredData.filter(job => job.status === filters.status);
-      }
-
-      if (filters.priority && filters.priority !== 'all') {
-        filteredData = filteredData.filter(job => job.priority === filters.priority);
-      }
-
-      // Pagination
-      const page = filters.page || 1;
-      const pageSize = filters.pageSize || 20;
-      const total = filteredData.length;
-      const totalPages = Math.ceil(total / pageSize);
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const data = filteredData.slice(startIndex, endIndex);
-
-      return {
-        data,
-        total,
-        page,
-        pageSize,
-        totalPages,
-      };
     } catch (error) {
-      this.handleError('Failed to fetch job works', error);
+      console.error('Error fetching job works:', error);
       throw error;
     }
   }
@@ -145,12 +104,7 @@ export class JobWorksService extends BaseService {
    */
   async getJobWork(id: string): Promise<JobWork> {
     try {
-      const response = await this.getJobWorks();
-      const jobWork = response.data.find(job => job.id === id);
-      if (!jobWork) {
-        throw new Error('Job work not found');
-      }
-      return jobWork;
+      return await legacyJobWorkService.getJobWork(id);
     } catch (error) {
       this.handleError(`Failed to fetch job work ${id}`, error);
       throw error;
@@ -162,15 +116,7 @@ export class JobWorksService extends BaseService {
    */
   async createJobWork(data: CreateJobWorkData): Promise<JobWork> {
     try {
-      // Mock implementation - replace with actual API call
-      const newJobWork: JobWork = {
-        id: Date.now().toString(),
-        ...data,
-        status: data.status || 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      return newJobWork;
+      return await legacyJobWorkService.createJobWork(data as any);
     } catch (error) {
       this.handleError('Failed to create job work', error);
       throw error;
@@ -182,13 +128,7 @@ export class JobWorksService extends BaseService {
    */
   async updateJobWork(id: string, data: Partial<CreateJobWorkData>): Promise<JobWork> {
     try {
-      const existing = await this.getJobWork(id);
-      const updated: JobWork = {
-        ...existing,
-        ...data,
-        updated_at: new Date().toISOString(),
-      };
-      return updated;
+      return await legacyJobWorkService.updateJobWork(id, data as any);
     } catch (error) {
       this.handleError(`Failed to update job work ${id}`, error);
       throw error;
@@ -200,8 +140,7 @@ export class JobWorksService extends BaseService {
    */
   async deleteJobWork(id: string): Promise<void> {
     try {
-      // Mock implementation - replace with actual API call
-      console.log(`Deleting job work ${id}`);
+      await legacyJobWorkService.deleteJobWork(id);
     } catch (error) {
       this.handleError(`Failed to delete job work ${id}`, error);
       throw error;
@@ -239,6 +178,12 @@ export class JobWorksService extends BaseService {
         overdueJobs: 0,
       };
 
+      // If no job works returned (e.g., auth error), return empty stats
+      if (!jobWorks || jobWorks.length === 0) {
+        console.warn('[JobWorksService] No job works available for statistics calculation');
+        return stats;
+      }
+
       const now = new Date();
       const thisMonth = now.getMonth();
       const thisYear = now.getFullYear();
@@ -270,8 +215,17 @@ export class JobWorksService extends BaseService {
 
       return stats;
     } catch (error) {
-      this.handleError('Failed to fetch job work statistics', error);
-      throw error;
+      console.warn('[JobWorksService] Error fetching job work statistics, returning empty stats:', error);
+      // Return empty stats instead of throwing
+      return {
+        total: 0,
+        byStatus: {},
+        byPriority: {},
+        totalCost: 0,
+        totalHours: 0,
+        completedThisMonth: 0,
+        overdueJobs: 0,
+      };
     }
   }
 

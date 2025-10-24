@@ -111,10 +111,10 @@ const DashboardLayout = () => {
     navigationSections.push({
       title: "Administration",
       items: [
-        { name: 'User Management', href: '/tenant/user-management', icon: Users, permission: 'manage_users' },
-        { name: 'Role Management', href: '/tenant/role-management', icon: Shield, permission: 'manage_roles' },
-        { name: 'Permission Matrix', href: '/tenant/permission-matrix', icon: Settings, permission: 'manage_roles' },
-        { name: 'PDF Templates', href: '/tenant/pdf-templates', icon: FileText, permission: 'manage_users' },
+        { name: 'User Management', href: '/tenant/users/list', icon: Users, permission: 'manage_users' },
+        { name: 'Role Management', href: '/tenant/users/roles', icon: Shield, permission: 'manage_roles' },
+        { name: 'Permission Matrix', href: '/tenant/users/permissions', icon: Settings, permission: 'manage_roles' },
+        { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'manage_users' },
         { name: 'Company Master', href: '/tenant/masters/companies', icon: Building, permission: 'manage_companies' },
         { name: 'Product Master', href: '/tenant/masters/products', icon: Package, permission: 'manage_products' },
         { name: 'Audit Logs', href: '/tenant/logs', icon: Activity, permission: 'manage_users' },
@@ -127,7 +127,7 @@ const DashboardLayout = () => {
     navigationSections.push({
       title: "Settings",
       items: [
-        { name: 'Configuration', href: '/tenant/configuration', icon: Settings, permission: 'manage_users' },
+        { name: 'Configuration', href: '/tenant/configuration/tenant', icon: Settings, permission: 'manage_users' },
         { name: 'Notifications', href: '/tenant/notifications', icon: Bell, permission: 'read' },
       ]
     });

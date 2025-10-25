@@ -16,6 +16,7 @@ export const contractKeys = {
   list: (filters: ContractFilters) => [...contractKeys.lists(), filters] as const,
   details: () => [...contractKeys.all, 'detail'] as const,
   detail: (id: string) => [...contractKeys.details(), id] as const,
+  byCustomer: (customerId: string) => [...contractKeys.all, 'by-customer', customerId] as const,
   stats: () => [...contractKeys.all, 'stats'] as const,
   expiring: (days: number) => [...contractKeys.all, 'expiring', days] as const,
   renewals: (days: number) => [...contractKeys.all, 'renewals', days] as const,
@@ -64,6 +65,38 @@ export const useContract = (id: string) => {
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+};
+
+/**
+ * Hook for fetching contracts by customer ID
+ */
+export const useContractsByCustomer = (customerId: string, filters: ContractFilters = {}) => {
+  const contractService = useService<ContractService>('contractService');
+
+  const query = useQuery({
+    queryKey: [...contractKeys.byCustomer(customerId), filters],
+    queryFn: () => contractService.getContractsByCustomer(customerId, filters),
+    enabled: !!customerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Extract data from paginated response and flatten for component compatibility
+  const data = query.data;
+  const contracts = data?.data || [];
+  const pagination = {
+    page: data?.page || 1,
+    pageSize: data?.pageSize || 20,
+    total: data?.total || 0,
+    totalPages: data?.totalPages || 1,
+  };
+
+  return {
+    contracts,
+    pagination,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };
 
 /**

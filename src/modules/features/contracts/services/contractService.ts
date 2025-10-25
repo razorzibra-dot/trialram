@@ -253,6 +253,36 @@ export class ContractService extends BaseService {
   }
 
   /**
+   * Get contracts by customer ID
+   */
+  async getContractsByCustomer(
+    customerId: string,
+    filters: ContractFilters = {}
+  ): Promise<PaginatedResponse<Contract>> {
+    try {
+      // Get all contracts for now - filter by customer ID
+      const response = await this.getContracts({ ...filters, pageSize: 1000 });
+      
+      // Filter contracts by customer_id
+      const customerContracts = response.data.filter(
+        (contract) => contract.customer_id === customerId || contract.customerId === customerId
+      );
+
+      const pageSize = filters.pageSize || 20;
+      return {
+        data: customerContracts,
+        total: customerContracts.length,
+        page: filters.page || 1,
+        pageSize: pageSize,
+        totalPages: Math.ceil(customerContracts.length / pageSize),
+      };
+    } catch (error) {
+      console.error(`Failed to fetch contracts for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get expiring contracts
    */
   async getExpiringContracts(days: number = 30): Promise<Contract[]> {

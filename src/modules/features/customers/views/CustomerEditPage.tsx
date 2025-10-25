@@ -37,7 +37,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '@/modules/core/components/PageHeader';
-import { useCustomer } from '../hooks/useCustomers';
+import { useCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers';
 import type { CreateCustomerData } from '../services/customerService';
 
 const { TextArea } = Input;
@@ -57,8 +57,10 @@ const CustomerEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { data: customer, isLoading, error, refetch } = useCustomer(id!);
+  const { mutateAsync: updateCustomer, isPending: isUpdating } = useUpdateCustomer();
+  const { mutateAsync: deleteCustomer, isPending: isDeleting } = useDeleteCustomer();
 
   // Mock audit trail data (replace with real API call)
   const auditTrail: AuditEntry[] = [
@@ -120,25 +122,31 @@ const CustomerEditPage: React.FC = () => {
   const handleSubmit = async (values: CreateCustomerData) => {
     if (!id) return;
 
-    setLoading(true);
     try {
-      // TODO: Implement update customer API call
-      // const customerService = new CustomerService();
-      // const updatedCustomer = await customerService.updateCustomer(id, values);
-      
-      console.log('Updating customer with data:', values);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await updateCustomer({ id, data: values });
       message.success('Customer updated successfully');
-      await refetch();
       navigate(`/tenant/customers/${id}`);
     } catch (error) {
-      message.error('Failed to update customer');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to update customer';
+      message.error(errorMsg);
       console.error('Update error:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+
+    setDeleting(true);
+    try {
+      await deleteCustomer(id);
+      message.success('Customer deleted successfully');
+      navigate('/tenant/customers');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete customer';
+      message.error(errorMsg);
+      console.error('Delete error:', error);
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
@@ -217,7 +225,7 @@ const CustomerEditPage: React.FC = () => {
       <Button
         type="primary"
         icon={<SaveOutlined />}
-        loading={loading}
+        loading={isUpdating}
         onClick={() => form.submit()}
       >
         Save Changes

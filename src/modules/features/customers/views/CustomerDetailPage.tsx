@@ -20,7 +20,9 @@ import {
   Alert,
   Tooltip,
   Popconfirm,
+  Modal,
   message,
+  Skeleton,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -40,8 +42,12 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
-import { useCustomer } from '../hooks/useCustomers';
+import { DataTabErrorBoundary } from '@/components/errors/DataTabErrorBoundary';
+import { useCustomer, useDeleteCustomer } from '../hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSalesByCustomer } from '@/modules/features/sales/hooks/useSales';
+import { useContractsByCustomer } from '@/modules/features/contracts/hooks/useContracts';
+import { useTicketsByCustomer } from '@/modules/features/tickets/hooks/useTickets';
 
 // Mock data for related entities (will be replaced with real API calls)
 interface RelatedSale {
@@ -77,75 +83,58 @@ const CustomerDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
   const { data: customer, isLoading, error, refetch } = useCustomer(id!);
+  const { mutateAsync: deleteCustomer, isPending: isDeleting } = useDeleteCustomer();
   const [activeTab, setActiveTab] = useState('overview');
-  const [deleting, setDeleting] = useState(false);
 
-  // Mock related data (replace with real API calls)
-  const relatedSales: RelatedSale[] = [
-    {
-      id: '1',
-      sale_number: 'SAL-2024-001',
-      product_name: 'Enterprise CRM License',
-      amount: 15000,
-      status: 'completed',
-      sale_date: '2024-01-15',
-    },
-    {
-      id: '2',
-      sale_number: 'SAL-2024-045',
-      product_name: 'Premium Support Package',
-      amount: 5000,
-      status: 'completed',
-      sale_date: '2024-02-20',
-    },
-  ];
+  // Fetch related data from API
+  const { data: salesData, isLoading: salesLoading, error: salesError, refetch: refetchSales } = useSalesByCustomer(id!);
+  const { contracts: relatedContracts = [], isLoading: contractsLoading, error: contractsError, refetch: refetchContracts } = useContractsByCustomer(id!);
+  const { data: ticketsData, isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTicketsByCustomer(id!);
 
-  const relatedContracts: RelatedContract[] = [
-    {
-      id: '1',
-      contract_number: 'CON-2024-001',
-      service_level: 'premium',
-      value: 25000,
-      status: 'active',
-      start_date: '2024-01-01',
-      end_date: '2024-12-31',
-    },
-  ];
+  // Transform sales data to match the RelatedSale interface
+  const relatedSales: RelatedSale[] = Array.isArray(salesData?.data) 
+    ? salesData.data.map((deal: any) => ({
+        id: deal.id,
+        sale_number: deal.id?.substring(0, 8).toUpperCase() || 'SAL-UNKNOWN',
+        product_name: deal.title || 'Untitled Deal',
+        amount: deal.value || 0,
+        status: deal.stage === 'closed_won' ? 'completed' : 'pending',
+        sale_date: deal.created_at || new Date().toISOString(),
+      }))
+    : [];
 
-  const relatedTickets: RelatedTicket[] = [
-    {
-      id: '1',
-      ticket_number: 'TKT-2024-123',
-      subject: 'Login issue',
-      priority: 'high',
-      status: 'open',
-      created_at: '2024-03-15',
-    },
-    {
-      id: '2',
-      ticket_number: 'TKT-2024-089',
-      subject: 'Feature request',
-      priority: 'medium',
-      status: 'resolved',
-      created_at: '2024-02-28',
-    },
-  ];
+  // Transform tickets data to match the RelatedTicket interface
+  const relatedTickets: RelatedTicket[] = Array.isArray(ticketsData?.data)
+    ? ticketsData.data.map((ticket: any) => ({
+        id: ticket.id,
+        ticket_number: ticket.id?.substring(0, 8).toUpperCase() || 'TKT-UNKNOWN',
+        subject: ticket.title || ticket.subject || 'Untitled Ticket',
+        priority: ticket.priority || 'medium',
+        status: ticket.status || 'open',
+        created_at: ticket.created_at || new Date().toISOString(),
+      }))
+    : [];
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return;
-    
-    setDeleting(true);
-    try {
-      // TODO: Implement delete customer API call
-      // await customerService.deleteCustomer(id);
-      message.success('Customer deleted successfully');
-      navigate('/tenant/customers');
-    } catch (error) {
-      message.error('Failed to delete customer');
-      console.error('Delete error:', error);
-    } finally {
-      setDeleting(false);
-    }
+
+    Modal.confirm({
+      title: 'Delete Customer',
+      content: `Are you sure you want to delete "${customer?.company_name}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await deleteCustomer(id);
+          message.success('Customer deleted successfully');
+          navigate('/tenant/customers');
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Failed to delete customer';
+          message.error(errorMsg);
+          console.error('Delete error:', error);
+        }
+      },
+    });
   };
 
   const getStatusTag = (status: string) => {
@@ -609,22 +598,37 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card variant="borderless">
-          <Table
-            columns={salesColumns}
-            dataSource={relatedSales}
-            rowKey="id"
-            pagination={false}
-            locale={{
-              emptyText: (
-                <Empty
-                  description="No sales found for this customer"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ),
-            }}
-          />
-        </Card>
+        <DataTabErrorBoundary tabName="Sales" onRetry={() => refetchSales()}>
+          <Card variant="borderless">
+            {salesError && (
+              <Alert
+                message="Error Loading Sales"
+                description={salesError instanceof Error ? salesError.message : 'Failed to load sales data'}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            {salesLoading ? (
+              <Skeleton active paragraph={{ rows: 4 }} />
+            ) : (
+              <Table
+                columns={salesColumns}
+                dataSource={relatedSales}
+                rowKey="id"
+                pagination={false}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="No sales found for this customer"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ),
+                }}
+              />
+            )}
+          </Card>
+        </DataTabErrorBoundary>
       ),
     },
     {
@@ -635,22 +639,37 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card variant="borderless">
-          <Table
-            columns={contractsColumns}
-            dataSource={relatedContracts}
-            rowKey="id"
-            pagination={false}
-            locale={{
-              emptyText: (
-                <Empty
-                  description="No contracts found for this customer"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ),
-            }}
-          />
-        </Card>
+        <DataTabErrorBoundary tabName="Contracts" onRetry={() => refetchContracts()}>
+          <Card variant="borderless">
+            {contractsError && (
+              <Alert
+                message="Error Loading Contracts"
+                description={contractsError instanceof Error ? contractsError.message : 'Failed to load contracts data'}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            {contractsLoading ? (
+              <Skeleton active paragraph={{ rows: 4 }} />
+            ) : (
+              <Table
+                columns={contractsColumns}
+                dataSource={relatedContracts}
+                rowKey="id"
+                pagination={false}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="No contracts found for this customer"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ),
+                }}
+              />
+            )}
+          </Card>
+        </DataTabErrorBoundary>
       ),
     },
     {
@@ -661,22 +680,37 @@ const CustomerDetailPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Card variant="borderless">
-          <Table
-            columns={ticketsColumns}
-            dataSource={relatedTickets}
-            rowKey="id"
-            pagination={false}
-            locale={{
-              emptyText: (
-                <Empty
-                  description="No support tickets found for this customer"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ),
-            }}
-          />
-        </Card>
+        <DataTabErrorBoundary tabName="Support Tickets" onRetry={refetchTickets}>
+          <Card variant="borderless">
+            {ticketsError && (
+              <Alert
+                message="Error Loading Tickets"
+                description={ticketsError instanceof Error ? ticketsError.message : 'Failed to load tickets data'}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            {ticketsLoading ? (
+              <Skeleton active paragraph={{ rows: 4 }} />
+            ) : (
+              <Table
+                columns={ticketsColumns}
+                dataSource={relatedTickets}
+                rowKey="id"
+                pagination={false}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="No support tickets found for this customer"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ),
+                }}
+              />
+            )}
+          </Card>
+        </DataTabErrorBoundary>
       ),
     },
   ];

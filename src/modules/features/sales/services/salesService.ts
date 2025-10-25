@@ -219,6 +219,36 @@ export class SalesService extends BaseService {
   }
 
   /**
+   * Get deals by customer ID
+   */
+  async getDealsByCustomer(
+    customerId: string,
+    filters: SalesFilters = {}
+  ): Promise<PaginatedResponse<Deal>> {
+    try {
+      // Get all deals for now - filter by customer ID
+      const response = await this.getDeals({ ...filters, pageSize: 1000 });
+      
+      // Filter deals by customer_id
+      const customerDeals = response.data.filter(
+        (deal) => deal.customer_id === customerId || deal.customerId === customerId
+      );
+
+      const pageSize = filters.pageSize || 20;
+      return {
+        data: customerDeals,
+        total: customerDeals.length,
+        page: filters.page || 1,
+        pageSize: pageSize,
+        totalPages: Math.ceil(customerDeals.length / pageSize),
+      };
+    } catch (error) {
+      console.error(`Failed to fetch deals for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Search deals
    */
   async searchDeals(query: string): Promise<Deal[]> {

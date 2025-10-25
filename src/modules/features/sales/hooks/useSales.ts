@@ -16,6 +16,7 @@ export const salesKeys = {
   all: ['sales'] as const,
   deals: () => [...salesKeys.all, 'deals'] as const,
   deal: (id: string) => [...salesKeys.deals(), id] as const,
+  dealsByCustomer: (customerId: string) => [...salesKeys.all, 'deals-by-customer', customerId] as const,
   stats: () => [...salesKeys.all, 'stats'] as const,
   stages: () => [...salesKeys.all, 'stages'] as const,
 };
@@ -66,6 +67,24 @@ export const useDeal = (id: string) => {
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Hook for fetching deals by customer ID
+ */
+export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {}) => {
+  const salesService = useService<SalesService>('salesService');
+
+  return useQuery({
+    queryKey: [...salesKeys.dealsByCustomer(customerId), filters],
+    queryFn: async () => {
+      const response = await salesService.getDealsByCustomer(customerId, filters);
+      return response;
+    },
+    enabled: !!customerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 

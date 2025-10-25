@@ -16,6 +16,7 @@ export const ticketKeys = {
   all: ['tickets'] as const,
   tickets: () => [...ticketKeys.all, 'tickets'] as const,
   ticket: (id: string) => [...ticketKeys.tickets(), id] as const,
+  byCustomer: (customerId: string) => [...ticketKeys.all, 'by-customer', customerId] as const,
   stats: () => [...ticketKeys.all, 'stats'] as const,
   statuses: () => [...ticketKeys.all, 'statuses'] as const,
   priorities: () => [...ticketKeys.all, 'priorities'] as const,
@@ -63,6 +64,24 @@ export const useTicket = (id: string) => {
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Hook for fetching tickets by customer ID
+ */
+export const useTicketsByCustomer = (customerId: string, filters: TicketFilters = {}) => {
+  const ticketService = useService<TicketService>('ticketService');
+
+  return useQuery({
+    queryKey: [...ticketKeys.byCustomer(customerId), filters],
+    queryFn: async () => {
+      const response = await ticketService.getTicketsByCustomer(customerId, filters);
+      return response;
+    },
+    enabled: !!customerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 

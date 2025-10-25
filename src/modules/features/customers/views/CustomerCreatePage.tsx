@@ -3,7 +3,7 @@
  * Comprehensive form for creating new customers
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -30,6 +30,7 @@ import {
   DollarOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '@/modules/core/components/PageHeader';
+import { useCreateCustomer } from '../hooks/useCustomers';
 import type { CreateCustomerData } from '../services/customerService';
 
 const { TextArea } = Input;
@@ -38,27 +39,17 @@ const { Option } = Select;
 const CustomerCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+  const { mutateAsync: createCustomer, isPending } = useCreateCustomer();
 
   const handleSubmit = async (values: CreateCustomerData) => {
-    setLoading(true);
     try {
-      // TODO: Implement create customer API call
-      // const customerService = new CustomerService();
-      // const newCustomer = await customerService.createCustomer(values);
-      
-      console.log('Creating customer with data:', values);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const newCustomer = await createCustomer(values);
       message.success('Customer created successfully');
-      navigate('/tenant/customers');
+      navigate(`/tenant/customers/${newCustomer.id}`);
     } catch (error) {
-      message.error('Failed to create customer');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to create customer';
+      message.error(errorMsg);
       console.error('Create error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -80,7 +71,7 @@ const CustomerCreatePage: React.FC = () => {
       <Button
         type="primary"
         icon={<SaveOutlined />}
-        loading={loading}
+        loading={isPending}
         onClick={() => form.submit()}
       >
         Create Customer

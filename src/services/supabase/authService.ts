@@ -487,21 +487,30 @@ export class SupabaseAuthService extends BaseSupabaseService {
 
   /**
    * Check if user has a specific permission (synchronous with fallback)
+   * Supports both generic permissions (manage_customers, read, write, delete)
+   * and resource-specific permissions (customers:update, customers:delete, customers:create)
    */
   hasPermission(permission: string): boolean {
     try {
       const userStr = localStorage.getItem('sb_current_user');
-      if (!userStr) return false;
+      if (!userStr) {
+        console.warn('[Supabase hasPermission] No user found');
+        return false;
+      }
       
       const user = JSON.parse(userStr) as User;
       
       // Super admin has all permissions
-      if (user.role === 'super_admin') return true;
+      if (user.role === 'super_admin') {
+        console.log('[Supabase hasPermission] User is super_admin, granting all permissions');
+        return true;
+      }
       
       // Define role-based permissions (fallback when DB not available)
       const rolePermissions: Record<string, string[]> = {
         super_admin: ['*'],
         admin: [
+          'read', 'write', 'delete',  // Generic permissions
           'view_dashboard',
           'manage_users',
           'manage_customers',
@@ -516,6 +525,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'export_data',
         ],
         manager: [
+          'read', 'write',  // Generic permissions
           'view_dashboard',
           'view_customers',
           'create_customers',
@@ -532,6 +542,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'manage_complaints',
         ],
         agent: [
+          'read', 'write',  // Generic permissions
           'view_dashboard',
           'view_customers',
           'create_customers',
@@ -543,6 +554,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'manage_complaints',
         ],
         engineer: [
+          'read', 'write',  // Generic permissions
           'view_dashboard',
           'view_tickets',
           'edit_tickets',
@@ -550,11 +562,13 @@ export class SupabaseAuthService extends BaseSupabaseService {
           'manage_product_sales',
         ],
         customer: [
+          'read',  // Generic read permission
           'view_dashboard',
           'view_own_tickets',
           'create_tickets',
         ],
         viewer: [
+          'read',  // Generic read permission
           'view_dashboard',
           'view_customers',
           'view_sales',
@@ -564,10 +578,57 @@ export class SupabaseAuthService extends BaseSupabaseService {
       };
       
       const userPermissions = rolePermissions[user.role] || [];
+      console.log(`[Supabase hasPermission] Checking permission "${permission}" for user role "${user.role}". User permissions:`, userPermissions);
       
-      // Check if user has specific permission
-      return userPermissions.includes('*') || userPermissions.includes(permission);
-    } catch {
+      // Check for wildcard permission (super admin)
+      if (userPermissions.includes('*')) {
+        console.log(`[Supabase hasPermission] User has wildcard permission, granting access`);
+        return true;
+      }
+      
+      // Check if user has specific permission (direct match)
+      if (userPermissions.includes(permission)) {
+        console.log(`[Supabase hasPermission] Direct match found for "${permission}"`);
+        return true;
+      }
+
+      // Handle resource-specific permission format (e.g., "customers:read", "customers.update", "customers:delete")
+      // Parse the permission string to extract resource and action
+      const separator = permission.includes(':') ? ':' : '.';
+      const [resource, action] = permission.split(separator);
+      
+      if (resource && action) {
+        // Map action to generic permission
+        const actionPermissionMap: Record<string, string> = {
+          'read': 'read',
+          'create': 'write',
+          'update': 'write',
+          'delete': 'delete',
+          'manage': `manage_${resource}`
+        };
+
+        const mappedPermission = actionPermissionMap[action];
+        console.log(`[Supabase hasPermission] Parsed: resource="${resource}", action="${action}", mappedPermission="${mappedPermission}"`);
+        
+        // Check if user has the generic permission
+        if (mappedPermission && userPermissions.includes(mappedPermission)) {
+          console.log(`[Supabase hasPermission] User has mapped permission "${mappedPermission}", granting access`);
+          return true;
+        }
+
+        // Check if user has the resource-specific manage permission
+        const managePermission = `manage_${resource}`;
+        if (userPermissions.includes(managePermission)) {
+          // User can manage this resource, so they can do most operations
+          console.log(`[Supabase hasPermission] User has manage permission "${managePermission}", granting access`);
+          return true;
+        }
+      }
+
+      console.warn(`[Supabase hasPermission] No matching permission found for "${permission}"`);
+      return false;
+    } catch (error) {
+      console.error('[Supabase hasPermission] Error:', error);
       return false;
     }
   }

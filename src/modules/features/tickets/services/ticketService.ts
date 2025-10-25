@@ -247,6 +247,36 @@ export class TicketService extends BaseService {
   }
 
   /**
+   * Get tickets by customer ID
+   */
+  async getTicketsByCustomer(
+    customerId: string,
+    filters: TicketFilters = {}
+  ): Promise<PaginatedResponse<Ticket>> {
+    try {
+      // Get all tickets for now - filter by customer ID
+      const response = await this.getTickets({ ...filters, pageSize: 1000 });
+      
+      // Filter tickets by customer_id
+      const customerTickets = response.data.filter(
+        (ticket) => ticket.customer_id === customerId || ticket.customerId === customerId
+      );
+
+      const pageSize = filters.pageSize || 20;
+      return {
+        data: customerTickets,
+        total: customerTickets.length,
+        page: filters.page || 1,
+        pageSize: pageSize,
+        totalPages: Math.ceil(customerTickets.length / pageSize),
+      };
+    } catch (error) {
+      console.error(`Failed to fetch tickets for customer ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Search tickets
    */
   async searchTickets(query: string): Promise<Ticket[]> {

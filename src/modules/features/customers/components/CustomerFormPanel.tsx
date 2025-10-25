@@ -4,9 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, Checkbox } from 'antd';
+import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, Checkbox, Spin } from 'antd';
 import { Customer } from '@/types/crm';
 import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
+import { useIndustries } from '../hooks/useIndustries';
+import { useCompanySizes } from '../hooks/useCompanySizes';
+import { useActiveUsers } from '../hooks/useUsers';
 
 interface CustomerFormPanelProps {
   visible: boolean;
@@ -26,7 +29,13 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
 
+  // Fetch dynamic dropdown data
+  const { data: industries = [], isLoading: industriesLoading } = useIndustries();
+  const { data: companySizes = [], isLoading: sizesLoading } = useCompanySizes();
+  const { data: users = [], isLoading: usersLoading } = useActiveUsers();
+
   const isEditMode = !!customer;
+  const isLoadingDropdowns = industriesLoading || sizesLoading || usersLoading;
 
   useEffect(() => {
     if (visible && customer) {
@@ -144,6 +153,24 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           </Select>
         </Form.Item>
 
+        <Form.Item
+          label="Assigned To"
+          name="assignedTo"
+        >
+          <Select 
+            placeholder="Select user (optional)"
+            loading={usersLoading}
+            disabled={usersLoading}
+            allowClear
+          >
+            {users.map(user => (
+              <Select.Option key={user.id} value={user.id}>
+                {user.firstName} {user.lastName}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
         {/* Business Information */}
         <div style={{ marginTop: 24, marginBottom: 16 }}>
           <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Business Information</h3>
@@ -153,13 +180,16 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           label="Industry"
           name="industry"
         >
-          <Select placeholder="Select industry">
-            <Select.Option value="Technology">Technology</Select.Option>
-            <Select.Option value="Finance">Finance</Select.Option>
-            <Select.Option value="Retail">Retail</Select.Option>
-            <Select.Option value="Healthcare">Healthcare</Select.Option>
-            <Select.Option value="Manufacturing">Manufacturing</Select.Option>
-            <Select.Option value="Other">Other</Select.Option>
+          <Select 
+            placeholder="Select industry"
+            loading={industriesLoading}
+            disabled={industriesLoading}
+          >
+            {industries.map(industry => (
+              <Select.Option key={industry.id} value={industry.name}>
+                {industry.name}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
 
@@ -167,11 +197,16 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           label="Company Size"
           name="size"
         >
-          <Select placeholder="Select company size">
-            <Select.Option value="startup">Startup</Select.Option>
-            <Select.Option value="small">Small</Select.Option>
-            <Select.Option value="medium">Medium</Select.Option>
-            <Select.Option value="enterprise">Enterprise</Select.Option>
+          <Select 
+            placeholder="Select company size"
+            loading={sizesLoading}
+            disabled={sizesLoading}
+          >
+            {companySizes.map(size => (
+              <Select.Option key={size.id} value={size.name}>
+                {size.name}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
 

@@ -347,9 +347,9 @@ class AuthService {
       const user: User = {
         id: appUser.id,
         email: appUser.email,
-        name: `${appUser.firstName} ${appUser.lastName}`,
-        firstName: appUser.firstName,
-        lastName: appUser.lastName,
+        name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
+        firstName: appUser.first_name || '',
+        lastName: appUser.last_name || '',
         role: appUser.role,
         tenantId: appUser.tenant_id,
         tenant_id: appUser.tenant_id,
@@ -419,14 +419,14 @@ class AuthService {
       const user: User = {
         id: appUser.id,
         email: appUser.email,
-        name: `${appUser.firstName} ${appUser.lastName}`,
-        firstName: appUser.firstName,
-        lastName: appUser.lastName,
+        name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
+        firstName: appUser.first_name || '',
+        lastName: appUser.last_name || '',
         role: appUser.role,
         tenantId: appUser.tenant_id,
         tenant_id: appUser.tenant_id,
         createdAt: appUser.created_at,
-        lastLogin: appUser.lastLogin,
+        lastLogin: appUser.last_login,
       };
 
       localStorage.setItem(this.userKey, JSON.stringify(user));
@@ -439,7 +439,11 @@ class AuthService {
 
   getCurrentUser(): User | null {
     const userStr = localStorage.getItem(this.userKey);
-    return userStr ? JSON.parse(userStr) : null;
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (user) {
+      console.log('[getCurrentUser] User:', { id: user.id, email: user.email, role: user.role, name: user.name });
+    }
+    return user;
   }
 
   getToken(): string | null {
@@ -464,13 +468,70 @@ class AuthService {
 
   hasPermission(permission: string): boolean {
     const user = this.getCurrentUser();
-    if (!user) return false;
+    if (!user) {
+      console.warn('[hasPermission] No user found');
+      return false;
+    }
 
     // Super admin has all permissions
-    if (user.role === 'super_admin') return true;
+    if (user.role === 'super_admin') {
+      console.log('[hasPermission] User is super_admin, granting all permissions');
+      return true;
+    }
 
-    const userPermissions = this.rolePermissions[user.role] || [];
-    return userPermissions.includes(permission);
+    // FIX: Ensure role is properly set - if role is empty or invalid, default to checking the role field
+    const userRole = user.role || user.role;
+    if (!userRole) {
+      console.warn('[hasPermission] User role is not set, denying access');
+      return false;
+    }
+
+    const userPermissions = this.rolePermissions[userRole] || [];
+    console.log(`[hasPermission] Checking permission "${permission}" for user role "${userRole}". User permissions:`, userPermissions);
+    
+    // Direct permission check (for legacy permission names like 'read', 'write', 'delete')
+    if (userPermissions.includes(permission)) {
+      console.log(`[hasPermission] Direct match found for "${permission}"`);
+      return true;
+    }
+
+    // Handle resource-specific permission format (e.g., "customers:read", "customers:update", "customers:delete")
+    // Parse the permission string to extract resource and action
+    const separator = permission.includes(':') ? ':' : '.';
+    const parts = permission.split(separator);
+    
+    if (parts.length === 2) {
+      const [resource, action] = parts;
+      
+      // Map action to generic permission
+      const actionPermissionMap: Record<string, string> = {
+        'read': 'read',
+        'create': 'write',
+        'update': 'write',
+        'delete': 'delete',
+        'manage': `manage_${resource}`
+      };
+
+      const mappedPermission = actionPermissionMap[action];
+      console.log(`[hasPermission] Parsed: resource="${resource}", action="${action}", mappedPermission="${mappedPermission}"`);
+      
+      // Check if user has the generic permission
+      if (mappedPermission && userPermissions.includes(mappedPermission)) {
+        console.log(`[hasPermission] User has mapped permission "${mappedPermission}", granting access`);
+        return true;
+      }
+
+      // Check if user has the resource-specific manage permission
+      const managePermission = `manage_${resource}`;
+      if (userPermissions.includes(managePermission)) {
+        // User can manage this resource, so they can do most operations
+        console.log(`[hasPermission] User has manage permission "${managePermission}", granting access`);
+        return true;
+      }
+    }
+
+    console.warn(`[hasPermission] No matching permission found for "${permission}". User role: "${userRole}", User permissions: ${JSON.stringify(userPermissions)}`);
+    return false;
   }
 
   isSuperAdmin(): boolean {

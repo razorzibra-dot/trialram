@@ -142,8 +142,7 @@ export class SupabaseNotificationService extends BaseSupabaseService {
             title: data.title,
             message: data.message,
             data: data.data,
-            read: false,
-            is_read: false, // Ensure both are set for backward compatibility
+            is_read: false, // Use is_read only - primary field for read status
             action_url: data.action_url,
             action_label: data.action_label,
             category: data.category,
@@ -182,8 +181,7 @@ export class SupabaseNotificationService extends BaseSupabaseService {
             title: n.title,
             message: n.message,
             data: n.data,
-            read: false,
-            is_read: false, // Ensure both are set for backward compatibility
+            is_read: false, // Use is_read only - primary field for read status
             action_url: n.action_url,
             action_label: n.action_label,
             category: n.category,

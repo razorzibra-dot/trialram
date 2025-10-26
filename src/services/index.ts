@@ -202,7 +202,7 @@ const mapSale = (s: any): Sale => {
     next_activity_date: String(saleData.next_activity_date || ''),
     assigned_to: s.assignedTo || s.assigned_to || '',
     assigned_to_name: s.assignedUser?.name || s.assigned_to_name || '',
-    notes: s.description || s.notes || '',
+    notes: s.notes || '',
     tags: Array.isArray(saleData.tags) ? (saleData.tags as string[]) : [],
     competitor_info: String(saleData.competitor_info || ''),
     // Handle both products array (camelCase) and items array (snake_case)

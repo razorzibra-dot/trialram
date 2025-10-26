@@ -7,6 +7,7 @@
 import { BaseSupabaseService } from './baseService';
 import { getSupabaseClient } from './client';
 import { Sale, Deal } from '@/types/crm';
+import { SupabaseNotificationService, Notification } from './notificationService';
 
 export interface SalesFilters {
   status?: string;
@@ -18,8 +19,90 @@ export interface SalesFilters {
 }
 
 export class SupabaseSalesService extends BaseSupabaseService {
+  private notificationService: SupabaseNotificationService;
+
   constructor() {
     super('sales', true);
+    this.notificationService = new SupabaseNotificationService();
+  }
+
+  /**
+   * Helper method to get current user's tenant_id
+   */
+  private async getCurrentUserTenantId(): Promise<string | null> {
+    try {
+      const supabase = getSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Try JWT claims first
+        const tenantFromJwt = (user.user_metadata?.tenant_id || 
+                              (user as any).app_metadata?.tenant_id);
+        if (tenantFromJwt) return tenantFromJwt;
+        
+        // Fall back to users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('tenant_id')
+          .eq('id', user.id)
+          .single();
+        return userData?.tenant_id || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting current user tenant:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper method to get current user ID
+   */
+  private async getCurrentUserId(): Promise<string | null> {
+    try {
+      const supabase = getSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.id || null;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a notification for a sales operation
+   */
+  private async createSalesNotification(
+    type: 'info' | 'success' | 'warning' | 'error',
+    title: string,
+    message: string,
+    saleId?: string
+  ): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      const tenantId = await this.getCurrentUserTenantId();
+      
+      if (!userId || !tenantId) {
+        this.log('Skipping notification: missing user or tenant', { userId, tenantId });
+        return;
+      }
+
+      await this.notificationService.createNotification({
+        user_id: userId,
+        type,
+        title,
+        message,
+        category: 'sales',
+        action_url: saleId ? `/sales/${saleId}` : undefined,
+        action_label: saleId ? 'View Sale' : undefined,
+        tenant_id: tenantId,
+      } as Partial<Notification>);
+
+      this.log('Sales notification created', { type, title });
+    } catch (error) {
+      this.logError('Failed to create sales notification', error);
+      // Don't throw - continue even if notification fails
+    }
   }
 
   /**
@@ -105,6 +188,38 @@ export class SupabaseSalesService extends BaseSupabaseService {
     try {
       this.log('Creating sale', { customer_id: data.customer_id });
 
+      // Extract items if provided
+      const items = data.items;
+
+      // Get current user's tenant_id for RLS compliance
+      const supabase = getSupabaseClient();
+      let tenantId = data.tenant_id;
+      
+      if (!tenantId) {
+        // Get current user's tenant from auth session
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Try to get tenant_id from JWT claims first
+          const tenantFromJwt = (user.user_metadata?.tenant_id || 
+                                 (user as any).app_metadata?.tenant_id);
+          if (tenantFromJwt) {
+            tenantId = tenantFromJwt;
+          } else {
+            // Fall back to querying users table
+            const { data: userData } = await supabase
+              .from('users')
+              .select('tenant_id')
+              .eq('id', user.id)
+              .single();
+            tenantId = userData?.tenant_id;
+          }
+        }
+        
+        if (!tenantId) {
+          throw new Error('Cannot determine tenant_id for current user');
+        }
+      }
+
       const { data: created, error } = await getSupabaseClient()
         .from('sales')
         .insert([
@@ -122,7 +237,10 @@ export class SupabaseSalesService extends BaseSupabaseService {
             actual_close_date: data.actual_close_date,
             assigned_to: data.assigned_to,
             notes: data.notes,
-            tenant_id: data.tenant_id,
+            source: data.source,
+            campaign: data.campaign,
+            tags: data.tags,
+            tenant_id: tenantId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -136,8 +254,48 @@ export class SupabaseSalesService extends BaseSupabaseService {
 
       if (error) throw error;
 
+      // Handle sale items if provided
+      if (items && Array.isArray(items) && items.length > 0 && created) {
+        console.log('⏳ [SUPABASE] Creating sale items for new sale...');
+        try {
+          const itemsToInsert = items.map((item: any) => ({
+            sale_id: created.id,
+            product_id: item.product_id || null,
+            product_name: item.product_name,
+            product_description: item.product_description || null,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount: item.discount || 0,
+            tax: item.tax || 0,
+            line_total: item.line_total,
+          }));
+
+          const { error: insertError } = await getSupabaseClient()
+            .from('sale_items')
+            .insert(itemsToInsert);
+
+          if (insertError) {
+            console.warn('⚠️ [SUPABASE] Warning: Could not insert items:', insertError.message);
+          } else {
+            console.log('🔄 [SUPABASE] Created sale items:', itemsToInsert.length);
+          }
+        } catch (itemError) {
+          console.warn('⚠️ [SUPABASE] Warning: Error creating items, continuing:', itemError);
+        }
+      }
+
       this.log('Sale created successfully', { id: created.id });
-      return this.mapSaleResponse(created);
+      
+      // Create notification for sale creation
+      const mappedSale = this.mapSaleResponse(created);
+      await this.createSalesNotification(
+        'success',
+        'Sale Created',
+        `New sale "${data.title || 'Untitled'}" has been created successfully`,
+        created.id
+      );
+      
+      return mappedSale;
     } catch (error) {
       this.logError('Error creating sale', error);
       throw error;
@@ -146,40 +304,169 @@ export class SupabaseSalesService extends BaseSupabaseService {
 
   /**
    * Update sale
+   * Sanitizes data to exclude undefined/null/empty values to prevent "invalid input syntax for type uuid" errors
    */
   async updateSale(id: string, updates: Partial<Sale>): Promise<Sale> {
     try {
-      this.log('Updating sale', { id });
+      this.log('Updating sale', { id, updatesKeys: Object.keys(updates) });
 
-      const { data, error } = await getSupabaseClient()
+      // Helper to check if a value is valid (not undefined, null, or empty string)
+      const isValidValue = (val: unknown): boolean => {
+        return val !== undefined && val !== null && val !== '';
+      };
+
+      // Build update object, excluding invalid values to prevent PostgreSQL UUID errors
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include fields that have actual values
+      if (isValidValue(updates.title)) updatePayload.title = updates.title;
+      if (isValidValue(updates.description)) updatePayload.description = updates.description;
+      if (isValidValue(updates.value)) updatePayload.value = updates.value;
+      if (isValidValue(updates.probability)) updatePayload.probability = updates.probability;
+      if (isValidValue(updates.stage)) updatePayload.stage = updates.stage;
+      if (isValidValue(updates.status)) updatePayload.status = updates.status;
+      if (isValidValue(updates.expected_close_date)) updatePayload.expected_close_date = updates.expected_close_date;
+      if (isValidValue(updates.actual_close_date)) updatePayload.actual_close_date = updates.actual_close_date;
+      if (isValidValue(updates.assigned_to)) updatePayload.assigned_to = updates.assigned_to;
+      if (isValidValue(updates.notes)) updatePayload.notes = updates.notes;
+      if (isValidValue(updates.customer_id)) updatePayload.customer_id = updates.customer_id;
+      if (isValidValue(updates.source)) updatePayload.source = updates.source;
+      if (isValidValue(updates.campaign)) updatePayload.campaign = updates.campaign;
+      if (isValidValue(updates.tags)) updatePayload.tags = updates.tags;
+
+      this.log('Update payload prepared', updatePayload);
+      console.log('🔄 [SUPABASE] Making updateSale request:', { id, payload: updatePayload });
+
+      // STEP 1: Do the update (simpler query, less likely to hang)
+      console.log('⏳ [SUPABASE] Executing update operation...');
+      const { error: updateError } = await getSupabaseClient()
         .from('sales')
-        .update({
-          title: updates.title,
-          description: updates.description,
-          value: updates.value,
-          probability: updates.probability,
-          stage: updates.stage,
-          status: updates.status,
-          expected_close_date: updates.expected_close_date,
-          actual_close_date: updates.actual_close_date,
-          assigned_to: updates.assigned_to,
-          notes: updates.notes,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
+        .update(updatePayload)
+        .eq('id', id);
+
+      console.log('🔄 [SUPABASE] Update operation response:', { updateError });
+
+      if (updateError) {
+        console.error('❌ [SUPABASE] Update error detail:', {
+          message: updateError.message,
+          code: updateError.code,
+          details: updateError.details,
+          hint: updateError.hint,
+          fullError: updateError
+        });
+        throw updateError;
+      }
+
+      // STEP 1.5: Handle sale items update if provided
+      if (updates.items && Array.isArray(updates.items) && updates.items.length > 0) {
+        console.log('⏳ [SUPABASE] Updating sale items...');
+        try {
+          // Delete existing items for this sale
+          const { error: deleteError } = await getSupabaseClient()
+            .from('sale_items')
+            .delete()
+            .eq('sale_id', id);
+
+          if (deleteError) {
+            console.warn('⚠️ [SUPABASE] Warning: Could not delete old items:', deleteError.message);
+          } else {
+            console.log('🔄 [SUPABASE] Deleted existing sale items');
+          }
+
+          // Insert new items
+          const itemsToInsert = updates.items.map((item: any) => ({
+            sale_id: id,
+            product_id: item.product_id || null,
+            product_name: item.product_name,
+            product_description: item.product_description || null,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount: item.discount || 0,
+            tax: item.tax || 0,
+            line_total: item.line_total,
+          }));
+
+          const { error: insertError } = await getSupabaseClient()
+            .from('sale_items')
+            .insert(itemsToInsert);
+
+          if (insertError) {
+            console.warn('⚠️ [SUPABASE] Warning: Could not insert new items:', insertError.message);
+          } else {
+            console.log('🔄 [SUPABASE] Inserted new sale items:', itemsToInsert.length);
+          }
+        } catch (itemError) {
+          console.warn('⚠️ [SUPABASE] Warning: Error handling sale items, continuing:', itemError);
+        }
+      } else if (updates.items !== undefined && (!Array.isArray(updates.items) || updates.items.length === 0)) {
+        // If items is explicitly provided but empty, delete all items for this sale
+        console.log('⏳ [SUPABASE] Clearing sale items...');
+        try {
+          const { error: deleteError } = await getSupabaseClient()
+            .from('sale_items')
+            .delete()
+            .eq('sale_id', id);
+
+          if (!deleteError) {
+            console.log('🔄 [SUPABASE] Cleared sale items');
+          }
+        } catch (itemError) {
+          console.warn('⚠️ [SUPABASE] Warning: Error clearing items:', itemError);
+        }
+      }
+
+      // STEP 2: Fetch the updated record separately (more reliable)
+      console.log('⏳ [SUPABASE] Fetching updated record...');
+      const { data, error: fetchError } = await getSupabaseClient()
+        .from('sales')
         .select(
           `*,
           customer:customers(*),
           items:sale_items(*)`
         )
+        .eq('id', id)
         .single();
 
-      if (error) throw error;
+      console.log('🔄 [SUPABASE] Fetch response:', { data, error: fetchError });
 
-      this.log('Sale updated successfully', { id });
-      return this.mapSaleResponse(data);
+      if (fetchError) {
+        console.error('❌ [SUPABASE] Fetch error detail:', {
+          message: fetchError.message,
+          code: fetchError.code,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          fullError: fetchError
+        });
+        throw fetchError;
+      }
+
+      if (!data) {
+        console.warn('⚠️ [SUPABASE] Fetch returned no data');
+        throw new Error('Fetch returned no data after update');
+      }
+
+      this.log('Sale updated successfully', { id, returnedId: data.id });
+      
+      // Create notification for sale update
+      const mappedSale = this.mapSaleResponse(data);
+      const updateSummary = Object.entries(updates)
+        .filter(([_, v]) => v !== undefined && v !== null)
+        .map(([k]) => k)
+        .join(', ');
+      
+      await this.createSalesNotification(
+        'info',
+        'Sale Updated',
+        `Sale "${data.title || 'Untitled'}" has been updated${updateSummary ? ': ' + updateSummary : ''}`,
+        data.id
+      );
+      
+      return mappedSale;
     } catch (error) {
       this.logError('Error updating sale', error);
+      console.error('❌ [SUPABASE] UpdateSale exception:', error);
       throw error;
     }
   }
@@ -191,6 +478,10 @@ export class SupabaseSalesService extends BaseSupabaseService {
     try {
       this.log('Deleting sale', { id });
 
+      // Fetch sale before deletion to get its title for notification
+      const sale = await this.getSale(id);
+      const saleTitle = sale?.title || 'Untitled';
+
       const { error } = await getSupabaseClient()
         .from('sales')
         .update({ deleted_at: new Date().toISOString() })
@@ -199,6 +490,13 @@ export class SupabaseSalesService extends BaseSupabaseService {
       if (error) throw error;
 
       this.log('Sale deleted successfully', { id });
+
+      // Create notification for sale deletion
+      await this.createSalesNotification(
+        'warning',
+        'Sale Deleted',
+        `Sale "${saleTitle}" has been deleted`
+      );
     } catch (error) {
       this.logError('Error deleting sale', error);
       throw error;
@@ -304,10 +602,20 @@ export class SupabaseSalesService extends BaseSupabaseService {
     try {
       this.log('Updating sale stage', { id, newStage });
 
-      return this.updateSale(id, {
+      const updatedSale = await this.updateSale(id, {
         stage: newStage as Sale['stage'],
         notes: notes || undefined,
       } as any);
+
+      // Create a more specific notification for stage changes
+      await this.createSalesNotification(
+        'success',
+        'Sale Stage Updated',
+        `Sale "${updatedSale.title || 'Untitled'}" has moved to ${newStage}`,
+        id
+      );
+
+      return updatedSale;
     } catch (error) {
       this.logError('Error updating sale stage', error);
       throw error;

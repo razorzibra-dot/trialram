@@ -147,7 +147,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'title',
       header: 'Deal Title',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return (
           <div className="font-medium">
@@ -165,7 +165,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'customer_name',
       header: 'Customer',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return deal.customer_name || <span className="text-gray-400">Unassigned</span>;
       },
@@ -174,7 +174,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'value',
       header: 'Value',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return formatCurrency(deal.value || 0);
       },
@@ -183,7 +183,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'stage',
       header: 'Stage',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return (
           <div className="space-y-2">
@@ -198,9 +198,9 @@ export const SalesList: React.FC<SalesListProps> = ({
     },
     {
       key: 'assigned_to_name',
-      header: 'Assigned To',
+      header: 'Owner',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return deal.assigned_to_name || <span className="text-gray-400">Unassigned</span>;
       },
@@ -209,7 +209,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       key: 'expected_close_date',
       header: 'Expected Close',
       sortable: true,
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         if (!deal.expected_close_date) return <span className="text-gray-400">N/A</span>;
         try {
@@ -220,14 +220,69 @@ export const SalesList: React.FC<SalesListProps> = ({
       },
     },
     {
+      key: 'items',
+      header: 'Product',
+      render: (_: unknown, deal: Deal | undefined) => {
+        if (!deal || !deal.items || deal.items.length === 0) {
+          return <span className="text-gray-400">-</span>;
+        }
+        if (deal.items.length === 1) {
+          return <span className="text-sm">{deal.items[0].product_name}</span>;
+        }
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">{deal.items[0].product_name}</span>
+            <Badge variant="outline" className="text-xs w-fit">
+              +{deal.items.length - 1} more
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'source',
+      header: 'Source',
+      sortable: true,
+      render: (_: unknown, deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return deal.source || <span className="text-gray-400">-</span>;
+      },
+    },
+    {
+      key: 'campaign',
+      header: 'Campaign',
+      sortable: true,
+      render: (_: unknown, deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        return deal.campaign || <span className="text-gray-400">-</span>;
+      },
+    },
+    {
+      key: 'tags',
+      header: 'Tags',
+      render: (_: unknown, deal: Deal | undefined) => {
+        if (!deal) return <span className="text-gray-400">-</span>;
+        if (!deal.tags || deal.tags.length === 0) return <span className="text-gray-400">-</span>;
+        return (
+          <div className="flex gap-1 flex-wrap">
+            {deal.tags.map((tag, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
       key: 'actions',
       header: 'Actions',
-      render: (deal: Deal | undefined) => {
+      render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

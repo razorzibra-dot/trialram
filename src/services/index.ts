@@ -173,48 +173,68 @@ const stageMapToUi: Record<string, string> = {
   lost: 'closed_lost'
 };
 
-const mapSale = (s: SaleResponse): Sale => ({
-  id: s.id,
-  sale_number: s.id, // Use ID as sale number for now
-  title: s.title,
-  description: s.description || '',
-  customer_id: s.customer?.id || '',
-  customer_name: s.customer?.companyName,
-  value: s.value,
-  amount: s.value, // Alias for backend compatibility
-  currency: 'USD',
-  probability: s.probability,
-  weighted_amount: s.value * (s.probability / 100),
-  stage: (stageMapToUi[(s.stage || '').toLowerCase()] || 'lead') as Sale['stage'],
-  status: s.stage === 'won' ? 'won' : s.stage === 'lost' ? 'lost' : 'open',
-  source: '',
-  campaign: '',
-  expected_close_date: s.expectedCloseDate || '',
-  actual_close_date: s.actualCloseDate || '',
-  last_activity_date: '',
-  next_activity_date: '',
-  assigned_to: s.assignedTo || '',
-  assigned_to_name: s.assignedUser?.name,
-  notes: s.description || '',
-  tags: [],
-  competitor_info: '',
-  items: s.products?.map(p => ({
-    id: p.id,
-    sale_id: s.id,
-    product_id: p.productId,
-    product_name: p.productName,
-    product_description: '',
-    quantity: p.quantity,
-    unit_price: p.unitPrice,
-    discount: 0,
-    tax: 0,
-    line_total: p.totalPrice
-  })) || [],
-  tenant_id: s.tenantId,
-  created_at: s.createdAt,
-  updated_at: s.updatedAt,
-  created_by: ''
-});
+const mapSale = (s: any): Sale => {
+  const saleData = s as Record<string, unknown>;
+  
+  // Handle both SaleResponse (camelCase) and Supabase Sale (snake_case) formats
+  const expectedCloseDate = (s.expectedCloseDate || s.expected_close_date || '') as string;
+  const actualCloseDate = (s.actualCloseDate || s.actual_close_date || '') as string;
+  
+  return {
+    id: s.id,
+    sale_number: s.id, // Use ID as sale number for now
+    title: s.title,
+    description: s.description || '',
+    customer_id: s.customer?.id || s.customer_id || '',
+    customer_name: s.customer?.companyName || s.customer?.company_name || String(saleData.customer_name || ''),
+    value: s.value || Number(saleData.value) || 0,
+    amount: s.value || s.amount || Number(saleData.value) || 0,
+    currency: 'USD',
+    probability: s.probability || Number(saleData.probability) || 50,
+    weighted_amount: (s.value || Number(saleData.value) || 0) * ((s.probability || Number(saleData.probability) || 50) / 100),
+    stage: (stageMapToUi[(s.stage || '').toLowerCase()] || 'lead') as Sale['stage'],
+    status: s.status || (s.stage === 'won' ? 'won' : s.stage === 'lost' ? 'lost' : 'open'),
+    source: String(saleData.source || ''),
+    campaign: String(saleData.campaign || ''),
+    expected_close_date: expectedCloseDate,
+    actual_close_date: actualCloseDate,
+    last_activity_date: String(saleData.last_activity_date || ''),
+    next_activity_date: String(saleData.next_activity_date || ''),
+    assigned_to: s.assignedTo || s.assigned_to || '',
+    assigned_to_name: s.assignedUser?.name || s.assigned_to_name || '',
+    notes: s.description || s.notes || '',
+    tags: Array.isArray(saleData.tags) ? (saleData.tags as string[]) : [],
+    competitor_info: String(saleData.competitor_info || ''),
+    // Handle both products array (camelCase) and items array (snake_case)
+    items: (s.products?.map((p: any) => ({
+      id: p.id,
+      sale_id: s.id,
+      product_id: p.productId,
+      product_name: p.productName,
+      product_description: '',
+      quantity: p.quantity,
+      unit_price: p.unitPrice,
+      discount: 0,
+      tax: 0,
+      line_total: p.totalPrice
+    })) || (Array.isArray(saleData.items) ? (saleData.items as any[]).map(item => ({
+      id: item.id || '',
+      sale_id: item.sale_id || s.id,
+      product_id: item.product_id || '',
+      product_name: item.product_name || '',
+      product_description: item.product_description || '',
+      quantity: Number(item.quantity) || 0,
+      unit_price: Number(item.unit_price) || 0,
+      discount: Number(item.discount) || 0,
+      tax: Number(item.tax) || 0,
+      line_total: Number(item.line_total) || 0,
+    })) : [])) || [],
+    tenant_id: s.tenantId || s.tenant_id || '',
+    created_at: s.createdAt || s.created_at || new Date().toISOString(),
+    updated_at: s.updatedAt || s.updated_at || new Date().toISOString(),
+    created_by: String(saleData.created_by || '')
+  };
+};
 
 const mapTicket = (t: TicketResponse): Ticket => ({
   id: t.id,
@@ -401,6 +421,24 @@ export const salesService = {
     if (apiServiceFactory.isUsingMockApi() && 'getDeals' in base) return (base as Record<string, unknown>).getDeals?.(filters) as Promise<Deal[]>;
     const res: SaleResponse[] = await base.getSales(filters) as SaleResponse[];
     return res.map(mapSale);
+  },
+  async getDeal(id: string): Promise<Deal> {
+    const base: ISalesService = getSalesService();
+    if (apiServiceFactory.isUsingMockApi() && 'getDeal' in base) return (base as Record<string, unknown>).getDeal?.(id) as Promise<Deal>;
+    const res: SaleResponse = await base.getSale(id) as SaleResponse;
+    return mapSale(res);
+  },
+  async createDeal(data: Record<string, unknown>): Promise<Deal> {
+    const base: ISalesService = getSalesService();
+    if (apiServiceFactory.isUsingMockApi() && 'createDeal' in base) return (base as Record<string, unknown>).createDeal?.(data) as Promise<Deal>;
+    const res: SaleResponse = await base.createSale(data) as SaleResponse;
+    return mapSale(res);
+  },
+  async updateDeal(id: string, data: Record<string, unknown>): Promise<Deal> {
+    const base: ISalesService = getSalesService();
+    if (apiServiceFactory.isUsingMockApi() && 'updateDeal' in base) return (base as Record<string, unknown>).updateDeal?.(id, data) as Promise<Deal>;
+    const res: SaleResponse = await base.updateSale(id, data) as SaleResponse;
+    return mapSale(res);
   },
   async deleteDeal(id: string): Promise<void> {
     const base: ISalesService = getSalesService();

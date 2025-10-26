@@ -11,6 +11,10 @@ export interface Contract {
   customer_name?: string;
   customer_contact?: string;
 
+  // Phase 3.3: Deal Relationship (Link to Sales Deal)
+  deal_id?: string;
+  deal_title?: string;
+
   // Additional Parties (Secondary)
   parties: ContractParty[];
 
@@ -157,6 +161,9 @@ export interface ContractFormData {
   parties: Omit<ContractParty, 'id' | 'signed_at' | 'signature_url'>[];
   terms?: string;
   notes?: string;
+  // Phase 3.3: Deal Relationship
+  deal_id?: string;
+  deal_title?: string;
 }
 
 // Contract filters interface

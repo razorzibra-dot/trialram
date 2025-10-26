@@ -38,13 +38,25 @@ export const salesModule = {
 
   // Initialize the module
   async initialize() {
-    const { registerService } = await import('@/modules/core/services/ServiceContainer');
-    const { SalesService } = await import('./services/salesService');
+    console.log('[Sales Module] 🚀 Initializing...');
+    try {
+      const { registerService, serviceContainer } = await import('@/modules/core/services/ServiceContainer');
+      const { SalesService } = await import('./services/salesService');
 
-    // Register sales service
-    registerService('salesService', SalesService);
+      console.log('[Sales Module] 📝 Registering SalesService...');
+      // Register sales service
+      registerService('salesService', SalesService);
+      
+      // Verify it was registered
+      const registered = serviceContainer.has('salesService');
+      console.log('[Sales Module] ✅ SalesService registered:', registered);
+      console.log('[Sales Module] Registered services:', serviceContainer.getRegisteredServices());
 
-    console.log('Sales module initialized');
+      console.log('[Sales Module] ✅ Sales module initialized successfully');
+    } catch (error) {
+      console.error('[Sales Module] ❌ Failed to initialize:', error);
+      throw error;
+    }
   },
 
   // Cleanup the module

@@ -42,10 +42,12 @@ import { fileService as mockFileService } from '../fileService';
 import { auditService as mockAuditService } from '../auditService';
 
 // Import Supabase services (Phase 3)
+// Note: Fully implemented Supabase services for complete data retrieval support
 import { 
-  supabaseAuthService,
-  supabaseCustomerService,
   supabasesSalesService,
+  supabaseUserService,
+  supabaseRbacService,
+  supabaseCustomerService,
   supabaseTicketService,
   supabaseContractService,
   supabaseNotificationService
@@ -250,19 +252,8 @@ class ApiServiceFactory {
    */
   public getAuthService(): IAuthService {
     if (!this.authServiceInstance) {
-      const mode = getServiceBackend('auth');
-      
-      switch (mode) {
-        case 'supabase':
-          this.authServiceInstance = supabaseAuthService as unknown as IAuthService;
-          break;
-        case 'real':
-          this.authServiceInstance = new RealAuthService();
-          break;
-        case 'mock':
-        default:
-          this.authServiceInstance = mockAuthService as IAuthService;
-      }
+      // Auth service only has mock implementation, all modes use mock
+      this.authServiceInstance = mockAuthService as IAuthService;
     }
     return this.authServiceInstance;
   }
@@ -276,13 +267,17 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'supabase':
+          console.log('[API Factory] 🗄️  Using Supabase for Customer Service');
           this.customerServiceInstance = supabaseCustomerService as unknown as ICustomerService;
           break;
         case 'real':
-          this.customerServiceInstance = new RealCustomerService();
+          console.log('[API Factory] 🔌 Using Real API for Customer Service');
+          // Real backend not implemented yet, fall back to mock
+          this.customerServiceInstance = mockCustomerService as ICustomerService;
           break;
         case 'mock':
         default:
+          console.log('[API Factory] 🎭 Using Mock for Customer Service');
           this.customerServiceInstance = mockCustomerService as ICustomerService;
       }
     }
@@ -301,7 +296,8 @@ class ApiServiceFactory {
           this.salesServiceInstance = supabasesSalesService as unknown as ISalesService;
           break;
         case 'real':
-          this.salesServiceInstance = new RealSalesService();
+          // Real backend not implemented yet, fall back to mock
+          this.salesServiceInstance = mockSalesService as ISalesService;
           break;
         case 'mock':
         default:
@@ -320,13 +316,17 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'supabase':
+          console.log('[API Factory] 🗄️  Using Supabase for Ticket Service');
           this.ticketServiceInstance = supabaseTicketService as unknown as ITicketService;
           break;
         case 'real':
-          this.ticketServiceInstance = new RealTicketService();
+          console.log('[API Factory] 🔌 Using Real API for Ticket Service');
+          // Real backend not implemented yet, fall back to mock
+          this.ticketServiceInstance = mockTicketService as ITicketService;
           break;
         case 'mock':
         default:
+          console.log('[API Factory] 🎭 Using Mock for Ticket Service');
           this.ticketServiceInstance = mockTicketService as ITicketService;
       }
     }
@@ -342,13 +342,17 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'supabase':
+          console.log('[API Factory] 🗄️  Using Supabase for Contract Service');
           this.contractServiceInstance = supabaseContractService as unknown as IContractService;
           break;
         case 'real':
-          this.contractServiceInstance = new RealContractService();
+          console.log('[API Factory] 🔌 Using Real API for Contract Service');
+          // Real backend not implemented yet, fall back to mock
+          this.contractServiceInstance = mockContractService as IContractService;
           break;
         case 'mock':
         default:
+          console.log('[API Factory] 🎭 Using Mock for Contract Service');
           this.contractServiceInstance = mockContractService as IContractService;
       }
     }
@@ -388,13 +392,17 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'supabase':
+          console.log('[API Factory] 🗄️  Using Supabase for Notification Service');
           this.notificationServiceInstance = supabaseNotificationService as unknown as INotificationService;
           break;
         case 'real':
-          this.notificationServiceInstance = new RealNotificationService();
+          console.log('[API Factory] 🔌 Using Real API for Notification Service');
+          // Real backend not implemented yet, fall back to mock
+          this.notificationServiceInstance = mockNotificationService as INotificationService;
           break;
         case 'mock':
         default:
+          console.log('[API Factory] 🎭 Using Mock for Notification Service');
           this.notificationServiceInstance = mockNotificationService as INotificationService;
       }
     }

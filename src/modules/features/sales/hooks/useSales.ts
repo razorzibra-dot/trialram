@@ -25,15 +25,22 @@ export const salesKeys = {
  * Hook for fetching deals with filters
  */
 export const useDeals = (filters: SalesFilters = {}) => {
+  console.log('[useDeals] 🚀 Hook called with filters:', filters);
+  
   const salesService = useService<SalesService>('salesService');
+  console.log('[useDeals] ✅ SalesService obtained:', { hasGetDeals: !!salesService.getDeals });
+  
   const { setDeals, setLoading, setPagination } = useSalesStore();
 
   return useQuery({
     queryKey: [...salesKeys.deals(), filters],
     queryFn: async () => {
+      console.log('[useDeals] 🔄 queryFn executing...');
       setLoading(true);
       try {
+        console.log('[useDeals] 📞 Calling salesService.getDeals...');
         const response = await salesService.getDeals(filters);
+        console.log('[useDeals] ✅ Got response:', { dataCount: response.data?.length, total: response.total });
         setDeals(response.data);
         setPagination({ 
           page: response.page, 
@@ -42,6 +49,9 @@ export const useDeals = (filters: SalesFilters = {}) => {
           total: response.total 
         });
         return response;
+      } catch (error) {
+        console.error('[useDeals] ❌ Error:', error);
+        throw error;
       } finally {
         setLoading(false);
       }
@@ -169,12 +179,19 @@ export const useUpdateDeal = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateDealData> }) => {
       setUpdating(true);
       try {
-        return await salesService.updateDeal(id, data);
+        console.log('🎯 [useUpdateDeal] mutationFn starting:', { id, dataKeys: Object.keys(data || {}) });
+        const result = await salesService.updateDeal(id, data);
+        console.log('✅ [useUpdateDeal] mutationFn completed:', { id, resultId: result.id });
+        return result;
+      } catch (error) {
+        console.error('❌ [useUpdateDeal] mutationFn error:', error);
+        throw error;
       } finally {
         setUpdating(false);
       }
     },
     onSuccess: (updatedDeal) => {
+      console.log('✅ [useUpdateDeal] onSuccess triggered:', updatedDeal.id);
       updateDeal(updatedDeal.id, updatedDeal);
       queryClient.invalidateQueries({ queryKey: salesKeys.deal(updatedDeal.id) });
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
@@ -185,6 +202,7 @@ export const useUpdateDeal = () => {
       });
     },
     onError: (error) => {
+      console.error('❌ [useUpdateDeal] onError triggered:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to update deal',

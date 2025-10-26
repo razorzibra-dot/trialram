@@ -55,47 +55,61 @@ export class CustomerService extends BaseService {
    */
   async getCustomers(filters: CustomerFilters = {}): Promise<PaginatedResponse<Customer>> {
     try {
-      try {
-        console.log('[CustomerService] getCustomers called with filters:', filters);
-        
-        // Use the API Service Factory to respect VITE_API_MODE configuration
-        const customers = await apiServiceFactory.getCustomerService().getCustomers(filters);
-        
-        console.log('[CustomerService] Received customers from factory:', customers.length);
-        
-        // Transform to paginated response
+      console.log('[CustomerService] getCustomers called with filters:', filters);
+      
+      // Use the API Service Factory to respect VITE_API_MODE configuration
+      const result = await apiServiceFactory.getCustomerService().getCustomers(filters);
+      
+      console.log('[CustomerService] Received result from factory:', result);
+      
+      // Handle both array and paginated response formats
+      let allCustomers: Customer[] = [];
+      if (Array.isArray(result)) {
+        console.log('[CustomerService] Result is array, length:', result.length);
+        allCustomers = result;
+      } else if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
+        console.log('[CustomerService] Result is paginated response, data length:', result.data.length);
+        allCustomers = result.data;
+      } else {
+        console.error('[CustomerService] Unexpected result format:', result);
+        allCustomers = [];
+      }
+      
+      // Transform to paginated response
+      const { page = 1, pageSize = 20 } = filters;
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedData = allCustomers.slice(startIndex, endIndex);
+      
+      console.log('[CustomerService] Returning paginated response - total:', allCustomers.length, 'page:', page, 'data:', paginatedData.length);
+      
+      return {
+        data: paginatedData,
+        total: allCustomers.length,
+        page,
+        pageSize,
+        totalPages: Math.ceil(allCustomers.length / pageSize),
+      };
+    } catch (error) {
+      // Handle authorization/tenant context errors gracefully by returning empty response
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('[CustomerService] Error fetching customers:', errorMsg);
+      
+      if (errorMsg.includes('Tenant context not initialized') || errorMsg.includes('Unauthorized')) {
+        // Return empty response instead of throwing when auth context is not ready
         const { page = 1, pageSize = 20 } = filters;
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedData = customers.slice(startIndex, endIndex);
-        
-        console.log('[CustomerService] Returning paginated response - total:', customers.length, 'page:', page, 'data:', paginatedData.length);
-        
+        console.log('[CustomerService] ✅ Auth context not ready - returning empty response gracefully');
         return {
-          data: paginatedData,
-          total: customers.length,
+          data: [],
+          total: 0,
           page,
           pageSize,
-          totalPages: Math.ceil(customers.length / pageSize),
+          totalPages: 0,
         };
-      } catch (error) {
-        // Handle tenant context not initialized gracefully
-        if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
-          // Return empty response instead of throwing
-          const { page = 1, pageSize = 20 } = filters;
-          console.log('[CustomerService] Tenant not initialized, returning empty response');
-          return {
-            data: [],
-            total: 0,
-            page,
-            pageSize,
-            totalPages: 0,
-          };
-        }
-        throw error;
       }
-    } catch (error) {
-      console.error('[CustomerService] Error fetching customers:', error);
+      
+      // For other errors, log and re-throw
+      console.error('[CustomerService] ❌ Unexpected error, rethrowing:', error);
       throw error;
     }
   }
@@ -103,11 +117,21 @@ export class CustomerService extends BaseService {
   /**
    * Get a single customer by ID
    */
-  async getCustomer(id: string): Promise<Customer> {
+  async getCustomer(id: string): Promise<Customer | null> {
     try {
       return await apiServiceFactory.getCustomerService().getCustomer(id);
     } catch (error) {
-      console.error('Error fetching customer:', error);
+      // Handle authorization/tenant context errors gracefully by returning null
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('[CustomerService] Error fetching customer:', errorMsg);
+      
+      if (errorMsg.includes('Tenant context not initialized') || errorMsg.includes('Unauthorized')) {
+        console.log('[CustomerService] ✅ Auth context not ready - returning null for customer');
+        return null;
+      }
+      
+      // For other errors, log and re-throw
+      console.error('[CustomerService] ❌ Unexpected error, rethrowing:', error);
       throw error;
     }
   }

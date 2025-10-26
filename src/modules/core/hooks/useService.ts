@@ -11,13 +11,21 @@ import { serviceContainer } from '../services/ServiceContainer';
  * @returns The service instance
  */
 export function useService<T = unknown>(serviceName: string): T {
-  const service = serviceContainer.get(serviceName);
-  
-  if (!service) {
-    throw new Error(`Service '${serviceName}' not found in service container. Make sure it's registered.`);
+  try {
+    const service = serviceContainer.get(serviceName);
+    
+    if (!service) {
+      const registeredServices = serviceContainer.getRegisteredServices();
+      console.error(`[useService] Service '${serviceName}' not found. Registered services:`, registeredServices);
+      throw new Error(`Service '${serviceName}' not found in service container. Make sure it's registered. Available: ${registeredServices.join(', ')}`);
+    }
+    
+    console.log(`[useService] ✅ Retrieved service '${serviceName}'`);
+    return service as T;
+  } catch (error) {
+    console.error(`[useService] ❌ Error retrieving service '${serviceName}':`, error);
+    throw error;
   }
-  
-  return service as T;
 }
 
 /**

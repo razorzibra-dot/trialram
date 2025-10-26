@@ -353,6 +353,47 @@ class MockNotificationService {
       throw error;
     }
   }
+
+  /**
+   * Generic notify method - creates and broadcasts a notification
+   * Used by toast hooks for unified notifications
+   */
+  notify(options: {
+    type: 'success' | 'info' | 'warning' | 'error';
+    message: string;
+    description?: string;
+    duration?: number;
+    category?: string;
+  }): void {
+    try {
+      const notification: Notification = {
+        id: Date.now().toString(),
+        user_id: 'user_1',
+        type: options.type,
+        title: options.message,
+        message: options.description || '',
+        category: options.category || 'system',
+        is_read: false,
+        read: false,
+        tenant_id: 'tenant_1',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Add to notifications list
+      this.mockNotifications.unshift(notification);
+
+      // Keep only last 100 notifications
+      if (this.mockNotifications.length > 100) {
+        this.mockNotifications = this.mockNotifications.slice(0, 100);
+      }
+
+      // Notify subscribers
+      this.unsubscribeCallbacks.forEach(cb => cb(notification));
+    } catch (error) {
+      console.error('Error in notify method:', error);
+    }
+  }
 }
 
 export const notificationService = new MockNotificationService();

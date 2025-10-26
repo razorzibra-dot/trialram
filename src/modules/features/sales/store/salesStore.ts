@@ -129,19 +129,56 @@ export const useSalesStore = create<SalesState>()(
         // Data Actions
         setDeals: (deals) => {
           set((state) => {
-            // Filter out null/undefined deals and ensure all have required fields
+            // Filter out null/undefined deals, preserve all fields from service layer
             state.deals = (Array.isArray(deals) ? deals : [])
               .filter((deal) => deal && typeof deal === 'object' && deal.id)
-              .map((deal) => ({
-                ...deal,
-                title: deal.title || 'Untitled Deal',
-                value: Number(deal.value) || 0,
-                stage: deal.stage || 'lead',
-                status: deal.status || 'open',
-                tenant_id: deal.tenant_id || '',
-                created_at: deal.created_at || new Date().toISOString(),
-                updated_at: deal.updated_at || new Date().toISOString(),
-              }));
+              .map((deal) => {
+                // Service layer already transformed data with all fields,
+                // we just pass it through with basic validation
+                const dealValue = Number(deal.value) || Number(deal.amount) || 0;
+                return {
+                  ...deal,
+                  // Ensure core fields have defaults
+                  id: deal.id,
+                  title: deal.title || 'Untitled Deal',
+                  value: dealValue,
+                  amount: dealValue, // Alias for value
+                  stage: deal.stage || 'lead',
+                  status: deal.status || 'open',
+                  
+                  // IMPORTANT: Preserve date fields from service layer
+                  expected_close_date: deal.expected_close_date || '',
+                  actual_close_date: deal.actual_close_date || '',
+                  last_activity_date: deal.last_activity_date || '',
+                  next_activity_date: deal.next_activity_date || '',
+                  
+                  // Preserve customer info
+                  customer_id: deal.customer_id || '',
+                  customer_name: deal.customer_name || '',
+                  
+                  // Preserve assignment
+                  assigned_to: deal.assigned_to || '',
+                  assigned_to_name: deal.assigned_to_name || '',
+                  
+                  // Preserve optional fields
+                  description: deal.description || '',
+                  source: deal.source || '',
+                  campaign: deal.campaign || '',
+                  notes: deal.notes || '',
+                  tags: Array.isArray(deal.tags) ? deal.tags : [],
+                  items: Array.isArray(deal.items) ? deal.items : [],
+                  
+                  // System fields
+                  tenant_id: deal.tenant_id || '',
+                  created_at: deal.created_at || new Date().toISOString(),
+                  updated_at: deal.updated_at || new Date().toISOString(),
+                  created_by: deal.created_by || '',
+                  
+                  // Preserve other fields
+                  currency: deal.currency || 'USD',
+                  probability: Number(deal.probability) || 50,
+                };
+              });
           });
         },
 

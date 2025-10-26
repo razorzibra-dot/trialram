@@ -137,13 +137,16 @@ export class SupabaseNotificationService extends BaseSupabaseService {
         .insert([
           {
             user_id: data.user_id,
+            recipient_id: data.user_id, // Ensure both are set for backward compatibility
             type: data.type || 'info',
             title: data.title,
             message: data.message,
             data: data.data,
             read: false,
+            is_read: false, // Ensure both are set for backward compatibility
             action_url: data.action_url,
             action_label: data.action_label,
+            category: data.category,
             tenant_id: data.tenant_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -174,13 +177,16 @@ export class SupabaseNotificationService extends BaseSupabaseService {
         .insert(
           notifications.map((n) => ({
             user_id: n.user_id,
+            recipient_id: n.user_id, // Ensure both are set for backward compatibility
             type: n.type || 'info',
             title: n.title,
             message: n.message,
             data: n.data,
             read: false,
+            is_read: false, // Ensure both are set for backward compatibility
             action_url: n.action_url,
             action_label: n.action_label,
+            category: n.category,
             tenant_id: n.tenant_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -583,15 +589,19 @@ export class SupabaseNotificationService extends BaseSupabaseService {
    * Map database notification response to Notification type
    */
   private mapNotificationResponse(dbNotification: any): Notification {
+    // Handle both old schema (is_read, recipient_id) and new schema (read, user_id)
+    const read = dbNotification.read !== undefined ? dbNotification.read : (dbNotification.is_read || false);
+    const userId = dbNotification.user_id || dbNotification.recipient_id;
+    
     return {
       id: dbNotification.id,
-      user_id: dbNotification.user_id,
+      user_id: userId,
       type: (dbNotification.type || 'info') as Notification['type'],
       title: dbNotification.title,
       message: dbNotification.message,
       data: dbNotification.data || {},
-      read: dbNotification.read || false,
-      is_read: dbNotification.read || false,
+      read: read,
+      is_read: read,
       read_at: dbNotification.read_at,
       action_url: dbNotification.action_url,
       action_label: dbNotification.action_label,

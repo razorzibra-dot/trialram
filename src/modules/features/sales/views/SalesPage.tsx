@@ -69,7 +69,7 @@ export const SalesPage: React.FC = () => {
   const handleDelete = async (deal: Deal) => {
     try {
       await deleteDeal.mutateAsync(deal.id);
-      message.success(`Deal "${deal.name}" deleted successfully`);
+      message.success(`Deal "${deal.title}" deleted successfully`);
       refetchDeals();
       refetchStats();
     } catch (error) {
@@ -104,8 +104,8 @@ export const SalesPage: React.FC = () => {
   const columns: ColumnsType<Deal> = [
     {
       title: 'Deal Name',
-      key: 'name',
-      dataIndex: 'name',
+      key: 'title',
+      dataIndex: 'title',
       width: 200,
       render: (text) => <div style={{ fontWeight: 500 }}>{text}</div>,
     },
@@ -118,9 +118,9 @@ export const SalesPage: React.FC = () => {
     {
       title: 'Value',
       key: 'value',
-      dataIndex: 'amount',
+      dataIndex: 'value',
       width: 120,
-      render: (amount) => <div style={{ fontWeight: 500 }}>{formatCurrency(amount)}</div>,
+      render: (value) => <div style={{ fontWeight: 500 }}>{formatCurrency(value)}</div>,
     },
     {
       title: 'Stage',
@@ -136,7 +136,7 @@ export const SalesPage: React.FC = () => {
     {
       title: 'Owner',
       key: 'owner',
-      dataIndex: 'owner_name',
+      dataIndex: 'assigned_to_name',
       width: 130,
     },
     {
@@ -144,7 +144,27 @@ export const SalesPage: React.FC = () => {
       key: 'expected_close',
       dataIndex: 'expected_close_date',
       width: 130,
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+      render: (date, record) => {
+        console.log('[SalesPage Grid] Expected Close Date Debug:', {
+          field: 'expected_close_date',
+          value: date,
+          dealId: record.id,
+          dealTitle: record.title,
+          allRecordFields: Object.keys(record),
+        });
+        return date ? new Date(date).toLocaleDateString() : '-';
+      },
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      dataIndex: 'status',
+      width: 100,
+      render: (status) => (
+        <Tag color={status === 'won' ? 'green' : status === 'lost' ? 'red' : status === 'open' ? 'blue' : 'default'}>
+          {status?.toUpperCase() || 'OPEN'}
+        </Tag>
+      ),
     },
     {
       title: 'Actions',
@@ -164,7 +184,7 @@ export const SalesPage: React.FC = () => {
           {hasPermission('sales:delete') && (
             <Popconfirm
               title="Delete Deal"
-              description={`Are you sure you want to delete "${record.name}"?`}
+              description={`Are you sure you want to delete "${record.title}"?`}
               onConfirm={() => handleDelete(record)}
               okText="Yes"
               cancelText="No"

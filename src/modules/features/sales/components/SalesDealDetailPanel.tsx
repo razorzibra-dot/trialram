@@ -6,14 +6,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Descriptions, Button, Space, Divider, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table } from 'antd';
-import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Drawer, Descriptions, Button, Space, Divider, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message } from 'antd';
+import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { Deal, Customer } from '@/types/crm';
 import { useNavigate } from 'react-router-dom';
 import { useService } from '@/modules/core/hooks/useService';
 import { CustomerService } from '@/modules/features/customers/services/customerService';
 import { SalesService } from '../services/salesService';
 import { ConvertToContractModal } from './ConvertToContractModal';
+import { CreateProductSalesModal } from './CreateProductSalesModal';
 
 interface SalesDealDetailPanelProps {
   visible: boolean;
@@ -32,6 +33,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [convertModalVisible, setConvertModalVisible] = useState(false);
+  const [productSalesModalVisible, setProductSalesModalVisible] = useState(false);
   const [linkedContracts, setLinkedContracts] = useState<Array<{
     id: string;
     title: string;
@@ -175,6 +177,15 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
         footer={
           <Space style={{ float: 'right' }}>
             <Button onClick={onClose}>Close</Button>
+            {deal?.stage === 'closed_won' && deal?.items && deal?.items.length > 0 && (
+              <Button
+                type="default"
+                icon={<ShoppingOutlined />}
+                onClick={() => setProductSalesModalVisible(true)}
+              >
+                Create Product Sales
+              </Button>
+            )}
             {deal?.stage === 'closed_won' && (
               <Button
                 type="default"
@@ -490,6 +501,17 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
         deal={deal}
         onClose={() => setConvertModalVisible(false)}
         onSuccess={handleConversionSuccess}
+      />
+
+      {/* Phase 3.3: Create Product Sales Modal */}
+      <CreateProductSalesModal
+        visible={productSalesModalVisible}
+        deal={deal}
+        onClose={() => setProductSalesModalVisible(false)}
+        onSuccess={(createdCount) => {
+          handleConversionSuccess();
+          message.success(`${createdCount} product sales created successfully`);
+        }}
       />
     </>
   );

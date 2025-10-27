@@ -9,6 +9,13 @@ alwaysApply: true
 A modular CRM (Customer Relationship Management) application with a React frontend and multiple backend options including .NET Core and Supabase. The application follows a clean architecture pattern and is designed to manage customers, contracts, sales, tickets, and notifications in a multi-tenant environment.
 
 ## Structure
+- **APP_DOCS/**: 📚 Centralized Documentation Hub (Phase 4)
+  - All documentation organized in one place
+  - 266 documentation files (215 .md, 50 .txt)
+  - **docs/**: Standard project documentation
+  - **DOCUMENTATION/**: Comprehensive guides (32+ subdirectories)
+  - **Root level docs**: 65 quick reference files
+  - **INDEX.md**: Navigation guide for all documentation
 - **src/**: Frontend React application with modular architecture
   - **modules/**: Feature modules with self-contained functionality
   - **services/**: API services with mock, real, and Supabase implementations
@@ -18,7 +25,7 @@ A modular CRM (Customer Relationship Management) application with a React fronte
   - **types/**: TypeScript type definitions
 - **supabase/**: Supabase configuration and migrations
 - **public/**: Static assets
-- **docs/**: Documentation files
+- **MARK_FOR_DELETE/**: Archived temporary files (39 files in 4 categories)
 
 ## Language & Runtime
 **Language**: TypeScript/JavaScript
@@ -200,6 +207,36 @@ If you see "Unauthorized" errors:
 2. Verify the calling code uses factory service, not direct imports
 3. Check that `serviceFactory.ts` exports the correct service method
 4. Ensure mock services don't attempt to access `authService.getCurrentUser()` when called in Supabase mode
+
+## Documentation Project Status
+
+### Phase 1 ✅ COMPLETE
+- 16 module DOC.md files (5,500+ lines)
+- Complete module-level documentation
+
+### Phase 2 ✅ COMPLETE
+- 7 architecture documents (4,210 lines)
+- Complete system-level documentation
+
+### Phase 3 ✅ COMPLETE
+- Archived 39 temporary files
+- Organized into 4 subdirectories in MARK_FOR_DELETE/
+- 141 essential files preserved in root
+- Root directory 22% cleaner
+- See: PHASE_3_EXECUTION_COMPLETE.md for details
+
+### Phase 4 ✅ COMPLETE
+- ✅ All 65 root documentation files moved to APP_DOCS
+- ✅ docs/ and DOCUMENTATION/ folders organized into APP_DOCS
+- ✅ 266 total documentation files managed
+- ✅ INDEX.md navigation guide created
+- ✅ Root directory 96% clean
+
+### Phase 5 🔄 READY FOR PLANNING
+- Optional: Delete archived logs (in MARK_FOR_DELETE)
+- Optional: Implement CI/CD automation for documentation
+- Optional: Add documentation search indexing
+- Optional: Create documentation versioning
 
 **Known Factory-Routed Services**:
 - Product Service (productService)

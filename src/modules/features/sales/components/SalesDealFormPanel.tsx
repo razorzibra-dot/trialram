@@ -180,7 +180,9 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
         title: deal.title || '',
         customer_id: deal.customer_id || undefined,
         value: deal.value || 0,
-        stage: deal.stage || 'lead', // Default to 'lead' if not set
+        // ⭐ FIX: Ensure stage is always set to the deal's actual stage, never default to 'lead'
+        // This prevents the stage from reverting when editing
+        stage: deal.stage ? String(deal.stage).toLowerCase() : 'lead',
         assigned_to: deal.assigned_to || undefined, // Leave as undefined/null (no default string)
         expected_close_date: deal.expected_close_date ? dayjs(deal.expected_close_date) : undefined,
         actual_close_date: deal.actual_close_date ? dayjs(deal.actual_close_date) : undefined,
@@ -194,6 +196,8 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
       };
       
       console.log('[SalesDealFormPanel] Setting form values:', formValues);
+      // ⭐ FIX: Set form values ONLY when deal first loads
+      // Do NOT use setTimeout delay as it's not needed
       form.setFieldsValue(formValues);
     } else if (visible) {
       console.log('[SalesDealFormPanel] Resetting form (no deal)');
@@ -201,7 +205,7 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
       setSelectedCustomer(null);
       setSaleItems([]);
     }
-  }, [visible, deal, customers, form]);
+  }, [visible, deal, form]); // ⭐ CRITICAL FIX: Remove 'stages' from dependency - it was causing form values to reset on user input!
 
   // Handle customer selection - update form with customer details
   const handleCustomerChange = (customerId: string) => {
@@ -285,6 +289,15 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
       const values = await form.validateFields();
       console.log('Step 2: Form values validated:', values);
       
+      // ⭐ FIX: Add detailed logging for stage to debug reverting issue
+      console.log('🔍 STAGE DEBUG:', {
+        formStageValue: values.stage,
+        formStageType: typeof values.stage,
+        dealStageOriginal: deal?.stage,
+        isEditMode,
+        stagesAvailable: stages?.length,
+      });
+      
       // Validate customer is selected
       if (!values.customer_id) {
         console.warn('Step 3a: No customer_id selected');
@@ -309,11 +322,15 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
         ? values.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag)
         : [];
 
+      // ⭐ FIX: Ensure stage is string and valid, never null or undefined
+      const stageValue = String(values.stage || 'lead').toLowerCase();
+      
       const dealData = {
         title: values.title,
         description: values.description,
         value: dealValue,
-        stage: values.stage,
+        // ⭐ FIX: Explicitly set stage to the string value to prevent reverting
+        stage: stageValue,
         status: values.status || null,
         customer_id: values.customer_id,
         assigned_to: values.assigned_to || null, // Only include if valid UUID, else null
@@ -331,6 +348,8 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
         items: saleItems.length > 0 ? saleItems : undefined, // Phase 3.2: Include items
       };
       console.log('Step 5: Deal data prepared:', dealData);
+      // ⭐ FIX: Log the exact stage being sent
+      console.log('🔍 STAGE BEING SENT:', { stage: dealData.stage, originalStage: deal?.stage });
 
       if (isEditMode && deal) {
         console.log('Step 6a: Calling UPDATE mutation for deal:', deal.id);

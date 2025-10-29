@@ -13,7 +13,7 @@
 import { DashboardStats } from '@/types/crm';
 import { authService } from './authService';
 import { supabaseCustomerService } from './supabase/customerService';
-import { supabasesSalesService } from './supabase/salesService';
+import { supabaseSalesService } from './supabase/salesService';
 import { supabaseTicketService } from './supabase/ticketService';
 import { multiTenantService } from './supabase/multiTenantService';
 
@@ -65,7 +65,7 @@ class DashboardService {
       // Fetch all data in parallel for optimal performance
       const [customers, sales, tickets] = await Promise.all([
         supabaseCustomerService.getCustomers({ status: 'active' }),
-        supabasesSalesService.getSales(),
+        supabaseSalesService.getSales(),
         supabaseTicketService.getTickets()
       ]);
 
@@ -121,7 +121,7 @@ class DashboardService {
       // Fetch recent data from all sources
       const [customers, sales, tickets] = await Promise.all([
         supabaseCustomerService.getCustomers(),
-        supabasesSalesService.getSales(),
+        supabaseSalesService.getSales(),
         supabaseTicketService.getTickets()
       ]);
 
@@ -203,7 +203,7 @@ class DashboardService {
 
       const [customers, sales] = await Promise.all([
         supabaseCustomerService.getCustomers(),
-        supabasesSalesService.getSales()
+        supabaseSalesService.getSales()
       ]);
 
       // Calculate customer metrics
@@ -291,7 +291,7 @@ class DashboardService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Unauthorized: User not authenticated');
 
-      const sales = await supabasesSalesService.getSales();
+      const sales = await supabaseSalesService.getSales();
 
       // Filter out closed deals for active pipeline
       const activeSales = sales.filter(

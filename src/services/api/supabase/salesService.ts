@@ -451,6 +451,304 @@ class SupabaseSalesService {
       throw error;
     }
   }
+
+  // ============================================================
+  // Missing methods for hook compliance
+  // ============================================================
+
+  async getDealsByCustomer(customerId: string, filters?: Record<string, unknown>): Promise<{ data: Deal[], page: number, pageSize: number, total: number, totalPages: number }> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      let query = supabase
+        .from(this.table)
+        .select('*, sale_items(*)')
+        .eq('tenant_id', user.tenant_id)
+        .eq('customer_id', customerId);
+
+      // Apply role-based filtering for agents
+      if (user.role === 'agent') {
+        query = query.eq('assigned_to', user.id);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      const deals = (data || []).map(d => this.toTypeScript(d));
+      return {
+        data: deals,
+        page: 1,
+        pageSize: deals.length,
+        total: count || deals.length,
+        totalPages: 1
+      };
+    } catch (error) {
+      console.error('[Supabase] Error fetching deals by customer:', error);
+      throw error;
+    }
+  }
+
+  async getSalesStats(): Promise<Record<string, unknown>> {
+    return this.getSalesAnalytics();
+  }
+
+  async getDealStages(): Promise<string[]> {
+    return this.getStages();
+  }
+
+  async updateDealStage(id: string, stage: string): Promise<Deal> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      if (!authService.hasPermission('write')) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Verify ownership for agents
+      const { data: existingDeal, error: fetchError } = await supabase
+        .from(this.table)
+        .select('*')
+        .eq('id', id)
+        .eq('tenant_id', user.tenant_id)
+        .single();
+
+      if (fetchError || !existingDeal) throw new Error('Deal not found');
+
+      if (user.role === 'agent' && existingDeal.assigned_to !== user.id) {
+        throw new Error('Access denied');
+      }
+
+      const { data, error } = await supabase
+        .from(this.table)
+        .update({
+          stage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('tenant_id', user.tenant_id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return this.toTypeScript(data);
+    } catch (error) {
+      console.error('[Supabase] Error updating deal stage:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpdateDeals(ids: string[], updates: Record<string, unknown>): Promise<Deal[]> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      if (!authService.hasPermission('write')) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const dbUpdates = {
+        ...this.toDatabase(updates as Partial<Deal>),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(this.table)
+        .update(dbUpdates)
+        .in('id', ids)
+        .eq('tenant_id', user.tenant_id)
+        .select();
+
+      if (error) throw error;
+
+      return (data || []).map(d => this.toTypeScript(d));
+    } catch (error) {
+      console.error('[Supabase] Error bulk updating deals:', error);
+      throw error;
+    }
+  }
+
+  async bulkDeleteDeals(ids: string[]): Promise<void> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      if (!authService.hasPermission('delete')) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const { error } = await supabase
+        .from(this.table)
+        .delete()
+        .in('id', ids)
+        .eq('tenant_id', user.tenant_id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('[Supabase] Error bulk deleting deals:', error);
+      throw error;
+    }
+  }
+
+  async searchDeals(query: string): Promise<Deal[]> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      const searchQuery = query.toLowerCase();
+
+      let q = supabase
+        .from(this.table)
+        .select('*, sale_items(*)')
+        .eq('tenant_id', user.tenant_id);
+
+      // Apply role-based filtering for agents
+      if (user.role === 'agent') {
+        q = q.eq('assigned_to', user.id);
+      }
+
+      const { data, error } = await q;
+
+      if (error) throw error;
+
+      const deals = (data || []).map(d => this.toTypeScript(d));
+      
+      // Client-side search across title, customer_name, and description
+      return deals.filter(d =>
+        d.title.toLowerCase().includes(searchQuery) ||
+        d.customer_name?.toLowerCase().includes(searchQuery) ||
+        d.description.toLowerCase().includes(searchQuery)
+      );
+    } catch (error) {
+      console.error('[Supabase] Error searching deals:', error);
+      throw error;
+    }
+  }
+
+  async exportDeals(format: 'csv' | 'json' = 'csv'): Promise<string> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      let query = supabase
+        .from(this.table)
+        .select('*')
+        .eq('tenant_id', user.tenant_id);
+
+      // Apply role-based filtering for agents
+      if (user.role === 'agent') {
+        query = query.eq('assigned_to', user.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const deals = (data || []).map(d => this.toTypeScript(d));
+
+      if (format === 'csv') {
+        const headers = ['ID', 'Title', 'Customer', 'Value', 'Stage', 'Status', 'Probability', 'Assigned To'];
+        const rows = deals.map(d => [
+          d.id,
+          d.title,
+          d.customer_name,
+          d.value,
+          d.stage,
+          d.status,
+          d.probability,
+          d.assigned_to_name
+        ]);
+
+        const csvContent = [
+          headers.join(','),
+          ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        return csvContent;
+      } else {
+        return JSON.stringify(deals, null, 2);
+      }
+    } catch (error) {
+      console.error('[Supabase] Error exporting deals:', error);
+      throw error;
+    }
+  }
+
+  async importDeals(csv: string): Promise<{ success: number; errors: string[] }> {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Unauthorized');
+
+      if (!authService.hasPermission('write')) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const errors: string[] = [];
+      let success = 0;
+      const lines = csv.trim().split('\n');
+      
+      // Skip header
+      const dataLines = lines.slice(1);
+      const dealsToInsert: any[] = [];
+
+      for (let i = 0; i < dataLines.length; i++) {
+        try {
+          const values = dataLines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const [, title, customerName, value, stage, status, probability, assignedToName] = values;
+
+          if (!title || !customerName) {
+            errors.push(`Row ${i + 2}: Missing required fields (title or customer)`);
+            continue;
+          }
+
+          dealsToInsert.push({
+            title,
+            customer_id: 'imported',
+            customer_name: customerName,
+            value: parseInt(value) || 0,
+            amount: parseInt(value) || 0,
+            currency: 'USD',
+            stage: stage || 'lead',
+            status: status || 'open',
+            probability: parseInt(probability) || 50,
+            expected_close_date: '',
+            actual_close_date: '',
+            last_activity_date: new Date().toISOString(),
+            next_activity_date: '',
+            description: '',
+            source: 'import',
+            campaign: '',
+            notes: `Imported from CSV on ${new Date().toLocaleDateString()}`,
+            assigned_to: user.id,
+            assigned_to_name: assignedToName || 'Unassigned',
+            tags: ['imported'],
+            tenant_id: user.tenant_id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: user.id
+          });
+        } catch (error) {
+          errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      if (dealsToInsert.length > 0) {
+        const { error } = await supabase
+          .from(this.table)
+          .insert(dealsToInsert);
+
+        if (error) throw error;
+        success = dealsToInsert.length;
+      }
+
+      return { success, errors };
+    } catch (error) {
+      console.error('[Supabase] Error importing deals:', error);
+      throw error;
+    }
+  }
 }
 
-export const supabasesSalesService = new SupabaseSalesService();
+export const supabaseSalesService = new SupabaseSalesService();

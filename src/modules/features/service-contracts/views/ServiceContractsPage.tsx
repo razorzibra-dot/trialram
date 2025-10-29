@@ -92,7 +92,7 @@ export const ServiceContractsPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<ServiceContract | null>(null);
 
   // Load data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const loadContracts = useCallback(async () => {
     try {
       setLoading(true);

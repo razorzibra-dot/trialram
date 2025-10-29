@@ -50,7 +50,7 @@ const SuperAdminHealthPage: React.FC = () => {
   const [isPanelVisible, setIsPanelVisible] = useState(false);
 
   // Auto-refresh every 30 seconds
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     fetchHealthData();
     const interval = setInterval(fetchHealthData, 30000);

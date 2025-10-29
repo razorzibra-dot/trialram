@@ -115,7 +115,7 @@ export const ServiceContractDetailPage: React.FC = () => {
   const [renewForm] = Form.useForm();
   const [noteForm] = Form.useForm();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const loadContractDetails = useCallback(async () => {
     try {
       setLoading(true);

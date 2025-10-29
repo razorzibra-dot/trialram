@@ -78,7 +78,7 @@ export const UsersPage: React.FC = () => {
 
   // Load users and metadata on component mount
   // Note: Service layer handles authorization via RLS (Supabase) or database rules (mock)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     loadUsers();
     loadMetadata();

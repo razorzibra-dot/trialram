@@ -3,9 +3,9 @@ import {
   ProductSaleFormData, 
   ProductSaleFilters, 
   ProductSalesResponse,
-  ProductSalesAnalytics,
   FileAttachment
 } from '@/types/productSales';
+import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
 import { supabaseClient } from './client';
 import { multiTenantService } from './multiTenantService';
 import { 
@@ -313,15 +313,15 @@ class SupabaseProductSaleService {
   /**
    * Get product sales analytics
    */
-  async getProductSalesAnalytics(): Promise<ProductSalesAnalytics> {
+  async getProductSalesAnalytics(tenantId?: string): Promise<ProductSalesAnalyticsDTO> {
     try {
-      const tenantId = multiTenantService.getCurrentTenantId();
+      const finalTenantId = tenantId || multiTenantService.getCurrentTenantId();
 
       // Get all product sales
       const { data: sales, error: salesError } = await supabaseClient
         .from('product_sales')
         .select('*')
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', finalTenantId);
 
       if (salesError) throw handleSupabaseError(salesError);
 
@@ -329,14 +329,17 @@ class SupabaseProductSaleService {
 
       if (mappedSales.length === 0) {
         return {
-          total_sales: 0,
-          total_revenue: 0,
-          average_deal_size: 0,
-          sales_by_month: [],
-          top_products: [],
-          top_customers: [],
-          status_distribution: [],
-          warranty_expiring_soon: []
+          totalSales: 0,
+          totalRevenue: 0,
+          averageSaleValue: 0,
+          completedSales: 0,
+          pendingSales: 0,
+          totalQuantity: 0,
+          revenueByMonth: {},
+          topProducts: [],
+          topCustomers: [],
+          byStatus: [],
+          lastUpdated: new Date().toISOString(),
         };
       }
 
@@ -355,13 +358,12 @@ class SupabaseProductSaleService {
         });
       });
 
-      const salesByMonth = Array.from(salesByMonthMap.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([month, data]) => ({
-          month,
-          sales_count: data.count,
-          revenue: data.revenue
-        }));
+      const salesByMonthArray = Array.from(salesByMonthMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b));
+      
+      const revenueByMonth = Object.fromEntries(
+        salesByMonthArray.map(([month, data]) => [month, data.revenue])
+      );
 
       // Top products
       const productMap = new Map<string, { count: number; revenue: number; units: number }>();
@@ -381,11 +383,10 @@ class SupabaseProductSaleService {
         .map(([key, data]) => {
           const [productId, productName] = key.split('|');
           return {
-            product_id: productId,
-            product_name: productName,
-            total_sales: data.count,
-            total_revenue: data.revenue,
-            units_sold: data.units
+            productId: productId,
+            productName: productName,
+            quantity: data.units,
+            revenue: data.revenue,
           };
         });
 
@@ -407,11 +408,10 @@ class SupabaseProductSaleService {
         .map(([key, data]) => {
           const [customerId, customerName] = key.split('|');
           return {
-            customer_id: customerId,
-            customer_name: customerName,
-            total_sales: data.count,
-            total_revenue: data.revenue,
-            last_purchase: data.lastPurchase
+            customerId: customerId,
+            customerName: customerName,
+            totalSales: data.count,
+            revenue: data.revenue,
           };
         });
 
@@ -438,15 +438,18 @@ class SupabaseProductSaleService {
       });
 
       return {
-        total_sales: totalSales,
-        total_revenue: totalRevenue,
-        average_deal_size: averageDealSize,
-        sales_by_month: salesByMonth,
-        top_products: topProducts,
-        top_customers: topCustomers,
-        status_distribution: statusDistribution,
-        warranty_expiring_soon: warrantyExpiringSoon
-      };
+        totalSales: totalSales,
+        totalRevenue: totalRevenue,
+        averageSaleValue: averageDealSize,
+        completedSales: totalSales,
+        pendingSales: 0,
+        totalQuantity: mappedSales.reduce((sum, sale) => sum + sale.units, 0),
+        revenueByMonth: revenueByMonth,
+        topProducts: topProducts,
+        topCustomers: topCustomers,
+        byStatus: statusDistribution,
+        lastUpdated: new Date().toISOString(),
+      } as ProductSalesAnalyticsDTO;
     } catch (error) {
       console.error('Error fetching analytics:', error);
       throw error instanceof Error ? error : new Error('Failed to fetch analytics');

@@ -7,6 +7,7 @@
 import { ServiceContractService } from './serviceContractService'; // Mock implementation
 import { supabaseServiceContractService } from './supabase/serviceContractService'; // Supabase implementation
 import { supabaseProductSaleService } from './supabase/productSaleService';
+import { supabaseSalesService } from './api/supabase/salesService';
 import { supabaseCustomerService } from './supabase/customerService';
 import { supabaseJobWorkService } from './supabase/jobWorkService';
 import { supabaseProductService } from './supabase/productService';
@@ -16,6 +17,7 @@ import { supabaseRbacService } from './api/supabase/rbacService';
 import { supabaseNotificationService } from './supabase/notificationService';
 import { supabaseTenantService } from './supabase/tenantService';
 import { productSaleService as mockProductSaleService } from './productSaleService';
+import { salesService as mockSalesService } from './salesService';
 import { customerService as mockCustomerService } from './customerService';
 import { jobWorkService as mockJobWorkService } from './jobWorkService';
 import { productService as mockProductService } from './productService';
@@ -91,6 +93,23 @@ class ServiceFactory {
       case 'mock':
       default:
         return mockProductSaleService;
+    }
+  }
+
+  /**
+   * Get Sales Service (for deal management)
+   */
+  getSalesService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseSalesService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseSalesService;
+      case 'mock':
+      default:
+        return mockSalesService;
     }
   }
 
@@ -240,6 +259,9 @@ class ServiceFactory {
       case 'productsale':
       case 'product_sale':
         return this.getProductSaleService();
+      case 'sales':
+      case 'sale':
+        return this.getSalesService();
       case 'customer':
         return this.getCustomerService();
       case 'jobwork':
@@ -344,6 +366,41 @@ export const productSaleService = {
     serviceFactory.getProductSaleService().getProductSalesAnalytics(...args),
   uploadAttachment: (...args: Parameters<typeof supabaseProductSaleService.uploadAttachment>) =>
     serviceFactory.getProductSaleService().uploadAttachment(...args),
+};
+
+// Export for convenience - Sales Service (Deal Management)
+export const salesService = {
+  get instance() {
+    return serviceFactory.getSalesService();
+  },
+  getDeals: (...args: Parameters<typeof supabaseSalesService.getDeals>) =>
+    serviceFactory.getSalesService().getDeals(...args),
+  getDeal: (...args: Parameters<typeof supabaseSalesService.getDeal>) =>
+    serviceFactory.getSalesService().getDeal(...args),
+  createDeal: (...args: Parameters<typeof supabaseSalesService.createDeal>) =>
+    serviceFactory.getSalesService().createDeal(...args),
+  updateDeal: (...args: Parameters<typeof supabaseSalesService.updateDeal>) =>
+    serviceFactory.getSalesService().updateDeal(...args),
+  deleteDeal: (...args: Parameters<typeof supabaseSalesService.deleteDeal>) =>
+    serviceFactory.getSalesService().deleteDeal(...args),
+  getDealsByCustomer: (...args: Parameters<typeof supabaseSalesService.getDealsByCustomer>) =>
+    serviceFactory.getSalesService().getDealsByCustomer(...args),
+  getSalesStats: (...args: Parameters<typeof supabaseSalesService.getSalesStats>) =>
+    serviceFactory.getSalesService().getSalesStats(...args),
+  getDealStages: (...args: Parameters<typeof supabaseSalesService.getDealStages>) =>
+    serviceFactory.getSalesService().getDealStages(...args),
+  updateDealStage: (...args: Parameters<typeof supabaseSalesService.updateDealStage>) =>
+    serviceFactory.getSalesService().updateDealStage(...args),
+  bulkUpdateDeals: (...args: Parameters<typeof supabaseSalesService.bulkUpdateDeals>) =>
+    serviceFactory.getSalesService().bulkUpdateDeals(...args),
+  bulkDeleteDeals: (...args: Parameters<typeof supabaseSalesService.bulkDeleteDeals>) =>
+    serviceFactory.getSalesService().bulkDeleteDeals(...args),
+  searchDeals: (...args: Parameters<typeof supabaseSalesService.searchDeals>) =>
+    serviceFactory.getSalesService().searchDeals(...args),
+  exportDeals: (...args: Parameters<typeof supabaseSalesService.exportDeals>) =>
+    serviceFactory.getSalesService().exportDeals(...args),
+  importDeals: (...args: Parameters<typeof supabaseSalesService.importDeals>) =>
+    serviceFactory.getSalesService().importDeals(...args),
 };
 
 // Export for convenience - Customer Service

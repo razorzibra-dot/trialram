@@ -89,7 +89,7 @@ const SuperAdminTenantsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load tenants
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     fetchTenants();
   }, [statusFilter, searchText]);

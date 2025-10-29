@@ -41,10 +41,11 @@ import {
   CalendarOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import { ProductSalesAnalytics, ProductSale } from '@/types/productSales';
+import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
+import { ProductSale } from '@/types/productSales';
 
 interface ProductSalesAnalyticsDashboardProps {
-  analytics: ProductSalesAnalytics | null;
+  analytics: ProductSalesAnalyticsDTO | null;
   loading?: boolean;
 }
 

@@ -5,7 +5,7 @@
  * NOTE: Only implemented services are exported. Other services fall back to mock implementations.
  */
 
-export { supabasesSalesService } from './salesService';
+export { supabaseSalesService } from './salesService';
 export { supabaseUserService } from './userService';
 export { supabaseRbacService } from './rbacService';
 

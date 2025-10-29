@@ -34,7 +34,7 @@ import { auditService as mockAuditService } from '../auditService';
 // Import Supabase services (Phase 3)
 // Note: Fully implemented Supabase services for complete data retrieval support
 import { 
-  supabasesSalesService,
+  supabaseSalesService,
   supabaseUserService,
   supabaseRbacService,
   supabaseCustomerService,
@@ -284,7 +284,7 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'supabase':
-          this.salesServiceInstance = supabasesSalesService as unknown as ISalesService;
+          this.salesServiceInstance = supabaseSalesService as unknown as ISalesService;
           break;
         case 'real':
           // Real backend not implemented yet, fall back to mock

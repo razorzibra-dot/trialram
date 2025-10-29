@@ -5,59 +5,57 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { ProductSalesAnalytics } from '@/types/productSales';
+import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
 import { useProductSalesStore } from '../store/productSalesStore';
-import { useService } from '@/modules/core/hooks/useService';
+import { productSaleService as factoryProductSaleService } from '@/services/serviceFactory';
+import { useAuth } from '@/contexts/AuthContext';
 import { productSalesKeys } from './useProductSales';
 
 /**
  * Hook for fetching product sales analytics data
- * @param dateRange Optional date range for filtering analytics
  * @returns Query result with analytics data
  */
-export const useProductSalesAnalytics = (dateRange?: { startDate: string; endDate: string }) => {
+export const useProductSalesAnalytics = () => {
+  const { user } = useAuth();
+  const tenantId = user?.tenant_id || 'default-tenant';
   const { setAnalytics, setError, clearError } = useProductSalesStore();
-  const service = useService<any>('productSaleService');
 
   return useQuery({
-    queryKey: [
-      ...productSalesKeys.analytics(),
-      dateRange ? `${dateRange.startDate}-${dateRange.endDate}` : 'all-time',
-    ],
+    queryKey: [...productSalesKeys.analytics()],
     queryFn: async () => {
       clearError();
       try {
-        const analytics: ProductSalesAnalytics = await service.getAnalytics(dateRange);
+        const analytics = await factoryProductSaleService.getProductSalesAnalytics(tenantId);
 
         // Transform and update store
         const analyticsState = {
-          totalSales: analytics.total_sales || 0,
-          totalRevenue: analytics.total_revenue || 0,
-          averageDealSize: analytics.average_deal_size || 0,
-          topProducts: analytics.top_products?.map((p) => ({
-            id: p.product_id,
-            name: p.product_name,
-            count: p.total_sales,
-            revenue: p.total_revenue,
+          totalSales: analytics.totalSales ?? 0,
+          totalRevenue: analytics.totalRevenue ?? 0,
+          averageSaleValue: analytics.averageSaleValue ?? 0,
+          topProducts: analytics.topProducts?.map((p) => ({
+            id: p.productId,
+            name: p.productName,
+            count: p.quantity,
+            revenue: p.revenue,
           })) || [],
-          topCustomers: analytics.top_customers?.map((c) => ({
-            id: c.customer_id,
-            name: c.customer_name,
-            count: c.total_sales,
-            revenue: c.total_revenue,
+          topCustomers: analytics.topCustomers?.map((c) => ({
+            id: c.customerId,
+            name: c.customerName,
+            count: c.totalSales,
+            revenue: c.revenue,
           })) || [],
-          statusDistribution: (analytics.status_distribution || []).reduce(
+          statusDistribution: (analytics.byStatus || []).reduce(
             (acc, s) => ({
               ...acc,
               [s.status]: s.count,
             }),
             {}
           ),
-          monthlyTrend: analytics.sales_by_month?.map((m) => ({
-            month: m.month,
-            sales: m.sales_count,
-            revenue: m.revenue,
-          })) || [],
+          monthlyTrend: analytics.revenueByMonth ? Object.entries(analytics.revenueByMonth).map(([month, revenue]) => ({
+            month,
+            sales: 0, // Calculated from topProducts if needed
+            revenue,
+          })) || [] : [],
         };
 
         setAnalytics(analyticsState);

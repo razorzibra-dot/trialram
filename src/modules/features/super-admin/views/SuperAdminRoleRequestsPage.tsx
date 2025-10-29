@@ -58,7 +58,7 @@ const SuperAdminRoleRequestsPage: React.FC = () => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // Load role requests
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (isSuperAdmin) {
       fetchRoleRequests();

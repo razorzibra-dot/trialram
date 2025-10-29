@@ -427,6 +427,236 @@ class SalesService {
       averageDealSize: wonDeals.length > 0 ? wonDeals.reduce((sum, deal) => sum + deal.value, 0) / wonDeals.length : 0
     };
   }
+
+  // ============================================================
+  // Missing methods for hook compliance
+  // ============================================================
+
+  async getDealsByCustomer(customerId: string, filters?: Record<string, unknown>): Promise<{ data: Deal[], page: number, pageSize: number, total: number, totalPages: number }> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    let deals = this.mockDeals.filter(d => 
+      d.tenant_id === user.tenant_id && d.customer_id === customerId
+    );
+
+    // Apply role-based filtering
+    if (user.role === 'agent') {
+      deals = deals.filter(d => d.assigned_to === user.id);
+    }
+
+    return {
+      data: deals,
+      page: 1,
+      pageSize: deals.length,
+      total: deals.length,
+      totalPages: 1
+    };
+  }
+
+  async getSalesStats(): Promise<Record<string, unknown>> {
+    return this.getSalesAnalytics();
+  }
+
+  async getDealStages(): Promise<string[]> {
+    return this.getStages();
+  }
+
+  async updateDealStage(id: string, stage: string): Promise<Deal> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    if (!authService.hasPermission('write')) {
+      throw new Error('Insufficient permissions');
+    }
+
+    const dealIndex = this.mockDeals.findIndex(d => 
+      d.id === id && d.tenant_id === user.tenant_id
+    );
+
+    if (dealIndex === -1) {
+      throw new Error('Deal not found');
+    }
+
+    this.mockDeals[dealIndex] = {
+      ...this.mockDeals[dealIndex],
+      stage,
+      updated_at: new Date().toISOString()
+    };
+
+    return this.mockDeals[dealIndex];
+  }
+
+  async bulkUpdateDeals(ids: string[], updates: Record<string, unknown>): Promise<Deal[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    if (!authService.hasPermission('write')) {
+      throw new Error('Insufficient permissions');
+    }
+
+    const updatedDeals: Deal[] = [];
+    
+    for (const id of ids) {
+      const dealIndex = this.mockDeals.findIndex(d => 
+        d.id === id && d.tenant_id === user.tenant_id
+      );
+
+      if (dealIndex !== -1) {
+        this.mockDeals[dealIndex] = {
+          ...this.mockDeals[dealIndex],
+          ...updates,
+          updated_at: new Date().toISOString()
+        };
+        updatedDeals.push(this.mockDeals[dealIndex]);
+      }
+    }
+
+    return updatedDeals;
+  }
+
+  async bulkDeleteDeals(ids: string[]): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    if (!authService.hasPermission('delete')) {
+      throw new Error('Insufficient permissions');
+    }
+
+    for (const id of ids) {
+      const dealIndex = this.mockDeals.findIndex(d => 
+        d.id === id && d.tenant_id === user.tenant_id
+      );
+
+      if (dealIndex !== -1) {
+        this.mockDeals.splice(dealIndex, 1);
+      }
+    }
+  }
+
+  async searchDeals(query: string): Promise<Deal[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    const searchLower = query.toLowerCase();
+    
+    let deals = this.mockDeals.filter(d => d.tenant_id === user.tenant_id);
+
+    // Apply role-based filtering
+    if (user.role === 'agent') {
+      deals = deals.filter(d => d.assigned_to === user.id);
+    }
+
+    // Search across title, customer_name, and description
+    return deals.filter(d =>
+      d.title.toLowerCase().includes(searchLower) ||
+      d.customer_name?.toLowerCase().includes(searchLower) ||
+      d.description.toLowerCase().includes(searchLower)
+    );
+  }
+
+  async exportDeals(format: 'csv' | 'json' = 'csv'): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    let deals = this.mockDeals.filter(d => d.tenant_id === user.tenant_id);
+
+    // Apply role-based filtering
+    if (user.role === 'agent') {
+      deals = deals.filter(d => d.assigned_to === user.id);
+    }
+
+    if (format === 'csv') {
+      // CSV format
+      const headers = ['ID', 'Title', 'Customer', 'Value', 'Stage', 'Status', 'Probability', 'Assigned To'];
+      const rows = deals.map(d => [
+        d.id,
+        d.title,
+        d.customer_name,
+        d.value,
+        d.stage,
+        d.status,
+        d.probability,
+        d.assigned_to_name
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      return csvContent;
+    } else {
+      // JSON format
+      return JSON.stringify(deals, null, 2);
+    }
+  }
+
+  async importDeals(csv: string): Promise<{ success: number; errors: string[] }> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    if (!authService.hasPermission('write')) {
+      throw new Error('Insufficient permissions');
+    }
+
+    const errors: string[] = [];
+    let success = 0;
+    const lines = csv.trim().split('\n');
+    
+    // Skip header
+    const dataLines = lines.slice(1);
+
+    for (let i = 0; i < dataLines.length; i++) {
+      try {
+        const values = dataLines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const [id, title, customerName, value, stage, status, probability, assignedToName] = values;
+
+        if (!title || !customerName) {
+          errors.push(`Row ${i + 2}: Missing required fields (title or customer)`);
+          continue;
+        }
+
+        const newDeal: Deal = {
+          id: Date.now().toString() + Math.random(),
+          title,
+          customer_id: 'imported',
+          customer_name: customerName,
+          value: parseInt(value) || 0,
+          amount: parseInt(value) || 0,
+          currency: 'USD',
+          stage: stage || 'lead',
+          status: status || 'open',
+          probability: parseInt(probability) || 50,
+          expected_close_date: '',
+          actual_close_date: '',
+          last_activity_date: new Date().toISOString(),
+          next_activity_date: '',
+          description: '',
+          source: 'import',
+          campaign: '',
+          notes: `Imported from CSV on ${new Date().toLocaleDateString()}`,
+          assigned_to: user.id,
+          assigned_to_name: assignedToName || 'Unassigned',
+          tags: ['imported'],
+          items: [],
+          tenant_id: user.tenant_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: user.id
+        };
+
+        this.mockDeals.push(newDeal);
+        success++;
+      } catch (error) {
+        errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return { success, errors };
+  }
 }
 
 export const salesService = new SalesService();

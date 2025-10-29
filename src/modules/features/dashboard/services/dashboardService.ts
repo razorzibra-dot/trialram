@@ -6,7 +6,7 @@
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { supabaseCustomerService } from '@/services/supabase/customerService';
-import { supabasesSalesService } from '@/services/supabase/salesService';
+import { supabaseSalesService } from '@/services/supabase/salesService';
 import { 
   getMockData, 
   getMockActivityData, 
@@ -65,7 +65,7 @@ export interface CustomerData {
 
 export class DashboardService extends BaseService {
   private customerService = supabaseCustomerService;
-  private salesService = supabasesSalesService;
+  private salesService = supabaseSalesService;
   private useMockData: boolean = false;
 
   constructor() {

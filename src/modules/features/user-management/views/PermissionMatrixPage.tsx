@@ -65,7 +65,7 @@ export const PermissionMatrixPage: React.FC = () => {
   const [showSystemRoles, setShowSystemRoles] = useState(true);
 
   // Load data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     loadData();
   }, [showSystemRoles]);

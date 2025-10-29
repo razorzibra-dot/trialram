@@ -3,9 +3,9 @@ import {
   ProductSaleFormData, 
   ProductSaleFilters, 
   ProductSalesResponse,
-  ProductSalesAnalytics,
   FileAttachment
 } from '@/types/productSales';
+import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
 import { pdfTemplateService } from './pdfTemplateService';
 import { PDFGenerationResponse } from '@/types/pdfTemplates';
 
@@ -379,12 +379,7 @@ class ProductSaleService {
   }
 
   // Get product sales analytics
-  async getProductSalesAnalytics(tenantId?: string): Promise<ProductSalesAnalytics> {
-    return this.getAnalytics(tenantId);
-  }
-
-  // Get analytics data
-  async getAnalytics(tenantId?: string): Promise<ProductSalesAnalytics> {
+  async getProductSalesAnalytics(tenantId?: string): Promise<ProductSalesAnalyticsDTO> {
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
 
@@ -444,15 +439,30 @@ class ProductSaleService {
       });
 
       return {
-        total_sales: totalSales,
-        total_revenue: totalRevenue,
-        average_deal_size: averageDealSize,
-        sales_by_month: salesByMonth,
-        top_products: topProducts,
-        top_customers: topCustomers,
-        status_distribution: statusDistribution,
-        warranty_expiring_soon: warrantyExpiringSoon
-      };
+        totalSales: totalSales,
+        totalRevenue: totalRevenue,
+        averageSaleValue: averageDealSize,
+        completedSales: totalSales,
+        pendingSales: 0,
+        totalQuantity: tenantSales.reduce((sum, sale) => sum + sale.units, 0),
+        revenueByMonth: Object.fromEntries(
+          salesByMonth.map(m => [m.month, m.revenue])
+        ),
+        topProducts: topProducts.map(p => ({
+          productId: p.product_id,
+          productName: p.product_name,
+          quantity: p.units_sold,
+          revenue: p.total_revenue,
+        })),
+        topCustomers: topCustomers.map(c => ({
+          customerId: c.customer_id,
+          customerName: c.customer_name,
+          totalSales: c.total_sales,
+          revenue: c.total_revenue,
+        })),
+        byStatus: statusDistribution,
+        lastUpdated: new Date().toISOString(),
+      } as ProductSalesAnalyticsDTO;
     } catch (error) {
       console.error('Error fetching analytics:', error);
       throw new Error('Failed to fetch analytics');

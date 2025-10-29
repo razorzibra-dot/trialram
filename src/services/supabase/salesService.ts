@@ -705,4 +705,4 @@ export class SupabaseSalesService extends BaseSupabaseService {
 }
 
 // Export singleton instance
-export const supabasesSalesService = new SupabaseSalesService();
+export const supabaseSalesService = new SupabaseSalesService();

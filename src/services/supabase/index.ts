@@ -23,7 +23,7 @@ export { supabaseServiceContractService } from './serviceContractService';
 export { supabaseProductSaleService } from './productSaleService';
 export { supabaseCustomerService } from './customerService';
 export { supabaseTicketService } from './ticketService';
-export { supabasesSalesService } from './salesService';
+export { supabaseSalesService } from './salesService';
 export { supabaseContractService } from './contractService';
 export { supabaseNotificationService } from './notificationService';
 export { supabaseProductService } from './productService';

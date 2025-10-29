@@ -86,7 +86,7 @@ export const RoleManagementPage: React.FC = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Load data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     loadData();
   }, []);

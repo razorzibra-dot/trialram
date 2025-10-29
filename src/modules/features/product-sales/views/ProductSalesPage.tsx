@@ -121,7 +121,7 @@ export const ProductSalesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'analytics'>('table');
 
   // Load data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const loadProductSales = useCallback(async () => {
     try {
       setLoading(true);
@@ -136,7 +136,7 @@ export const ProductSalesPage: React.FC = () => {
     }
   }, [filters, currentPage, pageSize, productSaleService]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const loadAnalytics = useCallback(async () => {
     try {
       const analyticsData = await productSaleService.getProductSalesAnalytics();
@@ -360,7 +360,7 @@ export const ProductSalesPage: React.FC = () => {
   };
 
   // Table columns - base configuration
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const baseColumns = useMemo(() => {
     const cols: ColumnsType<ProductSale> = [
       {
@@ -496,7 +496,7 @@ export const ProductSalesPage: React.FC = () => {
   }, [hasPermission]);
 
   // Apply column configuration
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const columns = useMemo(() => {
     if (columnConfig.length === 0) {
       return baseColumns;

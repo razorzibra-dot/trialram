@@ -85,7 +85,7 @@ export const UserManagementPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load users
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   React.useEffect(() => {
     loadUsers();
   }, [roleFilter, statusFilter, tenantFilter, searchText]);

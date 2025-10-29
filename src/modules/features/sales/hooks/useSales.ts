@@ -8,8 +8,12 @@ import { useCallback } from 'react';
 import { Deal } from '@/types/crm';
 import { SalesService, SalesFilters, CreateDealData, DealStats } from '../services/salesService';
 import { useSalesStore } from '../store/salesStore';
-import { useService } from '@/modules/core/hooks/useService';
+import { salesService as factorySalesService } from '@/services/serviceFactory';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+// Module service instance
+const moduleSalesService = new SalesService();
 
 // Query Keys
 export const salesKeys = {
@@ -27,19 +31,20 @@ export const salesKeys = {
 export const useDeals = (filters: SalesFilters = {}) => {
   console.log('[useDeals] 🚀 Hook called with filters:', filters);
   
-  const salesService = useService<SalesService>('salesService');
-  console.log('[useDeals] ✅ SalesService obtained:', { hasGetDeals: !!salesService.getDeals });
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
+  console.log('[useDeals] ✅ Factory SalesService obtained with tenantId:', tenantId);
   
   const { setDeals, setLoading, setPagination } = useSalesStore();
 
   return useQuery({
-    queryKey: [...salesKeys.deals(), filters],
+    queryKey: [...salesKeys.deals(), filters, tenantId],
     queryFn: async () => {
-      console.log('[useDeals] 🔄 queryFn executing...');
+      console.log('[useDeals] 🔄 queryFn executing with tenantId:', tenantId);
       setLoading(true);
       try {
-        console.log('[useDeals] 📞 Calling salesService.getDeals...');
-        const response = await salesService.getDeals(filters);
+        console.log('[useDeals] 📞 Calling factorySalesService.getDeals...');
+        const response = await factorySalesService.getDeals(filters);
         console.log('[useDeals] ✅ Got response:', { dataCount: response.data?.length, total: response.total });
         setDeals(response.data);
         setPagination({ 
@@ -65,13 +70,14 @@ export const useDeals = (filters: SalesFilters = {}) => {
  * Hook for fetching a single deal
  */
 export const useDeal = (id: string) => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { setSelectedDeal } = useSalesStore();
 
   return useQuery({
     queryKey: salesKeys.deal(id),
     queryFn: async () => {
-      const deal = await salesService.getDeal(id);
+      const deal = await factorySalesService.getDeal(id);
       setSelectedDeal(deal);
       return deal;
     },
@@ -84,12 +90,13 @@ export const useDeal = (id: string) => {
  * Hook for fetching deals by customer ID
  */
 export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {}) => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
 
   return useQuery({
-    queryKey: [...salesKeys.dealsByCustomer(customerId), filters],
+    queryKey: [...salesKeys.dealsByCustomer(customerId), filters, tenantId],
     queryFn: async () => {
-      const response = await salesService.getDealsByCustomer(customerId, filters);
+      const response = await factorySalesService.getDealsByCustomer(customerId, filters);
       return response;
     },
     enabled: !!customerId,
@@ -102,13 +109,15 @@ export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {
  * Hook for fetching sales statistics
  */
 export const useSalesStats = () => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { setStats } = useSalesStore();
 
   return useQuery({
     queryKey: salesKeys.stats(),
     queryFn: async () => {
-      const stats = await salesService.getSalesStats();
+      // Use module service which transforms data to expected format
+      const stats = await moduleSalesService.getSalesStats();
       setStats(stats);
       return stats;
     },
@@ -120,11 +129,12 @@ export const useSalesStats = () => {
  * Hook for fetching deal stages
  */
 export const useDealStages = () => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
 
   return useQuery({
     queryKey: salesKeys.stages(),
-    queryFn: () => salesService.getDealStages(),
+    queryFn: () => factorySalesService.getDealStages(),
     staleTime: 60 * 60 * 1000, // 1 hour
   });
 };
@@ -134,7 +144,8 @@ export const useDealStages = () => {
  */
 export const useCreateDeal = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { addDeal, setCreating } = useSalesStore();
   const { toast } = useToast();
 
@@ -142,7 +153,7 @@ export const useCreateDeal = () => {
     mutationFn: async (data: CreateDealData) => {
       setCreating(true);
       try {
-        return await salesService.createDeal(data);
+        return await factorySalesService.createDeal(data);
       } finally {
         setCreating(false);
       }
@@ -171,7 +182,8 @@ export const useCreateDeal = () => {
  */
 export const useUpdateDeal = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { updateDeal, setUpdating } = useSalesStore();
   const { toast } = useToast();
 
@@ -180,7 +192,7 @@ export const useUpdateDeal = () => {
       setUpdating(true);
       try {
         console.log('🎯 [useUpdateDeal] mutationFn starting:', { id, dataKeys: Object.keys(data || {}) });
-        const result = await salesService.updateDeal(id, data);
+        const result = await factorySalesService.updateDeal(id, data);
         console.log('✅ [useUpdateDeal] mutationFn completed:', { id, resultId: result.id });
         return result;
       } catch (error) {
@@ -217,7 +229,8 @@ export const useUpdateDeal = () => {
  */
 export const useDeleteDeal = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { removeDeal, setDeleting } = useSalesStore();
   const { toast } = useToast();
 
@@ -225,7 +238,7 @@ export const useDeleteDeal = () => {
     mutationFn: async (id: string) => {
       setDeleting(true);
       try {
-        await salesService.deleteDeal(id);
+        await factorySalesService.deleteDeal(id);
         return id;
       } finally {
         setDeleting(false);
@@ -255,13 +268,14 @@ export const useDeleteDeal = () => {
  */
 export const useUpdateDealStage = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { updateDeal } = useSalesStore();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
-      return await salesService.updateDealStage(id, stage);
+      return await factorySalesService.updateDealStage(id, stage);
     },
     onSuccess: (updatedDeal) => {
       updateDeal(updatedDeal.id, updatedDeal);
@@ -287,13 +301,14 @@ export const useUpdateDealStage = () => {
  */
 export const useBulkDeals = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { clearSelection } = useSalesStore();
   const { toast } = useToast();
 
   const bulkUpdate = useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[]; updates: Partial<CreateDealData> }) => {
-      return await salesService.bulkUpdateDeals(ids, updates);
+      return await factorySalesService.bulkUpdateDeals(ids, updates);
     },
     onSuccess: (updatedDeals) => {
       clearSelection();
@@ -315,7 +330,7 @@ export const useBulkDeals = () => {
 
   const bulkDelete = useMutation({
     mutationFn: async (ids: string[]) => {
-      await salesService.bulkDeleteDeals(ids);
+      await factorySalesService.bulkDeleteDeals(ids);
       return ids;
     },
     onSuccess: (deletedIds) => {
@@ -346,14 +361,15 @@ export const useBulkDeals = () => {
  * Hook for searching deals
  */
 export const useSearchDeals = () => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
 
   return useCallback(
     async (query: string) => {
       if (!query.trim()) return [];
-      return await salesService.searchDeals(query);
+      return await factorySalesService.searchDeals(query);
     },
-    [salesService]
+    []
   );
 };
 
@@ -361,12 +377,13 @@ export const useSearchDeals = () => {
  * Hook for exporting deals
  */
 export const useExportDeals = () => {
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (format: 'csv' | 'json' = 'csv') => {
-      return await salesService.exportDeals(format);
+      return await factorySalesService.exportDeals(format);
     },
     onSuccess: (data, format) => {
       // Create download link
@@ -402,12 +419,13 @@ export const useExportDeals = () => {
  */
 export const useImportDeals = () => {
   const queryClient = useQueryClient();
-  const salesService = useService<SalesService>('salesService');
+  const { currentUser } = useAuth();
+  const tenantId = currentUser?.tenant_id;
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (csv: string) => {
-      return await salesService.importDeals(csv);
+      return await factorySalesService.importDeals(csv);
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });

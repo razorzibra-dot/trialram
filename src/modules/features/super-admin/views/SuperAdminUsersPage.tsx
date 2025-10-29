@@ -89,7 +89,7 @@ const SuperAdminUsersPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (isSuperAdmin) {
       loadData();

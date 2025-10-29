@@ -149,6 +149,65 @@ class ProductSaleService {
         filteredSales = filteredSales.filter(sale => sale.total_cost <= filters.max_amount!);
       }
 
+      if (filters.sale_id) {
+        const saleIdLower = filters.sale_id.toLowerCase();
+        filteredSales = filteredSales.filter(sale => sale.id.toLowerCase().includes(saleIdLower));
+      }
+
+      if (filters.customer_name) {
+        const customerLower = filters.customer_name.toLowerCase();
+        filteredSales = filteredSales.filter(sale => 
+          sale.customer_name?.toLowerCase().includes(customerLower)
+        );
+      }
+
+      if (filters.product_name) {
+        const productLower = filters.product_name.toLowerCase();
+        filteredSales = filteredSales.filter(sale => 
+          sale.product_name?.toLowerCase().includes(productLower)
+        );
+      }
+
+      if (filters.notes) {
+        const notesLower = filters.notes.toLowerCase();
+        filteredSales = filteredSales.filter(sale => 
+          sale.notes.toLowerCase().includes(notesLower)
+        );
+      }
+
+      if (filters.min_price) {
+        filteredSales = filteredSales.filter(sale => sale.total_cost >= filters.min_price!);
+      }
+
+      if (filters.max_price) {
+        filteredSales = filteredSales.filter(sale => sale.total_cost <= filters.max_price!);
+      }
+
+      if (filters.warranty_status) {
+        const now = new Date();
+        filteredSales = filteredSales.filter(sale => {
+          const warrantyDate = new Date(sale.warranty_expiry);
+          const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          
+          if (filters.warranty_status === 'active') {
+            return warrantyDate > now;
+          } else if (filters.warranty_status === 'expiring_soon') {
+            return warrantyDate > now && warrantyDate <= thirtyDaysFromNow;
+          } else if (filters.warranty_status === 'expired') {
+            return warrantyDate <= now;
+          }
+          return true;
+        });
+      }
+
+      if (filters.start_date) {
+        filteredSales = filteredSales.filter(sale => sale.delivery_date >= filters.start_date!);
+      }
+
+      if (filters.end_date) {
+        filteredSales = filteredSales.filter(sale => sale.delivery_date <= filters.end_date!);
+      }
+
       // Pagination
       const total = filteredSales.length;
       const totalPages = Math.ceil(total / limit);

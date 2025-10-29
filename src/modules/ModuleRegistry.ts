@@ -60,6 +60,7 @@ export class ModuleRegistry {
    */
   async initialize(name: string): Promise<void> {
     if (this.initializedModules.has(name)) {
+      console.log(`[ModuleRegistry.initialize] Module '${name}' already initialized, skipping`);
       return;
     }
 
@@ -68,20 +69,38 @@ export class ModuleRegistry {
       throw new Error(`Module '${name}' not found`);
     }
 
+    console.log(`[ModuleRegistry.initialize] ▶ Initializing module '${name}'`, {
+      hasDependencies: !!module.dependencies && module.dependencies.length > 0,
+      dependencies: module.dependencies || [],
+      timestamp: new Date().toISOString()
+    });
+
     // Initialize dependencies first
     if (module.dependencies) {
       for (const dependency of module.dependencies) {
+        console.log(`[ModuleRegistry.initialize] Initializing dependency '${dependency}' of '${name}'`);
         await this.initialize(dependency);
       }
     }
 
     // Initialize the module
     if (module.initialize) {
-      await module.initialize();
+      console.log(`[ModuleRegistry.initialize] Calling initialize() for '${name}'`);
+      const startTime = performance.now();
+      try {
+        await module.initialize();
+        const duration = performance.now() - startTime;
+        console.log(`[ModuleRegistry.initialize] ✓ Module '${name}' initialize() completed (${duration.toFixed(2)}ms)`);
+      } catch (error) {
+        console.error(`[ModuleRegistry.initialize] ✗ Module '${name}' initialize() failed:`, error);
+        throw error;
+      }
+    } else {
+      console.log(`[ModuleRegistry.initialize] Module '${name}' has no initialize() method`);
     }
 
     this.initializedModules.add(name);
-    console.log(`Module '${name}' initialized`);
+    console.log(`[ModuleRegistry.initialize] ✓ Module '${name}' marked as initialized`);
   }
 
   /**
@@ -89,13 +108,40 @@ export class ModuleRegistry {
    */
   async initializeAll(): Promise<void> {
     const moduleNames = this.getModuleNames();
+    console.log(`[ModuleRegistry.initializeAll] ▶ Starting initialization of ${moduleNames.length} modules`, {
+      modules: moduleNames,
+      timestamp: new Date().toISOString()
+    });
+    
+    const startTime = performance.now();
+    let successCount = 0;
+    let failureCount = 0;
+    const failedModules: Array<{ name: string; error: string }> = [];
     
     for (const name of moduleNames) {
       try {
         await this.initialize(name);
+        successCount++;
       } catch (error) {
-        console.error(`Failed to initialize module '${name}':`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`✗ Failed to initialize module '${name}':`, error);
+        failureCount++;
+        failedModules.push({ name, error: errorMsg });
       }
+    }
+    
+    const duration = performance.now() - startTime;
+    console.log(`[ModuleRegistry.initializeAll] ✓ Module initialization completed`, {
+      totalModules: moduleNames.length,
+      successCount,
+      failureCount,
+      failedModules: failedModules.length > 0 ? failedModules : undefined,
+      duration: duration.toFixed(2) + 'ms',
+      timestamp: new Date().toISOString()
+    });
+    
+    if (failureCount > 0) {
+      console.warn(`[ModuleRegistry.initializeAll] ⚠️ ${failureCount} module(s) failed to initialize`, failedModules);
     }
   }
 

@@ -52,7 +52,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { rbacService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
 import { Role, Permission, RoleTemplate } from '@/types/rbac';
 
 const { TextArea } = Input;
@@ -67,6 +67,7 @@ interface RoleFormData {
 export const RoleManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  const rbacService = useService<any>('rbacService');
   const [form] = Form.useForm();
   const [templateForm] = Form.useForm();
 
@@ -85,6 +86,7 @@ export const RoleManagementPage: React.FC = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Load data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
   }, []);

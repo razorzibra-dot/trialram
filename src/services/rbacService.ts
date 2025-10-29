@@ -391,7 +391,50 @@ class RBACService {
     }, {} as Record<string, Permission[]>);
   }
 
-  validateRolePermissions(permissions: string[]): { valid: boolean; invalid: string[] } {
+  /**
+   * Check if action is permitted (overloaded method signature)
+   * Accepts either:
+   * 1. An action string + optional context (for module-specific RBAC checks)
+   * 2. An array of permission IDs (for traditional permission validation)
+   */
+  validateRolePermissions(actionOrPermissions: string | string[], context?: Record<string, any>): boolean | { valid: boolean; invalid: string[] } {
+    // If second parameter exists or first param looks like an action, treat as action check
+    if (context || typeof actionOrPermissions === 'string') {
+      // Action-based permission check
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        console.warn('[validateRolePermissions] No user found');
+        return false;
+      }
+      
+      const action = actionOrPermissions as string;
+      
+      // Map action to required permission
+      // Actions follow pattern: "resource:operation" or "resource_subresource:operation"
+      // e.g., "product_sales:create" -> "manage_product_sales"
+      const permissionRequired = this.mapActionToPermission(action);
+      
+      if (!permissionRequired) {
+        console.warn(`[validateRolePermissions] Unable to map action "${action}" to permission`);
+        // If mapping fails, allow access (graceful degradation)
+        return true;
+      }
+      
+      // Check if user has the required permission using authService's hasPermission
+      // which properly checks the user's role and permissions
+      const hasPermission = authService.hasPermission(permissionRequired);
+      
+      if (!hasPermission) {
+        console.warn(`[validateRolePermissions] User does not have permission "${permissionRequired}" for action "${action}"`);
+      } else {
+        console.log(`[validateRolePermissions] User has permission "${permissionRequired}" for action "${action}"`);
+      }
+      
+      return hasPermission;
+    }
+    
+    // Permission array validation (original behavior)
+    const permissions = Array.isArray(actionOrPermissions) ? actionOrPermissions : [actionOrPermissions];
     const validPermissions = this.mockPermissions.map(p => p.id);
     const invalid = permissions.filter(p => !validPermissions.includes(p));
     
@@ -399,6 +442,48 @@ class RBACService {
       valid: invalid.length === 0,
       invalid
     };
+  }
+
+  /**
+   * Map action string to required permission
+   * Converts action format like "product_sales:create" to "manage_product_sales"
+   */
+  private mapActionToPermission(action: string): string | null {
+    // Action format: "resource(:or_subresource):operation"
+    // e.g., "product_sales:create" -> "manage_product_sales"
+    const parts = action.split(':');
+    if (parts.length < 2) return null;
+    
+    const resource = parts[0];
+    const operation = parts[1];
+    
+    // For most operations, we need the "manage_resource" permission
+    // Special cases can be added here as needed
+    switch (operation) {
+      case 'create':
+      case 'edit':
+      case 'delete':
+      case 'change_status':
+      case 'approve':
+      case 'reject':
+      case 'bulk_delete':
+      case 'bulk_update_status':
+      case 'create_with_contract':
+      case 'edit_fields':
+      case 'export':
+      case 'view_audit':
+      case 'bulk_export':
+        // All these operations require the "manage_resource" permission
+        return `manage_${resource}`;
+      
+      case 'view':
+      case 'view_details':
+        // View operations can work with either "read" or "manage_resource"
+        return `manage_${resource}`;
+      
+      default:
+        return `manage_${resource}`;
+    }
   }
 }
 

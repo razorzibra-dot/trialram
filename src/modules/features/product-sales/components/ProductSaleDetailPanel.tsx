@@ -2,9 +2,10 @@
  * Product Sale Detail Panel
  * Side drawer for viewing product sale details in read-only mode
  * Aligned with Contracts module standards
+ * RBAC Integration: Controls view and action permissions
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Drawer,
   Descriptions,
@@ -16,6 +17,9 @@ import {
   Row,
   Col,
   Statistic,
+  Modal,
+  message,
+  Tooltip,
 } from 'antd';
 import {
   EditOutlined,
@@ -24,25 +28,100 @@ import {
   DollarOutlined,
   UserOutlined,
   ShoppingCartOutlined,
+  FileTextOutlined,
+  DeleteOutlined,
+  SwapOutlined,
+  FilePdfOutlined,
+  BellOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
-import { ProductSale } from '@/types/productSales';
+import { ProductSale, ProductSaleItem } from '@/types/productSales';
+import { StatusTransitionModal } from './StatusTransitionModal';
+import { InvoiceGenerationModal } from './InvoiceGenerationModal';
+import { InvoiceEmailModal } from './InvoiceEmailModal';
+import { NotificationHistoryPanel } from './NotificationHistoryPanel';
+import { useGenerateContractFromSale } from '../hooks/useGenerateContractFromSale';
+import { useProductSalesPermissions } from '../hooks/useProductSalesPermissions';
 
 interface ProductSaleDetailPanelProps {
   visible: boolean;
   productSale: ProductSale | null;
+  saleItems?: ProductSaleItem[];
   onClose: () => void;
   onEdit: () => void;
+  onGenerateContract?: () => void;
+  onDelete?: () => void;
+  onStatusChanged?: () => void;
+  onInvoiceGenerated?: (invoiceNumber: string) => void;
 }
 
 export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
   visible,
   productSale,
+  saleItems = [],
   onClose,
   onEdit,
+  onGenerateContract,
+  onDelete,
+  onStatusChanged,
+  onInvoiceGenerated,
 }) => {
+  const [showStatusTransition, setShowStatusTransition] = useState(false);
+  const [showInvoiceGeneration, setShowInvoiceGeneration] = useState(false);
+  const [showInvoiceEmail, setShowInvoiceEmail] = useState(false);
+  const [generatedInvoice, setGeneratedInvoice] = useState<any>(null);
+  const [showNotificationHistory, setShowNotificationHistory] = useState(false);
+  
+  // Hook for generating contracts from sales
+  const { generateContract } = useGenerateContractFromSale();
+  
+  // RBAC permission checking
+  const permissions = useProductSalesPermissions({
+    sale: productSale || undefined,
+    autoLoad: visible, // Load permissions when drawer opens
+  });
+
   if (!productSale) {
     return null;
   }
+
+  const handleGenerateContract = () => {
+    Modal.confirm({
+      title: 'Generate Service Contract',
+      content: `Create a new service contract for sale ${productSale.sale_number}? You'll be redirected to the contract creation form with pre-filled data from this sale.`,
+      okText: 'Yes, Generate',
+      cancelText: 'Cancel',
+      onOk() {
+        try {
+          // Navigate to contract creation with pre-filled data
+          generateContract(productSale);
+          
+          // Call callback if provided
+          if (onGenerateContract) {
+            onGenerateContract();
+          }
+        } catch (error) {
+          console.error('Error generating contract:', error);
+          message.error('Failed to generate contract. Please try again.');
+        }
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: 'Delete Product Sale',
+      content: `Are you sure you want to delete sale ${productSale.sale_number}? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk() {
+        if (onDelete) {
+          onDelete();
+        }
+      },
+    });
+  };
 
   const getStatusColor = (status: string): string => {
     const colorMap: Record<string, string> = {
@@ -76,18 +155,160 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
     .replace(/\b\w/g, l => l.toUpperCase());
 
   return (
-    <Drawer
-      title="Product Sale Details"
-      placement="right"
-      width={550}
-      onClose={onClose}
-      open={visible}
-      footer={
+    <>
+      <Drawer
+        title="Product Sale Details"
+        placement="right"
+        width={550}
+        onClose={onClose}
+        open={visible}
+        footer={
         <Space style={{ float: 'right' }}>
           <Button onClick={onClose}>Close</Button>
-          <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
-            Edit
-          </Button>
+          
+          {/* View Notification History - Always available if viewing details */}
+          <Tooltip title="View notification history">
+            <Button 
+              icon={<BellOutlined />} 
+              onClick={() => setShowNotificationHistory(true)}
+            >
+              Notifications
+            </Button>
+          </Tooltip>
+          
+          {/* Change Status - Only if permission granted */}
+          {permissions.canChangeStatus ? (
+            <Tooltip title="Change sale status">
+              <Button 
+                icon={<SwapOutlined />} 
+                onClick={() => setShowStatusTransition(true)}
+              >
+                Change Status
+              </Button>
+            </Tooltip>
+          ) : (
+            <Tooltip title="Permission denied: Cannot change status">
+              <Button 
+                icon={<SwapOutlined />}
+                disabled
+              >
+                Change Status
+              </Button>
+            </Tooltip>
+          )}
+          
+          {/* Generate Invoice - Only if delivered and permitted */}
+          {productSale.status === 'delivered' && saleItems.length > 0 && (
+            <>
+              {permissions.canExport ? (
+                <Tooltip title="Generate invoice for this sale">
+                  <Button 
+                    icon={<FilePdfOutlined />} 
+                    onClick={() => setShowInvoiceGeneration(true)}
+                    title="Generate invoice from this sale"
+                  >
+                    Generate Invoice
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Tooltip title="Permission denied: Cannot generate invoices">
+                  <Button 
+                    icon={<FilePdfOutlined />}
+                    disabled
+                    title="Permission denied"
+                  >
+                    Generate Invoice
+                  </Button>
+                </Tooltip>
+              )}
+              
+              {generatedInvoice && (
+                permissions.canExport ? (
+                  <Tooltip title="Send generated invoice to customer email">
+                    <Button 
+                      icon={<MailOutlined />} 
+                      onClick={() => setShowInvoiceEmail(true)}
+                      title="Send invoice via email"
+                      type="default"
+                    >
+                      Send Invoice Email
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Permission denied: Cannot send invoices">
+                    <Button 
+                      icon={<MailOutlined />}
+                      disabled
+                      type="default"
+                    >
+                      Send Invoice Email
+                    </Button>
+                  </Tooltip>
+                )
+              )}
+            </>
+          )}
+          
+          {/* Generate Contract - Only if permitted */}
+          {!productSale.service_contract_id && (
+            permissions.canCreate ? (
+              <Button 
+                icon={<FileTextOutlined />} 
+                onClick={handleGenerateContract}
+                title="Generate a service contract from this sale"
+              >
+                Generate Contract
+              </Button>
+            ) : (
+              <Tooltip title="Permission denied: Cannot generate contracts">
+                <Button 
+                  icon={<FileTextOutlined />}
+                  disabled
+                  title="Permission denied"
+                >
+                  Generate Contract
+                </Button>
+              </Tooltip>
+            )
+          )}
+          
+          {/* Delete - Only if permitted */}
+          {onDelete && (
+            permissions.canDelete ? (
+              <Button 
+                danger 
+                icon={<DeleteOutlined />} 
+                onClick={handleDelete}
+                title="Delete this product sale"
+              >
+                Delete
+              </Button>
+            ) : (
+              <Tooltip title="Permission denied: Cannot delete sales">
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled
+                  title="Permission denied"
+                >
+                  Delete
+                </Button>
+              </Tooltip>
+            )
+          )}
+          
+          {/* Edit - Only if permitted */}
+          {permissions.canEdit ? (
+            <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+              Edit
+            </Button>
+          ) : (
+            <Tooltip title="Permission denied: Cannot edit sales">
+              <Button type="primary" icon={<LockOutlined />} disabled>
+                Edit
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       }
     >
@@ -237,10 +458,21 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
               <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Service Contract</h3>
               <Descriptions column={1} size="small" bordered>
                 <Descriptions.Item label="Contract ID">
-                  {productSale.service_contract_id}
+                  <a href={`/app/service-contracts/${productSale.service_contract_id}`} target="_blank" rel="noopener noreferrer">
+                    {productSale.service_contract_id}
+                  </a>
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
                   <Tag color="blue">Linked</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Action">
+                  <Button 
+                    type="link" 
+                    size="small"
+                    onClick={() => window.open(`/app/service-contracts/${productSale.service_contract_id}`, '_blank')}
+                  >
+                    View Contract Details
+                  </Button>
                 </Descriptions.Item>
               </Descriptions>
             </>
@@ -262,6 +494,66 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
       ) : (
         <Empty description="No sale selected" />
       )}
-    </Drawer>
+      </Drawer>
+
+      {/* Status Transition Modal */}
+      <StatusTransitionModal
+        visible={showStatusTransition}
+        sale={productSale}
+        onClose={() => setShowStatusTransition(false)}
+        onSuccess={() => {
+          setShowStatusTransition(false);
+          if (onStatusChanged) {
+            onStatusChanged();
+          }
+        }}
+      />
+
+      {/* Invoice Generation Modal */}
+      {productSale && (
+        <InvoiceGenerationModal
+          visible={showInvoiceGeneration}
+          sale={productSale}
+          saleItems={saleItems}
+          onClose={() => setShowInvoiceGeneration(false)}
+          onSuccess={(invoice) => {
+            setShowInvoiceGeneration(false);
+            setGeneratedInvoice(invoice);
+            message.success(`Invoice ${invoice.invoice_number} generated successfully`);
+            if (onInvoiceGenerated) {
+              onInvoiceGenerated(invoice.invoice_number);
+            }
+          }}
+        />
+      )}
+
+      {/* Invoice Email Modal */}
+      {productSale && generatedInvoice && (
+        <InvoiceEmailModal
+          visible={showInvoiceEmail}
+          invoice={generatedInvoice}
+          sale={productSale}
+          saleItems={saleItems}
+          onClose={() => setShowInvoiceEmail(false)}
+          onSuccess={() => {
+            message.success('Invoice email sent successfully');
+          }}
+        />
+      )}
+
+      {/* Notification History Modal */}
+      {showNotificationHistory && (
+        <Modal
+          title="Notification History"
+          visible={showNotificationHistory}
+          onCancel={() => setShowNotificationHistory(false)}
+          footer={null}
+          width={800}
+          style={{ top: 20 }}
+        >
+          <NotificationHistoryPanel sale={productSale} />
+        </Modal>
+      )}
+    </>
   );
 };

@@ -11,7 +11,7 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 import { moduleRegistry, initializeModules } from './ModuleRegistry';
 import { createModularRouter } from './routing/ModularRouter';
-import { registerCoreModules } from './bootstrap';
+import { bootstrapApplication } from './bootstrap';
 import type { RouteObject } from 'react-router-dom';
 
 // Create React Query client
@@ -37,8 +37,8 @@ const ModularApp: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Register core modules
-        await registerCoreModules();
+        // Bootstrap application (registers all modules)
+        await bootstrapApplication();
         
         // Initialize all modules
         await initializeModules();

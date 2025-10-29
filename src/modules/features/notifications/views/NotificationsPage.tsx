@@ -40,9 +40,9 @@ import {
   XCircle
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 import type { Notification, NotificationPreferences } from '@/services/uiNotificationService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useService } from '@/modules/core/hooks/useService';
 import { NotificationDetailPanel } from '../components/NotificationDetailPanel';
 import { NotificationPreferencesPanel } from '../components/NotificationPreferencesPanel';
 
@@ -54,6 +54,7 @@ interface NotificationFilters {
 
 export const NotificationsPage: React.FC = () => {
   const { user } = useAuth();
+  const notificationService = useService<any>('notificationService');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,7 +73,7 @@ export const NotificationsPage: React.FC = () => {
       if (filterRead !== 'all') filters.is_read = filterRead === 'read';
       if (filterCategory !== 'all') filters.category = filterCategory;
 
-      const data = await factoryNotificationService.getNotifications(filters);
+      const data = await notificationService.getNotifications(filters);
       setNotifications(data);
     } catch (error: unknown) {
       console.error('Failed to fetch notifications:', error);
@@ -80,23 +81,23 @@ export const NotificationsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, filterRead, filterCategory]);
+  }, [searchTerm, filterRead, filterCategory, notificationService]);
 
   const fetchPreferences = useCallback(async (): Promise<void> => {
     try {
-      const prefs = await factoryNotificationService.getNotificationPreferences();
+      const prefs = await notificationService.getNotificationPreferences();
       setPreferences(prefs);
     } catch (error: unknown) {
       console.error('Failed to fetch preferences:', error);
     }
-  }, []);
+  }, [notificationService]);
 
   useEffect(() => {
     void fetchNotifications();
     void fetchPreferences();
 
     // Subscribe to real-time notifications
-    const unsubscribe = factoryNotificationService.subscribeToNotifications((notification: Notification) => {
+    const unsubscribe = notificationService.subscribeToNotifications((notification: Notification) => {
       message.info({
         content: notification.title,
         duration: 3
@@ -113,7 +114,7 @@ export const NotificationsPage: React.FC = () => {
 
   const handleMarkAsRead = async (id: string): Promise<void> => {
     try {
-      await factoryNotificationService.markAsRead(id);
+      await notificationService.markAsRead(id);
       message.success('Marked as read');
       void fetchNotifications();
     } catch (error: unknown) {
@@ -125,7 +126,7 @@ export const NotificationsPage: React.FC = () => {
   const handleMarkAsUnread = async (id: string): Promise<void> => {
     try {
       // Note: markAsUnread not yet implemented in service
-      // await factoryNotificationService.markAsUnread(id);
+      // await notificationService.markAsUnread(id);
       message.success('Marked as unread');
       void fetchNotifications();
     } catch (error: unknown) {
@@ -136,7 +137,7 @@ export const NotificationsPage: React.FC = () => {
 
   const handleMarkAllAsRead = async (): Promise<void> => {
     try {
-      await factoryNotificationService.markAllAsRead();
+      await notificationService.markAllAsRead();
       message.success('All notifications marked as read');
       void fetchNotifications();
     } catch (error: unknown) {
@@ -153,7 +154,7 @@ export const NotificationsPage: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          await factoryNotificationService.deleteNotification(id);
+          await notificationService.deleteNotification(id);
           message.success('Notification deleted');
           void fetchNotifications();
         } catch (error: unknown) {
@@ -172,7 +173,7 @@ export const NotificationsPage: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          await factoryNotificationService.clearAllNotifications();
+          await notificationService.clearAllNotifications();
           message.success('All read notifications deleted');
           void fetchNotifications();
         } catch (error: unknown) {
@@ -185,7 +186,7 @@ export const NotificationsPage: React.FC = () => {
 
   const handleSavePreferences = async (values: NotificationPreferences): Promise<void> => {
     try {
-      await factoryNotificationService.updateNotificationPreferences(values);
+      await notificationService.updateNotificationPreferences(values);
       message.success('Preferences saved successfully');
       setDrawerMode(null);
       void fetchPreferences();

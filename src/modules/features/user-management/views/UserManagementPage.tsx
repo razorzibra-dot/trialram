@@ -52,8 +52,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { userService } from '@/services/serviceFactory';
-import { User } from '@/types/crm';
+import { useService } from '@/modules/core/hooks/useService';
+import type { User } from '@/types/crm';
 
 const { Option } = Select;
 
@@ -70,6 +70,7 @@ interface UserFormData {
 export const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  const userService = useService<any>('userService');
   const [form] = Form.useForm();
 
   // State
@@ -84,6 +85,7 @@ export const UserManagementPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load users
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     loadUsers();
   }, [roleFilter, statusFilter, tenantFilter, searchText]);

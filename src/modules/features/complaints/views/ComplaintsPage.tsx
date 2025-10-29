@@ -3,9 +3,9 @@
  * Enhanced complaint management with lifecycle tracking
  */
 import React, { useEffect, useState, useCallback } from 'react';
-import { complaintService } from '@/services/complaintService';
 import { Complaint, ComplaintFilters } from '@/types/complaints';
 import { useAuth } from '@/contexts/AuthContext';
+import { useService } from '@/modules/core/hooks/useService';
 import { 
   Row, 
   Col, 
@@ -41,6 +41,7 @@ import { toast } from 'sonner';
 
 export const ComplaintsPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const complaintService = useService<any>('complaintService');
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

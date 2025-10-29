@@ -6,7 +6,7 @@ alwaysApply: true
 
 # Documentation Synchronization & Consolidation Rules
 
-**Last Updated**: 2025-01-17 (Added Summary & Report and Checklist Documentation Standards)  
+**Last Updated**: 2025-01-29 (Added Guide Documentation Standards)  
 **Status**: Active Enforcement
 
 ## Core Principle
@@ -161,6 +161,37 @@ PROJ_DOCS/10_CHECKLISTS/
 - ✅ Automatic logging in master index
 - ✅ Old versions archived to ARCHIVE/ organized by date
 - ✅ Consistent formatting across all checklists
+
+### Guide Documentation ⭐ NEW
+
+All guide documents in `/PROJ_DOCS/11_GUIDES/`:
+
+```
+PROJ_DOCS/11_GUIDES/
+  ├── YYYY-MM-DD_ProjectName_GuideType_v{version}.md
+  │   ├── Metadata Header (title, date, author, status)
+  │   ├── Overview & Purpose
+  │   ├── Table of Contents
+  │   ├── Prerequisites/Requirements
+  │   ├── Step-by-Step Instructions
+  │   ├── Examples & Use Cases
+  │   ├── Troubleshooting Section
+  │   ├── Related Resources
+  │   └── Version History & Archival Info
+  ├── Index_Guide.md (Master index)
+  └── ARCHIVE/
+      └── {YearMonth}/ (organized by date)
+          └── archived_guides.md
+```
+
+**Key Requirements**:
+- ✅ Single source of truth for all guide materials
+- ✅ Standardized naming: `YYYY-MM-DD_ProjectName_GuideType_v{version}.md`
+- ✅ Metadata header with title, date, author, status, and guideType
+- ✅ Version control with explicit version numbers
+- ✅ Automatic logging in master index
+- ✅ Old versions archived to ARCHIVE/ organized by date
+- ✅ Consistent formatting across all guides
 
 ---
 
@@ -435,6 +466,180 @@ The agent must:
 
 ---
 
+## Guide Documentation Standards ⭐ NEW ENFORCEMENT
+
+### Purpose
+All guide documents, implementation guides, setup guides, troubleshooting guides, and best practice guides must be centrally managed in `/PROJ_DOCS/11_GUIDES/` to establish a **single source of truth** for all guide materials across the project.
+
+### Mandatory Metadata Header
+Every guide file must start with:
+
+```markdown
+---
+title: {Guide Title}
+description: {One-line description of what this guide covers}
+date: YYYY-MM-DD
+author: {Name/Team}
+version: {X.Y.Z}
+status: {active|archived|deprecated|draft}
+projectName: {Associated Project}
+guideType: {setup|implementation|troubleshooting|best-practices|integration|migration|performance|deployment|security|api}
+scope: {Scope of applicability}
+audience: {Target audience: developers|operators|admins|end-users}
+difficulty: {beginner|intermediate|advanced}
+estimatedTime: {X minutes or X hours}
+previousVersions: [list of prior versions if applicable]
+nextReview: YYYY-MM-DD (if applicable)
+---
+
+# {Title}
+
+## Overview & Purpose
+{Clear explanation of what this guide covers and why it's important}
+
+## Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Step-by-Step Instructions](#step-by-step-instructions)
+3. [Examples & Use Cases](#examples--use-cases)
+4. [Troubleshooting](#troubleshooting)
+5. [Related Resources](#related-resources)
+
+## Prerequisites/Requirements
+{Prerequisites that must be met before starting}
+
+## Step-by-Step Instructions
+
+### Step 1: {Action}
+{Detailed instructions}
+
+### Step 2: {Action}
+{Detailed instructions}
+
+## Examples & Use Cases
+
+### Example 1: {Use Case}
+{Detailed example with code/screenshots}
+
+### Example 2: {Use Case}
+{Detailed example with code/screenshots}
+
+## Troubleshooting
+
+### Issue: {Problem}
+**Solution**: {Detailed resolution steps}
+
+### Issue: {Problem}
+**Solution**: {Detailed resolution steps}
+
+## Related Resources
+- [Related Guide 1](link)
+- [Related Documentation](link)
+
+## Version History
+- v{X.Y.Z} - {Date} - {Changes}
+```
+
+### Filing Rules ✅
+
+1. **Naming Convention**: `YYYY-MM-DD_ProjectName_GuideType_v{version}.md`
+   - Example: `2025-01-29_DeploymentProcess_PreLaunchGuide_v1.0.md`
+   - Guide Types: setup, implementation, troubleshooting, best-practices, integration, migration, performance, deployment, security, api
+
+2. **Destination**: `/PROJ_DOCS/11_GUIDES/`
+   - No exceptions — all guides go here
+   - Move existing guides from scattered locations (04_IMPLEMENTATION_GUIDES, 05_SETUP_CONFIGURATION, etc.)
+
+3. **Master Index**: Update `/PROJ_DOCS/11_GUIDES/Index_Guide.md`
+   - Log every new entry with date, title, type, audience, author, and status
+
+4. **Version Control**: 
+   - Always use explicit version numbers (v1.0, v1.1, v2.0)
+   - Update version when scope changes, steps are added/modified, or clarifications made
+   - Never overwrite — create new versioned file
+
+5. **Archival**: 
+   - When superseded or older than 12 months, move to `PROJ_DOCS/11_GUIDES/ARCHIVE/{YearMonth}/`
+   - Update status to "archived" in metadata
+   - Keep entry in master index with archive location noted
+
+### Content Standards ✓
+
+- [ ] Metadata header complete with all required fields
+- [ ] Version number explicit and consistent
+- [ ] Purpose clearly explained
+- [ ] Prerequisites documented and easy to find
+- [ ] Step-by-step instructions clear and detailed
+- [ ] Each step includes success criteria or expected outcome
+- [ ] Examples provided for key concepts
+- [ ] Troubleshooting section addresses common issues
+- [ ] All links are valid and current
+- [ ] Difficulty level and estimated time accurate
+- [ ] Target audience clearly identified
+- [ ] No critical steps left unclear or ambiguous
+- [ ] Related guides/documents linked
+- [ ] Markdown formatting clean and consistent
+- [ ] Logged in master index immediately
+- [ ] Applicable to current project/environment
+
+### Guide Best Practices ⭐
+
+✅ **DO**:
+- Start with clear prerequisites and requirements
+- Use numbered steps with specific actions
+- Include expected outcomes after each step
+- Provide concrete examples with code/screenshots
+- Link to related guides and documentation
+- Break complex guides into sections
+- Include troubleshooting section
+- Estimate time to complete
+- Specify target audience level (beginner/intermediate/advanced)
+- Update version when steps significantly change
+- Archive old versions when replaced
+- Use consistent terminology throughout
+
+❌ **DON'T**:
+- Leave steps vague or open to interpretation
+- Mix multiple independent guides into one
+- Forget to update versions when making changes
+- Leave outdated guides in "active" status
+- Store guides outside `/PROJ_DOCS/11_GUIDES/`
+- Create guides without metadata headers
+- Mix guide content with troubleshooting reports
+- Skip the Table of Contents in long guides
+- Assume reader knowledge without documenting prerequisites
+- Use jargon without explanation
+- Mix multiple difficulty levels in one guide
+- Leave new guides unlogged in master index
+
+### Auto-Logging Requirements
+
+The agent must:
+- ✅ Create new guide in correct location
+- ✅ Add entry to `/PROJ_DOCS/11_GUIDES/Index_Guide.md`
+- ✅ Include file path, date created, type, audience, author, and brief description in index
+- ✅ Ensure metadata header is complete before considering task done
+- ✅ Archive previous versions when creating updates
+- ✅ Maintain version control discipline
+- ✅ Link to related guides in the index
+- ✅ Notify team when new critical guides are added
+
+### Violations & Penalties
+
+| Violation | Action |
+|-----------|--------|
+| Guide in root directory | Move to `/PROJ_DOCS/11_GUIDES/` immediately |
+| Missing metadata header | Reject submission — header is mandatory |
+| No version number | Add versioning before acceptance |
+| Vague or incomplete steps | Clarify all steps before acceptance |
+| Not logged in master index | Add entry with timestamp and type |
+| Stale guide (12+ months old) not archived | Archive and update metadata |
+| Multiple independent guides combined | Split into separate files |
+| Guide without Table of Contents (if length > 1000 words) | Add TOC before acceptance |
+| Outdated guide still marked "active" | Update status to "archived" |
+| Missing examples or use cases | Add practical examples before acceptance |
+
+---
+
 ## Consolidation Rules (Enforcement ⚠️)
 
 ### ✅ DO
@@ -460,6 +665,16 @@ The agent must:
 - ✅ Log every new checklist in master index immediately
 - ✅ Archive old checklists (9+ months) to ARCHIVE/{YearMonth}/ subdirectory
 - ✅ Update version when checklist items significantly change
+- ✅ Store ALL guides in `/PROJ_DOCS/11_GUIDES/`
+- ✅ Use standardized guide naming: `YYYY-MM-DD_ProjectName_GuideType_v{version}.md`
+- ✅ Include metadata header with guideType, audience, and difficulty level
+- ✅ Use numbered steps for procedural guides
+- ✅ Include examples and use cases in all guides
+- ✅ Add troubleshooting section to guides
+- ✅ Specify target audience (developers|operators|admins|end-users)
+- ✅ Log every new guide in master index immediately
+- ✅ Archive old guides (12+ months) to ARCHIVE/{YearMonth}/ subdirectory
+- ✅ Update version when guide steps or content significantly change
 
 ### ❌ DON'T
 - ❌ Create multiple docs for the same feature
@@ -484,6 +699,18 @@ The agent must:
 - ❌ Forget to add sign-off section to checklists
 - ❌ Leave new checklists unlogged in the master index
 - ❌ Overwrite checklist files — always create new versions
+- ❌ Store guides outside `/PROJ_DOCS/11_GUIDES/`
+- ❌ Create guides without mandatory metadata header
+- ❌ Mix multiple independent guides into a single file
+- ❌ Leave vague or incomplete steps in guides
+- ❌ Skip prerequisites and requirements section
+- ❌ Create guides without examples or use cases
+- ❌ Forget to include troubleshooting section
+- ❌ Leave guides in "active" status when outdated
+- ❌ Leave new guides unlogged in the master index
+- ❌ Overwrite guide files — always create new versions
+- ❌ Create guides without Table of Contents (if longer than 1000 words)
+- ❌ Use jargon without explaining technical terms
 
 ---
 

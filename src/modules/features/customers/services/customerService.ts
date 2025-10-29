@@ -298,42 +298,84 @@ export class CustomerService extends BaseService {
     recentlyAdded: number;
   }> {
     try {
+      console.log('[CustomerService] getCustomerStats() called');
+      
+      // Try to use the factory's getCustomerStats if available
+      const factoryService = apiServiceFactory.getCustomerService();
+      if (factoryService.getCustomerStats) {
+        console.log('[CustomerService] Using factory service getCustomerStats()');
+        const factoryStats = await factoryService.getCustomerStats();
+        
+        // Map factory stats to wrapper format
+        return {
+          total: (factoryStats as any).totalCustomers || 0,
+          active: (factoryStats as any).activeCustomers || 0,
+          inactive: (factoryStats as any).inactiveCustomers || 0,
+          prospects: (factoryStats as any).prospectCustomers || 0,
+          byIndustry: (factoryStats as any).byIndustry || {},
+          bySize: (factoryStats as any).bySize || {},
+          recentlyAdded: 0, // Factory doesn't calculate this, would need additional logic
+        };
+      }
+      
+      // Fallback: fetch customers and calculate stats manually
+      console.log('[CustomerService] Falling back to manual calculation via getCustomers()');
       try {
         const customers = await apiServiceFactory.getCustomerService().getCustomers();
         
+        console.log('[CustomerService] Got customers array, length:', customers?.length || 0);
+        console.log('[CustomerService] Customers data type:', typeof customers, 'Is array?', Array.isArray(customers));
+        
+        // Safety check: handle both array and paginated response
+        let customerArray: any[] = [];
+        if (Array.isArray(customers)) {
+          customerArray = customers;
+        } else if (customers && typeof customers === 'object' && 'data' in customers) {
+          console.log('[CustomerService] ⚠️ Got paginated response instead of array!');
+          customerArray = (customers as any).data || [];
+        } else {
+          console.error('[CustomerService] ❌ Unexpected response format:', customers);
+          customerArray = [];
+        }
+        
         const stats = {
-          total: customers.length,
-          active: customers.filter(c => c.status === 'active').length,
-          inactive: customers.filter(c => c.status === 'inactive').length,
-          prospects: customers.filter(c => c.status === 'prospect').length,
+          total: customerArray.length,
+          active: customerArray.filter(c => (c as any).status === 'active').length,
+          inactive: customerArray.filter(c => (c as any).status === 'inactive').length,
+          prospects: customerArray.filter(c => (c as any).status === 'prospect').length,
           byIndustry: {} as Record<string, number>,
           bySize: {} as Record<string, number>,
           recentlyAdded: 0,
         };
 
         // Calculate industry distribution
-        customers.forEach(customer => {
-          const industry = customer.industry || 'Unknown';
+        customerArray.forEach(customer => {
+          const industry = (customer as any).industry || 'Unknown';
           stats.byIndustry[industry] = (stats.byIndustry[industry] || 0) + 1;
         });
 
         // Calculate size distribution
-        customers.forEach(customer => {
-          const size = customer.size || 'Unknown';
+        customerArray.forEach(customer => {
+          const size = (customer as any).size || 'Unknown';
           stats.bySize[size] = (stats.bySize[size] || 0) + 1;
         });
 
         // Calculate recently added (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        stats.recentlyAdded = customers.filter(c => 
-          new Date(c.created_at) > thirtyDaysAgo
+        stats.recentlyAdded = customerArray.filter(c => 
+          new Date((c as any).created_at) > thirtyDaysAgo
         ).length;
 
+        console.log('[CustomerService] Calculated stats:', stats);
         return stats;
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('[CustomerService] ❌ Error calculating stats:', errorMsg, error);
+        
         // Handle tenant context not initialized gracefully
-        if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+        if (errorMsg.includes('Tenant context not initialized') || errorMsg.includes('Unauthorized')) {
+          console.log('[CustomerService] 📋 Returning empty stats due to auth/tenant context');
           // Return empty stats instead of throwing
           return {
             total: 0,
@@ -348,7 +390,8 @@ export class CustomerService extends BaseService {
         throw error;
       }
     } catch (error) {
-      console.error('Error fetching customer stats:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('[CustomerService] ❌ CRITICAL Error fetching customer stats:', errorMsg, error);
       throw error;
     }
   }

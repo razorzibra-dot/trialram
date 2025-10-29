@@ -157,7 +157,7 @@ export async function bootstrapApplication(): Promise<void> {
   // Register modules in order
   await registerCoreModules();
   await registerLayoutModules();
-  await registerFeatureModules();
+  // Note: registerFeatureModules() is already called inside registerCoreModules()
   
   console.log('Application bootstrap completed');
 }

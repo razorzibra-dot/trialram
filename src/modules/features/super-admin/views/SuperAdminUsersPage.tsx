@@ -48,8 +48,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { userService } from '@/services/userService';
-import { tenantService } from '@/services/tenantService';
+import { useService } from '@/modules/core/hooks/useService';
 import { User } from '@/types/auth';
 import { Tenant } from '@/types/rbac';
 
@@ -68,6 +67,8 @@ interface UserFormData {
 const SuperAdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, user: currentUser } = useAuth();
+  const userService = useService<any>('userService');
+  const tenantService = useService<any>('tenantService');
   const [form] = Form.useForm();
 
   // Check super admin permission
@@ -88,6 +89,7 @@ const SuperAdminUsersPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isSuperAdmin) {
       loadData();

@@ -409,6 +409,44 @@ class CustomerService {
     return { success, errors };
   }
 
+  async getCustomerStats(): Promise<{
+    totalCustomers: number;
+    activeCustomers: number;
+    prospectCustomers: number;
+    inactiveCustomers: number;
+    byIndustry: Record<string, number>;
+    bySize: Record<string, number>;
+    byStatus: Record<string, number>;
+  }> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    const customers = this.mockCustomers.filter(c => c.tenant_id === user.tenant_id);
+
+    // Calculate total customers by status
+    const byStatus: Record<string, number> = {};
+    const byIndustry: Record<string, number> = {};
+    const bySize: Record<string, number> = {};
+
+    customers.forEach(customer => {
+      byStatus[customer.status] = (byStatus[customer.status] || 0) + 1;
+      byIndustry[customer.industry] = (byIndustry[customer.industry] || 0) + 1;
+      bySize[customer.size] = (bySize[customer.size] || 0) + 1;
+    });
+
+    return {
+      totalCustomers: customers.length,
+      activeCustomers: customers.filter(c => c.status === 'active').length,
+      prospectCustomers: customers.filter(c => c.status === 'prospect').length,
+      inactiveCustomers: customers.filter(c => c.status === 'inactive').length,
+      byIndustry,
+      bySize,
+      byStatus
+    };
+  }
+
   async getIndustries(): Promise<string[]> {
     return ['Technology', 'Manufacturing', 'Software', 'Retail', 'Healthcare', 'Finance', 'Education', 'Other'];
   }

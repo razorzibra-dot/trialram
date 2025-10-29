@@ -37,7 +37,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { rbacService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
 import { Role, Permission } from '@/types/rbac';
 
 interface PermissionMatrixRow {
@@ -52,6 +52,7 @@ interface PermissionMatrixRow {
 export const PermissionMatrixPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  const rbacService = useService<any>('rbacService');
   const canManageRoles = hasPermission('manage_roles');
 
   // State
@@ -64,6 +65,7 @@ export const PermissionMatrixPage: React.FC = () => {
   const [showSystemRoles, setShowSystemRoles] = useState(true);
 
   // Load data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
   }, [showSystemRoles]);

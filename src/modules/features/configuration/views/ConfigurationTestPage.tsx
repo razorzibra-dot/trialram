@@ -30,9 +30,9 @@ import {
 } from '@ant-design/icons';
 import { PageHeader } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { configTestService } from '../services/configTestService';
+import { useService } from '@/modules/core/hooks/useService';
 import { ConfigTestResultPanel } from '../components/ConfigTestResultPanel';
-import {
+import type {
   EmailTestConfig,
   SMSTestConfig,
   PaymentTestConfig,
@@ -46,6 +46,7 @@ const { Title } = Typography;
 
 const ConfigurationTestPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const configTestService = useService<any>('configTestService');
   const [emailForm] = Form.useForm();
   const [smsForm] = Form.useForm();
   const [paymentForm] = Form.useForm();

@@ -7,15 +7,37 @@ import { userManagementRoutes } from './routes';
 
 export const userManagementModule: FeatureModule = {
   name: 'user-management',
+  path: '/user-management',
   routes: userManagementRoutes,
-  services: [],
+  services: ['userService', 'rbacService'],
   components: {},
   dependencies: ['core', 'shared'],
   async initialize() {
-    console.log('User Management module initialized');
+    try {
+      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
+      const { userService, rbacService } = await import('@/services/serviceFactory');
+      
+      // Services are factory-routed instances, not constructors
+      registerServiceInstance('userService', userService);
+      registerServiceInstance('rbacService', rbacService);
+      
+      console.log('[User Management] ✅ userService registered');
+      console.log('[User Management] ✅ rbacService registered');
+      console.log('[User Management] ✅ Module initialized successfully');
+    } catch (error) {
+      console.error('[User Management] ❌ Initialization failed:', error);
+      throw error;
+    }
   },
   async cleanup() {
-    console.log('User Management module cleanup');
+    try {
+      const { unregisterService } = await import('@/modules/core/services/ServiceContainer');
+      unregisterService('userService');
+      unregisterService('rbacService');
+      console.log('[User Management] ✅ Services unregistered');
+    } catch (error) {
+      console.error('[User Management] ❌ Cleanup failed:', error);
+    }
   },
 };
 

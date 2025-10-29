@@ -7,22 +7,20 @@
  * ARCHITECTURE:
  * =============
  * This file provides a unified interface for all services in the application
- * with seamless switching between THREE backend systems:
+ * with seamless switching between TWO backend systems:
  * 
  * 1. MOCK/STATIC DATA (src/services/*Service.ts)
  *    - Development and testing with static data
  *    - Set: VITE_API_MODE=mock or VITE_USE_MOCK_API=true
  * 
- * 2. REAL .NET CORE BACKEND (src/services/real/*Service.ts)
- *    - Production API backend
- *    - Set: VITE_API_MODE=real or VITE_USE_MOCK_API=false
- *    - Requires: dotnet backend running at VITE_API_BASE_URL
- * 
- * 3. SUPABASE POSTGRESQL (src/services/supabase/*Service.ts - Phase 3)
+ * 2. SUPABASE POSTGRESQL (src/services/supabase/*Service.ts - Phase 3)
  *    - Modern PostgreSQL with real-time capabilities
  *    - Multi-tenant with Row-Level Security
  *    - Set: VITE_API_MODE=supabase
  *    - Requires: Supabase local/cloud setup
+ * 
+ * NOTE: .NET Core Backend (.NET) was planned but never implemented.
+ *       Legacy placeholder files archived to: MARK_FOR_DELETE/legacy_services_real/
  * 
  * SWITCHING BACKENDS:
  * ===================
@@ -58,11 +56,11 @@
  * SERVICE STRUCTURE:
  * ==================
  * ├── Mock Services: src/services/*Service.ts
- * ├── Real Services: src/services/real/*Service.ts
  * ├── Supabase Services: src/services/supabase/*Service.ts (Phase 3)
  * ├── Interfaces: src/services/api/apiServiceFactory.ts
  * ├── Configuration: src/config/apiConfig.ts
- * └── Custom Hooks: src/hooks/useSupabase*.ts (Phase 4)
+ * ├── Custom Hooks: src/hooks/useSupabase*.ts (Phase 4)
+ * └── Archived Services: MARK_FOR_DELETE/legacy_services_real/ (unmaintained)
  * 
  * PHASE 4 FEATURES:
  * =================
@@ -94,7 +92,7 @@ import {
   IContractService,
   INotificationService
 } from './api/apiServiceFactory';
-import { productSaleService as factoryProductSaleService, jobWorkService as factoryJobWorkService, notificationService as factoryNotificationService } from './serviceFactory';
+import { productSaleService as factoryProductSaleService, jobWorkService as factoryJobWorkService, notificationService as factoryNotificationService, tenantService as factoryTenantService } from './serviceFactory';
 import { Customer, CustomerTag, Sale, Deal, Ticket } from '@/types/crm';
 import { User } from '@/types/auth';
 import { 
@@ -892,6 +890,8 @@ export function getServiceHealth(): {
 export { uiNotificationService };
 // Export the data notification service from factory
 export { notificationService } from './serviceFactory';
+// Export the tenant service from factory
+export { tenantService } from './serviceFactory';
 
 // Default export for convenience
 export default {
@@ -905,6 +905,7 @@ export default {
   dashboard: dashboardService,
   notification: factoryNotificationService,  // Data notification service from factory
   uiNotification: uiNotificationService,      // UI notification (messages/alerts)
+  tenant: factoryTenantService,               // Tenant service from factory
   file: fileService,
   audit: auditService,
   factory: apiServiceFactory,

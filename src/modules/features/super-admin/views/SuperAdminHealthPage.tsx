@@ -26,13 +26,14 @@ import {
 } from '@ant-design/icons';
 import { PageHeader, StatCard } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { healthService } from '../services/healthService';
+import { useService } from '@/modules/core/hooks/useService';
 import { ServiceDetailPanel } from '../components/ServiceDetailPanel';
-import { ServiceHealth, SystemMetrics, IncidentLog } from '../types/health';
+import type { ServiceHealth, SystemMetrics, IncidentLog } from '../types/health';
 import { Activity, Zap, AlertCircle, CheckCircle } from 'lucide-react';
 
 const SuperAdminHealthPage: React.FC = () => {
   const { user } = useAuth();
+  const healthService = useService<any>('healthService');
 
   // State
   const [services, setServices] = useState<ServiceHealth[]>([]);
@@ -49,6 +50,7 @@ const SuperAdminHealthPage: React.FC = () => {
   const [isPanelVisible, setIsPanelVisible] = useState(false);
 
   // Auto-refresh every 30 seconds
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchHealthData();
     const interval = setInterval(fetchHealthData, 30000);

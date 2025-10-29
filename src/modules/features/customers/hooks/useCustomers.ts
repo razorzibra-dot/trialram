@@ -10,8 +10,19 @@ import { CustomerService, CustomerFilters, CreateCustomerData } from '../service
 import { inject } from '@/modules/core/services/ServiceContainer';
 import { useTenantContext } from '@/hooks/useTenantContext';
 
-// Get customer service instance
-const getCustomerService = () => inject<CustomerService>('customerService');
+// Get customer service instance with error handling
+const getCustomerService = () => {
+  try {
+    const service = inject<CustomerService>('customerService');
+    if (!service) {
+      throw new Error('CustomerService instance is null or undefined');
+    }
+    return service;
+  } catch (error) {
+    console.warn('[useCustomers] Failed to get customer service:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+};
 
 /**
  * Hook for fetching customers with pagination and filtering
@@ -48,7 +59,7 @@ export function useCustomers(filters: CustomerFilters = {}) {
     isTenantInitialized, 
     tenantId,
     enabled: isTenantInitialized,
-    customersCount: customers.length
+    customersCount: customers?.length ?? 0
   });
 
   const query = useQuery(
@@ -69,11 +80,25 @@ export function useCustomers(filters: CustomerFilters = {}) {
       enabled: isTenantInitialized,
       onSuccess: (data) => {
         console.log('[useCustomers] onSuccess callback triggered with data:', data);
-        setCustomers(data.data);
+        console.log('[useCustomers] Data type:', typeof data);
+        console.log('[useCustomers] Is array?', Array.isArray(data));
+        console.log('[useCustomers] data.data:', data?.data);
+        console.log('[useCustomers] data.total:', data?.total);
+        console.log('[useCustomers] data.page:', data?.page);
+        
+        // Extract the customer array - handle both formats
+        const customerArray = Array.isArray(data) ? data : (data?.data || []);
+        const pageNum = data?.page || 1;
+        const pageSize = data?.pageSize || 20;
+        const total = data?.total || (Array.isArray(data) ? data.length : 0);
+        
+        console.log('[useCustomers] Setting customers with:', { customerArray: customerArray.length, pageNum, pageSize, total });
+        
+        setCustomers(customerArray);
         setPagination({
-          page: data.page,
-          pageSize: data.pageSize,
-          total: data.total,
+          page: pageNum,
+          pageSize: pageSize,
+          total: total,
         });
         setError(null);
       },
@@ -267,9 +292,72 @@ export function useCustomerStats() {
 
   return useQuery(
     ['customer-stats'],
-    () => getCustomerService().getCustomerStats(),
+    async () => {
+      try {
+        const service = getCustomerService();
+        const protoMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(service) || {});
+        const ownMethods = Object.getOwnPropertyNames(service || {});
+        
+        console.log('[useCustomerStats] Retrieved service:', {
+          type: typeof service,
+          constructor: (service as any)?.constructor?.name || 'unknown',
+          hasGetCustomerStats: typeof (service as any)?.getCustomerStats,
+          protoMethodsCount: protoMethods.length,
+          protoMethods: protoMethods,
+          ownMethods: ownMethods,
+          isGetCustomerStatsCallable: typeof (service as any)?.getCustomerStats === 'function'
+        });
+        
+        if (typeof (service as any)?.getCustomerStats !== 'function') {
+          console.error('[useCustomerStats] ✗ getCustomerStats is not a function!', {
+            service,
+            type: typeof (service as any)?.getCustomerStats
+          });
+          throw new Error(`getCustomerStats is not a function. Got type: ${typeof (service as any)?.getCustomerStats}`);
+        }
+        
+        const result = await (service as any).getCustomerStats();
+        console.log('[useCustomerStats] ✓ Retrieved stats:', result);
+        return result;
+      } catch (error) {
+        console.error('[useCustomerStats] ✗ Error retrieving stats:', error);
+        throw error;
+      }
+    },
     {
       enabled: isTenantInitialized,
+      onSuccess: (data) => {
+        // Log data format information
+        console.log('[useCustomerStats] onSuccess callback triggered with data:', data);
+        console.log('[useCustomerStats] Data type:', typeof data);
+        console.log('[useCustomerStats] Is array?', Array.isArray(data));
+        console.log('[useCustomerStats] Data structure:', {
+          totalCustomers: (data as any)?.totalCustomers,
+          activeCustomers: (data as any)?.activeCustomers,
+          inactiveCustomers: (data as any)?.inactiveCustomers,
+          prospectCustomers: (data as any)?.prospectCustomers,
+          byIndustry: (data as any)?.byIndustry,
+          bySize: (data as any)?.bySize,
+          byStatus: (data as any)?.byStatus,
+        });
+        
+        // Ensure we have the expected structure
+        if (!data || typeof data !== 'object') {
+          console.warn('[useCustomerStats] ⚠️ Stats data is not an object:', data);
+        }
+        
+        // Verify all required fields exist (from Supabase service)
+        const requiredFields = ['totalCustomers', 'activeCustomers', 'prospectCustomers'];
+        const missingFields = requiredFields.filter(field => !(field in (data as any)));
+        if (missingFields.length > 0) {
+          console.warn('[useCustomerStats] ⚠️ Missing fields in stats:', missingFields);
+        } else {
+          console.log('[useCustomerStats] ✅ All required fields present - stats are valid!');
+        }
+      },
+      onError: (error) => {
+        console.error('[useCustomerStats] onError callback triggered with error:', error);
+      },
       staleTime: 5 * 60 * 1000, // 5 minutes
     }
   );

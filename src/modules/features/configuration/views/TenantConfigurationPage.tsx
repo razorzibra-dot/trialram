@@ -44,7 +44,7 @@ import {
   Clock
 } from 'lucide-react';
 import { PageHeader } from '@/components/common';
-import { tenantService } from '@/services/tenantService';
+import { useService } from '@/modules/core/hooks/useService';
 import { useAuth } from '@/contexts/AuthContext';
 import { TenantSettings } from '@/types/rbac';
 import type { Color } from 'antd/es/color-picker';
@@ -53,6 +53,7 @@ const { TextArea } = Input;
 
 export const TenantConfigurationPage: React.FC = () => {
   const { user } = useAuth();
+  const tenantService = useService<any>('tenantService');
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

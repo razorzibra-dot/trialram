@@ -35,9 +35,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { auditService, AuditLog } from '@/services/auditService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useService } from '@/modules/core/hooks/useService';
 import dayjs, { Dayjs } from 'dayjs';
+import type { AuditLog } from '@/services/auditService';
 
 const { RangePicker } = DatePicker;
 
@@ -51,6 +52,7 @@ interface AuditLogFilters {
 
 export const LogsPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const auditService = useService<any>('auditService');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

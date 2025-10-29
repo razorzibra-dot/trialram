@@ -44,8 +44,9 @@ import {
   Mail
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { pdfTemplateService, PDFTemplate } from '@/services/pdfTemplateService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useService } from '@/modules/core/hooks/useService';
+import type { PDFTemplate } from '@/services/pdfTemplateService';
 import { PDFTemplateDetailPanel } from '../components/PDFTemplateDetailPanel';
 import { PDFTemplateFormPanel } from '../components/PDFTemplateFormPanel';
 
@@ -63,6 +64,7 @@ interface TemplateFormValues {
 
 export const PDFTemplatesPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const pdfTemplateService = useService<any>('pdfTemplateService');
   const [templates, setTemplates] = useState<PDFTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

@@ -76,13 +76,22 @@ export interface ServiceContractFormData {
 // Filter interfaces
 export interface ProductSaleFilters {
   search?: string;
+  sale_id?: string;
   customer_id?: string;
+  customer_name?: string;
   product_id?: string;
+  product_name?: string;
   status?: string;
   date_from?: string;
   date_to?: string;
   min_amount?: number;
   max_amount?: number;
+  min_price?: number;
+  max_price?: number;
+  warranty_status?: string;
+  start_date?: string;
+  end_date?: string;
+  notes?: string;
 }
 
 export interface ServiceContractFilters {

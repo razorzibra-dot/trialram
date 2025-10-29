@@ -14,6 +14,7 @@ import { supabaseCompanyService } from './supabase/companyService';
 import { supabaseUserService } from './api/supabase/userService';
 import { supabaseRbacService } from './api/supabase/rbacService';
 import { supabaseNotificationService } from './supabase/notificationService';
+import { supabaseTenantService } from './supabase/tenantService';
 import { productSaleService as mockProductSaleService } from './productSaleService';
 import { customerService as mockCustomerService } from './customerService';
 import { jobWorkService as mockJobWorkService } from './jobWorkService';
@@ -22,6 +23,7 @@ import { companyService as mockCompanyService } from './companyService';
 import { userService as mockUserService } from './userService';
 import { rbacService as mockRbacService } from './rbacService';
 import { notificationService as mockNotificationService } from './notificationService';
+import { tenantService as mockTenantService } from './tenantService';
 
 type ApiMode = 'mock' | 'supabase' | 'real';
 
@@ -212,6 +214,23 @@ class ServiceFactory {
   }
 
   /**
+   * Get Tenant Service
+   */
+  getTenantService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseTenantService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseTenantService;
+      case 'mock':
+      default:
+        return mockTenantService;
+    }
+  }
+
+  /**
    * Get Service (generic method for future extensibility)
    */
   getService(serviceName: string) {
@@ -241,6 +260,9 @@ class ServiceFactory {
       case 'notification':
       case 'notifications':
         return this.getNotificationService();
+      case 'tenant':
+      case 'tenants':
+        return this.getTenantService();
       // Add other services as needed
       default:
         throw new Error(`Unknown service: ${serviceName}`);
@@ -355,6 +377,10 @@ export const customerService = {
     serviceFactory.getCustomerService().getIndustries(...args),
   getSizes: (...args: Parameters<typeof supabaseCustomerService.getSizes>) =>
     serviceFactory.getCustomerService().getSizes(...args),
+  getCustomerStats: (...args: Parameters<typeof supabaseCustomerService.getCustomerStats>) =>
+    serviceFactory.getCustomerService().getCustomerStats(...args),
+  searchCustomers: (...args: Parameters<typeof supabaseCustomerService.searchCustomers>) =>
+    serviceFactory.getCustomerService().searchCustomers(...args),
 };
 
 // Export for convenience - Job Work Service
@@ -521,6 +547,47 @@ export const notificationService = {
     serviceFactory.getNotificationService().getUnreadCount(...args),
   getNotificationStats: (...args: Parameters<typeof mockNotificationService.getNotificationStats>) =>
     serviceFactory.getNotificationService().getNotificationStats(...args),
+};
+
+// Export for convenience - Tenant Service
+export const tenantService = {
+  get instance() {
+    return serviceFactory.getTenantService();
+  },
+  getTenants: (...args: Parameters<typeof mockTenantService.getTenants>) =>
+    serviceFactory.getTenantService().getTenants(...args),
+  getTenant: (...args: Parameters<typeof mockTenantService.getTenant>) =>
+    serviceFactory.getTenantService().getTenant(...args),
+  getCurrentTenant: (...args: Parameters<typeof mockTenantService.getCurrentTenant>) =>
+    serviceFactory.getTenantService().getCurrentTenant(...args),
+  updateTenantSettings: (...args: Parameters<typeof mockTenantService.updateTenantSettings>) =>
+    serviceFactory.getTenantService().updateTenantSettings(...args),
+  getTenantUsers: (...args: Parameters<typeof mockTenantService.getTenantUsers>) =>
+    serviceFactory.getTenantService().getTenantUsers(...args),
+  addUserToTenant: (...args: Parameters<typeof mockTenantService.addUserToTenant>) =>
+    serviceFactory.getTenantService().addUserToTenant(...args),
+  removeUserFromTenant: (...args: Parameters<typeof mockTenantService.removeUserFromTenant>) =>
+    serviceFactory.getTenantService().removeUserFromTenant(...args),
+  updateUserRole: (...args: Parameters<typeof mockTenantService.updateUserRole>) =>
+    serviceFactory.getTenantService().updateUserRole(...args),
+  getTenantUsage: (...args: Parameters<typeof mockTenantService.getTenantUsage>) =>
+    serviceFactory.getTenantService().getTenantUsage(...args),
+  getTenantAnalytics: (...args: Parameters<typeof mockTenantService.getTenantAnalytics>) =>
+    serviceFactory.getTenantService().getTenantAnalytics(...args),
+  createTenant: (...args: Parameters<typeof mockTenantService.createTenant>) =>
+    serviceFactory.getTenantService().createTenant(...args),
+  updateTenantStatus: (...args: Parameters<typeof mockTenantService.updateTenantStatus>) =>
+    serviceFactory.getTenantService().updateTenantStatus(...args),
+  deleteTenant: (...args: Parameters<typeof mockTenantService.deleteTenant>) =>
+    serviceFactory.getTenantService().deleteTenant(...args),
+  getTenantBranding: (...args: Parameters<typeof mockTenantService.getTenantBranding>) =>
+    serviceFactory.getTenantService().getTenantBranding(...args),
+  updateTenantBranding: (...args: Parameters<typeof mockTenantService.updateTenantBranding>) =>
+    serviceFactory.getTenantService().updateTenantBranding(...args),
+  getTenantFeatures: (...args: Parameters<typeof mockTenantService.getTenantFeatures>) =>
+    serviceFactory.getTenantService().getTenantFeatures(...args),
+  updateTenantFeatures: (...args: Parameters<typeof mockTenantService.updateTenantFeatures>) =>
+    serviceFactory.getTenantService().updateTenantFeatures(...args),
 };
 
 export type { ApiMode };

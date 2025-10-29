@@ -30,13 +30,14 @@ import {
 } from '@ant-design/icons';
 import { PageHeader, StatCard } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { roleRequestService } from '../services/roleRequestService';
+import { useService } from '@/modules/core/hooks/useService';
 import { RoleRequestDetailPanel } from '../components/RoleRequestDetailPanel';
-import { RoleRequest, RoleRequestStats } from '../types/roleRequest';
+import type { RoleRequest, RoleRequestStats } from '../types/roleRequest';
 import { Clock, CheckCircle, XCircle, Users } from 'lucide-react';
 
 const SuperAdminRoleRequestsPage: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const roleRequestService = useService<any>('roleRequestService');
 
   // State
   const [requests, setRequests] = useState<RoleRequest[]>([]);
@@ -57,6 +58,7 @@ const SuperAdminRoleRequestsPage: React.FC = () => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // Load role requests
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isSuperAdmin) {
       fetchRoleRequests();

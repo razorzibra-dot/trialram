@@ -34,6 +34,9 @@ export { useSupabaseSales } from './useSupabaseSales';
 export { useSupabaseTickets } from './useSupabaseTickets';
 export { useSupabaseContracts } from './useSupabaseContracts';
 
+// Service Factory Hooks
+export { useService } from './useService';
+
 // Existing utility hooks
 export { useAuth } from '@/contexts/AuthContext';
 export { useToast } from './use-toast';

@@ -17,19 +17,9 @@
 
 import { getApiMode, getServiceBackend, type ApiMode } from '@/config/apiConfig';
 
-// Import real API services
-import { RealAuthService } from '../real/authService';
-import { RealCustomerService } from '../real/customerService';
-import { RealSalesService } from '../real/salesService';
-import { RealTicketService } from '../real/ticketService';
-import { RealContractService } from '../real/contractService';
-import { RealUserService } from '../real/userService';
-import { RealDashboardService } from '../real/dashboardService';
-import { RealNotificationService } from '../real/notificationService';
-import { RealFileService } from '../real/fileService';
-import { RealAuditService } from '../real/auditService';
-
 // Import mock API services (existing ones)
+// Note: Real API services have been archived to MARK_FOR_DELETE/legacy_services_real/
+// They were never fully implemented and routes to mock fallback
 import { authService as mockAuthService } from '../authService';
 import { customerService as mockCustomerService } from '../customerService';
 import { salesService as mockSalesService } from '../salesService';
@@ -80,6 +70,7 @@ export interface ICustomerService {
   getIndustries?(): Promise<string[]>;
   getSizes?(): Promise<string[]>;
   createTag?(name: string, color: string): Promise<Record<string, unknown>>;
+  getCustomerStats?(): Promise<Record<string, unknown>>;
   // Add other customer methods as needed
 }
 
@@ -361,24 +352,22 @@ class ApiServiceFactory {
 
   /**
    * Get User Service
+   * Note: Real backend implementation archived, using mock fallback
    */
   public getUserService(): IUserService {
     if (!this.userServiceInstance) {
-      this.userServiceInstance = this.useMockApi 
-        ? mockUserService as IUserService
-        : new RealUserService();
+      this.userServiceInstance = mockUserService as IUserService;
     }
     return this.userServiceInstance;
   }
 
   /**
    * Get Dashboard Service
+   * Note: Real backend implementation archived, using mock fallback
    */
   public getDashboardService(): IDashboardService {
     if (!this.dashboardServiceInstance) {
-      this.dashboardServiceInstance = this.useMockApi 
-        ? mockDashboardService as IDashboardService
-        : new RealDashboardService();
+      this.dashboardServiceInstance = mockDashboardService as IDashboardService;
     }
     return this.dashboardServiceInstance;
   }
@@ -410,8 +399,8 @@ class ApiServiceFactory {
   }
 
   /**
-   * Get File Service (Mock | Real)
-   * Note: File service doesn't have Supabase implementation yet
+   * Get File Service (Mock | Supabase)
+   * Note: Real backend implementation archived, using mock fallback
    */
   public getFileService(): IFileService {
     if (!this.fileServiceInstance) {
@@ -419,8 +408,6 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'real':
-          this.fileServiceInstance = new RealFileService();
-          break;
         case 'mock':
         case 'supabase':
         default:
@@ -431,8 +418,8 @@ class ApiServiceFactory {
   }
 
   /**
-   * Get Audit Service (Mock | Real)
-   * Note: Audit service doesn't have Supabase implementation yet
+   * Get Audit Service (Mock | Supabase)
+   * Note: Real backend implementation archived, using mock fallback
    */
   public getAuditService(): IAuditService {
     if (!this.auditServiceInstance) {
@@ -440,8 +427,6 @@ class ApiServiceFactory {
       
       switch (mode) {
         case 'real':
-          this.auditServiceInstance = new RealAuditService();
-          break;
         case 'mock':
         case 'supabase':
         default:

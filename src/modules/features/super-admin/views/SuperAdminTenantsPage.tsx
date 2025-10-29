@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
-import { tenantService } from '@/services/tenantService';
+import { useService } from '@/modules/core/hooks/useService';
 import { Tenant } from '@/types/crm';
 import { TenantSettings } from '@/types/rbac';
 
@@ -72,6 +72,7 @@ interface TenantFormData {
 
 const SuperAdminTenantsPage: React.FC = () => {
   const { hasPermission, user } = useAuth();
+  const tenantService = useService<any>('tenantService');
   const [form] = Form.useForm();
   const [settingsForm] = Form.useForm();
 
@@ -88,6 +89,7 @@ const SuperAdminTenantsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Load tenants
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTenants();
   }, [statusFilter, searchText]);

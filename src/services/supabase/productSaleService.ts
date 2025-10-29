@@ -68,6 +68,52 @@ class SupabaseProductSaleService {
         query = query.lte('total_cost', filters.max_amount);
       }
 
+      if (filters.sale_id) {
+        query = query.ilike('id', `%${filters.sale_id}%`);
+      }
+
+      if (filters.customer_name) {
+        query = query.ilike('customer_name', `%${filters.customer_name}%`);
+      }
+
+      if (filters.product_name) {
+        query = query.ilike('product_name', `%${filters.product_name}%`);
+      }
+
+      if (filters.notes) {
+        query = query.ilike('notes', `%${filters.notes}%`);
+      }
+
+      if (filters.warranty_status) {
+        const now = new Date().toISOString().split('T')[0];
+        const thirtyDaysFromNow = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        if (filters.warranty_status === 'active') {
+          query = query.gt('warranty_expiry', now);
+        } else if (filters.warranty_status === 'expiring_soon') {
+          query = query.lte('warranty_expiry', thirtyDaysFromNow);
+          query = query.gt('warranty_expiry', now);
+        } else if (filters.warranty_status === 'expired') {
+          query = query.lte('warranty_expiry', now);
+        }
+      }
+
+      if (filters.start_date) {
+        query = query.gte('delivery_date', filters.start_date);
+      }
+
+      if (filters.end_date) {
+        query = query.lte('delivery_date', filters.end_date);
+      }
+
+      if (filters.min_price) {
+        query = query.gte('total_cost', filters.min_price);
+      }
+
+      if (filters.max_price) {
+        query = query.lte('total_cost', filters.max_price);
+      }
+
       // Apply pagination and sorting
       query = applyPagination(query, page, limit);
       query = applySorting(query, 'created_at', 'desc');

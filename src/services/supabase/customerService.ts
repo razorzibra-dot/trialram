@@ -615,6 +615,59 @@ class SupabaseCustomerService {
   }
 
   /**
+   * Get customer statistics
+   */
+  async getCustomerStats(): Promise<{
+    totalCustomers: number;
+    activeCustomers: number;
+    prospectCustomers: number;
+    inactiveCustomers: number;
+    byIndustry: Record<string, number>;
+    bySize: Record<string, number>;
+    byStatus: Record<string, number>;
+  }> {
+    try {
+      const tenantId = multiTenantService.getCurrentTenantId();
+
+      // Fetch all customers for the tenant
+      const { data, error } = await retryQuery(async () =>
+        supabaseClient
+          .from('customers')
+          .select('id, status, industry, size')
+          .eq('tenant_id', tenantId)
+      );
+
+      if (error) throw handleSupabaseError(error);
+
+      const customers = data || [];
+
+      // Calculate statistics
+      const byStatus: Record<string, number> = {};
+      const byIndustry: Record<string, number> = {};
+      const bySize: Record<string, number> = {};
+
+      customers.forEach(customer => {
+        byStatus[customer.status] = (byStatus[customer.status] || 0) + 1;
+        byIndustry[customer.industry] = (byIndustry[customer.industry] || 0) + 1;
+        bySize[customer.size] = (bySize[customer.size] || 0) + 1;
+      });
+
+      return {
+        totalCustomers: customers.length,
+        activeCustomers: customers.filter(c => c.status === 'active').length,
+        prospectCustomers: customers.filter(c => c.status === 'prospect').length,
+        inactiveCustomers: customers.filter(c => c.status === 'inactive').length,
+        byIndustry,
+        bySize,
+        byStatus
+      };
+    } catch (error) {
+      console.error('[SupabaseCustomerService] Error fetching customer stats:', error);
+      throw error instanceof Error ? error : new Error('Failed to fetch customer statistics');
+    }
+  }
+
+  /**
    * Map database row to Customer interface
    */
   private mapToCustomer(row: any): Customer {

@@ -54,7 +54,7 @@ import {
 import dayjs from 'dayjs';
 import { PageHeader } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { serviceContractService } from '@/services';
+import { useService } from '@/modules/core/hooks/useService';
 import { ServiceContract } from '@/types/productSales';
 
 const { TextArea } = Input;
@@ -101,6 +101,9 @@ export const ServiceContractDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
 
+  // ✅ Get service from module service container (standardized pattern)
+  const serviceContractService = useService<any>('serviceContractService');
+
   const [contract, setContract] = useState<ServiceContract | null>(null);
   const [activities, setActivities] = useState<ContractActivity[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -112,6 +115,7 @@ export const ServiceContractDetailPage: React.FC = () => {
   const [renewForm] = Form.useForm();
   const [noteForm] = Form.useForm();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadContractDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -181,7 +185,7 @@ export const ServiceContractDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, form, renewForm]);
+  }, [id, form, renewForm, serviceContractService]);
 
   useEffect(() => {
     if (id) {

@@ -103,6 +103,70 @@ npm run validate:code
 npm run quality:check
 ```
 
+## ⚠️ CRITICAL MODULE DISTINCTIONS - READ CAREFULLY
+
+### Multiple Similar Modules - DO NOT CONFUSE OR OVERRIDE
+
+**Important**: The application contains multiple distinct modules with similar names. Each has independent logic, state management, and data models. **NEVER confuse them or override changes from one module to another.**
+
+#### Sales Module vs Product Sales Module ⚠️ CRITICAL
+- **Sales Module** (Deal):
+  - Location: `/src/modules/features/sales/`
+  - Manages customer deals, sales opportunities, and deal lifecycle
+  - Services: `salesService`
+  - Focus: Deal management, sales pipeline, opportunity tracking
+  
+- **Product Sales Module** (Different):
+  - Location: `/src/modules/features/productSales/`
+  - Manages product-based sales, sales items, and product transactions
+  - Services: `productSaleService`
+  - Focus: Product inventory, sales line items, product transactions
+  
+**⚠️ RULE**: These are COMPLETELY SEPARATE modules with different schemas, services, and business logic. Do NOT:
+- Mix product sales logic into the sales module or vice versa
+- Reuse sales service queries in product sales context
+- Override product sales routes with sales routes
+- Share state between these modules unless explicitly required
+
+#### Contract Module vs Service Contract Module ⚠️ CRITICAL
+- **Contract Module**:
+  - Location: `/src/modules/features/contracts/`
+  - Manages client service contracts, terms, and agreements
+  - Services: `contractService`
+  - Focus: Service agreements, contract lifecycle, terms management
+  
+- **Service Contract Module** (Different):
+  - Location: `/src/modules/features/serviceContract/`
+  - Manages service-based contracts, service delivery, and scheduling
+  - Services: `serviceContractService`
+  - Focus: Service delivery contracts, scheduling, service fulfillment
+  
+**⚠️ RULE**: These are COMPLETELY SEPARATE modules with different schemas, services, and business logic. Do NOT:
+- Mix service contract logic into the contract module or vice versa
+- Reuse contract service queries in service contract context
+- Override service contract routes with contract routes
+- Share state between these modules unless explicitly required
+
+### Module Safety Guardrails
+
+**When modifying ANY module:**
+1. ✅ ONLY modify files within that module's directory (`/src/modules/features/{moduleName}/`)
+2. ✅ ONLY use that module's service (e.g., `salesService` for Sales, `productSaleService` for Product Sales)
+3. ✅ Verify you're using the correct service factory export before making changes
+4. ✅ Check module-specific routes, state, and components
+5. ❌ NEVER override or modify another module's files, services, or logic
+6. ❌ NEVER copy code from one module to another without explicit request
+7. ❌ NEVER share state stores between Sales and Product Sales modules
+8. ❌ NEVER share state stores between Contract and Service Contract modules
+
+**When asked to work on a module:**
+- Ask for clarification if the request mentions both Sales and Product Sales
+- Ask for clarification if the request mentions both Contract and Service Contract
+- Verify which module's service should be used
+- Never assume one module's logic applies to another
+
+---
+
 ## Architecture
 **Frontend**: Modular architecture with feature modules
 **State Management**: React Query and Context API

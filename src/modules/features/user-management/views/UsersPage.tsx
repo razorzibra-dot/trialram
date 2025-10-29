@@ -46,7 +46,7 @@ import {
   UserX
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { userService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
 import { User as UserType } from '@/types/crm';
 import { UserDetailPanel } from '../components/UserDetailPanel';
 import { UserFormPanel } from '../components/UserFormPanel';
@@ -63,6 +63,7 @@ interface UserFormData {
 
 export const UsersPage: React.FC = () => {
   const { hasPermission, isAuthenticated, isLoading: authLoading } = useAuth();
+  const userService = useService<any>('userService');
   
   // State
   const [users, setUsers] = useState<UserType[]>([]);
@@ -77,6 +78,7 @@ export const UsersPage: React.FC = () => {
 
   // Load users and metadata on component mount
   // Note: Service layer handles authorization via RLS (Supabase) or database rules (mock)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadUsers();
     loadMetadata();

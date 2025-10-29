@@ -65,10 +65,13 @@ const CustomerListPage: React.FC = () => {
 
   // Real stats from service
   const stats = statsData || {
-    total: 0,
-    active: 0,
-    prospects: 0,
-    byIndustry: {}
+    totalCustomers: 0,
+    activeCustomers: 0,
+    prospectCustomers: 0,
+    inactiveCustomers: 0,
+    byIndustry: {},
+    bySize: {},
+    byStatus: {}
   };
 
   const handleRefresh = () => {
@@ -478,7 +481,7 @@ const CustomerListPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Customers"
-              value={stats.total}
+              value={stats.totalCustomers}
               description="All customers"
               icon={Users}
               color="primary"
@@ -488,8 +491,8 @@ const CustomerListPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Active Customers"
-              value={stats.active}
-              description={`${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : 0}% of total`}
+              value={stats.activeCustomers}
+              description={`${stats.totalCustomers > 0 ? ((stats.activeCustomers / stats.totalCustomers) * 100).toFixed(1) : 0}% of total`}
               icon={Users}
               color="success"
               loading={statsLoading}
@@ -498,7 +501,7 @@ const CustomerListPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Prospects"
-              value={stats.prospects}
+              value={stats.prospectCustomers}
               description="Potential customers"
               icon={Users}
               color="info"

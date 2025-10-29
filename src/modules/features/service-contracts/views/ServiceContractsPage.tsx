@@ -42,7 +42,7 @@ import {
   CloseCircleOutlined,
   FilterOutlined
 } from '@ant-design/icons';
-import { serviceContractService } from '@/services';
+import { useService } from '@/modules/core/hooks/useService';
 import { 
   ServiceContract, 
   ServiceContractFilters,
@@ -63,6 +63,9 @@ interface ContractStats {
 export const ServiceContractsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Get service from module service container (standardized pattern)
+  const serviceContractService = useService<any>('serviceContractService');
 
   // State management
   const [contracts, setContracts] = useState<ServiceContract[]>([]);
@@ -89,6 +92,7 @@ export const ServiceContractsPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<ServiceContract | null>(null);
 
   // Load data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadContracts = useCallback(async () => {
     try {
       setLoading(true);
@@ -104,7 +108,7 @@ export const ServiceContractsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, currentPage, pageSize]);
+  }, [filters, currentPage, pageSize, serviceContractService]);
 
   useEffect(() => {
     void loadContracts();

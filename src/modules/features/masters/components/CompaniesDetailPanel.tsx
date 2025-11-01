@@ -74,7 +74,7 @@ export const CompaniesDetailPanel: React.FC<CompaniesDetailPanelProps> = ({
         onClose={onClose}
         open={isOpen}
         width={500}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <Empty description="No company selected" />
       </Drawer>
@@ -103,7 +103,7 @@ export const CompaniesDetailPanel: React.FC<CompaniesDetailPanelProps> = ({
       onClose={onClose}
       open={isOpen}
       width={500}
-      bodyStyle={{ padding: '24px' }}
+      styles={{ body: { padding: '24px' } }}
     >
       <Spin spinning={isLoading}>
         {/* Name Section */}

@@ -4,8 +4,9 @@
  * based on environment configuration
  */
 
-import { ServiceContractService } from './serviceContractService'; // Mock implementation
+import { mockServiceContractService } from './serviceContractService'; // Mock implementation
 import { supabaseServiceContractService } from './supabase/serviceContractService'; // Supabase implementation
+import { supabaseContractService } from './supabase/contractService'; // Supabase contract service (Contract module)
 import { supabaseProductSaleService } from './supabase/productSaleService';
 import { supabaseSalesService } from './api/supabase/salesService';
 import { supabaseCustomerService } from './supabase/customerService';
@@ -16,8 +17,10 @@ import { supabaseUserService } from './api/supabase/userService';
 import { supabaseRbacService } from './api/supabase/rbacService';
 import { supabaseNotificationService } from './supabase/notificationService';
 import { supabaseTenantService } from './supabase/tenantService';
+import { supabaseTicketService } from './supabase/ticketService';
 import { productSaleService as mockProductSaleService } from './productSaleService';
 import { salesService as mockSalesService } from './salesService';
+import { contractService as mockContractService } from './contractService'; // Mock contract service (Contract module)
 import { customerService as mockCustomerService } from './customerService';
 import { jobWorkService as mockJobWorkService } from './jobWorkService';
 import { productService as mockProductService } from './productService';
@@ -26,6 +29,7 @@ import { userService as mockUserService } from './userService';
 import { rbacService as mockRbacService } from './rbacService';
 import { notificationService as mockNotificationService } from './notificationService';
 import { tenantService as mockTenantService } from './tenantService';
+import { ticketService as mockTicketService } from './ticketService';
 
 type ApiMode = 'mock' | 'supabase' | 'real';
 
@@ -72,10 +76,10 @@ class ServiceFactory {
       case 'real':
         // TODO: Implement real API service
         console.warn('Real API service not yet implemented, falling back to mock');
-        return new ServiceContractService();
+        return mockServiceContractService;
       case 'mock':
       default:
-        return new ServiceContractService();
+        return mockServiceContractService;
     }
   }
 
@@ -250,11 +254,51 @@ class ServiceFactory {
   }
 
   /**
+   * Get Ticket Service
+   */
+  getTicketService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseTicketService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseTicketService;
+      case 'mock':
+      default:
+        return mockTicketService;
+    }
+  }
+
+  /**
+   * Get Contract Service (Contract module - not Service Contract)
+   * ⚠️ IMPORTANT: This is for the Contracts module (/src/modules/features/contracts/)
+   * For Service Contracts, use getServiceContractService() instead
+   */
+  getContractService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseContractService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseContractService;
+      case 'mock':
+      default:
+        return mockContractService;
+    }
+  }
+
+  /**
    * Get Service (generic method for future extensibility)
    */
   getService(serviceName: string) {
     switch (serviceName.toLowerCase()) {
+      case 'contract':
+      case 'contracts':
+        return this.getContractService();
       case 'servicecontract':
+      case 'service_contract':
         return this.getServiceContractService();
       case 'productsale':
       case 'product_sale':
@@ -285,6 +329,9 @@ class ServiceFactory {
       case 'tenant':
       case 'tenants':
         return this.getTenantService();
+      case 'ticket':
+      case 'tickets':
+        return this.getTicketService();
       // Add other services as needed
       default:
         throw new Error(`Unknown service: ${serviceName}`);
@@ -320,15 +367,15 @@ class ServiceFactory {
 // Export singleton instance
 export const serviceFactory = new ServiceFactory();
 
-// Export for convenience - Service Contract Service
+// Export for convenience - Service Contract Service (Service Contracts module)
 export const serviceContractService = {
   get instance() {
     return serviceFactory.getServiceContractService();
   },
   getServiceContracts: (...args: Parameters<typeof supabaseServiceContractService.getServiceContracts>) =>
     serviceFactory.getServiceContractService().getServiceContracts(...args),
-  getServiceContractById: (...args: Parameters<typeof supabaseServiceContractService.getServiceContractById>) =>
-    serviceFactory.getServiceContractService().getServiceContractById(...args),
+  getServiceContract: (...args: Parameters<typeof supabaseServiceContractService.getServiceContract>) =>
+    serviceFactory.getServiceContractService().getServiceContract(...args),
   createServiceContract: (...args: Parameters<typeof supabaseServiceContractService.createServiceContract>) =>
     serviceFactory.getServiceContractService().createServiceContract(...args),
   updateServiceContract: (...args: Parameters<typeof supabaseServiceContractService.updateServiceContract>) =>
@@ -345,6 +392,31 @@ export const serviceContractService = {
     serviceFactory.getServiceContractService().generateContractPDF(...args),
   getExpiringContracts: (...args: Parameters<typeof supabaseServiceContractService.getExpiringContracts>) =>
     serviceFactory.getServiceContractService().getExpiringContracts(...args),
+};
+
+// Export for convenience - Contract Service (Contracts module - NOT Service Contracts)
+// ⚠️ IMPORTANT: This is for the Contracts module (/src/modules/features/contracts/)
+// For Service Contracts, use serviceContractService instead
+export const contractService = {
+  get instance() {
+    return serviceFactory.getContractService();
+  },
+  getContracts: (...args: Parameters<typeof supabaseContractService.getContracts>) =>
+    serviceFactory.getContractService().getContracts(...args),
+  getContract: (...args: Parameters<typeof supabaseContractService.getContract>) =>
+    serviceFactory.getContractService().getContract(...args),
+  createContract: (...args: Parameters<typeof supabaseContractService.createContract>) =>
+    serviceFactory.getContractService().createContract(...args),
+  updateContract: (...args: Parameters<typeof supabaseContractService.updateContract>) =>
+    serviceFactory.getContractService().updateContract(...args),
+  deleteContract: (...args: Parameters<typeof supabaseContractService.deleteContract>) =>
+    serviceFactory.getContractService().deleteContract(...args),
+  getContractStats: (...args: Parameters<typeof supabaseContractService.getContractStats>) =>
+    serviceFactory.getContractService().getContractStats(...args),
+  getExpiringContracts: (...args: Parameters<typeof supabaseContractService.getExpiringContracts>) =>
+    serviceFactory.getContractService().getExpiringContracts(...args),
+  getContractsByCustomer: (customerId: string, filters?: any) =>
+    serviceFactory.getContractService().getContractsByCustomer(customerId, filters),
 };
 
 // Export for convenience - Product Sale Service
@@ -513,6 +585,11 @@ export const companyService = {
     serviceFactory.getCompanyService().subscribeToCompanies(...args),
 };
 
+// Export factory getter for user service
+export function getUserService() {
+  return serviceFactory.getUserService();
+}
+
 // Export for convenience - User Service
 export const userService = {
   get instance() {
@@ -530,12 +607,16 @@ export const userService = {
     serviceFactory.getUserService().deleteUser(...args),
   resetPassword: (...args: Parameters<typeof mockUserService.resetPassword>) =>
     serviceFactory.getUserService().resetPassword(...args),
+  getUserStats: (...args: Parameters<typeof mockUserService.getUserStats>) =>
+    serviceFactory.getUserService().getUserStats(...args),
   getRoles: (...args: Parameters<typeof mockUserService.getRoles>) =>
     serviceFactory.getUserService().getRoles(...args),
-  getPermissions: (...args: Parameters<typeof mockUserService.getPermissions>) =>
-    serviceFactory.getUserService().getPermissions(...args),
   getStatuses: (...args: Parameters<typeof mockUserService.getStatuses>) =>
     serviceFactory.getUserService().getStatuses(...args),
+  getUserActivity: (...args: Parameters<typeof mockUserService.getUserActivity>) =>
+    serviceFactory.getUserService().getUserActivity(...args),
+  logActivity: (...args: Parameters<typeof mockUserService.logActivity>) =>
+    serviceFactory.getUserService().logActivity(...args),
   getTenants: (...args: Parameters<typeof mockUserService.getTenants>) =>
     serviceFactory.getUserService().getTenants(...args),
 };
@@ -645,6 +726,35 @@ export const tenantService = {
     serviceFactory.getTenantService().getTenantFeatures(...args),
   updateTenantFeatures: (...args: Parameters<typeof mockTenantService.updateTenantFeatures>) =>
     serviceFactory.getTenantService().updateTenantFeatures(...args),
+};
+
+// Export for convenience - Ticket Service
+export const ticketService = {
+  get instance() {
+    return serviceFactory.getTicketService();
+  },
+  getTickets: (...args: Parameters<typeof mockTicketService.getTickets>) =>
+    serviceFactory.getTicketService().getTickets(...args),
+  getTicket: (...args: Parameters<typeof mockTicketService.getTicket>) =>
+    serviceFactory.getTicketService().getTicket(...args),
+  createTicket: (...args: Parameters<typeof mockTicketService.createTicket>) =>
+    serviceFactory.getTicketService().createTicket(...args),
+  updateTicket: (...args: Parameters<typeof mockTicketService.updateTicket>) =>
+    serviceFactory.getTicketService().updateTicket(...args),
+  deleteTicket: (...args: Parameters<typeof mockTicketService.deleteTicket>) =>
+    serviceFactory.getTicketService().deleteTicket(...args),
+  getStatuses: (...args: Parameters<typeof mockTicketService.getStatuses>) =>
+    serviceFactory.getTicketService().getStatuses(...args),
+  getPriorities: (...args: Parameters<typeof mockTicketService.getPriorities>) =>
+    serviceFactory.getTicketService().getPriorities(...args),
+  getCategories: (...args: Parameters<typeof mockTicketService.getCategories>) =>
+    serviceFactory.getTicketService().getCategories(...args),
+  getTicketStats: (...args: Parameters<typeof mockTicketService.getTicketStats>) =>
+    serviceFactory.getTicketService().getTicketStats(...args),
+  getTicketCategories: (...args: Parameters<typeof mockTicketService.getTicketCategories>) =>
+    serviceFactory.getTicketService().getTicketCategories(...args),
+  getTicketPriorities: (...args: Parameters<typeof mockTicketService.getTicketPriorities>) =>
+    serviceFactory.getTicketService().getTicketPriorities(...args),
 };
 
 export type { ApiMode };

@@ -1,6 +1,7 @@
 /**
  * Role Management Page - Enterprise Ant Design Version
  * Comprehensive role management with permission assignment and templates
+ * ✅ Uses granular RBAC permission checks (Phase 3.1)
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ import {
   Tabs,
   Descriptions,
   Tree,
+  Alert,
   type MenuProps
 } from 'antd';
 import type { DataNode } from 'antd/es/tree';
@@ -53,6 +55,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
+import { usePermissions } from '../hooks';
+import { UserPermission } from '../guards/permissionGuards';
 import { Role, Permission, RoleTemplate } from '@/types/rbac';
 
 const { TextArea } = Input;
@@ -66,7 +70,8 @@ interface RoleFormData {
 
 export const RoleManagementPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { canManageRoles, canManagePermissions, isLoading: permLoading, hasPermission } = usePermissions();
   const rbacService = useService<any>('rbacService');
   const [form] = Form.useForm();
   const [templateForm] = Form.useForm();
@@ -360,7 +365,7 @@ export const RoleManagementPage: React.FC = () => {
       width: 100,
       render: (_, record) => (
         <Space>
-          {hasPermission('manage_roles') && (
+          {canManageRoles && (
             <>
               <Tooltip title={record.is_system_role ? 'System roles cannot be edited' : 'Edit'}>
                 <Button
@@ -395,6 +400,43 @@ export const RoleManagementPage: React.FC = () => {
       )
     : roles;
 
+  // Show loading state while auth and permissions are being checked
+  if (authLoading || permLoading) {
+    return (
+      <div style={{ padding: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" tip="Loading permissions..." />
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Authentication Required"
+          description="Please log in to access role management."
+          type="warning"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  // Check if user can manage roles
+  if (!canManageRoles) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Access Denied"
+          description="You don't have permission to access role management."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -406,7 +448,7 @@ export const RoleManagementPage: React.FC = () => {
           { title: 'Roles' }
         ]}
         extra={
-          hasPermission('manage_roles') ? (
+          canManageRoles ? (
             <Space>
               <Button
                 icon={<ReloadOutlined />}
@@ -424,11 +466,12 @@ export const RoleManagementPage: React.FC = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleCreate}
+                disabled={!canManageRoles}
               >
                 Create Role
               </Button>
             </Space>
-          ) : undefined
+          ) : null
         }
       />
 
@@ -501,7 +544,7 @@ export const RoleManagementPage: React.FC = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description="No roles found"
                 >
-                  {hasPermission('manage_roles') && (
+                  {hasPermission(UserPermission.ROLE_MANAGE) && (
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}

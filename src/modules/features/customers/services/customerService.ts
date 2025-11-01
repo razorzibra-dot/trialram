@@ -1,13 +1,22 @@
 /**
  * Customer Service
  * Business logic for customer operations
- * Uses the API Service Factory to respect VITE_API_MODE configuration
+ * ⚠️ CRITICAL: Uses Service Factory Pattern for multi-backend routing
+ * 
+ * This module delegates all customer operations through the centralized Service Factory
+ * which routes requests to mock (development) or Supabase (production) based on VITE_API_MODE.
+ * 
+ * See: /src/services/serviceFactory.ts for factory routing logic
+ * 
+ * Module Distinction:
+ * - This module manages CUSTOMER entity and business logic
+ * - NOT to be confused with Product/Product Sales or other modules
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { Customer, CustomerTag } from '@/types/crm';
 import { FilterOptions, PaginatedResponse } from '@/modules/core/types';
-import { apiServiceFactory } from '@/services/api/apiServiceFactory';
+import { customerService as factoryCustomerService } from '@/services/serviceFactory';
 
 export interface CreateCustomerData {
   company_name: string;
@@ -57,8 +66,8 @@ export class CustomerService extends BaseService {
     try {
       console.log('[CustomerService] getCustomers called with filters:', filters);
       
-      // Use the API Service Factory to respect VITE_API_MODE configuration
-      const result = await apiServiceFactory.getCustomerService().getCustomers(filters);
+      // Delegate to factory service (routes to mock or Supabase based on VITE_API_MODE)
+      const result = await factoryCustomerService.getCustomers(filters);
       
       console.log('[CustomerService] Received result from factory:', result);
       
@@ -119,7 +128,7 @@ export class CustomerService extends BaseService {
    */
   async getCustomer(id: string): Promise<Customer | null> {
     try {
-      return await apiServiceFactory.getCustomerService().getCustomer(id);
+      return await factoryCustomerService.getCustomer(id);
     } catch (error) {
       // Handle authorization/tenant context errors gracefully by returning null
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -141,7 +150,7 @@ export class CustomerService extends BaseService {
    */
   async createCustomer(data: CreateCustomerData): Promise<Customer> {
     try {
-      return await apiServiceFactory.getCustomerService().createCustomer(data);
+      return await factoryCustomerService.createCustomer(data);
     } catch (error) {
       console.error('Error creating customer:', error);
       throw error;
@@ -153,7 +162,7 @@ export class CustomerService extends BaseService {
    */
   async updateCustomer(id: string, data: Partial<CreateCustomerData>): Promise<Customer> {
     try {
-      return await apiServiceFactory.getCustomerService().updateCustomer(id, data);
+      return await factoryCustomerService.updateCustomer(id, data);
     } catch (error) {
       console.error('Error updating customer:', error);
       throw error;
@@ -165,7 +174,7 @@ export class CustomerService extends BaseService {
    */
   async deleteCustomer(id: string): Promise<void> {
     try {
-      await apiServiceFactory.getCustomerService().deleteCustomer(id);
+      await factoryCustomerService.deleteCustomer(id);
     } catch (error) {
       console.error('Error deleting customer:', error);
       throw error;
@@ -204,7 +213,7 @@ export class CustomerService extends BaseService {
    */
   async getTags(): Promise<CustomerTag[]> {
     try {
-      return await apiServiceFactory.getCustomerService().getTags();
+      return await factoryCustomerService.getTags();
     } catch (error) {
       console.error('Error fetching customer tags:', error);
       throw error;
@@ -216,7 +225,7 @@ export class CustomerService extends BaseService {
    */
   async createTag(name: string, color: string): Promise<CustomerTag> {
     try {
-      return await apiServiceFactory.getCustomerService().createTag(name, color);
+      return await factoryCustomerService.createTag(name, color);
     } catch (error) {
       console.error('Error creating customer tag:', error);
       throw error;
@@ -228,7 +237,7 @@ export class CustomerService extends BaseService {
    */
   async getIndustries(): Promise<string[]> {
     try {
-      return await apiServiceFactory.getCustomerService().getIndustries();
+      return await factoryCustomerService.getIndustries();
     } catch (error) {
       console.error('Error fetching industries:', error);
       throw error;
@@ -240,7 +249,7 @@ export class CustomerService extends BaseService {
    */
   async getSizes(): Promise<string[]> {
     try {
-      return await apiServiceFactory.getCustomerService().getSizes();
+      return await factoryCustomerService.getSizes();
     } catch (error) {
       console.error('Error fetching company sizes:', error);
       throw error;
@@ -252,7 +261,7 @@ export class CustomerService extends BaseService {
    */
   async exportCustomers(format: 'csv' | 'json' = 'csv'): Promise<string> {
     try {
-      return await apiServiceFactory.getCustomerService().exportCustomers(format);
+      return await factoryCustomerService.exportCustomers(format);
     } catch (error) {
       console.error('Error exporting customers:', error);
       throw error;
@@ -264,7 +273,7 @@ export class CustomerService extends BaseService {
    */
   async importCustomers(csv: string): Promise<{ success: number; errors: string[] }> {
     try {
-      return await apiServiceFactory.getCustomerService().importCustomers(csv);
+      return await factoryCustomerService.importCustomers(csv);
     } catch (error) {
       console.error('Error importing customers:', error);
       throw error;
@@ -301,7 +310,7 @@ export class CustomerService extends BaseService {
       console.log('[CustomerService] getCustomerStats() called');
       
       // Try to use the factory's getCustomerStats if available
-      const factoryService = apiServiceFactory.getCustomerService();
+      const factoryService = factoryCustomerService;
       if (factoryService.getCustomerStats) {
         console.log('[CustomerService] Using factory service getCustomerStats()');
         const factoryStats = await factoryService.getCustomerStats();
@@ -321,7 +330,7 @@ export class CustomerService extends BaseService {
       // Fallback: fetch customers and calculate stats manually
       console.log('[CustomerService] Falling back to manual calculation via getCustomers()');
       try {
-        const customers = await apiServiceFactory.getCustomerService().getCustomers();
+        const customers = await factoryCustomerService.getCustomers();
         
         console.log('[CustomerService] Got customers array, length:', customers?.length || 0);
         console.log('[CustomerService] Customers data type:', typeof customers, 'Is array?', Array.isArray(customers));

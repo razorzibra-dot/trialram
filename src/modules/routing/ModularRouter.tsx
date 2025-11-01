@@ -36,7 +36,7 @@ const ContractsPage = lazy(() => import('@/modules/features/contracts/views/Cont
 // Lazy load additional modular pages
 const ComplaintsPage = lazy(() => import('@/modules/features/complaints/views/ComplaintsPage'));
 const UsersPage = lazy(() => import('@/modules/features/user-management/views/UsersPage'));
-const UserManagementPage = lazy(() => import('@/modules/features/user-management/views/UserManagementPage'));
+// ✅ CONSOLIDATED: UserManagementPage removed (legacy duplicate, consolidated into UsersPage)
 const RoleManagementPage = lazy(() => import('@/modules/features/user-management/views/RoleManagementPage'));
 const PermissionMatrixPage = lazy(() => import('@/modules/features/user-management/views/PermissionMatrixPage'));
 const LogsPage = lazy(() => import('@/modules/features/audit-logs/views/LogsPage'));

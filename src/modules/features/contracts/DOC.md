@@ -3,28 +3,31 @@
 ## Overview
 The Contracts module manages contract lifecycle, approvals, renewals, and compliance tracking. It follows a modern modular architecture synchronized with the Customers module pattern, ensuring consistency across the application.
 
+**✨ UI Enhancement**: Forms have been upgraded to enterprise-level styling with professional visual hierarchy, card-based sections, and enhanced UX. See **FORMS_ENHANCEMENT_GUIDE.md** for detailed information.
+
 ## Module Structure
 
 ```
 contracts/
 ├── components/
-│   ├── ContractFormPanel.tsx      # Side drawer for create/edit
-│   ├── ContractDetailPanel.tsx    # Side drawer for viewing details
-│   └── ContractsList.tsx          # Legacy table component (maintained for compatibility)
+│   ├── ContractFormPanel.tsx         # Side drawer for create/edit (enterprise enhanced)
+│   ├── ContractDetailPanel.tsx       # Side drawer for viewing details (enterprise enhanced)
+│   └── ContractsList.tsx             # Legacy table component (maintained for compatibility)
 ├── hooks/
-│   ├── useContracts.ts            # React Query hooks for contract operations
-│   └── useServiceContracts.ts     # Service contracts hooks
+│   ├── useContracts.ts               # React Query hooks for contract operations
+│   └── useServiceContracts.ts        # Service contracts hooks
 ├── services/
-│   ├── contractService.ts         # Business logic for contracts
-│   └── serviceContractService.ts  # Service contracts business logic
+│   ├── contractService.ts            # Business logic for contracts
+│   └── serviceContractService.ts     # Service contracts business logic
 ├── store/
-│   └── contractStore.ts           # Zustand state management
+│   └── contractStore.ts              # Zustand state management
 ├── views/
-│   ├── ContractsPage.tsx          # Main contracts list page
-│   └── ContractDetailPage.tsx     # Individual contract details page
-├── index.ts                       # Module exports
-├── routes.tsx                     # Route definitions
-└── ARCHITECTURE.md               # This file
+│   ├── ContractsPage.tsx             # Main contracts list page
+│   └── ContractDetailPage.tsx        # Individual contract details page
+├── index.ts                          # Module exports
+├── routes.tsx                        # Route definitions
+├── DOC.md                            # Architecture documentation
+└── FORMS_ENHANCEMENT_GUIDE.md        # UI/UX form enhancements guide
 ```
 
 ## Key Features

@@ -11,9 +11,18 @@ import { Contract } from '@/types/contracts';
 export interface ContractFilters {
   status?: string;
   type?: string;
-  tenantId?: string;
-  customerId?: string;
+  customer_id?: string;
+  assigned_to?: string;
+  priority?: string;
   search?: string;
+  date_from?: string;
+  date_to?: string;
+  expiring_soon?: boolean;
+  auto_renew?: boolean;
+  tags?: string[];
+  compliance_status?: string;
+  value_min?: number;
+  value_max?: number;
 }
 
 export class SupabaseContractService extends BaseSupabaseService {
@@ -22,11 +31,16 @@ export class SupabaseContractService extends BaseSupabaseService {
   }
 
   /**
-   * Get all contracts with optional filtering
+   * Get all contracts with optional filtering and pagination
+   * Returns paginated response with data array
    */
-  async getContracts(filters?: ContractFilters): Promise<Contract[]> {
+  async getContracts(filters?: ContractFilters & { page?: number; pageSize?: number }): Promise<any> {
     try {
       this.log('Fetching contracts', filters);
+
+      const page = filters?.page || 1;
+      const pageSize = filters?.pageSize || 20;
+      const offset = (page - 1) * pageSize;
 
       let query = getSupabaseClient()
         .from('contracts')
@@ -35,34 +49,101 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approval_records(*)`
+          approval_history:contract_approval_records(*),
+          attachments:contract_attachments(*)`
         );
 
       // Apply filters
-      if (filters?.tenantId) {
-        query = query.eq('tenant_id', filters.tenantId);
-      }
       if (filters?.status) {
         query = query.eq('status', filters.status);
       }
       if (filters?.type) {
         query = query.eq('type', filters.type);
       }
-      if (filters?.customerId) {
-        query = query.eq('customer_id', filters.customerId);
+      if (filters?.customer_id) {
+        query = query.eq('customer_id', filters.customer_id);
+      }
+      if (filters?.assigned_to) {
+        query = query.eq('assigned_to', filters.assigned_to);
+      }
+      if (filters?.priority) {
+        query = query.eq('priority', filters.priority);
+      }
+      if (filters?.compliance_status) {
+        query = query.eq('compliance_status', filters.compliance_status);
+      }
+      if (filters?.auto_renew !== undefined) {
+        query = query.eq('auto_renew', filters.auto_renew);
+      }
+      if (filters?.tags && filters.tags.length > 0) {
+        query = query.contains('tags', filters.tags);
+      }
+
+      // Date range filters
+      if (filters?.date_from) {
+        query = query.gte('start_date', filters.date_from);
+      }
+      if (filters?.date_to) {
+        query = query.lte('end_date', filters.date_to);
+      }
+
+      // Value range filters
+      if (filters?.value_min !== undefined) {
+        query = query.gte('value', filters.value_min);
+      }
+      if (filters?.value_max !== undefined) {
+        query = query.lte('value', filters.value_max);
       }
 
       // Exclude deleted records
       query = query.is('deleted_at', null);
 
-      const { data, error } = await query.order('created_at', {
-        ascending: false,
-      });
+      // Get total count first for pagination
+      const { count } = await query;
+
+      // Apply ordering and pagination
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
 
       if (error) throw error;
 
-      this.log('Contracts fetched', { count: data?.length });
-      return data?.map((c) => this.mapContractResponse(c)) || [];
+      // Post-process for expiring_soon filter (30-day window)
+      let results = data?.map((c) => this.mapContractResponse(c)) || [];
+      if (filters?.expiring_soon) {
+        const now = new Date();
+        const threshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        results = results.filter((c) => {
+          if (!c.end_date) return false;
+          const endDate = new Date(c.end_date);
+          return endDate <= threshold && endDate >= now;
+        });
+      }
+
+      // Search filter (full-text search)
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        results = results.filter((c) =>
+          c.title.toLowerCase().includes(searchLower) ||
+          c.description?.toLowerCase().includes(searchLower) ||
+          c.contract_number?.toLowerCase().includes(searchLower) ||
+          c.customer_name?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      const total = count || 0;
+      const totalPages = Math.ceil(total / pageSize);
+
+      this.log('Contracts fetched', { count: results?.length, total, page, pageSize });
+
+      // Return paginated response matching PaginatedResponse<Contract> interface
+      return {
+        data: results,
+        page,
+        pageSize,
+        total,
+        totalPages,
+      };
     } catch (error) {
       this.logError('Error fetching contracts', error);
       throw error;
@@ -112,17 +193,40 @@ export class SupabaseContractService extends BaseSupabaseService {
             title: data.title,
             description: data.description,
             customer_id: data.customer_id,
-            type: data.type || 'standard',
+            customer_contact: data.customer_contact,
+            deal_id: data.deal_id,
+            deal_title: data.deal_title,
+            type: data.type || 'service_agreement',
             status: data.status || 'draft',
             start_date: data.start_date,
             end_date: data.end_date,
-            renewal_date: data.renewal_date,
+            signed_date: data.signed_date,
+            next_renewal_date: data.next_renewal_date,
+            auto_renew: data.auto_renew ?? false,
+            renewal_period_months: data.renewal_period_months,
+            renewal_terms: data.renewal_terms,
+            terms: data.terms,
             value: data.value || 0,
             currency: data.currency || 'USD',
+            payment_terms: data.payment_terms,
+            delivery_terms: data.delivery_terms,
             template_id: data.template_id,
             content: data.content,
-            terms_and_conditions: data.terms_and_conditions,
+            document_path: data.document_path,
+            document_url: data.document_url,
+            version: data.version || 1,
+            approval_stage: data.approval_stage,
+            compliance_status: data.compliance_status || 'pending_review',
             created_by: data.created_by,
+            assigned_to: data.assigned_to,
+            assigned_to_name: data.assigned_to_name,
+            tags: data.tags || [],
+            priority: data.priority || 'medium',
+            reminder_days: data.reminder_days || [],
+            next_reminder_date: data.next_reminder_date,
+            notes: data.notes,
+            signed_by_customer: data.signed_by_customer,
+            signed_by_company: data.signed_by_company,
             tenant_id: data.tenant_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -133,7 +237,8 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approval_records(*)`
+          approval_history:contract_approval_records(*),
+          attachments:contract_attachments(*)`
         )
         .single();
 
@@ -159,15 +264,38 @@ export class SupabaseContractService extends BaseSupabaseService {
         .update({
           title: updates.title,
           description: updates.description,
+          customer_contact: updates.customer_contact,
+          deal_id: updates.deal_id,
+          deal_title: updates.deal_title,
           type: updates.type,
           status: updates.status,
           start_date: updates.start_date,
           end_date: updates.end_date,
-          renewal_date: updates.renewal_date,
+          signed_date: updates.signed_date,
+          next_renewal_date: updates.next_renewal_date,
+          auto_renew: updates.auto_renew,
+          renewal_period_months: updates.renewal_period_months,
+          renewal_terms: updates.renewal_terms,
+          terms: updates.terms,
           value: updates.value,
           currency: updates.currency,
+          payment_terms: updates.payment_terms,
+          delivery_terms: updates.delivery_terms,
           content: updates.content,
-          terms_and_conditions: updates.terms_and_conditions,
+          document_path: updates.document_path,
+          document_url: updates.document_url,
+          version: updates.version,
+          approval_stage: updates.approval_stage,
+          compliance_status: updates.compliance_status,
+          assigned_to: updates.assigned_to,
+          assigned_to_name: updates.assigned_to_name,
+          tags: updates.tags,
+          priority: updates.priority,
+          reminder_days: updates.reminder_days,
+          next_reminder_date: updates.next_reminder_date,
+          notes: updates.notes,
+          signed_by_customer: updates.signed_by_customer,
+          signed_by_company: updates.signed_by_company,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -176,7 +304,8 @@ export class SupabaseContractService extends BaseSupabaseService {
           customer:customers(*),
           template:contract_templates(*),
           parties:contract_parties(*),
-          approvals:contract_approval_records(*)`
+          approval_history:contract_approval_records(*),
+          attachments:contract_attachments(*)`
         )
         .single();
 
@@ -214,20 +343,22 @@ export class SupabaseContractService extends BaseSupabaseService {
   /**
    * Get contracts expiring soon
    */
-  async getExpiringContracts(tenantId: string, daysThreshold: number = 30): Promise<Contract[]> {
+  async getExpiringContracts(filters?: ContractFilters, daysThreshold: number = 30): Promise<Contract[]> {
     try {
-      this.log('Fetching expiring contracts', { tenantId, daysThreshold });
+      this.log('Fetching expiring contracts', { filters, daysThreshold });
 
       const now = new Date();
       const threshold = new Date(now.getTime() + daysThreshold * 24 * 60 * 60 * 1000);
 
-      const contracts = await this.getContracts({ tenantId });
+      // Use expiring_soon filter
+      const expiringFilters: ContractFilters = {
+        ...filters,
+        expiring_soon: true,
+      };
 
-      return contracts.filter((c) => {
-        if (!c.end_date) return false;
-        const endDate = new Date(c.end_date);
-        return endDate <= threshold && endDate >= now;
-      });
+      const contracts = await this.getContracts(expiringFilters);
+
+      return contracts;
     } catch (error) {
       this.logError('Error fetching expiring contracts', error);
       throw error;
@@ -334,7 +465,7 @@ export class SupabaseContractService extends BaseSupabaseService {
   /**
    * Get contract statistics
    */
-  async getContractStats(tenantId: string): Promise<{
+  async getContractStats(filters?: ContractFilters): Promise<{
     total: number;
     active: number;
     expiring: number;
@@ -343,10 +474,11 @@ export class SupabaseContractService extends BaseSupabaseService {
     byType: Record<string, number>;
   }> {
     try {
-      this.log('Fetching contract statistics', { tenantId });
+      this.log('Fetching contract statistics', { filters });
 
-      const contracts = await this.getContracts({ tenantId });
-      const expiringContracts = await this.getExpiringContracts(tenantId);
+      const contractsResponse = await this.getContracts(filters);
+      const contracts = contractsResponse.data || [];
+      const expiringContracts = await this.getExpiringContracts(filters);
 
       const stats = {
         total: contracts.length,
@@ -395,21 +527,105 @@ export class SupabaseContractService extends BaseSupabaseService {
       contract_number: dbContract.contract_number,
       title: dbContract.title,
       description: dbContract.description || '',
+      type: (dbContract.type || 'service_agreement') as Contract['type'],
+      status: (dbContract.status || 'draft') as Contract['status'],
+
+      // Customer Relationship
       customer_id: dbContract.customer_id,
       customer_name: dbContract.customer?.company_name || '',
-      type: (dbContract.type || 'standard') as Contract['type'],
-      status: (dbContract.status || 'draft') as Contract['status'],
+      customer_contact: dbContract.customer_contact,
+
+      // Deal Relationship
+      deal_id: dbContract.deal_id,
+      deal_title: dbContract.deal_title,
+
+      // Parties
+      parties: (dbContract.parties || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        company: p.company,
+        role: p.role,
+        is_primary: p.is_primary,
+        customer_id: p.customer_id,
+        signature_required: p.signature_required,
+        signed_at: p.signed_at,
+        signature_url: p.signature_url,
+        signature_status: p.signature_status,
+      })),
+
+      // Financial
+      value: dbContract.value || 0,
+      total_value: dbContract.value || 0, // Alias for backend compatibility
+      currency: dbContract.currency || 'USD',
+      payment_terms: dbContract.payment_terms,
+      delivery_terms: dbContract.delivery_terms,
+
+      // Dates and Timeline
       start_date: dbContract.start_date,
       end_date: dbContract.end_date,
-      renewal_date: dbContract.renewal_date,
-      value: dbContract.value || 0,
-      currency: dbContract.currency || 'USD',
-      template_id: dbContract.template_id,
-      content: dbContract.content || '',
-      terms_and_conditions: dbContract.terms_and_conditions || '',
+      signed_date: dbContract.signed_date,
+      next_renewal_date: dbContract.next_renewal_date,
+
+      // Renewal and Terms
+      auto_renew: dbContract.auto_renew ?? false,
+      renewal_period_months: dbContract.renewal_period_months,
+      renewal_terms: dbContract.renewal_terms,
+      terms: dbContract.terms,
+
+      // Approval and Workflow
+      approval_stage: dbContract.approval_stage,
+      approval_history: (dbContract.approval_history || []).map((record: any) => ({
+        id: record.id,
+        stage: record.stage,
+        approver: record.approver,
+        approver_name: record.approver_name,
+        status: record.status,
+        comments: record.comments,
+        timestamp: record.timestamp,
+      })),
+      compliance_status: (dbContract.compliance_status || 'pending_review') as Contract['compliance_status'],
+
+      // Assignment and Management
       created_by: dbContract.created_by || '',
-      approvals: dbContract.approvals || [],
-      parties: dbContract.parties || [],
+      assigned_to: dbContract.assigned_to,
+      assigned_to_name: dbContract.assigned_to_name,
+
+      // Document Management
+      content: dbContract.content || '',
+      template_id: dbContract.template_id,
+      document_path: dbContract.document_path,
+      document_url: dbContract.document_url,
+      version: dbContract.version || 1,
+
+      // Organization and Tracking
+      tags: dbContract.tags || [],
+      priority: (dbContract.priority || 'medium') as Contract['priority'],
+      reminder_days: dbContract.reminder_days || [],
+      next_reminder_date: dbContract.next_reminder_date,
+      notes: dbContract.notes,
+
+      // Signatures and Attachments
+      signature_status: {
+        total_required: dbContract.signature_status?.total_required || 0,
+        completed: dbContract.signature_status?.completed || 0,
+        pending: dbContract.signature_status?.pending || [],
+        last_signed_at: dbContract.signature_status?.last_signed_at,
+      },
+      signed_by_customer: dbContract.signed_by_customer,
+      signed_by_company: dbContract.signed_by_company,
+      attachments: (dbContract.attachments || []).map((att: any) => ({
+        id: att.id,
+        name: att.name,
+        url: att.url,
+        type: att.type,
+        size: att.size,
+        uploaded_at: att.uploaded_at,
+        uploaded_by: att.uploaded_by,
+      })),
+
+      // System Information
       tenant_id: dbContract.tenant_id,
       created_at: dbContract.created_at,
       updated_at: dbContract.updated_at,

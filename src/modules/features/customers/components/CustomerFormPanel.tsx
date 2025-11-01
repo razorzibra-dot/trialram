@@ -1,10 +1,38 @@
 /**
- * Customer Form Panel
- * Side drawer for creating/editing customer information
+ * Customer Form Panel - Enterprise Enhanced
+ * Professional UI/UX redesign with card-based sections, enhanced validation,
+ * tooltips, and visual hierarchy improvements.
+ * 
+ * Last Updated: 2025-01-31
+ * Reference: CUSTOMER_FORMS_ENHANCEMENT_GUIDE.md
  */
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, Checkbox, Spin } from 'antd';
+import {
+  Drawer,
+  Form,
+  Input,
+  Select,
+  Button,
+  Space,
+  message,
+  InputNumber,
+  Card,
+  Row,
+  Col,
+} from 'antd';
+import {
+  SaveOutlined,
+  CloseOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+  ShoppingOutlined,
+  DollarOutlined,
+  TagsOutlined,
+  FileOutlined,
+} from '@ant-design/icons';
 import { Customer } from '@/types/crm';
 import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
 import { useIndustries } from '../hooks/useIndustries';
@@ -17,6 +45,63 @@ interface CustomerFormPanelProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+// Professional styling configuration
+const sectionStyles = {
+  card: {
+    marginBottom: 20,
+    borderRadius: 8,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottom: '2px solid #e5e7eb',
+  },
+  headerIcon: {
+    fontSize: 20,
+    color: '#0ea5e9',
+    marginRight: 10,
+    fontWeight: 600,
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: '#1f2937',
+    margin: 0,
+  },
+};
+
+// Configuration objects for consistent display
+const statusConfig = {
+  active: { emoji: '✅', color: '#f0f5ff' },
+  inactive: { emoji: '❌', color: '#fafafa' },
+  prospect: { emoji: '⏳', color: '#fffbe6' },
+  suspended: { emoji: '🛑', color: '#fff1f0' },
+};
+
+const customerTypeConfig = {
+  business: { emoji: '🏢', label: 'Business' },
+  individual: { emoji: '👤', label: 'Individual' },
+  corporate: { emoji: '🏛️', label: 'Corporate' },
+  government: { emoji: '🏛️', label: 'Government' },
+};
+
+const ratingConfig = {
+  hot: { emoji: '🔥', label: 'Hot Lead' },
+  warm: { emoji: '☀️', label: 'Warm Lead' },
+  cold: { emoji: '❄️', label: 'Cold Lead' },
+};
+
+const sourceConfig = {
+  referral: { emoji: '👥', label: 'Referral' },
+  website: { emoji: '🌐', label: 'Website' },
+  sales_team: { emoji: '📞', label: 'Sales Team' },
+  event: { emoji: '🎯', label: 'Event' },
+  other: { emoji: '📋', label: 'Other' },
+};
 
 export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   visible,
@@ -73,22 +158,36 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
 
   return (
     <Drawer
-      title={isEditMode ? 'Edit Customer' : 'Create New Customer'}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>{isEditMode ? 'Edit Customer' : 'Create New Customer'}</span>
+        </div>
+      }
       placement="right"
-      width={500}
+      width={600}
       onClose={onClose}
       open={visible}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
-        <Space style={{ float: 'right' }}>
-          <Button onClick={onClose}>Cancel</Button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button
+            size="large"
+            icon={<CloseOutlined />}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
           <Button
             type="primary"
+            size="large"
+            icon={<SaveOutlined />}
             loading={loading}
             onClick={handleSubmit}
           >
-            {isEditMode ? 'Update' : 'Create'}
+            {isEditMode ? 'Update Customer' : 'Create Customer'}
           </Button>
-        </Space>
+        </div>
       }
     >
       <Form
@@ -96,232 +195,361 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
         layout="vertical"
         requiredMark="optional"
         autoComplete="off"
+        style={{ padding: '0 24px 24px 24px' }}
       >
-        {/* Basic Information */}
-        <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Basic Information</h3>
+        {/* 📄 Basic Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <FileTextOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+          </div>
 
-        <Form.Item
-          label="Company Name"
-          name="company_name"
-          rules={[{ required: true, message: 'Please enter company name' }]}
-        >
-          <Input placeholder="Enter company name" />
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Company Name"
+                name="company_name"
+                rules={[
+                  { required: true, message: 'Company name is required' },
+                  { min: 2, message: 'Company name must be at least 2 characters' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., Acme Corporation"
+                  allowClear
+                  prefix={<ShoppingOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Status"
+                name="status"
+                initialValue="active"
+                rules={[{ required: true, message: 'Please select status' }]}
+                tooltip="Status of the customer relationship"
+              >
+                <Select size="large" placeholder="Select status">
+                  {Object.entries(statusConfig).map(([key, { emoji }]) => (
+                    <Select.Option key={key} value={key}>
+                      {emoji} {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <Form.Item
-          label="Contact Name"
-          name="contact_name"
-          rules={[{ required: true, message: 'Please enter contact name' }]}
-        >
-          <Input placeholder="Enter contact name" />
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Contact Name"
+                name="contact_name"
+                rules={[
+                  { required: true, message: 'Contact name is required' },
+                  { min: 2, message: 'Contact name must be at least 2 characters' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., John Smith"
+                  allowClear
+                  prefix={<UserOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Assigned To"
+                name="assignedTo"
+                tooltip="Primary user responsible for this customer"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select user (optional)"
+                  loading={usersLoading}
+                  disabled={usersLoading}
+                  allowClear
+                >
+                  {users.map((user) => (
+                    <Select.Option key={user.id} value={user.id}>
+                      👤 {user.firstName} {user.lastName}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            { required: true, message: 'Please enter email' },
-            { type: 'email', message: 'Please enter a valid email' }
-          ]}
-        >
-          <Input placeholder="Enter email address" />
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Email Address"
+                name="email"
+                rules={[
+                  { required: true, message: 'Email is required' },
+                  { type: 'email', message: 'Please enter a valid email' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., john@acme.com"
+                  allowClear
+                  type="email"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Website" name="website">
+                <Input
+                  size="large"
+                  placeholder="e.g., https://acme.com"
+                  allowClear
+                  prefix="🌐"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <Form.Item
-          label="Phone"
-          name="phone"
-        >
-          <Input placeholder="Enter phone number" />
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Phone" name="phone">
+                <Input
+                  size="large"
+                  placeholder="e.g., +1 (555) 123-4567"
+                  allowClear
+                  prefix={<PhoneOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Mobile" name="mobile">
+                <Input
+                  size="large"
+                  placeholder="e.g., +1 (555) 987-6543"
+                  allowClear
+                  prefix={<PhoneOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        <Form.Item
-          label="Mobile"
-          name="mobile"
-        >
-          <Input placeholder="Enter mobile number" />
-        </Form.Item>
+        {/* 🏢 Business Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <ShoppingOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Business Information</h3>
+          </div>
 
-        <Form.Item
-          label="Status"
-          name="status"
-          initialValue="active"
-        >
-          <Select>
-            <Select.Option value="active">Active</Select.Option>
-            <Select.Option value="inactive">Inactive</Select.Option>
-            <Select.Option value="prospect">Prospect</Select.Option>
-          </Select>
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Industry" name="industry">
+                <Select
+                  size="large"
+                  placeholder="Select industry"
+                  loading={industriesLoading}
+                  disabled={industriesLoading}
+                  allowClear
+                >
+                  {industries.map((industry) => (
+                    <Select.Option key={industry.id} value={industry.name}>
+                      🏭 {industry.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Company Size"
+                name="size"
+                tooltip="Approximate number of employees"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select company size"
+                  loading={sizesLoading}
+                  disabled={sizesLoading}
+                  allowClear
+                >
+                  {companySizes.map((size) => (
+                    <Select.Option key={size.id} value={size.name}>
+                      📊 {size.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-        <Form.Item
-          label="Assigned To"
-          name="assignedTo"
-        >
-          <Select 
-            placeholder="Select user (optional)"
-            loading={usersLoading}
-            disabled={usersLoading}
-            allowClear
-          >
-            {users.map(user => (
-              <Select.Option key={user.id} value={user.id}>
-                {user.firstName} {user.lastName}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Customer Type" name="customer_type">
+                <Select size="large" placeholder="Select customer type" allowClear>
+                  {Object.entries(customerTypeConfig).map(([key, { emoji, label }]) => (
+                    <Select.Option key={key} value={key}>
+                      {emoji} {label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Tax ID" name="tax_id">
+                <Input
+                  size="large"
+                  placeholder="e.g., 12-3456789"
+                  allowClear
+                  prefix="📋"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        {/* Business Information */}
-        <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Business Information</h3>
-        </div>
+        {/* 📍 Address Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <EnvironmentOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Address Information</h3>
+          </div>
 
-        <Form.Item
-          label="Industry"
-          name="industry"
-        >
-          <Select 
-            placeholder="Select industry"
-            loading={industriesLoading}
-            disabled={industriesLoading}
-          >
-            {industries.map(industry => (
-              <Select.Option key={industry.id} value={industry.name}>
-                {industry.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Form.Item label="Street Address" name="address">
+            <Input
+              size="large"
+              placeholder="e.g., 123 Main Street"
+              allowClear
+            />
+          </Form.Item>
 
-        <Form.Item
-          label="Company Size"
-          name="size"
-        >
-          <Select 
-            placeholder="Select company size"
-            loading={sizesLoading}
-            disabled={sizesLoading}
-          >
-            {companySizes.map(size => (
-              <Select.Option key={size.id} value={size.name}>
-                {size.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="City" name="city">
+                <Input
+                  size="large"
+                  placeholder="e.g., San Francisco"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Country" name="country">
+                <Input
+                  size="large"
+                  placeholder="e.g., United States"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        <Form.Item
-          label="Customer Type"
-          name="customer_type"
-        >
-          <Select placeholder="Select customer type">
-            <Select.Option value="business">Business</Select.Option>
-            <Select.Option value="individual">Individual</Select.Option>
-          </Select>
-        </Form.Item>
+        {/* 💰 Financial Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <DollarOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Financial Information</h3>
+          </div>
 
-        <Form.Item
-          label="Website"
-          name="website"
-        >
-          <Input placeholder="https://example.com" />
-        </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Credit Limit"
+                name="credit_limit"
+                tooltip="Maximum credit extended to customer"
+              >
+                <InputNumber
+                  size="large"
+                  style={{ width: '100%' }}
+                  placeholder="e.g., 50000"
+                  min={0}
+                  formatter={(value) =>
+                    `$${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  }
+                  parser={(value) =>
+                    parseInt(value?.replace(/\$\s?|(,*)/g, '') || '0')
+                  }
+                  prefix={<DollarOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Payment Terms"
+                name="payment_terms"
+                tooltip="Standard payment terms (e.g., Net 30, Net 60)"
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., Net 30 or Net 60"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        <Form.Item
-          label="Tax ID"
-          name="tax_id"
-        >
-          <Input placeholder="Enter tax ID" />
-        </Form.Item>
+        {/* 🎯 Lead Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <TagsOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Lead Information</h3>
+          </div>
 
-        {/* Address Information */}
-        <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Address</h3>
-        </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Lead Source"
+                name="source"
+                tooltip="How this customer was acquired"
+              >
+                <Select size="large" placeholder="Select source" allowClear>
+                  {Object.entries(sourceConfig).map(([key, { emoji, label }]) => (
+                    <Select.Option key={key} value={key}>
+                      {emoji} {label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Lead Rating"
+                name="rating"
+                tooltip="Quality rating of the lead opportunity"
+              >
+                <Select size="large" placeholder="Select rating" allowClear>
+                  {Object.entries(ratingConfig).map(([key, { emoji, label }]) => (
+                    <Select.Option key={key} value={key}>
+                      {emoji} {label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-        <Form.Item
-          label="Address"
-          name="address"
-        >
-          <Input placeholder="Enter street address" />
-        </Form.Item>
+        {/* 📝 Additional Notes */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <FileOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Additional Notes</h3>
+          </div>
 
-        <Form.Item
-          label="City"
-          name="city"
-        >
-          <Input placeholder="Enter city" />
-        </Form.Item>
-
-        <Form.Item
-          label="Country"
-          name="country"
-        >
-          <Input placeholder="Enter country" />
-        </Form.Item>
-
-        {/* Financial Information */}
-        <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Financial Information</h3>
-        </div>
-
-        <Form.Item
-          label="Credit Limit"
-          name="credit_limit"
-        >
-          <InputNumber
-            placeholder="Enter credit limit"
-            min={0}
-            formatter={(value) => `$${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={(value) => parseInt(value?.replace(/\$\s?|(,*)/g, '') || '0')}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Payment Terms"
-          name="payment_terms"
-        >
-          <Input placeholder="E.g., Net 30, Net 60" />
-        </Form.Item>
-
-        {/* Additional Information */}
-        <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Additional Information</h3>
-        </div>
-
-        <Form.Item
-          label="Source"
-          name="source"
-        >
-          <Select placeholder="Select source">
-            <Select.Option value="referral">Referral</Select.Option>
-            <Select.Option value="website">Website</Select.Option>
-            <Select.Option value="sales_team">Sales Team</Select.Option>
-            <Select.Option value="event">Event</Select.Option>
-            <Select.Option value="other">Other</Select.Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          label="Rating"
-          name="rating"
-        >
-          <Select placeholder="Select rating">
-            <Select.Option value="hot">Hot Lead</Select.Option>
-            <Select.Option value="warm">Warm Lead</Select.Option>
-            <Select.Option value="cold">Cold Lead</Select.Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          label="Notes"
-          name="notes"
-        >
-          <Input.TextArea
-            placeholder="Add any additional notes"
-            rows={4}
-          />
-        </Form.Item>
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea
+              size="large"
+              placeholder="Add any additional notes about this customer..."
+              rows={5}
+              maxLength={1000}
+              showCount
+              style={{ fontFamily: 'inherit' }}
+            />
+          </Form.Item>
+        </Card>
       </Form>
     </Drawer>
   );

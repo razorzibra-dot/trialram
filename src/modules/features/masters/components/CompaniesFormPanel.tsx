@@ -65,6 +65,11 @@ export const CompaniesFormPanel: React.FC<CompaniesFormPanelProps> = ({
     }
   }, [isOpen, company, mode, form]);
 
+  const handleClose = () => {
+    form.resetFields();
+    onClose();
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -79,13 +84,14 @@ export const CompaniesFormPanel: React.FC<CompaniesFormPanelProps> = ({
     <Drawer
       title={title}
       placement="right"
-      onClose={onClose}
+      onClose={handleClose}
       open={isOpen}
       width={550}
-      bodyStyle={{ padding: '24px' }}
+      destroyOnHidden
+      styles={{ body: { padding: '24px' } }}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={handleClose}>Cancel</Button>
           <Button type="primary" loading={isSaving} onClick={handleSave}>
             {mode === 'create' ? 'Create' : 'Update'}
           </Button>

@@ -42,7 +42,7 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-react';
-import ComplaintFormModal from '@/components/complaints/ComplaintFormModal';
+import { ComplaintsFormPanel } from '@/modules/features/complaints/components/ComplaintsFormPanel';
 import ComplaintDetailModal from '@/components/complaints/ComplaintDetailModal';
 import { toast } from 'sonner';
 
@@ -52,7 +52,8 @@ export const ComplaintsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFormPanel, setShowFormPanel] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
 
@@ -90,6 +91,23 @@ export const ComplaintsPage: React.FC = () => {
         {status.replace('_', ' ')}
       </Badge>
     );
+  };
+
+  const handleCreateComplaint = () => {
+    setSelectedComplaint(null);
+    setFormMode('create');
+    setShowFormPanel(true);
+  };
+
+  const handleEditComplaint = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setFormMode('edit');
+    setShowFormPanel(true);
+  };
+
+  const handleCloseFormPanel = () => {
+    setShowFormPanel(false);
+    setSelectedComplaint(null);
   };
 
   const handleViewDetails = (complaint: Complaint) => {
@@ -143,7 +161,7 @@ export const ComplaintsPage: React.FC = () => {
             Refresh
           </Button>
           {hasPermission('write') && (
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={handleCreateComplaint}>
               <Plus className="h-4 w-4 mr-2" />
               Create Complaint
             </Button>
@@ -255,7 +273,7 @@ export const ComplaintsPage: React.FC = () => {
                 Get started by creating your first complaint
               </p>
               {hasPermission('write') && (
-                <Button onClick={() => setShowCreateModal(true)}>
+                <Button onClick={handleCreateComplaint}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Complaint
                 </Button>
@@ -326,7 +344,7 @@ export const ComplaintsPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleViewDetails(complaint)}
+                              onClick={() => handleEditComplaint(complaint)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -342,11 +360,12 @@ export const ComplaintsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <ComplaintFormModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onSuccess={fetchComplaints}
+      {/* Side Panel Forms */}
+      <ComplaintsFormPanel
+        complaint={selectedComplaint}
+        mode={formMode}
+        isOpen={showFormPanel}
+        onClose={handleCloseFormPanel}
       />
 
       {selectedComplaint && (

@@ -19,7 +19,8 @@ import {
   Badge,
   Divider,
   Alert,
-  Switch
+  Switch,
+  Spin
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -38,6 +39,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
+import { usePermissions } from '../hooks';
+import { UserPermission } from '../guards/permissionGuards';
 import { Role, Permission } from '@/types/rbac';
 
 interface PermissionMatrixRow {
@@ -49,11 +52,17 @@ interface PermissionMatrixRow {
   [roleId: string]: unknown; // Dynamic role columns
 }
 
+interface RBACService {
+  getRoles(): Promise<Role[]>;
+  getPermissions(): Promise<Permission[]>;
+  updateRolePermissions(roleId: string, permissionIds: string[]): Promise<void>;
+}
+
 export const PermissionMatrixPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
-  const rbacService = useService<any>('rbacService');
-  const canManageRoles = hasPermission('manage_roles');
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { canManageRoles, isLoading: permLoading } = usePermissions();
+  const rbacService = useService<RBACService>('rbacService');
 
   // State
   const [roles, setRoles] = useState<Role[]>([]);
@@ -64,13 +73,30 @@ export const PermissionMatrixPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showSystemRoles, setShowSystemRoles] = useState(true);
 
-  // Load data
-   
-  useEffect(() => {
-    loadData();
-  }, [showSystemRoles]);
+  // Build matrix data
+  const buildMatrixData = React.useCallback((rolesData: Role[], permissionsData: Permission[]) => {
+    const matrix: PermissionMatrixRow[] = permissionsData.map(permission => {
+      const row: PermissionMatrixRow = {
+        key: permission.id,
+        category: permission.category,
+        permissionId: permission.id,
+        permissionName: permission.name,
+        permissionDescription: permission.description
+      };
 
-  const loadData = async () => {
+      // Add role columns
+      rolesData.forEach(role => {
+        row[role.id] = role.permissions.includes(permission.id);
+      });
+
+      return row;
+    });
+
+    setMatrixData(matrix);
+  }, []);
+
+  // Load data function
+  const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
       const [rolesData, permissionsData] = await Promise.all([
@@ -92,29 +118,12 @@ export const PermissionMatrixPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showSystemRoles, buildMatrixData, rbacService]);
 
-  // Build matrix data
-  const buildMatrixData = (rolesData: Role[], permissionsData: Permission[]) => {
-    const matrix: PermissionMatrixRow[] = permissionsData.map(permission => {
-      const row: PermissionMatrixRow = {
-        key: permission.id,
-        category: permission.category,
-        permissionId: permission.id,
-        permissionName: permission.name,
-        permissionDescription: permission.description
-      };
-
-      // Add role columns
-      rolesData.forEach(role => {
-        row[role.id] = role.permissions.includes(permission.id);
-      });
-
-      return row;
-    });
-
-    setMatrixData(matrix);
-  };
+  // Load data on component mount and when showSystemRoles changes
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Handle permission toggle
   const handlePermissionToggle = (permissionId: string, roleId: string, checked: boolean) => {
@@ -318,6 +327,43 @@ export const PermissionMatrixPage: React.FC = () => {
       }
     }))
   ];
+
+  // Show loading state while auth and permissions are being checked
+  if (authLoading || permLoading) {
+    return (
+      <div style={{ padding: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" tip="Loading permissions..." />
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Authentication Required"
+          description="Please log in to access permission matrix."
+          type="warning"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  // Check if user can manage roles
+  if (!canManageRoles) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Access Denied"
+          description="You don't have permission to access permission matrix management."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
 
   return (
     <>

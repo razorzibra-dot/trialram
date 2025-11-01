@@ -1,12 +1,15 @@
 /**
- * Dashboard Service
+ * Dashboard Service - Module Layer
  * Business logic for dashboard analytics and widgets
- * Integrates with Supabase and provides mock data fallback
+ * ⚠️ IMPORTANT: This is for the Dashboard module
+ *
+ * This service uses the Service Factory pattern to route between mock and Supabase implementations
+ * based on VITE_API_MODE environment variable
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
-import { supabaseCustomerService } from '@/services/supabase/customerService';
-import { supabaseSalesService } from '@/services/supabase/salesService';
+import { customerService as factoryCustomerService } from '@/services/serviceFactory';
+import { salesService as factorySalesService } from '@/services/serviceFactory';
 import { 
   getMockData, 
   getMockActivityData, 
@@ -64,12 +67,24 @@ export interface CustomerData {
 }
 
 export class DashboardService extends BaseService {
-  private customerService = supabaseCustomerService;
-  private salesService = supabaseSalesService;
   private useMockData: boolean = false;
 
   constructor() {
     super();
+  }
+
+  /**
+   * Get customer service from factory (routes based on VITE_API_MODE)
+   */
+  private getCustomerService() {
+    return factoryCustomerService;
+  }
+
+  /**
+   * Get sales service from factory (routes based on VITE_API_MODE)
+   */
+  private getSalesService() {
+    return factorySalesService;
   }
 
   /**
@@ -114,11 +129,12 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch customer statistics from Supabase
+   * Fetch customer statistics from factory service
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchCustomerStats(): Promise<{ count: number }> {
     try {
-      const customers = await this.customerService.getCustomers({ status: 'active' });
+      const customers = await this.getCustomerService().getCustomers({ status: 'active' });
       return { count: customers.length };
     } catch (error) {
       this.handleError('Failed to fetch customer stats', error);
@@ -127,11 +143,12 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch sales statistics from Supabase
+   * Fetch sales statistics from factory service
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchSalesStats(): Promise<{ count: number; revenue: number }> {
     try {
-      const sales = await this.salesService.getSales({ status: 'won' });
+      const sales = await this.getSalesService().getDeals({ status: 'won' });
       const count = sales.length;
       const revenue = sales.reduce((sum, sale) => sum + (sale.value || 0), 0);
       return { count, revenue };
@@ -142,12 +159,13 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch recent activity from Supabase
+   * Fetch recent activity from factory services
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchRecentActivity(limit: number = 10): Promise<ActivityItem[]> {
     try {
-      const sales = await this.salesService.getSales();
-      const customers = await this.customerService.getCustomers();
+      const sales = await this.getSalesService().getDeals();
+      const customers = await this.getCustomerService().getCustomers();
 
       // Create activity items from recent data
       const activities: ActivityItem[] = [];
@@ -187,11 +205,12 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch sales trend data
+   * Fetch sales trend data from factory service
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchSalesTrend(): Promise<TrendData[]> {
     try {
-      const sales = await this.salesService.getSales();
+      const sales = await this.getSalesService().getDeals();
 
       // Group sales by month
       const monthlyData: Record<string, number> = {};
@@ -241,12 +260,13 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch top customers by value
+   * Fetch top customers by value from factory services
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchTopCustomers(limit: number = 5): Promise<CustomerData[]> {
     try {
-      const customers = await this.customerService.getCustomers();
-      const sales = await this.salesService.getSales();
+      const customers = await this.getCustomerService().getCustomers();
+      const sales = await this.getSalesService().getDeals();
 
       // Calculate customer totals
       const customerTotals: Record<string, { name: string; value: number; dealCount: number }> = {};
@@ -284,11 +304,12 @@ export class DashboardService extends BaseService {
   }
 
   /**
-   * Fetch sales pipeline data
+   * Fetch sales pipeline data from factory service
+   * Routes to mock or Supabase based on VITE_API_MODE
    */
   private async fetchSalesPipeline(): Promise<SalesPipelineData> {
     try {
-      const sales = await this.salesService.getSales();
+      const sales = await this.getSalesService().getDeals();
 
       // Group by stage
       const stages: Record<string, number> = {

@@ -20,10 +20,6 @@ export const userManagementModule: FeatureModule = {
       // Services are factory-routed instances, not constructors
       registerServiceInstance('userService', userService);
       registerServiceInstance('rbacService', rbacService);
-      
-      console.log('[User Management] ✅ userService registered');
-      console.log('[User Management] ✅ rbacService registered');
-      console.log('[User Management] ✅ Module initialized successfully');
     } catch (error) {
       console.error('[User Management] ❌ Initialization failed:', error);
       throw error;
@@ -34,15 +30,21 @@ export const userManagementModule: FeatureModule = {
       const { unregisterService } = await import('@/modules/core/services/ServiceContainer');
       unregisterService('userService');
       unregisterService('rbacService');
-      console.log('[User Management] ✅ Services unregistered');
     } catch (error) {
       console.error('[User Management] ❌ Cleanup failed:', error);
     }
   },
 };
 
+// Export services
+export { userService } from './services/userService';
+
+// Export hooks
+export * from './hooks';
+
 // Export views for direct imports if needed
 export { default as UsersPage } from './views/UsersPage';
-export { default as UserManagementPage } from './views/UserManagementPage';
+// ✅ CONSOLIDATED: UserManagementPage (legacy) consolidated into UsersPage
+// Routes redirect /user-management to /users/list for backward compatibility
 export { default as RoleManagementPage } from './views/RoleManagementPage';
 export { default as PermissionMatrixPage } from './views/PermissionMatrixPage';

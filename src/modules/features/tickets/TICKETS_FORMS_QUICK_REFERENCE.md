@@ -1,0 +1,532 @@
+---
+title: Support Tickets Form - Quick Reference
+description: Quick reference guide for developers using the enhanced Support Tickets form
+category: quick-reference
+---
+
+# Support Tickets Form - Quick Reference Guide
+
+## 🚀 Quick Start
+
+### Import Component
+
+```typescript
+import { TicketsFormPanel } from '@/modules/features/tickets/components';
+```
+
+### Basic Usage
+
+```typescript
+const [isFormOpen, setIsFormOpen] = useState(false);
+const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+
+return (
+  <>
+    <Button onClick={() => {
+      setFormMode('create');
+      setSelectedTicket(null);
+      setIsFormOpen(true);
+    }}>
+      Create Ticket
+    </Button>
+
+    <TicketsFormPanel
+      ticket={selectedTicket}
+      mode={formMode}
+      isOpen={isFormOpen}
+      onClose={() => setIsFormOpen(false)}
+    />
+  </>
+);
+```
+
+---
+
+## 📋 Features at a Glance
+
+| Feature | Benefit | Usage |
+|---------|---------|-------|
+| Auto-Ticket Number | Unique tracking | Automatic, no user input |
+| SLA Information | Response time clarity | Shown in card, updates on priority change |
+| Category Routing | Faster resolution | Auto-selects department |
+| Priority Levels | SLA management | 4 levels: Low, Medium, High, Urgent |
+| Status Workflow | Progress tracking | 5 states: Open, In Progress, Waiting, Resolved, Closed |
+| Tag Suggestions | Better organization | 10 quick-add tags |
+| Form Validation | Data quality | All required fields validated |
+| Responsive Design | Works everywhere | Mobile, tablet, desktop |
+
+---
+
+## 🎯 Ticket Number Format
+
+```
+TKT-YYYYMM-XXXX
+Example: TKT-202501-0042
+
+YYYY = Year (2025)
+MM = Month (01)
+XXXX = Sequential number (0042)
+```
+
+**Storage**: localStorage (production uses database)  
+**Uniqueness**: Per tenant per month  
+**Format**: Auto-generated, read-only, locked
+
+---
+
+## 🎪 SLA Configuration
+
+### Priority Levels
+
+```typescript
+const PRIORITIES = [
+  { 
+    label: 'Low', 
+    value: 'low', 
+    responseTime: '24 hours',
+    resolutionTime: '7 days'
+  },
+  { 
+    label: 'Medium', 
+    value: 'medium', 
+    responseTime: '8 hours',
+    resolutionTime: '3 days'
+  },
+  { 
+    label: 'High', 
+    value: 'high', 
+    responseTime: '2 hours',
+    resolutionTime: '24 hours'
+  },
+  { 
+    label: 'Urgent', 
+    value: 'urgent', 
+    responseTime: '30 minutes',
+    resolutionTime: '4 hours'
+  },
+];
+```
+
+---
+
+## 🔀 Category & Department Routing
+
+### Category to Department Mapping
+
+```typescript
+Technical Support → Support Team
+Billing & Invoicing → Finance
+Feature Request → Product Team
+Bug Report → Engineering
+Account & Access → Account Management
+General Inquiry → Support Team
+Service Issue → Operations
+Complaint → Management
+```
+
+**How it works**:
+1. User selects category
+2. Department auto-selects in assignment field
+3. Shows in tooltip: "Auto-routed to: {Department}"
+4. Faster routing, reduced manual work
+
+---
+
+## 📊 Form Sections
+
+### 1. 📋 Ticket Information
+- **Ticket Number** (auto-generated, read-only)
+- **Title** (max 255 chars, required)
+- **Description** (10-2000 chars, with counter, required)
+
+### 2. 🎯 Categorization & Routing
+- **Category** (required, auto-routes department)
+- **Priority** (required, shows SLA times)
+- **Status** (optional, workflow management)
+- **Assigned To** (optional, shows auto-routed dept)
+
+### 3. 👤 Customer Information
+- **Customer** (required, links ticket to customer)
+
+### 4. 📅 Timeline & Deadlines
+- **Due Date / SLA Deadline** (with time picker)
+
+### 5. 🏷️ Tags & Metadata
+- **Tags** (comma-separated)
+- **Suggested Tags** (10 quick-add options)
+
+---
+
+## ✅ Validation Rules
+
+| Field | Required | Max Length | Rules |
+|-------|----------|-----------|-------|
+| Title | Yes | 255 chars | Non-empty |
+| Description | Yes | 2000 chars | Min 10 chars |
+| Priority | Yes | - | Must select one |
+| Category | Yes | - | Must select one |
+| Customer | Yes | - | Must provide ID |
+| Due Date | No | - | Valid date |
+| Status | No | - | Must select if provided |
+| Tags | No | 500 chars | Comma-separated |
+
+---
+
+## 🎨 UI Components Used
+
+```typescript
+// Main Container
+<Drawer />
+
+// Organization
+<Divider />
+
+// Information Display
+<Card />
+<Alert />
+<Badge />
+<Tag />
+
+// Input Fields
+<Input />
+<Input.TextArea />
+<Select />
+<DatePicker />
+
+// Layout
+<Row />
+<Col />
+<Space />
+
+// Actions
+<Button />
+
+// Loading
+<Spin />
+
+// Icons
+<FileTextOutlined />
+<AlertOutlined />
+<ClockCircleOutlined />
+<UserOutlined />
+<etc.../>
+```
+
+---
+
+## 🔧 State Management
+
+```typescript
+// Component State
+const [selectedPriority, setSelectedPriority] = useState<string>();
+const [selectedCategory, setSelectedCategory] = useState<string>();
+const [selectedTags, setSelectedTags] = useState<string[]>([]);
+const [autoGeneratedTicketNumber, setAutoGeneratedTicketNumber] = useState<string>();
+const [customerAlert, setCustomerAlert] = useState<string | null>(null);
+
+// Memoized Calculations
+const getSLAInfo = useMemo(() => { /* calculate from priority */ }, [selectedPriority]);
+const getAutoAssignedDepartment = useMemo(() => { /* calculate from category */ }, [selectedCategory]);
+```
+
+---
+
+## 🎬 Event Handlers
+
+### On Form Open
+
+```typescript
+// Generate ticket number (create mode only)
+const newTicketNumber = generateTicketNumber();
+setAutoGeneratedTicketNumber(newTicketNumber);
+form.setFieldValue('ticket_number', newTicketNumber);
+
+// Populate form (edit mode)
+form.setFieldsValue({
+  title, description, priority, status,
+  customer_id, assigned_to, category, due_date, tags
+});
+```
+
+### On Priority Change
+
+```typescript
+const handlePriorityChange = (value: string) => {
+  setSelectedPriority(value);
+  // SLA Card automatically updates via useMemo
+};
+```
+
+### On Category Change
+
+```typescript
+const handleCategoryChange = (value: string) => {
+  setSelectedCategory(value);
+  // Department tooltip automatically updates
+};
+```
+
+### On Form Submit
+
+```typescript
+const handleSubmit = async (values: any) => {
+  const data = {
+    title: values.title,
+    description: values.description,
+    priority: values.priority,
+    status: values.status || 'open',
+    customer_id: values.customer_id,
+    assigned_to: values.assigned_to,
+    category: values.category,
+    due_date: values.due_date?.format('YYYY-MM-DD'),
+    tags: values.tags?.split(',').map(t => t.trim()).filter(t => t.length > 0),
+  };
+
+  if (mode === 'create') {
+    await createTicket.mutateAsync(data);
+  } else {
+    await updateTicket.mutateAsync({ id: ticket.id, data });
+  }
+
+  onClose();
+};
+```
+
+---
+
+## 💾 Data Submission
+
+### Create Ticket
+
+```typescript
+const data = {
+  title: 'Cannot login',
+  description: 'Cannot access my account...',
+  priority: 'high',
+  category: 'account_issue',
+  status: 'open',
+  customer_id: 'CUST-001',
+  assigned_to: 'support-team',
+  due_date: '2025-02-01',
+  tags: ['urgent', 'customer-complaint']
+};
+
+// Submitted to: useCreateTicket().mutateAsync(data)
+```
+
+### Update Ticket
+
+```typescript
+const updateData = {
+  id: 'TKT-202501-0042',
+  data: {
+    status: 'in_progress',
+    assigned_to: 'john-support',
+    priority: 'urgent',
+    due_date: '2025-02-01'
+  }
+};
+
+// Submitted to: useUpdateTicket().mutateAsync(updateData)
+```
+
+---
+
+## 🔍 Key Props
+
+```typescript
+interface TicketsFormPanelProps {
+  ticket: Ticket | null;        // Current ticket data (null for create)
+  mode: 'create' | 'edit';      // Form mode
+  isOpen: boolean;              // Show/hide drawer
+  onClose: () => void;          // Close callback
+}
+```
+
+---
+
+## 📱 Responsive Breakpoints
+
+| Breakpoint | Width | Layout |
+|-----------|-------|--------|
+| xs (mobile) | <576px | Full-width stacked |
+| sm (tablet) | ≥576px | 2-column grid |
+| md (desktop) | ≥768px | Optimized 620px |
+| lg (large) | ≥992px | Full optimization |
+
+---
+
+## 🔐 Field Permissions
+
+Currently **no RBAC** implemented, but architecture supports:
+
+```typescript
+// Future enhancement:
+const permissions = useTicketsPermissions({
+  canCreate: true,
+  canEdit: true,
+  canDelete: false,
+  canReassign: true,
+});
+```
+
+---
+
+## 🐛 Common Issues & Fixes
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Ticket number blank | Not generated on open | Check `isOpen` prop, verify form initialization |
+| SLA card blank | Priority not selected | Set default priority in form initialization |
+| Department not showing | Category not changed | Ensure `onChange` fires on category select |
+| Form validation fails | Required fields empty | Check all required field rules |
+| Tags not adding | Input not committed | Use comma separator, ensure focus |
+
+---
+
+## 🎯 Developer Tips
+
+### Tip 1: Auto-routing Works Best With Clear Categories
+```typescript
+// Good: Select appropriate category
+category: 'billing'  // Routes to Finance
+category: 'bug_report'  // Routes to Engineering
+
+// Unclear: Use general categories
+category: 'general_inquiry'  // Routes to Support Team
+```
+
+### Tip 2: Priority Affects SLA Timeline
+```typescript
+// Always set appropriate priority
+priority: 'urgent'   // 30 min response, 4 hrs resolution
+priority: 'low'      // 24 hrs response, 7 days resolution
+```
+
+### Tip 3: Use Tags for Better Filtering
+```typescript
+// Good: Multiple specific tags
+tags: ['urgent', 'escalation', 'customer-issue']
+
+// Avoid: Generic tags
+tags: ['ticket', 'support']
+```
+
+### Tip 4: Customer Link is Required
+```typescript
+// Always provide customer ID
+customer_id: 'CUST-001'  // Links to customer record
+
+// This enables:
+- Customer history tracking
+- Related tickets view
+- Customer communication logging
+```
+
+### Tip 5: Due Date Should Match SLA
+```typescript
+// For Urgent (4-hour SLA)
+due_date: dayjs().add(4, 'hours')
+
+// For High (24-hour SLA)
+due_date: dayjs().add(24, 'hours')
+
+// For Medium (3-day SLA)
+due_date: dayjs().add(3, 'days')
+
+// For Low (7-day SLA)
+due_date: dayjs().add(7, 'days')
+```
+
+---
+
+## 🧪 Testing Code
+
+### Unit Test Example
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { TicketsFormPanel } from '@/modules/features/tickets/components';
+
+test('generates ticket number on open', () => {
+  render(
+    <TicketsFormPanel
+      ticket={null}
+      mode="create"
+      isOpen={true}
+      onClose={jest.fn()}
+    />
+  );
+
+  const ticketNumberField = screen.getByDisplayValue(/TKT-/);
+  expect(ticketNumberField).toBeInTheDocument();
+});
+
+test('updates SLA on priority change', async () => {
+  render(
+    <TicketsFormPanel
+      ticket={null}
+      mode="create"
+      isOpen={true}
+      onClose={jest.fn()}
+    />
+  );
+
+  const prioritySelect = screen.getByLabelText('Priority');
+  await userEvent.selectOption(prioritySelect, 'urgent');
+
+  const responseTimeText = screen.getByText('30 minutes');
+  expect(responseTimeText).toBeInTheDocument();
+});
+```
+
+---
+
+## 📚 Related Files
+
+| File | Purpose |
+|------|---------|
+| `TicketsFormPanel.tsx` | Main component (this enhancement) |
+| `TicketsDetailPanel.tsx` | Read-only detail view |
+| `TicketsList.tsx` | List view with table |
+| `useTickets.ts` | Custom hooks for API |
+| `ticketService.ts` | Service layer |
+| `DOC.md` | Full documentation |
+
+---
+
+## 🔗 Integration Checklist
+
+- [ ] Import component correctly
+- [ ] Provide all required props
+- [ ] Handle `onClose` callback
+- [ ] Integrate with ticket list
+- [ ] Test create mode
+- [ ] Test edit mode
+- [ ] Test responsive on mobile
+- [ ] Test form validation
+- [ ] Test auto-ticket number
+- [ ] Test SLA card updates
+
+---
+
+## 💡 Pro Tips
+
+1. **Auto-ticket numbers are unique per month** - New month = sequence resets
+2. **SLA times are reference only** - Actual SLA tracked in due date
+3. **Category auto-routing improves resolution time** - Use correct category
+4. **Tags help with searching/filtering** - Use consistently
+5. **Form validates on submit** - Check all required fields first
+6. **Drawer is responsive** - Works on all screen sizes
+7. **Ticket number is read-only** - Prevents manual manipulation
+8. **Customer ID is required** - Ensures proper tracking
+9. **Due date shows in SLA tooltip** - Based on priority selected
+10. **Pro tips footer guides users** - Helps with best practices
+
+---
+
+**Quick Reference Version**: 1.0.0  
+**Last Updated**: 2025-01-30  
+**Use with**: TicketsFormPanel v1.0.0

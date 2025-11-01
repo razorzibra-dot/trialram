@@ -1,157 +1,125 @@
-import { User } from '@/types/auth';
-import { authService } from './authService';
+/**
+ * Mock User Service
+ * Provides mock data for user management operations
+ * Implements same interface as Supabase service for factory pattern compatibility
+ * 
+ * FIELD MAPPING REFERENCE (Mock → DTO):
+ * - All fields use camelCase matching UserDTO
+ * - No snake_case transformation needed in mock
+ * - Validation rules match database constraints
+ */
 
-class UserService {
-  private baseUrl = '/api/users';
+import { 
+  UserDTO, 
+  UserStatsDTO, 
+  CreateUserDTO, 
+  UpdateUserDTO,
+  UserFiltersDTO,
+  UserListResponseDTO,
+  UserActivityDTO,
+  UserRole,
+  UserStatus,
+} from '@/types/dtos/userDtos';
 
-  // Mock data for demonstration
-  private mockUsers: User[] = [
-    {
-      id: '1',
-      email: 'admin@company.com',
-      firstName: 'John',
-      lastName: 'Admin',
-      role: 'Admin',
-      status: 'active',
-      tenantId: 'tenant_1',
-      tenantName: 'Acme Corporation',
-      lastLogin: '2024-01-20T14:30:00Z',
-      createdAt: '2024-01-01T00:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0101'
-    },
-    {
-      id: '2',
-      email: 'manager@company.com',
-      firstName: 'Sarah',
-      lastName: 'Manager',
-      role: 'Manager',
-      status: 'active',
-      tenantId: 'tenant_1',
-      tenantName: 'Acme Corporation',
-      lastLogin: '2024-01-20T10:15:00Z',
-      createdAt: '2024-01-01T00:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0102'
-    },
-    {
-      id: '3',
-      email: 'agent@company.com',
-      firstName: 'Mike',
-      lastName: 'Agent',
-      role: 'Viewer',
-      status: 'active',
-      tenantId: 'tenant_1',
-      tenantName: 'Acme Corporation',
-      lastLogin: '2024-01-19T16:45:00Z',
-      createdAt: '2024-01-01T00:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0103'
-    },
-    {
-      id: '4',
-      email: 'jane.smith@techstart.io',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      role: 'Admin',
-      status: 'active',
-      tenantId: 'tenant_2',
-      tenantName: 'TechStart Inc',
-      lastLogin: '2024-01-20T09:30:00Z',
-      createdAt: '2024-01-15T10:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0201'
-    },
-    {
-      id: '5',
-      email: 'bob.wilson@techstart.io',
-      firstName: 'Bob',
-      lastName: 'Wilson',
-      role: 'Manager',
-      status: 'active',
-      tenantId: 'tenant_2',
-      tenantName: 'TechStart Inc',
-      lastLogin: '2024-01-19T14:20:00Z',
-      createdAt: '2024-01-15T10:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0202'
-    },
-    {
-      id: '6',
-      email: 'alice.brown@globalsolutions.com',
-      firstName: 'Alice',
-      lastName: 'Brown',
-      role: 'Viewer',
-      status: 'inactive',
-      tenantId: 'tenant_3',
-      tenantName: 'Global Solutions Ltd',
-      lastLogin: '2024-01-10T11:00:00Z',
-      createdAt: '2024-02-01T09:15:00Z',
-      avatar: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0301'
-    },
-    {
-      id: '7',
-      email: 'david.lee@innovationlabs.net',
-      firstName: 'David',
-      lastName: 'Lee',
-      role: 'Manager',
-      status: 'suspended',
-      tenantId: 'tenant_4',
-      tenantName: 'Innovation Labs',
-      lastLogin: '2024-01-15T08:45:00Z',
-      createdAt: '2024-01-20T14:30:00Z',
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0401'
-    },
-    {
-      id: '8',
-      email: 'emma.davis@enterprisesys.com',
-      firstName: 'Emma',
-      lastName: 'Davis',
-      role: 'Admin',
-      status: 'active',
-      tenantId: 'tenant_5',
-      tenantName: 'Enterprise Systems',
-      lastLogin: '2024-01-20T13:15:00Z',
-      createdAt: '2023-12-15T12:00:00Z',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=32&h=32&fit=crop&crop=face',
-      phone: '+1-555-0501'
-    }
-  ];
+/**
+ * Mock user data matching UserDTO structure exactly
+ */
+const mockUsers: UserDTO[] = [
+  {
+    id: '1',
+    email: 'admin@company.com',
+    name: 'John Admin',
+    firstName: 'John',
+    lastName: 'Admin',
+    role: 'admin',
+    status: 'active',
+    tenantId: 'tenant_1',
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+    phone: '+1-555-0101',
+    companyName: 'Acme Corporation',
+    position: 'System Administrator',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-20T14:30:00Z',
+    lastLogin: '2024-01-20T14:30:00Z',
+  },
+  {
+    id: '2',
+    email: 'manager@company.com',
+    name: 'Sarah Manager',
+    firstName: 'Sarah',
+    lastName: 'Manager',
+    role: 'manager',
+    status: 'active',
+    tenantId: 'tenant_1',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
+    phone: '+1-555-0102',
+    companyName: 'Acme Corporation',
+    position: 'Sales Manager',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-20T10:15:00Z',
+    lastLogin: '2024-01-20T10:15:00Z',
+  },
+  {
+    id: '3',
+    email: 'agent@company.com',
+    name: 'Mike Agent',
+    firstName: 'Mike',
+    lastName: 'Agent',
+    role: 'agent',
+    status: 'active',
+    tenantId: 'tenant_1',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
+    phone: '+1-555-0103',
+    companyName: 'Acme Corporation',
+    position: 'Sales Agent',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-19T16:45:00Z',
+    lastLogin: '2024-01-19T16:45:00Z',
+  },
+];
 
-  async getUsers(filters?: {
-    role?: string;
-    status?: string;
-    tenantId?: string;
-    search?: string;
-  }): Promise<User[]> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+/**
+ * Mock activity logs for testing
+ */
+const mockActivityLogs: UserActivityDTO[] = [];
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
+/**
+ * Mock User Service Implementation
+ * Provides development/testing data with consistent structure
+ */
+class MockUserService {
+  /**
+   * Get all users with optional filters
+   * ✅ Returns: UserDTO[]
+   * ✅ Validation: Same rules as Supabase
+   */
+  async getUsers(filters?: UserFiltersDTO): Promise<UserDTO[]> {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    let users = [...this.mockUsers];
+    let users = [...mockUsers];
 
     // Apply filters
     if (filters) {
-      if (filters.role) {
-        users = users.filter(u => u.role === filters.role);
+      if (filters.status && filters.status.length > 0) {
+        users = users.filter(u => filters.status!.includes(u.status));
       }
-      if (filters.status) {
-        users = users.filter(u => u.status === filters.status);
+      if (filters.role && filters.role.length > 0) {
+        users = users.filter(u => filters.role!.includes(u.role));
       }
-      if (filters.tenantId) {
-        users = users.filter(u => u.tenantId === filters.tenantId);
+      if (filters.department && filters.department.length > 0) {
+        users = users.filter(u => 
+          u.department && filters.department!.includes(u.department)
+        );
       }
       if (filters.search) {
         const search = filters.search.toLowerCase();
-        users = users.filter(u => 
-          u.firstName.toLowerCase().includes(search) ||
-          u.lastName.toLowerCase().includes(search) ||
+        users = users.filter(u =>
+          u.name.toLowerCase().includes(search) ||
           u.email.toLowerCase().includes(search) ||
-          u.tenantName.toLowerCase().includes(search)
+          u.firstName?.toLowerCase().includes(search) ||
+          u.lastName?.toLowerCase().includes(search) ||
+          u.companyName?.toLowerCase().includes(search)
         );
       }
     }
@@ -159,145 +127,311 @@ class UserService {
     return users;
   }
 
-  async getUser(id: string): Promise<User> {
-    await new Promise(resolve => setTimeout(resolve, 300));
+  /**
+   * Get a single user by ID
+   * ✅ Returns: UserDTO
+   * ✅ Validation: Throws on not found
+   */
+  async getUser(id: string): Promise<UserDTO> {
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
-
-    const user = this.mockUsers.find(u => u.id === id);
-
+    const user = mockUsers.find(u => u.id === id);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error(`User not found: ${id}`);
     }
 
     return user;
   }
 
-  async createUser(userData: Omit<User, 'id' | 'createdAt' | 'lastLogin'>): Promise<User> {
-    await new Promise(resolve => setTimeout(resolve, 800));
+  /**
+   * Create a new user
+   * ✅ Returns: UserDTO with generated id and timestamps
+   * ✅ Validation: Email uniqueness, required fields, field lengths
+   */
+  async createUser(data: CreateUserDTO): Promise<UserDTO> {
+    await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
+    // Validate required fields
+    if (!data.email) {
+      throw new Error('Email is required');
+    }
+    if (!data.name) {
+      throw new Error('Name is required');
+    }
+    if (!data.role) {
+      throw new Error('Role is required');
+    }
+    if (!data.status) {
+      throw new Error('Status is required');
+    }
+    if (!data.tenantId) {
+      throw new Error('Tenant ID is required');
+    }
 
-    // Check if email already exists
-    const existingUser = this.mockUsers.find(u => u.email === userData.email);
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Check email uniqueness (constraint)
+    const existingUser = mockUsers.find(u => u.email === data.email);
     if (existingUser) {
       throw new Error('Email already exists');
     }
 
-    const newUser: User = {
-      ...userData,
+    // Validate field lengths
+    if (data.name.length > 255) {
+      throw new Error('Name cannot exceed 255 characters');
+    }
+    if (data.firstName && data.firstName.length > 100) {
+      throw new Error('First name cannot exceed 100 characters');
+    }
+    if (data.lastName && data.lastName.length > 100) {
+      throw new Error('Last name cannot exceed 100 characters');
+    }
+    if (data.phone && data.phone.length > 50) {
+      throw new Error('Phone cannot exceed 50 characters');
+    }
+    if (data.mobile && data.mobile.length > 50) {
+      throw new Error('Mobile cannot exceed 50 characters');
+    }
+    if (data.companyName && data.companyName.length > 255) {
+      throw new Error('Company name cannot exceed 255 characters');
+    }
+    if (data.department && data.department.length > 100) {
+      throw new Error('Department cannot exceed 100 characters');
+    }
+    if (data.position && data.position.length > 100) {
+      throw new Error('Position cannot exceed 100 characters');
+    }
+
+    // Validate role
+    const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
+    if (!validRoles.includes(data.role)) {
+      throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
+    }
+
+    // Validate status
+    const validStatuses: UserStatus[] = ['active', 'inactive', 'suspended'];
+    if (!validStatuses.includes(data.status)) {
+      throw new Error(`Invalid status: ${data.status}. Allowed statuses: ${validStatuses.join(', ')}`);
+    }
+
+    const newUser: UserDTO = {
       id: `user_${Date.now()}`,
+      email: data.email,
+      name: data.name,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      role: data.role,
+      status: data.status,
+      tenantId: data.tenantId || 'tenant_1',
+      avatarUrl: data.avatarUrl,
+      phone: data.phone,
+      mobile: data.mobile,
+      companyName: data.companyName,
+      department: data.department,
+      position: data.position,
       createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
     };
 
-    this.mockUsers.push(newUser);
+    mockUsers.push(newUser);
     return newUser;
   }
 
-  async updateUser(id: string, updates: Partial<User>): Promise<User> {
-    await new Promise(resolve => setTimeout(resolve, 600));
+  /**
+   * Update a user
+   * ✅ Returns: Updated UserDTO
+   * ✅ Validation: Email uniqueness if updated, same rules as create, field lengths
+   */
+  async updateUser(id: string, data: UpdateUserDTO): Promise<UserDTO> {
+    await new Promise(resolve => setTimeout(resolve, 350));
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
-
-    const userIndex = this.mockUsers.findIndex(u => u.id === id);
-
+    const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex === -1) {
-      throw new Error('User not found');
+      throw new Error(`User not found: ${id}`);
     }
 
-    // Check if email already exists (if email is being updated)
-    if (updates.email && updates.email !== this.mockUsers[userIndex].email) {
-      const existingUser = this.mockUsers.find(u => u.email === updates.email && u.id !== id);
+    // If email is being updated, check uniqueness and format
+    if (data.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        throw new Error('Invalid email format');
+      }
+
+      const existingUser = mockUsers.find(u => 
+        u.email === data.email && u.id !== id
+      );
       if (existingUser) {
         throw new Error('Email already exists');
       }
     }
 
-    this.mockUsers[userIndex] = {
-      ...this.mockUsers[userIndex],
-      ...updates
+    // Validate field lengths if provided
+    if (data.name && data.name.length > 255) {
+      throw new Error('Name cannot exceed 255 characters');
+    }
+    if (data.firstName && data.firstName.length > 100) {
+      throw new Error('First name cannot exceed 100 characters');
+    }
+    if (data.lastName && data.lastName.length > 100) {
+      throw new Error('Last name cannot exceed 100 characters');
+    }
+    if (data.phone && data.phone.length > 50) {
+      throw new Error('Phone cannot exceed 50 characters');
+    }
+    if (data.mobile && data.mobile.length > 50) {
+      throw new Error('Mobile cannot exceed 50 characters');
+    }
+    if (data.companyName && data.companyName.length > 255) {
+      throw new Error('Company name cannot exceed 255 characters');
+    }
+    if (data.department && data.department.length > 100) {
+      throw new Error('Department cannot exceed 100 characters');
+    }
+    if (data.position && data.position.length > 100) {
+      throw new Error('Position cannot exceed 100 characters');
+    }
+
+    // Validate role if provided
+    if (data.role) {
+      const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
+      if (!validRoles.includes(data.role)) {
+        throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
+      }
+    }
+
+    // Validate status if provided
+    if (data.status) {
+      const validStatuses: UserStatus[] = ['active', 'inactive', 'suspended'];
+      if (!validStatuses.includes(data.status)) {
+        throw new Error(`Invalid status: ${data.status}. Allowed statuses: ${validStatuses.join(', ')}`);
+      }
+    }
+
+    mockUsers[userIndex] = {
+      ...mockUsers[userIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
     };
 
-    return this.mockUsers[userIndex];
+    return mockUsers[userIndex];
   }
 
+  /**
+   * Delete a user
+   * ✅ Validation: User exists
+   */
   async deleteUser(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 250));
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
-
-    const userIndex = this.mockUsers.findIndex(u => u.id === id);
-
+    const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex === -1) {
-      throw new Error('User not found');
+      throw new Error(`User not found: ${id}`);
     }
 
-    // Prevent deletion of current user
-    if (this.mockUsers[userIndex].id === currentUser.id) {
-      throw new Error('Cannot delete your own account');
-    }
-
-    this.mockUsers.splice(userIndex, 1);
+    mockUsers.splice(userIndex, 1);
   }
 
+  /**
+   * Reset user password
+   * ✅ Validation: User exists
+   */
   async resetPassword(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Authorization handled by database RLS and service factory pattern
-    // No auth check needed here - service layer enforces permissions at database level
-
-    const user = this.mockUsers.find(u => u.id === id);
-
+    const user = mockUsers.find(u => u.id === id);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error(`User not found: ${id}`);
     }
 
-    // In a real implementation, this would send a password reset email
-    // For now, we'll just simulate the action
-    console.log(`Password reset email sent to ${user.email}`);
+    // Simulate password reset (in production, would send email)
+    console.log(`[Mock] Password reset email sent to: ${user.email}`);
   }
 
-  async getRoles(): Promise<string[]> {
-    return ['Admin', 'Manager', 'Viewer'];
+  /**
+   * Get user statistics
+   * ✅ Returns: UserStatsDTO with aggregated data
+   */
+  async getUserStats(): Promise<UserStatsDTO> {
+    const totalUsers = mockUsers.length;
+    const activeUsers = mockUsers.filter(u => u.status === 'active').length;
+    const inactiveUsers = mockUsers.filter(u => u.status === 'inactive').length;
+    const suspendedUsers = mockUsers.filter(u => u.status === 'suspended').length;
+
+    const usersByRole: Record<UserRole, number> = {
+      'super_admin': mockUsers.filter(u => u.role === 'super_admin').length,
+      'admin': mockUsers.filter(u => u.role === 'admin').length,
+      'manager': mockUsers.filter(u => u.role === 'manager').length,
+      'agent': mockUsers.filter(u => u.role === 'agent').length,
+      'engineer': mockUsers.filter(u => u.role === 'engineer').length,
+      'customer': mockUsers.filter(u => u.role === 'customer').length,
+    };
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const newUsersLast30Days = mockUsers.filter(u =>
+      new Date(u.createdAt) > thirtyDaysAgo
+    ).length;
+
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      suspendedUsers,
+      usersByRole,
+      newUsersLast30Days,
+      lastUpdated: new Date().toISOString(),
+    };
   }
 
-  async getPermissions(): Promise<string[]> {
-    return [
-      'read',
-      'write',
-      'delete',
-      'admin',
-      'user_management',
-      'customer_management',
-      'sales_management',
-      'ticket_management',
-      'contract_management',
-      'report_access',
-      'export_data',
-      'import_data',
-      'system_settings'
-    ];
+  /**
+   * Get available roles
+   */
+  async getRoles(): Promise<UserRole[]> {
+    return ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
   }
 
-  async getStatuses(): Promise<string[]> {
+  /**
+   * Get available statuses
+   */
+  async getStatuses(): Promise<UserStatus[]> {
     return ['active', 'inactive', 'suspended'];
   }
 
-  async getTenants(): Promise<Array<{ id: string; name: string }>> {
-    // This would typically come from the tenant service
+  /**
+   * Get user activity
+   */
+  async getUserActivity(userId: string): Promise<UserActivityDTO[]> {
+    return mockActivityLogs.filter(log => log.userId === userId);
+  }
+
+  /**
+   * Log user activity
+   */
+  async logActivity(activity: Omit<UserActivityDTO, 'id'>): Promise<UserActivityDTO> {
+    const activityLog: UserActivityDTO = {
+      id: `activity_${Date.now()}`,
+      ...activity,
+    };
+    mockActivityLogs.push(activityLog);
+    return activityLog;
+  }
+
+  /**
+   * Get all tenants
+   * ✅ Returns: Array of tenant objects
+   */
+  async getTenants(): Promise<Array<{ id: string; name: string; status: string }>> {
+    // Mock tenants data
     return [
-      { id: 'tenant_1', name: 'Acme Corporation' },
-      { id: 'tenant_2', name: 'TechStart Inc' },
-      { id: 'tenant_3', name: 'Global Solutions Ltd' },
-      { id: 'tenant_4', name: 'Innovation Labs' },
-      { id: 'tenant_5', name: 'Enterprise Systems' }
+      { id: 'tenant_1', name: 'Acme Corporation', status: 'active' },
+      { id: 'tenant_2', name: 'Tech Innovations Inc', status: 'active' },
+      { id: 'tenant_3', name: 'Global Solutions Ltd', status: 'active' },
+      { id: 'tenant_4', name: 'Enterprise Systems', status: 'inactive' },
     ];
   }
 }
 
-export const userService = new UserService();
+export const userService = new MockUserService();

@@ -115,6 +115,22 @@ export const ServiceContractDetailPage: React.FC = () => {
   const [renewForm] = Form.useForm();
   const [noteForm] = Form.useForm();
 
+  // Reset forms when modals close to prevent stale instances
+  const handleEditModalClose = () => {
+    form.resetFields();
+    setEditModalVisible(false);
+  };
+
+  const handleRenewModalClose = () => {
+    renewForm.resetFields();
+    setRenewModalVisible(false);
+  };
+
+  const handleNoteModalClose = () => {
+    noteForm.resetFields();
+    setNoteModalVisible(false);
+  };
+
    
   const loadContractDetails = useCallback(async () => {
     try {
@@ -125,7 +141,7 @@ export const ServiceContractDetailPage: React.FC = () => {
       }
 
       // Fetch contract from service
-      const contractData = await serviceContractService.getServiceContractById(id);
+      const contractData = await serviceContractService.getServiceContract(id);
 
       // Create activities timeline
       const mockActivities: ContractActivity[] = [
@@ -205,6 +221,7 @@ export const ServiceContractDetailPage: React.FC = () => {
       );
 
       setContract(updatedContract as any);
+      form.resetFields();
       setEditModalVisible(false);
       message.success('Contract updated successfully');
 
@@ -242,6 +259,7 @@ export const ServiceContractDetailPage: React.FC = () => {
       );
 
       message.success(`Contract renewed successfully! New contract: ${renewedContract.contract_number}`);
+      renewForm.resetFields();
       setRenewModalVisible(false);
 
       // Add activity
@@ -425,26 +443,42 @@ export const ServiceContractDetailPage: React.FC = () => {
   const contractProgress = getContractProgress();
   const showRenewalAlert = daysUntilEnd <= 30 && daysUntilEnd > 0;
 
-  const actionMenu = (
-    <Menu>
-      <Menu.Item key="edit" icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
-        Edit Settings
-      </Menu.Item>
-      <Menu.Item key="renew" icon={<CheckCircleOutlined />} onClick={() => setRenewModalVisible(true)}>
-        Renew Contract
-      </Menu.Item>
-      <Menu.Item key="download" icon={<DownloadOutlined />} onClick={handleDownloadContract}>
-        Download PDF
-      </Menu.Item>
-      <Menu.Item key="reminder" icon={<MailOutlined />} onClick={handleSendReminder}>
-        Send Reminder
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="cancel" icon={<DeleteOutlined />} danger onClick={handleDelete}>
-        Cancel Contract
-      </Menu.Item>
-    </Menu>
-  );
+  const actionMenuItems = [
+    {
+      key: 'edit',
+      icon: <EditOutlined />,
+      label: 'Edit Settings',
+      onClick: () => setEditModalVisible(true),
+    },
+    {
+      key: 'renew',
+      icon: <CheckCircleOutlined />,
+      label: 'Renew Contract',
+      onClick: () => setRenewModalVisible(true),
+    },
+    {
+      key: 'download',
+      icon: <DownloadOutlined />,
+      label: 'Download PDF',
+      onClick: handleDownloadContract,
+    },
+    {
+      key: 'reminder',
+      icon: <MailOutlined />,
+      label: 'Send Reminder',
+      onClick: handleSendReminder,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'cancel',
+      icon: <DeleteOutlined />,
+      label: 'Cancel Contract',
+      danger: true,
+      onClick: handleDelete,
+    },
+  ];
 
   return (
     <>
@@ -467,7 +501,7 @@ export const ServiceContractDetailPage: React.FC = () => {
           <Button key="edit" type="primary" icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
             Edit
           </Button>,
-          <Dropdown key="more" overlay={actionMenu} trigger={['click']}>
+          <Dropdown key="more" menu={{ items: actionMenuItems }} trigger={['click']}>
             <Button icon={<MoreOutlined />} />
           </Dropdown>,
         ]}
@@ -566,7 +600,7 @@ export const ServiceContractDetailPage: React.FC = () => {
                 <Descriptions.Item label="Status">
                   <Badge 
                     status={contract.status === 'active' ? 'success' : contract.status === 'expired' ? 'error' : 'default'} 
-                    text={<Tag color={getStatusColor(contract.status)}>{contract.status.toUpperCase()}</Tag>} 
+                    text={<Tag color={getStatusColor(contract.status)}>{contract.status ? contract.status.toUpperCase() : 'N/A'}</Tag>} 
                   />
                 </Descriptions.Item>
                 <Descriptions.Item label="Customer">
@@ -582,13 +616,13 @@ export const ServiceContractDetailPage: React.FC = () => {
                   <CalendarOutlined /> {dayjs(contract.end_date).format('YYYY-MM-DD')}
                 </Descriptions.Item>
                 <Descriptions.Item label="Warranty Period">
-                  {contract.warranty_period} months
+                  {contract.warranty_period ?? 'N/A'} months
                 </Descriptions.Item>
                 <Descriptions.Item label="Annual Value">
-                  <DollarOutlined /> ${contract.annual_value.toFixed(2)}
+                  <DollarOutlined /> ${contract.annual_value ? contract.annual_value.toFixed(2) : 'N/A'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Service Level">
-                  <Tag color="blue">{contract.service_level}</Tag>
+                  <Tag color="blue">{contract.service_level ?? 'N/A'}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Auto-Renewal">
                   <Tag color={contract.auto_renewal ? 'success' : 'default'}>
@@ -596,10 +630,10 @@ export const ServiceContractDetailPage: React.FC = () => {
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Renewal Notice Period">
-                  {contract.renewal_notice_period} days
+                  {contract.renewal_notice_period ?? 'N/A'} days
                 </Descriptions.Item>
                 <Descriptions.Item label="Created By">
-                  {contract.created_by} on {dayjs(contract.created_at).format('YYYY-MM-DD')}
+                  {contract.created_by ?? 'N/A'} on {dayjs(contract.created_at).format('YYYY-MM-DD')}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -607,7 +641,7 @@ export const ServiceContractDetailPage: React.FC = () => {
             {/* Terms Card */}
             <Card title="Terms & Conditions" style={{ marginBottom: 16 }}>
               <div style={{ maxHeight: 300, overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-                <Text>{contract.terms}</Text>
+                <Text>{contract.terms ?? 'No terms specified'}</Text>
               </div>
             </Card>
 
@@ -637,14 +671,14 @@ export const ServiceContractDetailPage: React.FC = () => {
                                   : 'orange'
                               }
                             >
-                              {invoice.status.toUpperCase()}
+                              {invoice.status ? invoice.status.toUpperCase() : 'N/A'}
                             </Tag>
                           </Space>
                         }
                         description={
                           <Space direction="vertical" size={0}>
                             <Text>
-                              <DollarOutlined /> ${invoice.amount.toFixed(2)}
+                              <DollarOutlined /> ${invoice.amount ? invoice.amount.toFixed(2) : 'N/A'}
                             </Text>
                             <Text type="secondary">
                               Due: {dayjs(invoice.due_date).format('YYYY-MM-DD')}
@@ -670,9 +704,11 @@ export const ServiceContractDetailPage: React.FC = () => {
           <Col xs={24} lg={8}>
             <Card title="Activity Timeline">
               {activities.length > 0 ? (
-                <Timeline>
-                  {activities.map((activity) => (
-                    <Timeline.Item key={activity.id} dot={getActivityIcon(activity.type)}>
+                <Timeline
+                  items={activities.map((activity) => ({
+                    key: activity.id,
+                    dot: getActivityIcon(activity.type),
+                    children: (
                       <Space direction="vertical" size={2} style={{ width: '100%' }}>
                         <Text strong>{activity.title}</Text>
                         <Text style={{ fontSize: '13px' }}>{activity.description}</Text>
@@ -681,9 +717,9 @@ export const ServiceContractDetailPage: React.FC = () => {
                           {' by '} <strong>{activity.user}</strong>
                         </Text>
                       </Space>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
+                    ),
+                  }))}
+                />
               ) : (
                 <Empty description="No activities yet" />
               )}
@@ -695,9 +731,10 @@ export const ServiceContractDetailPage: React.FC = () => {
         <Modal
           title="Edit Contract Settings"
           open={editModalVisible}
-          onCancel={() => setEditModalVisible(false)}
+          onCancel={handleEditModalClose}
           onOk={() => form.submit()}
           width={700}
+          destroyOnHidden
         >
           <Form form={form} layout="vertical" onFinish={handleEdit}>
             <Row gutter={16}>
@@ -755,9 +792,10 @@ export const ServiceContractDetailPage: React.FC = () => {
         <Modal
           title="Renew Service Contract"
           open={renewModalVisible}
-          onCancel={() => setRenewModalVisible(false)}
+          onCancel={handleRenewModalClose}
           onOk={() => renewForm.submit()}
           width={700}
+          destroyOnHidden
         >
           <Form form={renewForm} layout="vertical" onFinish={handleRenew}>
             <Row gutter={16}>
@@ -827,8 +865,9 @@ export const ServiceContractDetailPage: React.FC = () => {
         <Modal
           title="Add Note"
           open={noteModalVisible}
-          onCancel={() => setNoteModalVisible(false)}
+          onCancel={handleNoteModalClose}
           onOk={() => noteForm.submit()}
+          destroyOnHidden
         >
           <Form form={noteForm} layout="vertical" onFinish={handleAddNote}>
             <Form.Item label="Note" name="note" rules={[{ required: true }]}>

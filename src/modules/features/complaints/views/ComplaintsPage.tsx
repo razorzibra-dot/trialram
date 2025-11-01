@@ -35,7 +35,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import ComplaintFormModal from '@/components/complaints/ComplaintFormModal';
+import { ComplaintsFormPanel } from '@/modules/features/complaints/components/ComplaintsFormPanel';
 import ComplaintDetailModal from '@/components/complaints/ComplaintDetailModal';
 import { toast } from 'sonner';
 
@@ -49,7 +49,8 @@ export const ComplaintsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [engineerFilter, setEngineerFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFormPanel, setShowFormPanel] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [engineers, setEngineers] = useState<Array<{ id: string; name: string; }>>([]);
@@ -88,6 +89,23 @@ export const ComplaintsPage: React.FC = () => {
     void fetchComplaints();
     void fetchEngineers();
   }, [fetchComplaints, fetchEngineers]);
+
+  const handleCreateComplaint = () => {
+    setSelectedComplaint(null);
+    setFormMode('create');
+    setShowFormPanel(true);
+  };
+
+  const handleEditComplaint = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setFormMode('edit');
+    setShowFormPanel(true);
+  };
+
+  const handleCloseFormPanel = () => {
+    setShowFormPanel(false);
+    setSelectedComplaint(null);
+  };
 
   const getStatusTag = (status: string) => {
     const colorMap: Record<string, string> = {
@@ -247,7 +265,7 @@ export const ComplaintsPage: React.FC = () => {
             <Button
               type="text"
               icon={<EditOutlined />}
-              onClick={() => handleViewDetails(record)}
+              onClick={() => handleEditComplaint(record)}
             />
           )}
         </Space>
@@ -277,7 +295,7 @@ export const ComplaintsPage: React.FC = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setShowCreateModal(true)}
+                onClick={handleCreateComplaint}
               >
                 Create Complaint
               </Button>
@@ -426,7 +444,7 @@ export const ComplaintsPage: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={handleCreateComplaint}
                 >
                   Create Complaint
                 </Button>
@@ -447,11 +465,12 @@ export const ComplaintsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Modals */}
-      <ComplaintFormModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onSuccess={fetchComplaints}
+      {/* Side Panel Forms */}
+      <ComplaintsFormPanel
+        complaint={selectedComplaint}
+        mode={formMode}
+        isOpen={showFormPanel}
+        onClose={handleCloseFormPanel}
       />
 
       {selectedComplaint && (

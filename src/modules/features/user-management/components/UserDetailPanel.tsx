@@ -1,58 +1,69 @@
 /**
  * User Detail Panel - Read-only Drawer
  * Displays user profile information
+ * ✅ Uses UserDTO for type safety and layer synchronization
  */
 import React from 'react';
-import { Drawer, Descriptions, Row, Col, Avatar, Tag, Button, Space, Divider, Badge } from 'antd';
-import { EditOutlined, MailOutlined, PhoneOutlined, CrownOutlined, CalendarOutlined, UserOutlined } from '@ant-design/icons';
-import { User as UserType } from '@/types/crm';
+import { Drawer, Descriptions, Row, Col, Avatar, Tag, Button, Space, Divider, Badge, Card, Empty, Spin, Tooltip } from 'antd';
+import { EditOutlined, MailOutlined, PhoneOutlined, CrownOutlined, CalendarOutlined, UserOutlined, BankOutlined, IdcardOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons';
+import { UserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface UserDetailPanelProps {
-  user: UserType | null;
+  user: UserDTO | null;
   open: boolean;
+  loading?: boolean;
   onClose: () => void;
-  onEdit: (user: UserType) => void;
+  onEdit?: (user: UserDTO) => void;
+  onDelete?: (userId: string) => void;
+  onResetPassword?: (userId: string) => void;
 }
 
 export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
   user,
   open,
+  loading = false,
   onClose,
-  onEdit
+  onEdit,
+  onDelete,
+  onResetPassword
 }) => {
   const { hasPermission } = useAuth();
 
-  if (!user) return null;
-
-  const getRoleIcon = (role: string) => {
-    switch (role.toLowerCase()) {
+  const getRoleIcon = (role: UserRole): React.ReactNode => {
+    switch (role) {
+      case 'super_admin':
       case 'admin':
         return <CrownOutlined />;
       case 'manager':
         return <EditOutlined />;
-      case 'viewer':
+      case 'agent':
+      case 'engineer':
         return <UserOutlined />;
       default:
         return <UserOutlined />;
     }
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role.toLowerCase()) {
+  const getRoleColor = (role: UserRole): string => {
+    switch (role) {
+      case 'super_admin':
+        return 'volcano';
       case 'admin':
         return 'red';
       case 'manager':
         return 'blue';
-      case 'viewer':
-        return 'default';
-      default:
+      case 'agent':
+        return 'cyan';
+      case 'engineer':
         return 'green';
+      default:
+        return 'default';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (status: UserStatus): string => {
+    switch (status) {
       case 'active':
         return 'success';
       case 'inactive':
@@ -64,26 +75,101 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
     }
   };
 
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <Drawer
+        title="User Profile"
+        placement="right"
+        onClose={onClose}
+        open={open}
+        width={550}
+      >
+        <Spin />
+      </Drawer>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Drawer
+        title="User Profile"
+        placement="right"
+        onClose={onClose}
+        open={open}
+        width={550}
+      >
+        <Empty description="No user selected" />
+      </Drawer>
+    );
+  }
+
+  // Get user initials for avatar fallback
+  const getInitials = (name: string): string => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <Drawer
       title={`User Profile`}
       placement="right"
       onClose={onClose}
       open={open}
-      width={550}
-      extra={
+      width={600}
+      footer={
         hasPermission('manage_users') && (
-          <Space>
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => {
-                onEdit(user);
-                onClose();
-              }}
-            >
-              Edit
-            </Button>
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <Button onClick={onClose}>Close</Button>
+            {onEdit && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  onEdit(user);
+                  onClose();
+                }}
+              >
+                Edit
+              </Button>
+            )}
+            {onResetPassword && (
+              <Button
+                icon={<LockOutlined />}
+                onClick={() => {
+                  onResetPassword(user.id);
+                  onClose();
+                }}
+              >
+                Reset Password
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  onDelete(user.id);
+                  onClose();
+                }}
+              >
+                Delete
+              </Button>
+            )}
           </Space>
         )
       }
@@ -92,76 +178,111 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <Avatar
           size={80}
-          src={user.avatar}
-          icon={<UserOutlined />}
-          style={{ backgroundColor: '#1890ff', marginBottom: 16 }}
-        />
+          src={user.avatarUrl}
+          style={{ backgroundColor: '#1890ff', marginBottom: 16, fontSize: 32, lineHeight: '80px' }}
+        >
+          {getInitials(user.name)}
+        </Avatar>
         <div style={{ marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>
-            {user.firstName} {user.lastName}
-          </h2>
+          <h2 style={{ margin: 0, marginBottom: 8 }}>{user.name}</h2>
+          <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>{user.email}</p>
         </div>
-        <Space wrap style={{ justifyContent: 'center' }}>
+        <Space wrap style={{ justifyContent: 'center', marginTop: 12 }}>
           <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
-            {user.role}
+            {user.role.replace(/_/g, ' ')}
           </Tag>
           <Tag color={getStatusColor(user.status)}>
-            {user.status?.toUpperCase()}
+            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
           </Tag>
         </Space>
       </div>
 
       <Divider />
 
-      {/* User Information */}
-      <div style={{ marginBottom: 24 }}>
-        <h4 style={{ marginBottom: 16, color: '#2C3E50' }}>Contact Information</h4>
+      {/* Contact Information */}
+      <Card title="Contact Information" size="small" style={{ marginBottom: 16 }}>
         <Descriptions column={1} size="small">
           <Descriptions.Item label={<><MailOutlined /> Email</>}>
             {user.email}
           </Descriptions.Item>
-          <Descriptions.Item label={<><PhoneOutlined /> Phone</>}>
-            {user.phone || '-'}
-          </Descriptions.Item>
+          {user.phone && (
+            <Descriptions.Item label={<><PhoneOutlined /> Phone</>}>
+              {user.phone}
+            </Descriptions.Item>
+          )}
+          {user.mobile && (
+            <Descriptions.Item label={<><PhoneOutlined /> Mobile</>}>
+              {user.mobile}
+            </Descriptions.Item>
+          )}
         </Descriptions>
-      </div>
+      </Card>
 
-      <Divider />
+      {/* Company Information */}
+      {(user.companyName || user.department || user.position) && (
+        <Card title="Company Information" size="small" style={{ marginBottom: 16 }}>
+          <Descriptions column={1} size="small">
+            {user.companyName && (
+              <Descriptions.Item label={<><BankOutlined /> Company</>}>
+                {user.companyName}
+              </Descriptions.Item>
+            )}
+            {user.department && (
+              <Descriptions.Item label="Department">
+                {user.department}
+              </Descriptions.Item>
+            )}
+            {user.position && (
+              <Descriptions.Item label={<><IdcardOutlined /> Position</>}>
+                {user.position}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      )}
 
       {/* Account Information */}
-      <div style={{ marginBottom: 24 }}>
-        <h4 style={{ marginBottom: 16, color: '#2C3E50' }}>Account Information</h4>
+      <Card title="Account Information" size="small" style={{ marginBottom: 16 }}>
         <Descriptions column={1} size="small">
-          <Descriptions.Item label="Tenant">
-            {user.tenantName || '-'}
-          </Descriptions.Item>
           <Descriptions.Item label="Role">
             <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
-              {user.role}
+              {user.role.replace(/_/g, ' ')}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color={getStatusColor(user.status)}>
-              {user.status?.toUpperCase()}
+              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
             </Tag>
           </Descriptions.Item>
+          <Descriptions.Item label="Tenant ID">
+            <code style={{ fontSize: '11px' }}>{user.tenantId}</code>
+          </Descriptions.Item>
         </Descriptions>
-      </div>
+      </Card>
 
-      <Divider />
-
-      {/* Login Information */}
-      <div>
-        <h4 style={{ marginBottom: 16, color: '#2C3E50' }}>Login Information</h4>
+      {/* Activity Information */}
+      <Card title="Activity Information" size="small">
         <Descriptions column={1} size="small">
-          <Descriptions.Item label={<><CalendarOutlined /> Last Login</>}>
-            {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
-          </Descriptions.Item>
+          {user.lastLogin && (
+            <Descriptions.Item label={<><CalendarOutlined /> Last Login</>}>
+              {formatDate(user.lastLogin)}
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label={<><CalendarOutlined /> Created</>}>
-            {user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}
+            {formatDate(user.createdAt)}
           </Descriptions.Item>
+          {user.updatedAt && (
+            <Descriptions.Item label="Last Updated">
+              {formatDate(user.updatedAt)}
+            </Descriptions.Item>
+          )}
+          {user.createdBy && (
+            <Descriptions.Item label="Created By">
+              <code style={{ fontSize: '11px' }}>{user.createdBy}</code>
+            </Descriptions.Item>
+          )}
         </Descriptions>
-      </div>
+      </Card>
     </Drawer>
   );
 };

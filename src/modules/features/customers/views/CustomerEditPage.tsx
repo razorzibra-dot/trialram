@@ -251,7 +251,7 @@ const CustomerEditPage: React.FC = () => {
               onFinish={handleSubmit}
             >
               {/* Basic Information */}
-              <Card title="Basic Information" bordered={false} style={{ marginBottom: 24 }}>
+              <Card title="Basic Information" variant="borderless" style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                   <Col xs={24} md={12}>
                     <Form.Item
@@ -356,7 +356,7 @@ const CustomerEditPage: React.FC = () => {
               </Card>
 
               {/* Address Information */}
-              <Card title="Address Information" bordered={false} style={{ marginBottom: 24 }}>
+              <Card title="Address Information" variant="borderless" style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                   <Col xs={24}>
                     <Form.Item label="Address" name="address">
@@ -395,7 +395,7 @@ const CustomerEditPage: React.FC = () => {
               </Card>
 
               {/* Business Information */}
-              <Card title="Business Information" bordered={false} style={{ marginBottom: 24 }}>
+              <Card title="Business Information" variant="borderless" style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                   <Col xs={24} md={12}>
                     <Form.Item
@@ -480,7 +480,7 @@ const CustomerEditPage: React.FC = () => {
               </Card>
 
               {/* Financial Information */}
-              <Card title="Financial Information" bordered={false} style={{ marginBottom: 24 }}>
+              <Card title="Financial Information" variant="borderless" style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                   <Col xs={24} md={12}>
                     <Form.Item
@@ -524,7 +524,7 @@ const CustomerEditPage: React.FC = () => {
               </Card>
 
               {/* Additional Information */}
-              <Card title="Additional Information" bordered={false} style={{ marginBottom: 24 }}>
+              <Card title="Additional Information" variant="borderless" style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                   <Col xs={24}>
                     <Form.Item label="Notes" name="notes">
@@ -540,7 +540,7 @@ const CustomerEditPage: React.FC = () => {
               </Card>
 
               {/* Form Actions */}
-              <Card bordered={false}>
+              <Card variant="borderless">
                 <Space size="middle">
                   <Button
                     type="primary"
@@ -568,7 +568,7 @@ const CustomerEditPage: React.FC = () => {
                   <span>Audit Trail</span>
                 </Space>
               }
-              bordered={false}
+              variant="borderless"
               style={{ position: 'sticky', top: 24 }}
             >
               <Timeline

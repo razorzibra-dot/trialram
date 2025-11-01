@@ -10,18 +10,8 @@ import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load components for code splitting
 const UsersPage = lazy(() => import('./views/UsersPage'));
-const UserManagementPage = lazy(() => import('./views/UserManagementPage'));
 const RoleManagementPage = lazy(() => import('./views/RoleManagementPage'));
 const PermissionMatrixPage = lazy(() => import('./views/PermissionMatrixPage'));
-
-// Route wrapper with error boundary and suspense
-const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ErrorBoundary>
-    <Suspense fallback={<LoadingSpinner text="Loading..." />}>
-      {children}
-    </Suspense>
-  </ErrorBoundary>
-);
 
 export const userManagementRoutes: RouteObject[] = [
   {
@@ -34,36 +24,38 @@ export const userManagementRoutes: RouteObject[] = [
       {
         path: 'list',
         element: (
-          <RouteWrapper>
-            <UsersPage />
-          </RouteWrapper>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+              <UsersPage />
+            </Suspense>
+          </ErrorBoundary>
         ),
       },
       {
         path: 'roles',
         element: (
-          <RouteWrapper>
-            <RoleManagementPage />
-          </RouteWrapper>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+              <RoleManagementPage />
+            </Suspense>
+          </ErrorBoundary>
         ),
       },
       {
         path: 'permissions',
         element: (
-          <RouteWrapper>
-            <PermissionMatrixPage />
-          </RouteWrapper>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+              <PermissionMatrixPage />
+            </Suspense>
+          </ErrorBoundary>
         ),
       },
     ],
   },
-  // Keep user-management route for backward compatibility if referenced elsewhere
+  // Backward compatibility: redirect legacy user-management route to new users/list route
   {
     path: 'user-management',
-    element: (
-      <RouteWrapper>
-        <UserManagementPage />
-      </RouteWrapper>
-    ),
+    element: <Navigate to="/users/list" replace />,
   },
 ];

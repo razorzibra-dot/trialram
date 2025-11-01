@@ -300,16 +300,17 @@ export const ProductSalesAnalyticsDashboard: React.FC<ProductSalesAnalyticsDashb
         <Col xs={24} md={12}>
           <Card title="Status Distribution (Revenue)" bordered={false}>
             {chartData.statusDistribution.length > 0 ? (
-              <Timeline>
-                {chartData.statusDistribution.map((item, index) => (
-                  <Timeline.Item key={index}>
+              <Timeline
+                items={chartData.statusDistribution.map((item, index) => ({
+                  key: index,
+                  children: (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 500 }}>{item.name}</span>
                       <span style={{ color: '#666' }}>{item.percentage}%</span>
                     </div>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+                  ),
+                }))}
+              />
             ) : (
               <Empty description="No status data" />
             )}

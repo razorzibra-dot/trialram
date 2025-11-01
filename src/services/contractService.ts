@@ -64,7 +64,7 @@ Provider: _________________________ Date: _________
         { id: '6', name: 'paymentTerms', label: 'Payment Terms', type: 'textarea', required: true },
         { id: '7', name: 'terminationNotice', label: 'Termination Notice (days)', type: 'number', required: true, defaultValue: '30' }
       ],
-      isActive: true,
+      is_active: true,
       category: 'Business',
       description: 'Standard service agreement template for professional services',
       created_at: '2024-01-01T00:00:00Z',
@@ -107,7 +107,7 @@ Receiving Party: _________________________ Date: _________
         { id: '4', name: 'purpose', label: 'Purpose of Disclosure', type: 'textarea', required: true },
         { id: '5', name: 'duration', label: 'Duration (years)', type: 'number', required: true, defaultValue: '2' }
       ],
-      isActive: true,
+      is_active: true,
       category: 'Legal',
       description: 'Standard non-disclosure agreement for confidential information protection',
       created_at: '2024-01-01T00:00:00Z',
@@ -155,7 +155,7 @@ Authorized Signature: _________________________ Date: _________
         { id: '9', name: 'paymentTerms', label: 'Payment Terms', type: 'textarea', required: true },
         { id: '10', name: 'warranties', label: 'Warranties', type: 'textarea', required: false }
       ],
-      isActive: true,
+      is_active: true,
       category: 'Procurement',
       description: 'Standard purchase order agreement for goods and services',
       created_at: '2024-01-01T00:00:00Z',
@@ -176,46 +176,47 @@ Authorized Signature: _________________________ Date: _________
           name: 'TechCorp Solutions',
           email: 'legal@techcorp.com',
           role: 'client',
-          signatureRequired: true,
-          signedAt: '2024-01-15T10:00:00Z',
-          signatureUrl: '/signatures/techcorp-signature.png'
+          signature_required: true,
+          signed_at: '2024-01-15T10:00:00Z',
+          signature_url: '/signatures/techcorp-signature.png'
         },
         {
           id: '2',
           name: 'Our Company',
           email: 'contracts@ourcompany.com',
           role: 'vendor',
-          signatureRequired: true,
-          signedAt: '2024-01-15T10:30:00Z',
-          signatureUrl: '/signatures/ourcompany-signature.png'
+          signature_required: true,
+          signed_at: '2024-01-15T10:30:00Z',
+          signature_url: '/signatures/ourcompany-signature.png'
         }
       ],
       value: 150000,
+      total_value: 150000,
       currency: 'USD',
-      startDate: '2024-01-15',
-      endDate: '2025-01-15',
-      autoRenew: true,
-      renewalTerms: 'Automatic renewal for 1 year unless terminated with 60 days notice',
-      approvalStage: 'approved',
-      signedDate: '2024-01-15T10:30:00Z',
-      createdBy: '1',
-      assignedTo: '2',
+      start_date: '2024-01-15',
+      end_date: '2025-01-15',
+      auto_renew: true,
+      renewal_terms: 'Automatic renewal for 1 year unless terminated with 60 days notice',
+      approval_stage: 'approved',
+      signed_date: '2024-01-15T10:30:00Z',
+      created_by: '1',
+      assigned_to: '2',
       tenant_id: 'tenant_1',
       content: 'Full enterprise software license agreement content...',
-      templateId: '1',
+      template_id: '1',
       version: 1,
       tags: ['enterprise', 'software', 'annual'],
       priority: 'high',
-      reminderDays: [90, 60, 30],
-      nextReminderDate: '2024-10-15',
-      complianceStatus: 'compliant',
+      reminder_days: [90, 60, 30],
+      next_reminder_date: '2024-10-15',
+      compliance_status: 'compliant',
       attachments: [],
-      approvalHistory: [
+      approval_history: [
         {
           id: '1',
           stage: 'legal_review',
           approver: '3',
-          approverName: 'Legal Team',
+          approver_name: 'Legal Team',
           status: 'approved',
           comments: 'Terms reviewed and approved',
           timestamp: '2024-01-10T14:00:00Z'
@@ -224,17 +225,17 @@ Authorized Signature: _________________________ Date: _________
           id: '2',
           stage: 'finance_review',
           approver: '4',
-          approverName: 'Finance Team',
+          approver_name: 'Finance Team',
           status: 'approved',
           comments: 'Budget approved',
           timestamp: '2024-01-12T16:00:00Z'
         }
       ],
-      signatureStatus: {
-        totalRequired: 2,
+      signature_status: {
+        total_required: 2,
         completed: 2,
         pending: [],
-        lastSignedAt: '2024-01-15T10:30:00Z'
+        last_signed_at: '2024-01-15T10:30:00Z'
       },
       created_at: '2024-01-05T09:00:00Z',
       updated_at: '2024-01-15T10:30:00Z'
@@ -250,46 +251,47 @@ Authorized Signature: _________________________ Date: _________
           name: 'Global Manufacturing Inc',
           email: 'legal@globalmanuf.com',
           role: 'partner',
-          signatureRequired: true
+          signature_required: true
         },
         {
           id: '2',
           name: 'Our Company',
           email: 'contracts@ourcompany.com',
           role: 'internal',
-          signatureRequired: true
+          signature_required: true
         }
       ],
       value: 0,
+      total_value: 0,
       currency: 'USD',
-      startDate: '2024-02-01',
-      endDate: '2026-02-01',
-      autoRenew: false,
-      renewalTerms: 'Manual renewal required',
-      approvalStage: 'legal_review',
-      createdBy: '2',
-      assignedTo: '3',
+      start_date: '2024-02-01',
+      end_date: '2026-02-01',
+      auto_renew: false,
+      renewal_terms: 'Manual renewal required',
+      approval_stage: 'legal_review',
+      created_by: '2',
+      assigned_to: '3',
       tenant_id: 'tenant_1',
       content: 'Non-disclosure agreement for manufacturing partnership...',
-      templateId: '2',
+      template_id: '2',
       version: 1,
       tags: ['nda', 'manufacturing', 'partnership'],
       priority: 'medium',
-      reminderDays: [30, 7],
-      complianceStatus: 'pending_review',
+      reminder_days: [30, 7],
+      compliance_status: 'pending_review',
       attachments: [],
-      approvalHistory: [
+      approval_history: [
         {
           id: '1',
           stage: 'legal_review',
           approver: '3',
-          approverName: 'Legal Team',
+          approver_name: 'Legal Team',
           status: 'pending',
           timestamp: '2024-01-25T10:00:00Z'
         }
       ],
-      signatureStatus: {
-        totalRequired: 2,
+      signature_status: {
+        total_required: 2,
         completed: 0,
         pending: ['legal@globalmanuf.com', 'contracts@ourcompany.com']
       },
@@ -307,30 +309,31 @@ Authorized Signature: _________________________ Date: _________
           name: 'Office Supplies Co',
           email: 'sales@officesupplies.com',
           role: 'vendor',
-          signatureRequired: true
+          signature_required: true
         }
       ],
       value: 25000,
+      total_value: 25000,
       currency: 'USD',
-      startDate: '2024-02-15',
-      endDate: '2024-03-15',
-      autoRenew: false,
-      renewalTerms: 'One-time purchase',
-      approvalStage: 'draft',
-      createdBy: '3',
-      assignedTo: '3',
+      start_date: '2024-02-15',
+      end_date: '2024-03-15',
+      auto_renew: false,
+      renewal_terms: 'One-time purchase',
+      approval_stage: 'draft',
+      created_by: '3',
+      assigned_to: '3',
       tenant_id: 'tenant_1',
       content: 'Purchase order for office equipment and supplies...',
-      templateId: '3',
+      template_id: '3',
       version: 1,
       tags: ['purchase', 'office', 'equipment'],
       priority: 'low',
-      reminderDays: [7],
-      complianceStatus: 'pending_review',
+      reminder_days: [7],
+      compliance_status: 'pending_review',
       attachments: [],
-      approvalHistory: [],
-      signatureStatus: {
-        totalRequired: 1,
+      approval_history: [],
+      signature_status: {
+        total_required: 1,
         completed: 0,
         pending: ['sales@officesupplies.com']
       },
@@ -348,62 +351,66 @@ Authorized Signature: _________________________ Date: _________
           name: 'StartupXYZ',
           email: 'legal@startupxyz.com',
           role: 'client',
-          signatureRequired: true,
-          signedAt: '2023-06-01T10:00:00Z',
-          signatureUrl: '/signatures/startupxyz-signature.png'
+          signature_required: true,
+          signed_at: '2023-06-01T10:00:00Z',
+          signature_url: '/signatures/startupxyz-signature.png'
         }
       ],
       value: 50000,
+      total_value: 50000,
       currency: 'USD',
-      startDate: '2023-06-01',
-      endDate: '2024-01-01',
-      autoRenew: false,
-      renewalTerms: 'Manual renewal required',
-      approvalStage: 'approved',
-      signedDate: '2023-06-01T10:00:00Z',
-      createdBy: '2',
-      assignedTo: '2',
+      start_date: '2023-06-01',
+      end_date: '2024-01-01',
+      auto_renew: false,
+      renewal_terms: 'Manual renewal required',
+      approval_stage: 'approved',
+      signed_date: '2023-06-01T10:00:00Z',
+      created_by: '2',
+      assigned_to: '2',
       tenant_id: 'tenant_1',
       content: 'Consulting services agreement content...',
-      templateId: '1',
+      template_id: '1',
       version: 1,
       tags: ['consulting', 'startup', 'expired'],
       priority: 'medium',
-      reminderDays: [30, 7],
-      complianceStatus: 'compliant',
+      reminder_days: [30, 7],
+      compliance_status: 'compliant',
       attachments: [],
-      approvalHistory: [
+      approval_history: [
         {
           id: '1',
           stage: 'manager_review',
           approver: '2',
-          approverName: 'Project Manager',
+          approver_name: 'Project Manager',
           status: 'approved',
           timestamp: '2023-05-25T10:00:00Z'
         }
       ],
-      signatureStatus: {
-        totalRequired: 1,
+      signature_status: {
+        total_required: 1,
         completed: 1,
         pending: [],
-        lastSignedAt: '2023-06-01T10:00:00Z'
+        last_signed_at: '2023-06-01T10:00:00Z'
       },
       created_at: '2023-05-20T09:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
     }
   ];
 
-  async getContracts(filters?: ContractFilters): Promise<Contract[]> {
+  async getContracts(filters?: ContractFilters & { page?: number; pageSize?: number }): Promise<any> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 20;
+
     let contracts = this.mockContracts.filter(c => c.tenant_id === user.tenant_id);
 
     // Apply role-based filtering
     if (user.role === 'agent') {
-      contracts = contracts.filter(c => c.assignedTo === user.id || c.createdBy === user.id);
+      contracts = contracts.filter(c => c.assigned_to === user.id || c.created_by === user.id);
     }
 
     // Apply filters
@@ -414,32 +421,32 @@ Authorized Signature: _________________________ Date: _________
       if (filters.type) {
         contracts = contracts.filter(c => c.type === filters.type);
       }
-      if (filters.assignedTo) {
-        contracts = contracts.filter(c => c.assignedTo === filters.assignedTo);
+      if (filters.customer_id) {
+        contracts = contracts.filter(c => c.customer_id === filters.customer_id);
       }
-      if (filters.createdBy) {
-        contracts = contracts.filter(c => c.createdBy === filters.createdBy);
+      if (filters.assigned_to) {
+        contracts = contracts.filter(c => c.assigned_to === filters.assigned_to);
       }
       if (filters.priority) {
         contracts = contracts.filter(c => c.priority === filters.priority);
       }
-      if (filters.autoRenew !== undefined) {
-        contracts = contracts.filter(c => c.autoRenew === filters.autoRenew);
+      if (filters.auto_renew !== undefined) {
+        contracts = contracts.filter(c => c.auto_renew === filters.auto_renew);
       }
-      if (filters.complianceStatus) {
-        contracts = contracts.filter(c => c.complianceStatus === filters.complianceStatus);
+      if (filters.compliance_status) {
+        contracts = contracts.filter(c => c.compliance_status === filters.compliance_status);
       }
-      if (filters.dateRange) {
+      if (filters.date_from && filters.date_to) {
         contracts = contracts.filter(c => {
-          const startDate = new Date(c.startDate);
-          const filterStart = new Date(filters.dateRange!.start);
-          const filterEnd = new Date(filters.dateRange!.end);
+          const startDate = new Date(c.start_date);
+          const filterStart = new Date(filters.date_from!);
+          const filterEnd = new Date(filters.date_to!);
           return startDate >= filterStart && startDate <= filterEnd;
         });
       }
-      if (filters.valueRange) {
+      if (filters.value_min !== undefined && filters.value_max !== undefined) {
         contracts = contracts.filter(c => 
-          c.value >= filters.valueRange!.min && c.value <= filters.valueRange!.max
+          c.value >= filters.value_min! && c.value <= filters.value_max!
         );
       }
       if (filters.tags && filters.tags.length > 0) {
@@ -447,18 +454,39 @@ Authorized Signature: _________________________ Date: _________
           filters.tags!.some(tag => c.tags.includes(tag))
         );
       }
+      if (filters.expiring_soon) {
+        const now = new Date();
+        const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        contracts = contracts.filter(c => {
+          const endDate = new Date(c.end_date);
+          return endDate > now && endDate <= thirtyDaysLater;
+        });
+      }
       if (filters.search) {
         const search = filters.search.toLowerCase();
         contracts = contracts.filter(c => 
           c.title.toLowerCase().includes(search) ||
-          c.content.toLowerCase().includes(search) ||
+          c.content?.toLowerCase().includes(search) ||
           c.parties.some(p => p.name.toLowerCase().includes(search)) ||
           c.tags.some(tag => tag.toLowerCase().includes(search))
         );
       }
     }
 
-    return contracts;
+    // Apply pagination
+    const total = contracts.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+    const paginatedContracts = contracts.slice(offset, offset + pageSize);
+
+    // Return paginated response
+    return {
+      data: paginatedContracts,
+      page,
+      pageSize,
+      total,
+      totalPages,
+    };
   }
 
   async getContract(id: string): Promise<Contract> {
@@ -476,7 +504,7 @@ Authorized Signature: _________________________ Date: _________
     }
 
     // Check permissions
-    if (user.role === 'agent' && contract.assignedTo !== user.id && contract.createdBy !== user.id) {
+    if (user.role === 'agent' && contract.assigned_to !== user.id && contract.created_by !== user.id) {
       throw new Error('Access denied');
     }
 
@@ -498,11 +526,11 @@ Authorized Signature: _________________________ Date: _________
       id: Date.now().toString(),
       tenant_id: user.tenant_id,
       version: 1,
-      approvalHistory: [],
-      signatureStatus: {
-        totalRequired: contractData.parties.filter(p => p.signatureRequired).length,
+      approval_history: [],
+      signature_status: {
+        total_required: contractData.parties.filter(p => p.signature_required).length,
         completed: 0,
-        pending: contractData.parties.filter(p => p.signatureRequired).map(p => p.email)
+        pending: contractData.parties.filter(p => p.signature_required).map(p => p.email)
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -532,8 +560,8 @@ Authorized Signature: _________________________ Date: _________
 
     // Check permissions
     if (user.role === 'agent' && 
-        this.mockContracts[contractIndex].assignedTo !== user.id && 
-        this.mockContracts[contractIndex].createdBy !== user.id) {
+        this.mockContracts[contractIndex].assigned_to !== user.id && 
+        this.mockContracts[contractIndex].created_by !== user.id) {
       throw new Error('Access denied');
     }
 
@@ -569,7 +597,7 @@ Authorized Signature: _________________________ Date: _________
 
   async getTemplates(): Promise<ContractTemplate[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
-    return this.mockTemplates.filter(t => t.isActive);
+    return this.mockTemplates.filter(t => t.is_active);
   }
 
   async getTemplate(id: string): Promise<ContractTemplate> {
@@ -595,15 +623,15 @@ Authorized Signature: _________________________ Date: _________
       id: Date.now().toString(),
       stage,
       approver: user.id,
-      approverName: user.name,
+      approver_name: user.name,
       status: 'approved',
       comments,
       timestamp: new Date().toISOString()
     };
 
     const updatedContract = await this.updateContract(id, {
-      approvalHistory: [...contract.approvalHistory, approvalRecord],
-      approvalStage: stage === 'final_approval' ? 'approved' : 'pending_approval',
+      approval_history: [...contract.approval_history, approvalRecord],
+      approval_stage: stage === 'final_approval' ? 'approved' : 'pending_approval',
       status: stage === 'final_approval' ? 'active' : contract.status
     });
 
@@ -622,15 +650,15 @@ Authorized Signature: _________________________ Date: _________
       id: Date.now().toString(),
       stage,
       approver: user.id,
-      approverName: user.name,
+      approver_name: user.name,
       status: 'rejected',
       comments,
       timestamp: new Date().toISOString()
     };
 
     const updatedContract = await this.updateContract(id, {
-      approvalHistory: [...contract.approvalHistory, approvalRecord],
-      approvalStage: 'rejected',
+      approval_history: [...contract.approval_history, approvalRecord],
+      approval_stage: 'rejected',
       status: 'draft'
     });
 
@@ -645,15 +673,15 @@ Authorized Signature: _________________________ Date: _________
 
     const signature: DigitalSignature = {
       id: Date.now().toString(),
-      contractId,
-      signerId: 'external',
-      signerName: 'External Signer',
-      signerEmail,
-      signatureUrl: '',
-      ipAddress: '192.168.1.1',
+      contract_id: contractId,
+      signer_id: 'external',
+      signer_name: 'External Signer',
+      signer_email: signerEmail,
+      signature_url: '',
+      ip_address: '192.168.1.1',
       timestamp: new Date().toISOString(),
       status: 'pending',
-      verificationCode: Math.random().toString(36).substring(2, 8).toUpperCase()
+      verification_code: Math.random().toString(36).substring(2, 8).toUpperCase()
     };
 
     return signature;
@@ -669,63 +697,63 @@ Authorized Signature: _________________________ Date: _________
 
     // Apply role-based filtering
     if (user.role === 'agent') {
-      contracts = contracts.filter(c => c.assignedTo === user.id || c.createdBy === user.id);
+      contracts = contracts.filter(c => c.assigned_to === user.id || c.created_by === user.id);
     }
 
-    const totalContracts = contracts.length;
-    const activeContracts = contracts.filter(c => c.status === 'active').length;
-    const pendingApprovals = contracts.filter(c => c.status === 'pending_approval').length;
-    const expiringContracts = contracts.filter(c => {
-      const endDate = new Date(c.endDate);
+    const total_contracts = contracts.length;
+    const active_contracts = contracts.filter(c => c.status === 'active').length;
+    const pending_approvals = contracts.filter(c => c.status === 'pending_approval').length;
+    const expiring_contracts = contracts.filter(c => {
+      const endDate = new Date(c.end_date);
       const now = new Date();
       const diffTime = endDate.getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays <= 30 && diffDays > 0;
     }).length;
 
-    const totalValue = contracts.reduce((sum, c) => sum + c.value, 0);
-    const averageApprovalTime = 3.5; // Mock average in days
-    const renewalRate = 85; // Mock percentage
-    const complianceRate = 92; // Mock percentage
+    const total_value = contracts.reduce((sum, c) => sum + c.value, 0);
+    const average_approval_time = 3.5; // Mock average in days
+    const renewal_rate = 85; // Mock percentage
+    const compliance_rate = 92; // Mock percentage
 
-    const statusDistribution = [
-      { status: 'active', count: activeContracts, percentage: (activeContracts / totalContracts) * 100 },
-      { status: 'draft', count: contracts.filter(c => c.status === 'draft').length, percentage: (contracts.filter(c => c.status === 'draft').length / totalContracts) * 100 },
-      { status: 'pending_approval', count: pendingApprovals, percentage: (pendingApprovals / totalContracts) * 100 },
-      { status: 'expired', count: contracts.filter(c => c.status === 'expired').length, percentage: (contracts.filter(c => c.status === 'expired').length / totalContracts) * 100 }
+    const status_distribution = [
+      { status: 'active', count: active_contracts, percentage: (active_contracts / total_contracts) * 100 },
+      { status: 'draft', count: contracts.filter(c => c.status === 'draft').length, percentage: (contracts.filter(c => c.status === 'draft').length / total_contracts) * 100 },
+      { status: 'pending_approval', count: pending_approvals, percentage: (pending_approvals / total_contracts) * 100 },
+      { status: 'expired', count: contracts.filter(c => c.status === 'expired').length, percentage: (contracts.filter(c => c.status === 'expired').length / total_contracts) * 100 }
     ];
 
-    const typeDistribution = [
+    const type_distribution = [
       { type: 'service_agreement', count: contracts.filter(c => c.type === 'service_agreement').length, value: contracts.filter(c => c.type === 'service_agreement').reduce((sum, c) => sum + c.value, 0) },
       { type: 'nda', count: contracts.filter(c => c.type === 'nda').length, value: contracts.filter(c => c.type === 'nda').reduce((sum, c) => sum + c.value, 0) },
       { type: 'purchase_order', count: contracts.filter(c => c.type === 'purchase_order').length, value: contracts.filter(c => c.type === 'purchase_order').reduce((sum, c) => sum + c.value, 0) }
     ];
 
-    const monthlyStats = [
+    const monthly_stats = [
       { month: 'Jan 2024', created: 2, signed: 1, expired: 0, value: 175000 },
       { month: 'Feb 2024', created: 1, signed: 0, expired: 1, value: 25000 },
       { month: 'Mar 2024', created: 0, signed: 1, expired: 0, value: 0 }
     ];
 
     return {
-      totalContracts,
-      activeContracts,
-      pendingApprovals,
-      expiringContracts,
-      totalValue,
-      averageApprovalTime,
-      renewalRate,
-      complianceRate,
-      monthlyStats,
-      statusDistribution,
-      typeDistribution
+      total_contracts,
+      active_contracts,
+      pending_approvals,
+      expiring_contracts,
+      total_value,
+      average_approval_time,
+      renewal_rate,
+      compliance_rate,
+      monthly_stats,
+      status_distribution,
+      type_distribution
     };
   }
 
 
 
   async toggleAutoRenewal(contractId: string, autoRenew: boolean): Promise<Contract> {
-    return this.updateContract(contractId, { autoRenew });
+    return this.updateContract(contractId, { auto_renew: autoRenew });
   }
 
   async getContractTypes(): Promise<string[]> {
@@ -800,15 +828,15 @@ Authorized Signature: _________________________ Date: _________
     return [
       {
         id: '1',
-        contractId,
-        signerId: 'user1',
-        signerName: 'John Doe',
-        signerEmail: 'john@example.com',
-        signatureUrl: '/signatures/signature1.png',
-        ipAddress: '192.168.1.100',
+        contract_id: contractId,
+        signer_id: 'user1',
+        signer_name: 'John Doe',
+        signer_email: 'john@example.com',
+        signature_url: '/signatures/signature1.png',
+        ip_address: '192.168.1.100',
         timestamp: new Date().toISOString(),
         status: 'completed',
-        verificationCode: 'ABC123'
+        verification_code: 'ABC123'
       }
     ];
   }
@@ -871,12 +899,12 @@ Authorized Signature: _________________________ Date: _________
         title: 'Initial Contract',
         description: 'First version of the contract',
         changes: 'Initial contract creation',
-        createdBy: 'user1',
-        createdByName: 'John Doe',
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_by: 'user1',
+        created_by_name: 'John Doe',
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'archived',
-        documentUrl: `/api/contracts/${contractId}/v1.pdf`,
-        isCurrentVersion: false
+        document_url: `/api/contracts/${contractId}/v1.pdf`,
+        is_current_version: false
       },
       {
         id: '2',
@@ -884,26 +912,26 @@ Authorized Signature: _________________________ Date: _________
         title: 'Updated Terms',
         description: 'Updated payment terms and conditions',
         changes: 'Modified payment schedule and added new clauses',
-        createdBy: 'user2',
-        createdByName: 'Jane Smith',
-        createdAt: new Date().toISOString(),
+        created_by: 'user2',
+        created_by_name: 'Jane Smith',
+        created_at: new Date().toISOString(),
         status: 'active',
-        documentUrl: `/api/contracts/${contractId}/v2.pdf`,
-        isCurrentVersion: true
+        document_url: `/api/contracts/${contractId}/v2.pdf`,
+        is_current_version: true
       }
     ];
   }
 
-  async createContractVersion(versionData: Omit<ContractVersion, 'id' | 'createdAt'>): Promise<ContractVersion> {
+  async createContractVersion(versionData: Omit<ContractVersion, 'id' | 'created_at'>): Promise<ContractVersion> {
     await new Promise(resolve => setTimeout(resolve, 800));
     // Mock implementation
     return {
       id: Date.now().toString(),
       version: 3,
       ...versionData,
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       status: 'draft',
-      isCurrentVersion: false
+      is_current_version: false
     };
   }
 
@@ -930,15 +958,15 @@ Authorized Signature: _________________________ Date: _________
         category: 'regulatory',
         status: 'compliant',
         priority: 'high',
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        assignedTo: 'user1',
-        assignedToName: 'Legal Team',
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        assigned_to: 'user1',
+        assigned_to_name: 'Legal Team',
         evidence: 'GDPR compliance checklist completed',
         notes: 'All data processing clauses reviewed and approved',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'user2',
-        createdByName: 'Jane Smith'
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: 'user2',
+        created_by_name: 'Jane Smith'
       },
       {
         id: '2',
@@ -947,34 +975,34 @@ Authorized Signature: _________________________ Date: _________
         category: 'financial',
         status: 'pending_review',
         priority: 'medium',
-        dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        assignedTo: 'user3',
-        assignedToName: 'Finance Team',
+        due_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        assigned_to: 'user3',
+        assigned_to_name: 'Finance Team',
         evidence: '',
         notes: 'Waiting for finance team review',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'user1',
-        createdByName: 'John Doe'
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: 'user1',
+        created_by_name: 'John Doe'
       }
     ];
   }
 
-  async createComplianceItem(itemData: Omit<ComplianceItem, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'createdByName'>): Promise<ComplianceItem> {
+  async createComplianceItem(itemData: Omit<ComplianceItem, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'created_by_name'>): Promise<ComplianceItem> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const user = authService.getCurrentUser();
     return {
       id: Date.now().toString(),
       ...itemData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: user?.id || '',
-      createdByName: user?.name || ''
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: user?.id || '',
+      created_by_name: user?.name || ''
     };
   }
 
-  async updateComplianceItem(itemId: string, itemData: Partial<Omit<ComplianceItem, 'id' | 'createdAt' | 'createdBy' | 'createdByName'>>): Promise<ComplianceItem> {
+  async updateComplianceItem(itemId: string, itemData: Partial<Omit<ComplianceItem, 'id' | 'created_at' | 'created_by' | 'created_by_name'>>): Promise<ComplianceItem> {
     await new Promise(resolve => setTimeout(resolve, 500));
     // Mock implementation
     return {
@@ -984,15 +1012,15 @@ Authorized Signature: _________________________ Date: _________
       category: itemData.category || 'other',
       status: itemData.status || 'pending_review',
       priority: itemData.priority || 'medium',
-      dueDate: itemData.dueDate || new Date().toISOString(),
-      assignedTo: itemData.assignedTo || '',
-      assignedToName: itemData.assignedToName || '',
+      due_date: itemData.due_date || new Date().toISOString(),
+      assigned_to: itemData.assigned_to || '',
+      assigned_to_name: itemData.assigned_to_name || '',
       evidence: itemData.evidence || '',
       notes: itemData.notes || '',
-      updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      createdBy: '',
-      createdByName: ''
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      created_by: '',
+      created_by_name: ''
     };
   }
 
@@ -1009,10 +1037,10 @@ Authorized Signature: _________________________ Date: _________
     return [
       {
         id: '1',
-        contractId,
-        contractTitle: 'Sample Contract',
-        reminderDate: new Date().toISOString(),
-        daysUntilExpiry: 30,
+        contract_id: contractId,
+        contract_title: 'Sample Contract',
+        reminder_date: new Date().toISOString(),
+        days_until_expiry: 30,
         status: 'pending',
         recipients: ['manager@company.com', 'legal@company.com'],
         message: 'Contract renewal required in 30 days',
@@ -1020,10 +1048,10 @@ Authorized Signature: _________________________ Date: _________
       },
       {
         id: '2',
-        contractId,
-        contractTitle: 'Sample Contract',
-        reminderDate: new Date().toISOString(),
-        daysUntilExpiry: 7,
+        contract_id: contractId,
+        contract_title: 'Sample Contract',
+        reminder_date: new Date().toISOString(),
+        days_until_expiry: 7,
         status: 'sent',
         recipients: ['manager@company.com'],
         message: 'Urgent: Contract expires in 7 days',
@@ -1037,7 +1065,7 @@ Authorized Signature: _________________________ Date: _________
 
     return {
       id: Date.now().toString(),
-      contractId,
+      contract_id: contractId,
       ...reminderData,
       created_at: new Date().toISOString()
     };
@@ -1072,7 +1100,7 @@ Authorized Signature: _________________________ Date: _________
       tags: renewalData.tags || [],
       priority: renewalData.priority || 'medium',
       reminder_days: renewalData.reminder_days || [],
-      signature_status: renewalData.signature_status || { totalRequired: 0, completed: 0, pending: [] },
+      signature_status: renewalData.signature_status || { total_required: 0, completed: 0, pending: [] },
       attachments: renewalData.attachments || [],
       tenant_id: renewalData.tenant_id || '',
       created_at: new Date().toISOString(),
@@ -1090,57 +1118,57 @@ Authorized Signature: _________________________ Date: _________
       {
         id: '1',
         action: 'Contract Created',
-        actionType: 'create',
+        action_type: 'create',
         description: 'Contract was created with initial terms',
-        userId: 'user1',
-        userName: 'John Doe',
-        userRole: 'Contract Manager',
+        user_id: 'user1',
+        user_name: 'John Doe',
+        user_role: 'Contract Manager',
         timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        ip_address: '192.168.1.100',
+        user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         changes: [
-          { field: 'title', oldValue: null, newValue: 'Service Agreement' },
-          { field: 'value', oldValue: null, newValue: 50000 }
+          { field: 'title', old_value: null, new_value: 'Service Agreement' },
+          { field: 'value', old_value: null, new_value: 50000 }
         ]
       },
       {
         id: '2',
         action: 'Contract Updated',
-        actionType: 'update',
+        action_type: 'update',
         description: 'Payment terms were modified',
-        userId: 'user2',
-        userName: 'Jane Smith',
-        userRole: 'Legal Advisor',
+        user_id: 'user2',
+        user_name: 'Jane Smith',
+        user_role: 'Legal Advisor',
         timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        ipAddress: '192.168.1.101',
+        ip_address: '192.168.1.101',
         changes: [
-          { field: 'payment_terms', oldValue: 'Net 30', newValue: 'Net 15' }
+          { field: 'payment_terms', old_value: 'Net 30', new_value: 'Net 15' }
         ]
       },
       {
         id: '3',
         action: 'Contract Signed',
-        actionType: 'sign',
+        action_type: 'sign',
         description: 'Contract was digitally signed by customer',
-        userId: 'customer1',
-        userName: 'Customer Rep',
-        userRole: 'Customer',
+        user_id: 'customer1',
+        user_name: 'Customer Rep',
+        user_role: 'Customer',
         timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        ipAddress: '203.0.113.1'
+        ip_address: '203.0.113.1'
       }
     ];
 
     // Apply filters
     let filteredEntries = mockEntries;
 
-    if (filters.actionType) {
-      filteredEntries = filteredEntries.filter(e => e.actionType === filters.actionType as AuditTrailEntry['actionType']);
+    if (filters.action_type) {
+      filteredEntries = filteredEntries.filter(e => e.action_type === filters.action_type as AuditTrailEntry['action_type']);
     }
 
-    if (filters.searchTerm) {
+    if (filters.search_term) {
       filteredEntries = filteredEntries.filter(e =>
-        e.action.toLowerCase().includes(filters.searchTerm!.toLowerCase()) ||
-        e.description.toLowerCase().includes(filters.searchTerm!.toLowerCase())
+        e.action.toLowerCase().includes(filters.search_term!.toLowerCase()) ||
+        e.description.toLowerCase().includes(filters.search_term!.toLowerCase())
       );
     }
 
@@ -1159,10 +1187,10 @@ Authorized Signature: _________________________ Date: _________
       ...entries.map(entry => [
         entry.timestamp,
         entry.action,
-        entry.userName,
-        entry.userRole,
+        entry.user_name,
+        entry.user_role,
         `"${entry.description}"`,
-        entry.ipAddress || ''
+        entry.ip_address || ''
       ].join(','))
     ].join('\r\n');
 
@@ -1310,6 +1338,54 @@ Authorized Signature: _________________________ Date: _________
   async deleteContractAttachment(attachmentId: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 300));
     // Mock implementation
+  }
+
+  /**
+   * Get contract statistics
+   * Returns aggregated stats for dashboard/state card display
+   */
+  async getContractStats(filters?: ContractFilters): Promise<{
+    total: number;
+    active: number;
+    expiring: number;
+    totalValue: number;
+    byStatus: Record<string, number>;
+    byType: Record<string, number>;
+  }> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Unauthorized');
+
+    // Get contracts using the paginated getContracts method
+    const contractsResponse = await this.getContracts(filters);
+    const contracts = contractsResponse.data || [];
+    
+    // Get expiring contracts
+    const expiringContracts = contracts.filter(c => {
+      const endDate = new Date(c.end_date);
+      const now = new Date();
+      const threshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      return endDate <= threshold && endDate >= now;
+    });
+
+    // Build statistics
+    const stats = {
+      total: contracts.length,
+      active: contracts.filter((c) => c.status === 'active').length,
+      expiring: expiringContracts.length,
+      totalValue: contracts.reduce((sum, c) => sum + (c.value || 0), 0),
+      byStatus: {} as Record<string, number>,
+      byType: {} as Record<string, number>,
+    };
+
+    // Count by status and type
+    contracts.forEach((c) => {
+      stats.byStatus[c.status] = (stats.byStatus[c.status] || 0) + 1;
+      stats.byType[c.type] = (stats.byType[c.type] || 0) + 1;
+    });
+
+    return stats;
   }
 }
 

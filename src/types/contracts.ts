@@ -94,25 +94,25 @@ export interface ContractAttachment {
   url: string;
   type: string;
   size: number;
-  uploadedAt: string;
-  uploadedBy: string;
+  uploaded_at: string;
+  uploaded_by: string;
 }
 
 export interface ApprovalRecord {
   id: string;
   stage: string;
   approver: string;
-  approverName: string;
+  approver_name: string;
   status: 'pending' | 'approved' | 'rejected';
   comments?: string;
   timestamp: string;
 }
 
 export interface SignatureStatus {
-  totalRequired: number;
+  total_required: number;
   completed: number;
   pending: string[];
-  lastSignedAt?: string;
+  last_signed_at?: string;
 }
 
 export interface ContractTemplate {
@@ -121,7 +121,7 @@ export interface ContractTemplate {
   type: 'service_agreement' | 'nda' | 'purchase_order' | 'employment' | 'custom';
   content: string;
   fields: TemplateField[];
-  isActive: boolean;
+  is_active: boolean;
   category: string;
   description: string;
   created_at: string;
@@ -166,7 +166,7 @@ export interface ContractFormData {
   deal_title?: string;
 }
 
-// Contract filters interface
+// Contract filters interface - MERGED and standardized
 export interface ContractFilters {
   status?: string;
   type?: string;
@@ -178,20 +178,25 @@ export interface ContractFilters {
   date_to?: string;
   expiring_soon?: boolean;
   auto_renew?: boolean;
+  // Extended filtering
+  tags?: string[];
+  compliance_status?: string;
+  value_min?: number;
+  value_max?: number;
 }
 
 export interface ContractAnalytics {
-  totalContracts: number;
-  activeContracts: number;
-  pendingApprovals: number;
-  expiringContracts: number;
-  totalValue: number;
-  averageApprovalTime: number;
-  renewalRate: number;
-  complianceRate: number;
-  monthlyStats: MonthlyContractStats[];
-  statusDistribution: StatusDistribution[];
-  typeDistribution: TypeDistribution[];
+  total_contracts: number;
+  active_contracts: number;
+  pending_approvals: number;
+  expiring_contracts: number;
+  total_value: number;
+  average_approval_time: number;
+  renewal_rate: number;
+  compliance_rate: number;
+  monthly_stats: MonthlyContractStats[];
+  status_distribution: StatusDistribution[];
+  type_distribution: TypeDistribution[];
 }
 
 export interface MonthlyContractStats {
@@ -214,32 +219,12 @@ export interface TypeDistribution {
   value: number;
 }
 
-export interface ContractFilters {
-  status?: string;
-  type?: string;
-  assignedTo?: string;
-  createdBy?: string;
-  priority?: string;
-  dateRange?: {
-    start: string;
-    end: string;
-  };
-  valueRange?: {
-    min: number;
-    max: number;
-  };
-  search?: string;
-  tags?: string[];
-  autoRenew?: boolean;
-  complianceStatus?: string;
-}
-
 export interface RenewalReminder {
   id: string;
-  contractId: string;
-  contractTitle: string;
-  reminderDate: string;
-  daysUntilExpiry: number;
+  contract_id: string;
+  contract_title: string;
+  reminder_date: string;
+  days_until_expiry: number;
   status: 'pending' | 'sent' | 'acknowledged';
   recipients: string[];
   message: string;
@@ -248,15 +233,15 @@ export interface RenewalReminder {
 
 export interface DigitalSignature {
   id: string;
-  contractId: string;
-  signerId: string;
-  signerName: string;
-  signerEmail: string;
-  signatureUrl: string;
-  ipAddress: string;
+  contract_id: string;
+  signer_id: string;
+  signer_name: string;
+  signer_email: string;
+  signature_url: string;
+  ip_address: string;
   timestamp: string;
   status: 'pending' | 'completed' | 'declined';
-  verificationCode?: string;
+  verification_code?: string;
 }
 
 export interface ComplianceItem {
@@ -266,93 +251,93 @@ export interface ComplianceItem {
   category: 'regulatory' | 'financial' | 'legal' | 'operational' | 'other';
   status: 'compliant' | 'non_compliant' | 'pending_review';
   priority: 'low' | 'medium' | 'high';
-  dueDate: string;
-  assignedTo: string;
-  assignedToName: string;
+  due_date: string;
+  assigned_to: string;
+  assigned_to_name: string;
   evidence: string;
   notes: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  createdByName: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  created_by_name: string;
 }
 
 export interface ContractVersion {
   id: string;
-  contractId?: string;
+  contract_id?: string;
   version: number;
   title?: string;
   description?: string;
   status: 'draft' | 'active' | 'archived';
-  documentUrl: string;
-  isCurrentVersion: boolean;
-  createdAt: string;
-  createdBy?: string;
+  document_url: string;
+  is_current_version: boolean;
+  created_at: string;
+  created_by?: string;
   notes?: string;
 }
 
 export interface ApprovalData {
-  approvalNotes?: string;
-  approvalDate?: string;
-  approvalStatus?: string;
+  approval_notes?: string;
+  approval_date?: string;
+  approval_status?: string;
 }
 
 export interface RejectionData {
-  rejectionReason: string;
-  rejectionDate?: string;
+  rejection_reason: string;
+  rejection_date?: string;
 }
 
 export interface AuditTrailEntry {
   id: string;
   action: string;
-  actionType: 'create' | 'update' | 'sign' | 'approve' | 'reject' | 'delete';
+  action_type: 'create' | 'update' | 'sign' | 'approve' | 'reject' | 'delete';
   description: string;
-  userId: string;
-  userName: string;
-  userRole: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
   timestamp: string;
-  ipAddress: string;
-  userAgent?: string;
-  changes?: Array<{ field: string; oldValue: unknown; newValue: unknown }>;
+  ip_address: string;
+  user_agent?: string;
+  changes?: Array<{ field: string; old_value: unknown; new_value: unknown }>;
 }
 
 export interface AuditTrailFilters {
-  actionType?: string;
-  searchTerm?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  userId?: string;
+  action_type?: string;
+  search_term?: string;
+  date_from?: string;
+  date_to?: string;
+  user_id?: string;
 }
 
 export interface ApprovalWorkflowStep {
   id: string;
-  stepNumber: number;
+  step_number: number;
   title: string;
   description: string;
-  approverRole: string;
-  approverName: string;
-  approverId: string;
+  approver_role: string;
+  approver_name: string;
+  approver_id: string;
   status: 'pending' | 'approved' | 'rejected';
-  isRequired: boolean;
-  approvedAt?: string;
+  is_required: boolean;
+  approved_at?: string;
   comments?: string;
-  canApprove: boolean;
+  can_approve: boolean;
 }
 
 export interface ContractAttachmentDetail {
   id: string;
-  fileName: string;
-  originalName: string;
-  fileSize: number;
-  fileType: string;
+  file_name: string;
+  original_name: string;
+  file_size: number;
+  file_type: string;
   category?: string;
   description?: string;
-  uploadedBy: string;
-  uploadedByName: string;
-  uploadedAt: string;
-  downloadUrl: string;
-  previewUrl?: string;
-  isPublic?: boolean;
+  uploaded_by: string;
+  uploaded_by_name: string;
+  uploaded_at: string;
+  download_url: string;
+  preview_url?: string;
+  is_public?: boolean;
   version?: number;
 }
 

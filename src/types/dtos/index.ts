@@ -99,3 +99,16 @@ export type {
   SlaConfigDTO,
   SatisfactionSurveyDTO,
 } from './ticketDtos';
+
+// User DTOs
+export type {
+  UserRole,
+  UserStatus,
+  UserDTO,
+  UserStatsDTO,
+  CreateUserDTO,
+  UpdateUserDTO,
+  UserFiltersDTO,
+  UserListResponseDTO,
+  UserActivityDTO,
+} from './userDtos';

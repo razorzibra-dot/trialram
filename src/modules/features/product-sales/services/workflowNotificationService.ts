@@ -2,10 +2,13 @@
  * Product Sales Workflow Notification Service
  * Handles notifications for product sales status transitions
  * Notifies different stakeholders based on status changes
+ * 
+ * Uses Service Factory pattern to route between mock and Supabase implementations
+ * based on VITE_API_MODE environment variable
  */
 
 import { ProductSale } from '@/types/productSales';
-import { notificationService, Notification } from '@/services/notificationService';
+import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 
 interface WorkflowNotificationOptions {
   saleNumber: string;
@@ -54,8 +57,8 @@ class WorkflowNotificationService {
           reason
         );
 
-        // Send via notification service
-        notificationService.notify({
+        // Send via notification service (routed through factory based on VITE_API_MODE)
+        factoryNotificationService.notify({
           type: this.getNotificationType(newStatus),
           message: notification.title,
           description: notification.message,
@@ -82,7 +85,7 @@ class WorkflowNotificationService {
 
       const formattedValue = this.formatCurrency(totalValue);
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'warning',
         message: 'Pending Approval Required',
         description: `Sale ${saleNumber} for ${customerName} (${productName}, ${formattedValue}) is awaiting your approval.`,
@@ -104,7 +107,7 @@ class WorkflowNotificationService {
     try {
       const { saleNumber, customerName, productName } = options;
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'info',
         message: 'Shipment Ready',
         description: `Sale ${saleNumber} for customer ${customerName} is ready for shipment. Product: ${productName}`,
@@ -126,7 +129,7 @@ class WorkflowNotificationService {
     try {
       const { saleNumber, customerName, productName } = options;
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'success',
         message: 'Delivery Confirmed',
         description: `Sale ${saleNumber} for customer ${customerName} has been successfully delivered. Product: ${productName}`,
@@ -150,7 +153,7 @@ class WorkflowNotificationService {
 
       const formattedValue = this.formatCurrency(totalValue);
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'success',
         message: 'Invoice Generated',
         description: `Invoice ${invoiceNumber || 'generated'} for sale ${saleNumber} (Customer: ${customerName}, Amount: ${formattedValue}) is ready.`,
@@ -174,7 +177,7 @@ class WorkflowNotificationService {
 
       const formattedValue = this.formatCurrency(totalValue);
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'success',
         message: 'Payment Received',
         description: `Payment of ${formattedValue} received for sale ${saleNumber} from ${customerName}. Sale marked as paid.`,
@@ -198,7 +201,7 @@ class WorkflowNotificationService {
 
       const reasonText = reason ? ` Reason: ${reason}` : '';
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'error',
         message: 'Sale Cancelled',
         description: `Sale ${saleNumber} for customer ${customerName} (${productName}) has been cancelled.${reasonText}`,
@@ -223,7 +226,7 @@ class WorkflowNotificationService {
       const formattedValue = this.formatCurrency(totalValue);
       const reasonText = reason ? ` Reason: ${reason}` : '';
 
-      notificationService.notify({
+      factoryNotificationService.notify({
         type: 'warning',
         message: 'Refund Processed',
         description: `Refund of ${formattedValue} for sale ${saleNumber} (Customer: ${customerName}) has been processed.${reasonText}`,

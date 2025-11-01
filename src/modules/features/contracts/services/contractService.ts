@@ -1,6 +1,11 @@
 /**
- * Contract Service
+ * Contract Service - Module Layer
  * Business logic for contract management and lifecycle
+ * ⚠️ IMPORTANT: This is for the Contracts module (/src/modules/features/contracts/)
+ * For Service Contracts, use serviceContractService from serviceFactory instead
+ *
+ * This service uses the Service Factory pattern to route between mock and Supabase implementations
+ * based on VITE_API_MODE environment variable
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
@@ -37,8 +42,9 @@ export interface ContractFormData {
   reminder_days: number[];
   notes?: string;
 }
-// Import legacy service for actual data fetching
-import { contractService as legacyContractService } from '@/services';
+
+// Import factory-routed service for multi-backend support
+import { contractService as factoryContractService } from '@/services/serviceFactory';
 
 export interface ContractStats {
   total: number;
@@ -55,26 +61,13 @@ export interface ContractStats {
 export class ContractService extends BaseService {
   /**
    * Get contracts with filtering and pagination
+   * Routes to mock or Supabase service based on VITE_API_MODE
    */
   async getContracts(filters: ContractFilters = {}): Promise<PaginatedResponse<Contract>> {
     try {
       try {
-        // Use the legacy service to fetch real data
-        const contracts = await legacyContractService.getContracts(filters);
-        
-        // Transform to paginated response
-        const { page = 1, pageSize = 20 } = filters;
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedData = contracts.slice(startIndex, endIndex);
-        
-        return {
-          data: paginatedData,
-          total: contracts.length,
-          page,
-          pageSize,
-          totalPages: Math.ceil(contracts.length / pageSize),
-        };
+        // Use factory service for multi-backend support
+        return await factoryContractService.getContracts(filters);
       } catch (error) {
         // Handle tenant context not initialized gracefully
         if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
@@ -101,7 +94,7 @@ export class ContractService extends BaseService {
    */
   async getContract(id: string): Promise<Contract> {
     try {
-      return await legacyContractService.getContract(id);
+      return await factoryContractService.getContract(id);
     } catch (error) {
       this.handleError(`Failed to fetch contract ${id}`, error);
       throw error;
@@ -113,7 +106,7 @@ export class ContractService extends BaseService {
    */
   async createContract(data: ContractFormData): Promise<Contract> {
     try {
-      return await legacyContractService.createContract(data as any);
+      return await factoryContractService.createContract(data as any);
     } catch (error) {
       this.handleError('Failed to create contract', error);
       throw error;
@@ -125,7 +118,7 @@ export class ContractService extends BaseService {
    */
   async updateContract(id: string, data: Partial<ContractFormData>): Promise<Contract> {
     try {
-      return await legacyContractService.updateContract(id, data as any);
+      return await factoryContractService.updateContract(id, data as any);
     } catch (error) {
       this.handleError(`Failed to update contract ${id}`, error);
       throw error;
@@ -137,7 +130,7 @@ export class ContractService extends BaseService {
    */
   async deleteContract(id: string): Promise<void> {
     try {
-      await legacyContractService.deleteContract(id);
+      await factoryContractService.deleteContract(id);
     } catch (error) {
       this.handleError(`Failed to delete contract ${id}`, error);
       throw error;
@@ -193,59 +186,9 @@ export class ContractService extends BaseService {
    */
   async getContractStats(): Promise<ContractStats> {
     try {
-      // Get all contracts for stats calculation
-      const response = await this.getContracts({ pageSize: 1000 });
-      const contracts = response.data;
-
-      const stats: ContractStats = {
-        total: contracts.length,
-        byStatus: {},
-        byType: {},
-        activeContracts: 0,
-        pendingApproval: 0,
-        expiringContracts: 0,
-        totalValue: 0,
-        averageValue: 0,
-        renewalsDue: 0,
-      };
-
-      const now = new Date();
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(now.getDate() + 30);
-
-      // Calculate statistics
-      contracts.forEach(contract => {
-        // Status stats
-        const status = contract.status || 'draft';
-        stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
-
-        // Type stats
-        const type = contract.type || 'custom';
-        stats.byType[type] = (stats.byType[type] || 0) + 1;
-
-        // Status counts
-        if (status === 'active') stats.activeContracts++;
-        if (status === 'pending_approval') stats.pendingApproval++;
-
-        // Value calculations
-        const value = contract.value || 0;
-        stats.totalValue += value;
-
-        // Expiring contracts (within 30 days)
-        if (contract.end_date && new Date(contract.end_date) <= thirtyDaysFromNow) {
-          stats.expiringContracts++;
-        }
-
-        // Renewals due
-        if (contract.next_renewal_date && new Date(contract.next_renewal_date) <= thirtyDaysFromNow) {
-          stats.renewalsDue++;
-        }
-      });
-
-      // Calculate average value
-      stats.averageValue = contracts.length > 0 ? stats.totalValue / contracts.length : 0;
-
-      return stats;
+      // Use factory service for stats calculation
+      // The service handles all stat calculations and aggregations
+      return await factoryContractService.getContractStats();
     } catch (error) {
       this.handleError('Failed to fetch contract statistics', error);
       throw error;
@@ -260,22 +203,8 @@ export class ContractService extends BaseService {
     filters: ContractFilters = {}
   ): Promise<PaginatedResponse<Contract>> {
     try {
-      // Get all contracts for now - filter by customer ID
-      const response = await this.getContracts({ ...filters, pageSize: 1000 });
-      
-      // Filter contracts by customer_id
-      const customerContracts = response.data.filter(
-        (contract) => contract.customer_id === customerId || contract.customerId === customerId
-      );
-
-      const pageSize = filters.pageSize || 20;
-      return {
-        data: customerContracts,
-        total: customerContracts.length,
-        page: filters.page || 1,
-        pageSize: pageSize,
-        totalPages: Math.ceil(customerContracts.length / pageSize),
-      };
+      // Use factory service with customer_id filter
+      return await factoryContractService.getContracts({ ...filters, customer_id: customerId });
     } catch (error) {
       console.error(`Failed to fetch contracts for customer ${customerId}:`, error);
       throw error;
@@ -287,17 +216,19 @@ export class ContractService extends BaseService {
    */
   async getExpiringContracts(days: number = 30): Promise<Contract[]> {
     try {
-      const response = await this.getContracts({ pageSize: 1000 });
-      const contracts = response.data;
+      // Use factory service with expiring_soon filter
+      const response = await factoryContractService.getExpiringContracts({ expiring_soon: true }, days);
       
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() + days);
+      // Safely handle response - could be array or object with data property
+      let contracts: Contract[] = [];
       
-      return contracts.filter(contract => 
-        contract.end_date && 
-        new Date(contract.end_date) <= cutoffDate &&
-        contract.status === 'active'
-      );
+      if (Array.isArray(response)) {
+        contracts = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        contracts = response.data;
+      }
+      
+      return contracts;
     } catch (error) {
       this.handleError('Failed to fetch expiring contracts', error);
       throw error;
@@ -309,8 +240,20 @@ export class ContractService extends BaseService {
    */
   async getContractsDueForRenewal(days: number = 30): Promise<Contract[]> {
     try {
-      const response = await this.getContracts({ pageSize: 1000 });
-      const contracts = response.data;
+      // Use factory service to get contracts with auto_renew flag
+      const response = await factoryContractService.getContracts({ 
+        auto_renew: true,
+        pageSize: 1000 
+      });
+      
+      // Safely handle response structure - ensure data is an array
+      const contracts = response?.data || response || [];
+      
+      // Guard against non-array responses
+      if (!Array.isArray(contracts)) {
+        console.warn('getContractsDueForRenewal: response.data is not an array', { response, contracts });
+        return [];
+      }
       
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() + days);

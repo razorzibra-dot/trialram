@@ -1,55 +1,55 @@
 {
-  "createdAt": "2025-10-19T16:08:26.547Z",
+  "createdAt": "2025-11-01T21:47:45.005Z",
   "supabaseUrl": "http://127.0.0.1:54321",
   "users": [
     {
       "email": "admin@acme.com",
       "displayName": "Admin Acme",
       "tenant": "Acme Corporation",
-      "userId": "a3c91c65-343d-4ff4-b9ab-f36adb371495",
-      "createdAt": "2025-10-19T16:08:25.713Z"
+      "userId": "7c370b02-fed9-45d8-85b8-414ce36a9d4c",
+      "createdAt": "2025-11-01T21:47:44.234Z"
     },
     {
       "email": "manager@acme.com",
       "displayName": "Manager Acme",
       "tenant": "Acme Corporation",
-      "userId": "d078f352-e074-4b26-bd3d-94d5751aa50c",
-      "createdAt": "2025-10-19T16:08:25.959Z"
+      "userId": "5e543818-4341-4ccf-b5cd-21cd2173735f",
+      "createdAt": "2025-11-01T21:47:44.341Z"
     },
     {
       "email": "engineer@acme.com",
       "displayName": "Engineer Acme",
       "tenant": "Acme Corporation",
-      "userId": "beac6dda-c64f-4341-9f35-12c19f519639",
-      "createdAt": "2025-10-19T16:08:26.071Z"
+      "userId": "9c124de0-f75c-44e8-9315-23d5a1f126ae",
+      "createdAt": "2025-11-01T21:47:44.465Z"
     },
     {
       "email": "user@acme.com",
       "displayName": "User Acme",
       "tenant": "Acme Corporation",
-      "userId": "c0885ddd-4d5f-4be6-b717-527d385a2c07",
-      "createdAt": "2025-10-19T16:08:26.171Z"
+      "userId": "7b984fb4-d100-490b-a108-10531947eb8c",
+      "createdAt": "2025-11-01T21:47:44.563Z"
     },
     {
       "email": "admin@techsolutions.com",
       "displayName": "Admin Tech",
       "tenant": "Tech Solutions Inc",
-      "userId": "e7bf21ab-b09f-450c-a389-081c1f8179b4",
-      "createdAt": "2025-10-19T16:08:26.271Z"
+      "userId": "a17b04b5-e4cd-449f-8611-e5d4062b6cb6",
+      "createdAt": "2025-11-01T21:47:44.661Z"
     },
     {
       "email": "manager@techsolutions.com",
       "displayName": "Manager Tech",
       "tenant": "Tech Solutions Inc",
-      "userId": "e7b329f4-6a50-4ea7-97eb-aec2d0e6565b",
-      "createdAt": "2025-10-19T16:08:26.369Z"
+      "userId": "e172c9ba-16e9-4a51-abec-2041de8cdff9",
+      "createdAt": "2025-11-01T21:47:44.760Z"
     },
     {
       "email": "admin@globaltrading.com",
       "displayName": "Admin Global",
       "tenant": "Global Trading Ltd",
-      "userId": "bedef1ef-6595-43f6-bb68-0acbba97e151",
-      "createdAt": "2025-10-19T16:08:26.470Z"
+      "userId": "ae50f31a-e11d-42cc-b3ce-8cdcb7d64579",
+      "createdAt": "2025-11-01T21:47:44.850Z"
     }
   ]
 }

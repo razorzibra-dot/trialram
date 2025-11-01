@@ -204,7 +204,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
 
           {/* Address Information */}
-          <Card title="Address Information" bordered={false} style={{ marginBottom: 24 }}>
+          <Card title="Address Information" variant="borderless" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item label="Address" name="address">
@@ -243,7 +243,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
 
           {/* Business Information */}
-          <Card title="Business Information" bordered={false} style={{ marginBottom: 24 }}>
+          <Card title="Business Information" variant="borderless" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item
@@ -328,7 +328,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
 
           {/* Financial Information */}
-          <Card title="Financial Information" bordered={false} style={{ marginBottom: 24 }}>
+          <Card title="Financial Information" variant="borderless" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item
@@ -372,7 +372,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
 
           {/* Additional Information */}
-          <Card title="Additional Information" bordered={false} style={{ marginBottom: 24 }}>
+          <Card title="Additional Information" variant="borderless" style={{ marginBottom: 24 }}>
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item label="Notes" name="notes">
@@ -388,7 +388,7 @@ const CustomerCreatePage: React.FC = () => {
           </Card>
 
           {/* Form Actions */}
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Space size="middle">
               <Button
                 type="primary"

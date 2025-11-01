@@ -53,19 +53,9 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
-import type { User } from '@/types/crm';
+import type { UserDTO, CreateUserDTO, UpdateUserDTO } from '@/types/dtos/userDtos';
 
 const { Option } = Select;
-
-interface UserFormData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  phone?: string;
-  status: string;
-  tenantId: string;
-}
 
 export const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -74,14 +64,14 @@ export const UserManagementPage: React.FC = () => {
   const [form] = Form.useForm();
 
   // State
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [tenantFilter, setTenantFilter] = useState<string>('');
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserDTO | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Load users
@@ -116,7 +106,7 @@ export const UserManagementPage: React.FC = () => {
   };
 
   // Handle edit user
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: UserDTO) => {
     setEditingUser(user);
     form.setFieldsValue({
       email: user.email,
@@ -218,7 +208,7 @@ export const UserManagementPage: React.FC = () => {
   };
 
   // Action menu items
-  const getActionMenu = (user: User): MenuProps['items'] => [
+  const getActionMenu = (user: UserDTO): MenuProps['items'] => [
     {
       key: 'edit',
       label: 'Edit User',
@@ -252,7 +242,7 @@ export const UserManagementPage: React.FC = () => {
   ];
 
   // Table columns
-  const columns: ColumnsType<User> = [
+  const columns: ColumnsType<UserDTO> = [
     {
       title: 'User',
       key: 'user',
@@ -262,7 +252,7 @@ export const UserManagementPage: React.FC = () => {
         <Space>
           <Avatar
             size={40}
-            src={record.avatar}
+            src={record.avatarUrl}
             icon={<UserOutlined />}
             style={{ backgroundColor: '#1890ff' }}
           />
@@ -378,7 +368,7 @@ export const UserManagementPage: React.FC = () => {
   // Calculate stats
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.status === 'active').length;
-  const adminUsers = users.filter(u => u.role === 'Admin').length;
+  const adminUsers = users.filter(u => u.role?.toLowerCase() === 'admin').length;
   const suspendedUsers = users.filter(u => u.status === 'suspended').length;
 
   return (

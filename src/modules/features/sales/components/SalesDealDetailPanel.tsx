@@ -1,13 +1,14 @@
 /**
- * Sales Deal Detail Panel
- * Side drawer for viewing deal details in read-only mode with customer and product integration
- * ✅ Phase 3.1: Link Sales to Customers - Show customer details and navigation
- * ✅ Phase 3.2: Link Sales to Products - Show product details and breakdown
+ * Sales Deal Detail Panel - Enterprise Enhanced Edition
+ * Professional read-only view with key metrics and rich information display
+ * ✨ Enterprise Grade UI/UX Enhancements (Phase 7)
+ * ✅ Phase 3.1: Link Sales to Customers
+ * ✅ Phase 3.2: Link Sales to Products
  */
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Descriptions, Button, Space, Divider, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message } from 'antd';
-import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { Drawer, Button, Space, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message, Row, Col, Statistic } from 'antd';
+import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined, CalendarOutlined, DollarOutlined, RadarChartOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { Deal, Customer } from '@/types/crm';
 import { useNavigate } from 'react-router-dom';
 import { useService } from '@/modules/core/hooks/useService';
@@ -22,6 +23,58 @@ interface SalesDealDetailPanelProps {
   onClose: () => void;
   onEdit: () => void;
 }
+
+// ✨ Configuration objects for professional styling
+const stageConfig: Record<string, { emoji: string; label: string; color: string }> = {
+  'lead': { emoji: '🎯', label: 'Lead', color: 'default' },
+  'qualified': { emoji: '✅', label: 'Qualified', color: 'processing' },
+  'proposal': { emoji: '📄', label: 'Proposal', color: 'warning' },
+  'negotiation': { emoji: '🤝', label: 'Negotiation', color: 'warning' },
+  'closed_won': { emoji: '🎉', label: 'Closed Won', color: 'green' },
+  'closed_lost': { emoji: '❌', label: 'Closed Lost', color: 'red' },
+};
+
+const statusConfig: Record<string, { emoji: string; label: string; color: string; bgColor: string }> = {
+  'open': { emoji: '🔵', label: 'Open', color: 'blue', bgColor: '#e6f4ff' },
+  'won': { emoji: '✅', label: 'Won', color: 'green', bgColor: '#f6ffed' },
+  'lost': { emoji: '❌', label: 'Lost', color: 'red', bgColor: '#fff1f0' },
+  'cancelled': { emoji: '⏸️', label: 'Cancelled', color: 'default', bgColor: '#f5f5f5' },
+};
+
+// Helper functions
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const formatDate = (dateString: string | undefined) => {
+  if (!dateString) return '—';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric'
+  });
+};
+
+const getDaysUntilClose = (dateString: string | undefined) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const today = new Date();
+  const diffTime = date.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const getStageProgress = (stage: string) => {
+  const stages = ['lead', 'qualified', 'proposal', 'negotiation', 'closed_won'];
+  const index = stages.indexOf(stage);
+  return index >= 0 ? ((index + 1) / stages.length) * 100 : 0;
+};
 
 export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
   visible,
@@ -46,7 +99,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
   const customerService = useService<CustomerService>('customerService');
   const salesService = useService<SalesService>('salesService');
 
-  // Load customer details when deal changes
+  // Load customer details
   useEffect(() => {
     if (!deal?.customer_id || !customerService || !visible) {
       return;
@@ -59,7 +112,6 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
         if (result) {
           setCustomer(result);
         } else {
-          console.log('[SalesDealDetailPanel] Customer not available during initialization');
           setCustomer(null);
         }
       } catch (error) {
@@ -73,7 +125,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
     loadCustomerDetails();
   }, [deal?.customer_id, visible, customerService]);
 
-  // Phase 3.3: Load linked contracts when deal changes
+  // Load linked contracts
   useEffect(() => {
     if (!deal?.id || !salesService || !visible) {
       return;
@@ -99,20 +151,9 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
     return null;
   }
 
-  // Log deal details for debugging
-  console.log('[SalesDealDetailPanel] 👀 Displaying deal:', {
-    id: deal.id,
-    title: deal.title,
-    expected_close_date: deal.expected_close_date,
-    actual_close_date: deal.actual_close_date,
-    status: deal.status,
-    source: deal.source,
-    campaign: deal.campaign,
-    notes: deal.notes,
-    description: deal.description,
-    allFields: Object.keys(deal),
-    allValues: deal,
-  });
+  const stageInfo = stageConfig[deal.stage] || { emoji: '📌', label: deal.stage, color: 'default' };
+  const statusInfo = statusConfig[deal.status] || { emoji: '❓', label: deal.status, color: 'default', bgColor: '#f5f5f5' };
+  const daysUntilClose = getDaysUntilClose(deal.expected_close_date);
 
   const handleNavigateToCustomer = () => {
     if (deal?.customer_id) {
@@ -121,61 +162,55 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
     }
   };
 
-  // Phase 3.3: Handle navigate to contract
   const handleNavigateToContract = (contractId: string) => {
     navigate(`/tenant/contracts/${contractId}`);
     onClose();
   };
 
-  // Phase 3.3: Handle successful contract conversion
   const handleConversionSuccess = (contractId: string) => {
-    // Reload contracts list
     if (deal?.id && salesService) {
       salesService.getContractsForDeal(deal.id).then(setLinkedContracts).catch(() => {
         setLinkedContracts([]);
       });
     }
-    // Navigate to the new contract
     handleNavigateToContract(contractId);
   };
 
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case 'lead': return 'default';
-      case 'qualified': return 'processing';
-      case 'proposal': return 'warning';
-      case 'negotiation': return 'warning';
-      case 'closed_won': return 'green';
-      case 'closed_lost': return 'red';
-      default: return 'default';
-    }
+  // ✨ Card styling
+  const infoCardStyle = {
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    borderRadius: 8,
+    border: '1px solid #f0f0f0',
+    marginBottom: 16,
   };
 
-  const getStageProgress = (stage: string) => {
-    const stages = ['lead', 'qualified', 'proposal', 'negotiation', 'closed_won'];
-    const index = stages.indexOf(stage);
-    return index >= 0 ? ((index + 1) / stages.length) * 100 : 0;
+  const cardHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottom: '2px solid #0ea5e9',
+    color: '#1f2937',
+    fontWeight: 600,
+    fontSize: 14,
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const iconStyle = {
+    marginRight: 8,
+    color: '#0ea5e9',
+    fontSize: 16,
   };
 
   return (
     <>
       <Drawer
-        title="Deal Details"
+        title={`Deal Details - ${deal.title}`}
         placement="right"
-        width={550}
+        width={650}
         onClose={onClose}
         open={visible}
         footer={
-          <Space style={{ float: 'right' }}>
+          <Space style={{ float: 'right', width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={onClose}>Close</Button>
             {deal?.stage === 'closed_won' && deal?.items && deal?.items.length > 0 && (
               <Button
@@ -201,128 +236,223 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
           </Space>
         }
       >
-      {deal ? (
-        <div>
-          {/* Basic Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Deal Information</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Deal Title">
-              {deal.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Deal Value">
-              {formatCurrency(deal.value || deal.amount || 0)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Stage">
-              <Tag color={getStageColor(deal.stage)}>
-                {deal.stage?.replace('_', ' ').toUpperCase()}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={deal.status === 'won' ? 'green' : deal.status === 'lost' ? 'red' : deal.status === 'open' ? 'blue' : 'default'}>
-                {deal.status?.toUpperCase() || 'OPEN'}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Probability">
-              {deal.probability || 50}%
-            </Descriptions.Item>
-            <Descriptions.Item label="Expected Close Date">
-              {deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : '-'}
-            </Descriptions.Item>
-            {deal.actual_close_date && (
-              <Descriptions.Item label="Actual Close Date">
-                {new Date(deal.actual_close_date).toLocaleDateString()}
-              </Descriptions.Item>
-            )}
-            {deal.source && (
-              <Descriptions.Item label="Source">
-                {deal.source}
-              </Descriptions.Item>
-            )}
-            {deal.campaign && (
-              <Descriptions.Item label="Campaign">
-                {deal.campaign}
-              </Descriptions.Item>
-            )}
-            {deal.notes && (
-              <Descriptions.Item label="Notes">
-                {deal.notes}
-              </Descriptions.Item>
-            )}
-            {deal.description && (
-              <Descriptions.Item label="Description">
-                {deal.description}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
+        {/* 🎯 Key Metrics Card */}
+        <Card style={infoCardStyle}>
+          <Row gutter={16}>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                  Deal Value
+                </div>
+                <Statistic
+                  value={deal.value || deal.amount || 0}
+                  prefix="$"
+                  suffix=""
+                  valueStyle={{ color: '#0ea5e9', fontSize: 18, fontWeight: 600 }}
+                  formatter={(value) => {
+                    const num = value as number;
+                    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                    if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+                    return num.toString();
+                  }}
+                />
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                  Win Probability
+                </div>
+                <Statistic
+                  value={deal.probability || 50}
+                  suffix="%"
+                  valueStyle={{ color: '#0ea5e9', fontSize: 18, fontWeight: 600 }}
+                />
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                  Status
+                </div>
+                <Tag color={statusInfo.color} style={{ fontSize: 12, padding: '4px 12px' }}>
+                  {statusInfo.emoji} {statusInfo.label}
+                </Tag>
+              </div>
+            </Col>
+          </Row>
+        </Card>
 
-          <Divider />
+        {/* 📊 Pipeline Progress */}
+        <Card style={infoCardStyle}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 500 }}>
+              Pipeline Progress
+            </div>
+            <Progress
+              percent={getStageProgress(deal.stage)}
+              status="active"
+              format={() => `${stageInfo.emoji} ${stageInfo.label}`}
+              strokeColor="#0ea5e9"
+            />
+          </div>
+          {daysUntilClose !== null && (
+            <Alert
+              message={daysUntilClose > 0 ? `${daysUntilClose} days until expected close` : 'Expected close date has passed'}
+              type={daysUntilClose > 10 ? 'info' : daysUntilClose > 0 ? 'warning' : 'error'}
+              showIcon
+            />
+          )}
+        </Card>
 
-          {/* Deal Progress */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Pipeline Progress</h3>
-          <Progress
-            percent={getStageProgress(deal.stage)}
-            status="active"
-            format={() => deal.stage?.replace('_', ' ').toUpperCase()}
-          />
+        {/* 🎯 Deal Information */}
+        <Card style={infoCardStyle}>
+          <div style={cardHeaderStyle}>
+            <FileTextOutlined style={iconStyle} />
+            Deal Information
+          </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Stage
+                </div>
+                <Tag color={stageInfo.color} style={{ fontSize: 12 }}>
+                  {stageInfo.emoji} {stageInfo.label}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24} sm={12}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Status
+                </div>
+                <Tag color={statusInfo.color}>
+                  {statusInfo.emoji} {statusInfo.label}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Description
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13, lineHeight: 1.6 }}>
+                  {deal.description || '—'}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Card>
 
-          <Divider />
+        {/* 📅 Timeline Information */}
+        <Card style={infoCardStyle}>
+          <div style={cardHeaderStyle}>
+            <CalendarOutlined style={iconStyle} />
+            Timeline
+          </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                Expected Close Date
+              </div>
+              <div style={{ color: '#1f2937', fontSize: 13 }}>
+                {formatDate(deal.expected_close_date)}
+              </div>
+            </Col>
+            <Col xs={24} sm={12}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                Actual Close Date
+              </div>
+              <div style={{ color: '#1f2937', fontSize: 13 }}>
+                {formatDate(deal.actual_close_date)}
+              </div>
+            </Col>
+          </Row>
+        </Card>
 
-          {/* Customer Information - Phase 3.1 */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>
-            <UserOutlined style={{ marginRight: 8 }} />
+        {/* 👥 Customer Information */}
+        <Card style={infoCardStyle}>
+          <div style={cardHeaderStyle}>
+            <UserOutlined style={iconStyle} />
             Customer Information
-          </h3>
+          </div>
 
           {loadingCustomer ? (
             <Spin size="small" />
           ) : customer ? (
             <>
-              <Card size="small" style={{ marginBottom: 16 }}>
-                <div style={{ lineHeight: 2 }}>
-                  <div>
-                    <strong>Company:</strong> {customer.company_name}
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Company Name
+                    </div>
+                    <div style={{ color: '#1f2937', fontSize: 13, fontWeight: 500 }}>
+                      {customer.company_name}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Contact:</strong> {customer.contact_name}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Contact Person
+                    </div>
+                    <div style={{ color: '#1f2937', fontSize: 13 }}>
+                      {customer.contact_name}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Email:</strong> {customer.email}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Email
+                    </div>
+                    <div style={{ color: '#0ea5e9', fontSize: 13 }}>
+                      <a href={`mailto:${customer.email}`}>{customer.email}</a>
+                    </div>
                   </div>
-                  <div>
-                    <strong>Phone:</strong> {customer.phone}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Phone
+                    </div>
+                    <div style={{ color: '#0ea5e9', fontSize: 13 }}>
+                      <a href={`tel:${customer.phone}`}>{customer.phone}</a>
+                    </div>
                   </div>
-                  <div>
-                    <strong>Industry:</strong> {customer.industry}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Industry
+                    </div>
+                    <div style={{ color: '#1f2937', fontSize: 13 }}>
+                      {customer.industry}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Company Size:</strong> {customer.size}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                      Company Size
+                    </div>
+                    <div style={{ color: '#1f2937', fontSize: 13 }}>
+                      {customer.size}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Status:</strong>{' '}
-                    <Tag color={customer.status === 'active' ? 'green' : 'red'}>
-                      {customer.status?.toUpperCase()}
-                    </Tag>
-                  </div>
-                </div>
-              </Card>
-
-              <Alert
-                message="View Full Customer Profile"
-                description="Click the button to view complete customer information and related records."
-                type="info"
-                icon={<LinkOutlined />}
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
+                </Col>
+              </Row>
 
               <Button
                 block
                 type="dashed"
                 onClick={handleNavigateToCustomer}
                 icon={<LinkOutlined />}
-                style={{ marginBottom: 16 }}
+                style={{ marginTop: 12 }}
               >
-                Go to Customer Profile
+                View Full Customer Profile
               </Button>
             </>
           ) : (
@@ -331,188 +461,195 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
               description="This deal is not linked to a customer. Edit the deal to add a customer relationship."
               type="warning"
               showIcon
-              style={{ marginBottom: 16 }}
             />
           )}
+        </Card>
 
-          <Divider />
-
-          {/* Products/Services Section - Phase 3.2 */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>
-            <ShoppingCartOutlined style={{ marginRight: 8 }} />
-            Products/Services
-          </h3>
-
-          {deal.items && deal.items.length > 0 ? (
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: '12px', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}>
-                      <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600 }}>Product</th>
-                      <th style={{ padding: '8px', textAlign: 'center', width: '50px', fontWeight: 600 }}>Qty</th>
-                      <th style={{ padding: '8px', textAlign: 'right', width: '70px', fontWeight: 600 }}>Price</th>
-                      <th style={{ padding: '8px', textAlign: 'right', width: '70px', fontWeight: 600 }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deal.items.map((item, index) => (
-                      <tr key={item.id || index} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                        <td style={{ padding: '8px' }}>
-                          <div style={{ fontWeight: 500, marginBottom: 4 }}>{item.product_name}</div>
-                          {item.product_description && (
-                            <div style={{ fontSize: '11px', color: '#999' }}>{item.product_description}</div>
-                          )}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
-                          {item.quantity}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>
-                          ${item.unit_price.toFixed(2)}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>
-                          ${item.line_total.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr style={{ backgroundColor: '#fafafa', fontWeight: 600, borderTop: '2px solid #f0f0f0' }}>
-                      <td colSpan={3} style={{ padding: '8px', textAlign: 'right' }}>
-                        Total:
+        {/* 🛒 Products/Services */}
+        {deal.items && deal.items.length > 0 && (
+          <Card style={infoCardStyle}>
+            <div style={cardHeaderStyle}>
+              <ShoppingCartOutlined style={iconStyle} />
+              Products & Services
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#fafafa', borderBottom: '2px solid #e5e7eb' }}>
+                    <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>
+                      Product
+                    </th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', width: '50px', fontWeight: 600, color: '#374151' }}>
+                      Qty
+                    </th>
+                    <th style={{ padding: '10px 8px', textAlign: 'right', width: '70px', fontWeight: 600, color: '#374151' }}>
+                      Price
+                    </th>
+                    <th style={{ padding: '10px 8px', textAlign: 'right', width: '70px', fontWeight: 600, color: '#374151' }}>
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deal.items.map((item, index) => (
+                    <tr key={item.id || index} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ fontWeight: 500, marginBottom: 4, color: '#1f2937' }}>
+                          {item.product_name}
+                        </div>
+                        {item.product_description && (
+                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                            {item.product_description}
+                          </div>
+                        )}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>
-                        ${deal.items.reduce((sum, item) => sum + item.line_total, 0).toFixed(2)}
+                      <td style={{ padding: '10px 8px', textAlign: 'center', color: '#6b7280' }}>
+                        {item.quantity}
+                      </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#6b7280' }}>
+                        ${item.unit_price.toFixed(2)}
+                      </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600, color: '#1f2937' }}>
+                        ${item.line_total.toFixed(2)}
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          ) : (
-            <Alert
-              message="No Products Added"
-              description="This deal doesn't have any products/services linked. Edit the deal to add products."
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
-          <Divider />
-
-          {/* Linked Contracts Section - Phase 3.3 */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>
-            <FileTextOutlined style={{ marginRight: 8 }} />
-            Linked Contracts
-          </h3>
-
-          {loadingContracts ? (
-            <Spin size="small" />
-          ) : linkedContracts.length > 0 ? (
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: '12px' }}>
-                {linkedContracts.map((contract) => (
-                  <div
-                    key={contract.id}
-                    style={{
-                      padding: 12,
-                      marginBottom: 8,
-                      backgroundColor: '#fafafa',
-                      borderRadius: 4,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{contract.title}</div>
-                      <div style={{ fontSize: '11px', color: '#999', marginTop: 4 }}>
-                        <span>Status: <Tag color={contract.status === 'active' ? 'green' : 'blue'}>{contract.status}</Tag></span>
-                        <span style={{ marginLeft: 12 }}>Value: ${contract.value.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    <Button
-                      type="text"
-                      size="small"
-                      onClick={() => handleNavigateToContract(contract.id)}
-                    >
-                      View
-                    </Button>
+        {/* 📝 Campaign & Source */}
+        {(deal.source || deal.campaign) && (
+          <Card style={infoCardStyle}>
+            <div style={cardHeaderStyle}>
+              <CheckCircleOutlined style={iconStyle} />
+              Campaign & Source
+            </div>
+            <Row gutter={16}>
+              {deal.source && (
+                <Col xs={24} sm={12}>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                    Source
                   </div>
-                ))}
-              </div>
-            </Card>
-          ) : (
-            <Alert
-              message="No Contracts Linked"
-              description={
-                deal?.stage === 'closed_won'
-                  ? 'This deal can be converted to a contract. Click the "Convert to Contract" button above.'
-                  : 'Convert this deal to a contract when it reaches the closed-won stage.'
-              }
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          )}
+                  <div style={{ color: '#1f2937', fontSize: 13 }}>
+                    {deal.source}
+                  </div>
+                </Col>
+              )}
+              {deal.campaign && (
+                <Col xs={24} sm={12}>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                    Campaign
+                  </div>
+                  <div style={{ color: '#1f2937', fontSize: 13 }}>
+                    {deal.campaign}
+                  </div>
+                </Col>
+              )}
+            </Row>
+          </Card>
+        )}
 
-          <Divider />
+        {/* 📌 Tags */}
+        {deal.tags && deal.tags.length > 0 && (
+          <Card style={infoCardStyle}>
+            <div style={cardHeaderStyle}>
+              <BgColorsOutlined style={iconStyle} />
+              Tags
+            </div>
+            <div>
+              {Array.isArray(deal.tags) ? (
+                deal.tags.map((tag: string, index: number) => (
+                  <Tag key={index} color="blue" style={{ marginRight: 8, marginBottom: 8 }}>
+                    {tag}
+                  </Tag>
+                ))
+              ) : (
+                <span style={{ color: '#6b7280' }}>—</span>
+              )}
+            </div>
+          </Card>
+        )}
 
-          {/* Deal Details */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Sales Details</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Sales Owner">
-              {deal.assigned_to_name || deal.assigned_to || 'Unassigned'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Expected Close Date">
-              {deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Probability">
-              {deal.probability}%
-            </Descriptions.Item>
-            <Descriptions.Item label="Created Date">
-              {deal.created_at ? new Date(deal.created_at).toLocaleDateString() : '-'}
-            </Descriptions.Item>
-          </Descriptions>
+        {/* 📄 Notes */}
+        {deal.notes && (
+          <Card style={{ ...infoCardStyle, backgroundColor: '#fffaed' }}>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 500 }}>
+              Internal Notes
+            </div>
+            <div style={{ color: '#1f2937', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {deal.notes}
+            </div>
+          </Card>
+        )}
 
-          {deal.notes && (
-            <>
-              <Divider />
-              <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Notes</h3>
-              <div style={{
-                padding: 12,
-                backgroundColor: '#fafafa',
-                borderRadius: 4,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
-                {deal.notes}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <Empty description="No deal selected" />
-      )}
+        {/* 🔗 Linked Contracts */}
+        {linkedContracts.length > 0 && (
+          <Card style={infoCardStyle}>
+            <div style={cardHeaderStyle}>
+              <FileTextOutlined style={iconStyle} />
+              Linked Contracts ({linkedContracts.length})
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#fafafa', borderBottom: '2px solid #e5e7eb' }}>
+                    <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>
+                      Contract Title
+                    </th>
+                    <th style={{ padding: '10px 8px', textAlign: 'right', width: '80px', fontWeight: 600, color: '#374151' }}>
+                      Value
+                    </th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', width: '60px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linkedContracts.map((contract, index) => (
+                    <tr key={contract.id || index} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ padding: '10px 8px', color: '#1f2937' }}>
+                        {contract.title}
+                      </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#0ea5e9', fontWeight: 600 }}>
+                        ${contract.value.toFixed(0)}
+                      </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={() => handleNavigateToContract(contract.id)}
+                        >
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
       </Drawer>
 
-      {/* Phase 3.3: Convert to Contract Modal */}
+      {/* Modals */}
       <ConvertToContractModal
         visible={convertModalVisible}
         deal={deal}
         onClose={() => setConvertModalVisible(false)}
         onSuccess={handleConversionSuccess}
       />
-
-      {/* Phase 3.3: Create Product Sales Modal */}
       <CreateProductSalesModal
         visible={productSalesModalVisible}
         deal={deal}
         onClose={() => setProductSalesModalVisible(false)}
-        onSuccess={(createdCount) => {
-          handleConversionSuccess();
-          message.success(`${createdCount} product sales created successfully`);
-        }}
+        onSuccess={() => setProductSalesModalVisible(false)}
       />
     </>
   );
 };
+
+// Add missing import icon
+const BgColorsOutlined = ({ style }: { style?: React.CSSProperties }) => (
+  <span style={style}>🏷️</span>
+);

@@ -653,19 +653,23 @@ export const TicketDetailPage: React.FC = () => {
           <Col xs={24} lg={8}>
             {/* Activity Timeline */}
             <Card title="Activity Timeline">
-              <Timeline>
-                {activities.map((activity) => (
-                  <Timeline.Item key={activity.id} dot={getActivityIcon(activity.type)}>
-                    <Text strong>{activity.user_name}</Text>
-                    <br />
-                    <Text type="secondary">{activity.description}</Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {formatTimeAgo(activity.created_at)}
-                    </Text>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+              <Timeline
+                items={activities.map((activity) => ({
+                  key: activity.id,
+                  dot: getActivityIcon(activity.type),
+                  children: (
+                    <>
+                      <Text strong>{activity.user_name}</Text>
+                      <br />
+                      <Text type="secondary">{activity.description}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {formatTimeAgo(activity.created_at)}
+                      </Text>
+                    </>
+                  ),
+                }))}
+              />
             </Card>
           </Col>
         </Row>

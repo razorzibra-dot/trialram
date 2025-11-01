@@ -56,7 +56,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
   const [selectedRows, setSelectedRows] = useState<Contract[]>([]);
 
   // Queries and mutations
-  const { data: contractsData, isLoading } = useContracts(filters);
+  const { contracts, pagination, isLoading } = useContracts(filters);
   const deleteContract = useDeleteContract();
   const updateStatus = useUpdateContractStatus();
   const approveContract = useApproveContract();
@@ -363,14 +363,14 @@ export const ContractsList: React.FC<ContractsListProps> = ({
 
   return (
     <DataTable
-      data={contractsData?.data || []}
+      data={contracts}
       columns={columns}
       loading={isLoading}
       pagination={{
-        page: contractsData?.page || 1,
-        pageSize: contractsData?.pageSize || 20,
-        total: contractsData?.total || 0,
-        totalPages: contractsData?.totalPages || 1,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        total: pagination.total,
+        totalPages: pagination.totalPages,
       }}
       onPaginationChange={(page, pageSize) => {
         onFiltersChange({ ...filters, page, pageSize });

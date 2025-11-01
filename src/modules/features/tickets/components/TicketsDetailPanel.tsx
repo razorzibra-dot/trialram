@@ -76,7 +76,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
         onClose={onClose}
         open={isOpen}
         width={500}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <Empty description="No ticket selected" />
       </Drawer>
@@ -105,7 +105,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
       onClose={onClose}
       open={isOpen}
       width={500}
-      bodyStyle={{ padding: '24px' }}
+      styles={{ body: { padding: '24px' } }}
     >
       <Spin spinning={isLoading}>
         {/* Title Section */}

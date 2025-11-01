@@ -1,48 +1,38 @@
 export interface Customer {
   id: string;
-  // Company Information
-  company_name: string;
-  contact_name: string;
-  email: string;
-  phone: string;
+  companyName: string;
+  contactName: string;
+  email?: string;
+  phone?: string;
   mobile?: string;
   website?: string;
-
-  // Address Information
-  address: string;
-  city: string;
-  country: string;
-
-  // Business Information
-  industry: string;
-  size: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
+  address?: string;
+  city?: string;
+  country?: string;
+  industry?: string;
+  size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   status: 'active' | 'inactive' | 'prospect' | 'suspended';
-  customer_type: 'individual' | 'business' | 'enterprise';
-
-  // Financial Information
-  credit_limit?: number;
-  payment_terms?: string;
-  tax_id?: string;
-  annual_revenue?: number;
-  total_sales_amount?: number;
-  total_orders?: number;
-  average_order_value?: number;
-  last_purchase_date?: string;
-
-  // Relationship Information
+  customerType?: 'individual' | 'business' | 'enterprise';
+  creditLimit?: number;
+  paymentTerms?: string;
+  taxId?: string;
+  annualRevenue?: number;
+  totalSalesAmount?: number;
+  totalOrders?: number;
+  averageOrderValue?: number;
+  lastPurchaseDate?: string;
   tags: CustomerTag[];
   notes?: string;
-  assigned_to: string;
+  assignedTo?: string;
   source?: string;
   rating?: string;
-  last_contact_date?: string;
-  next_follow_up_date?: string;
-
-  // System Information
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
+  lastContactDate?: string;
+  nextFollowUpDate?: string;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  deletedAt?: string;
 }
 
 export interface CustomerTag {

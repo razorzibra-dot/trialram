@@ -1,8 +1,11 @@
 /**
  * Users Page - Modular Version
  * Enhanced user management with role-based access control
+ * ✅ Uses UserDTO for type safety and layer synchronization
+ * ✅ RBAC permission checks integrated (Phase 3.1)
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Row, 
@@ -21,8 +24,11 @@ import {
   Input,
   message,
   Empty,
+  Select,
+  DatePicker,
   type MenuProps,
-  type ColumnsType
+  type ColumnsType,
+  type RangePickerProps
 } from 'antd';
 import { 
   PlusOutlined,
@@ -41,72 +47,109 @@ import {
 } from '@ant-design/icons';
 import { 
   Users as UsersIcon,
-  User,
   UserCheck,
   UserX
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import { useService } from '@/modules/core/hooks/useService';
-import { User as UserType } from '@/types/crm';
-import { UserDetailPanel } from '../components/UserDetailPanel';
-import { UserFormPanel } from '../components/UserFormPanel';
-
-interface UserFormData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  phone?: string;
-  status: string;
-  tenantId: string;
-}
+import { UserDTO, CreateUserDTO, UpdateUserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
+import { UserDetailPanel, UserFormPanel } from '../components';
+import {
+  useUsers,
+  useUserStats,
+  useTenants,
+  useUserRoles,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+  useResetPassword,
+  usePermissions
+} from '../hooks';
 
 export const UsersPage: React.FC = () => {
-  const { hasPermission, isAuthenticated, isLoading: authLoading } = useAuth();
-  const userService = useService<any>('userService');
-  
-  // State
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { 
+    canCreate: canCreateUsers, 
+    canEdit: canEditUsers, 
+    canDelete: canDeleteUsers, 
+    canResetPassword: canResetPasswords,
+    canManageUsers,
+    isLoading: permLoading
+  } = usePermissions();
+
+  // Hooks for data fetching
+  const { users, loading, refetch } = useUsers();
+  const { stats: userStats, loading: statsLoading } = useUserStats();
+  const { tenants: allTenants } = useTenants();
+  const { roles: allRoles } = useUserRoles();
+
+  // State for UI
   const [searchText, setSearchText] = useState('');
+  const [filterRole, setFilterRole] = useState<string | undefined>(undefined);
+  const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
+  const [filterTenant, setFilterTenant] = useState<string | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [allTenants, setAllTenants] = useState<Array<{ id: string; name: string }>>([]);
-  const [allRoles, setAllRoles] = useState<string[]>(['Admin', 'Manager', 'Viewer']);
-  const [allStatuses] = useState<string[]>(['active', 'inactive', 'suspended']);
+  const [selectedUser, setSelectedUser] = useState<UserDTO | null>(null);
 
-  // Load users and metadata on component mount
-  // Note: Service layer handles authorization via RLS (Supabase) or database rules (mock)
-   
-  useEffect(() => {
-    loadUsers();
-    loadMetadata();
-  }, []);
+  // Mutations - declared after state to avoid TDZ (Temporal Dead Zone) issues
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser(selectedUser?.id || '');
+  const deleteUser = useDeleteUser();
+  const resetPassword = useResetPassword();
+  const allStatuses: UserStatus[] = ['active', 'inactive', 'suspended'];
 
-  const loadMetadata = async () => {
-    try {
-      const tenants = await userService.getTenants();
-      const roles = await userService.getRoles();
-      setAllTenants(tenants || []);
-      setAllRoles(roles || ['Admin', 'Manager', 'Viewer']);
-    } catch (error) {
-      console.error('Error loading metadata:', error);
+  // Filter users based on search text and filters
+  const filteredUsers = useMemo(() => {
+    let result = [...users];
+    
+    // Text search - email or name
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase();
+      result = result.filter(user => 
+        user.email.toLowerCase().includes(searchLower) ||
+        user.name.toLowerCase().includes(searchLower)
+      );
     }
+    
+    // Role filter
+    if (filterRole) {
+      result = result.filter(user => user.role === filterRole);
+    }
+    
+    // Status filter
+    if (filterStatus) {
+      result = result.filter(user => user.status === filterStatus);
+    }
+    
+    // Tenant filter (for super-admin only)
+    if (filterTenant) {
+      result = result.filter(user => user.tenantId === filterTenant);
+    }
+    
+    // Date range filter
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].toDate();
+      const endDate = dateRange[1].toDate();
+      endDate.setHours(23, 59, 59, 999); // Include entire end day
+      result = result.filter(user => {
+        const createdDate = new Date(user.createdAt);
+        return createdDate >= startDate && createdDate <= endDate;
+      });
+    }
+    
+    return result;
+  }, [users, searchText, filterRole, filterStatus, filterTenant, dateRange]);
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchText('');
+    setFilterRole(undefined);
+    setFilterStatus(undefined);
+    setFilterTenant(undefined);
+    setDateRange(null);
   };
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await userService.getUsers();
-      setUsers(data || []);
-    } catch (error) {
-      message.error('Failed to load users');
-      console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Data is automatically loaded by hooks
 
   // Handle create user
   const handleCreate = () => {
@@ -115,13 +158,13 @@ export const UsersPage: React.FC = () => {
   };
 
   // Handle view user
-  const handleView = (user: UserType) => {
+  const handleView = (user: UserDTO) => {
     setSelectedUser(user);
     setDrawerMode('view');
   };
 
   // Handle edit user
-  const handleEdit = (user: UserType) => {
+  const handleEdit = (user: UserDTO) => {
     setSelectedUser(user);
     setDrawerMode('edit');
   };
@@ -130,20 +173,25 @@ export const UsersPage: React.FC = () => {
   const closeDrawer = () => {
     setDrawerMode(null);
     setSelectedUser(null);
+    refetch(); // Refresh users list
   };
 
   // Handle delete user
-  const handleDelete = async (userId: string, userName: string) => {
+  const handleDelete = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
     Modal.confirm({
       title: 'Delete User',
-      content: `Are you sure you want to delete ${userName}?`,
+      content: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
       okText: 'Delete',
       okType: 'danger',
+      cancelText: 'Cancel',
       onOk: async () => {
         try {
-          await userService.deleteUser(userId);
+          await deleteUser.mutateAsync(userId);
           message.success('User deleted successfully');
-          loadUsers();
+          refetch();
         } catch (error: unknown) {
           const error_msg = error instanceof Error ? error.message : 'Failed to delete user';
           message.error(error_msg);
@@ -155,32 +203,28 @@ export const UsersPage: React.FC = () => {
   // Handle reset password
   const handleResetPassword = async (userId: string) => {
     try {
-      await userService.resetPassword(userId);
-      message.success('Password reset email sent');
+      await resetPassword.mutateAsync(userId);
+      message.success('Password reset email sent to user');
     } catch (error: unknown) {
       const error_msg = error instanceof Error ? error.message : 'Failed to reset password';
       message.error(error_msg);
     }
   };
 
-  // Handle form save
-  const handleFormSave = async (values: UserFormData) => {
+  // Handle form save (create or update)
+  const handleFormSave = async (values: CreateUserDTO | UpdateUserDTO) => {
     try {
-      setIsSaving(true);
       if (drawerMode === 'edit' && selectedUser) {
-        await userService.updateUser(selectedUser.id, values);
+        await updateUser.mutateAsync(values as UpdateUserDTO);
         message.success('User updated successfully');
       } else if (drawerMode === 'create') {
-        await userService.createUser(values);
+        await createUser.mutateAsync(values as CreateUserDTO);
         message.success('User created successfully');
       }
       closeDrawer();
-      loadUsers();
     } catch (error: unknown) {
       const error_msg = error instanceof Error ? error.message : 'Failed to save user';
       message.error(error_msg);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -226,8 +270,8 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  // Action menu items
-  const getActionMenu = (user: UserType): MenuProps['items'] => [
+  // Action menu items - using granular permission checks
+  const getActionMenu = (user: UserDTO): MenuProps['items'] => [
     {
       key: 'view',
       label: 'View Profile',
@@ -238,14 +282,14 @@ export const UsersPage: React.FC = () => {
       label: 'Edit User',
       icon: <EditOutlined />,
       onClick: () => handleEdit(user),
-      disabled: !hasPermission('manage_users')
+      disabled: !canEditUsers
     },
     {
       key: 'reset',
       label: 'Reset Password',
       icon: <LockOutlined />,
       onClick: () => handleResetPassword(user.id),
-      disabled: !hasPermission('manage_users')
+      disabled: !canResetPasswords
     },
     {
       type: 'divider'
@@ -255,20 +299,13 @@ export const UsersPage: React.FC = () => {
       label: 'Delete User',
       icon: <DeleteOutlined />,
       danger: true,
-      onClick: () => handleDelete(user.id, `${user.firstName} ${user.lastName}`),
-      disabled: !hasPermission('manage_users')
+      onClick: () => handleDelete(user.id),
+      disabled: !canDeleteUsers
     }
   ];
 
-  // Filtered users
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchText.toLowerCase()) ||
-    user.firstName.toLowerCase().includes(searchText.toLowerCase()) ||
-    user.lastName.toLowerCase().includes(searchText.toLowerCase())
-  );
-
   // Table columns
-  const columns: ColumnsType<UserType> = [
+  const columns: ColumnsType<UserDTO> = [
     {
       title: 'User',
       key: 'user',
@@ -278,13 +315,13 @@ export const UsersPage: React.FC = () => {
         <Space>
           <Avatar
             size={40}
-            src={record.avatar}
+            src={record.avatarUrl}
             icon={<UserAntIcon />}
             style={{ backgroundColor: '#1890ff' }}
           />
           <div>
             <div style={{ fontWeight: 500, color: '#2C3E50' }}>
-              {record.firstName} {record.lastName}
+              {record.name}
             </div>
             <div style={{ fontSize: 12, color: '#7A8691' }}>
               <MailOutlined style={{ marginRight: 4 }} />
@@ -306,12 +343,12 @@ export const UsersPage: React.FC = () => {
       )
     },
     {
-      title: 'Tenant',
-      dataIndex: 'tenantName',
-      key: 'tenantName',
+      title: 'Company',
+      dataIndex: 'companyName',
+      key: 'companyName',
       width: 180,
-      render: (tenantName: string) => (
-        <span style={{ color: '#2C3E50' }}>{tenantName}</span>
+      render: (companyName: string) => (
+        <span style={{ color: '#2C3E50' }}>{companyName || '-'}</span>
       )
     },
     {
@@ -371,20 +408,20 @@ export const UsersPage: React.FC = () => {
       width: 100,
       render: (_, record) => (
         <Space>
-          {hasPermission('manage_users') && (
-            <>
-              <Tooltip title="Edit">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleEdit(record)}
-                />
-              </Tooltip>
-              <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
-                <Button type="text" size="small" icon={<MoreOutlined />} />
-              </Dropdown>
-            </>
+          {canEditUsers && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
+          )}
+          {(canDeleteUsers || canResetPasswords) && (
+            <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
+              <Button type="text" size="small" icon={<MoreOutlined />} />
+            </Dropdown>
           )}
         </Space>
       )
@@ -394,7 +431,7 @@ export const UsersPage: React.FC = () => {
   // Calculate stats
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.status === 'active').length;
-  const adminUsers = users.filter(u => u.role === 'Admin').length;
+  const adminUsers = users.filter(u => u.role === 'admin').length;
   const suspendedUsers = users.filter(u => u.status === 'suspended').length;
 
   // Show loading while checking authentication
@@ -407,6 +444,15 @@ export const UsersPage: React.FC = () => {
   }
 
   // Check if user is authenticated
+  // Show loading state while auth is being checked
+  if (authLoading || permLoading) {
+    return (
+      <div style={{ padding: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" tip="Loading permissions..." />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div style={{ padding: 24 }}>
@@ -420,7 +466,7 @@ export const UsersPage: React.FC = () => {
     );
   }
 
-  if (!hasPermission('manage_users')) {
+  if (!canManageUsers) {
     return (
       <div style={{ padding: 24 }}>
         <Alert
@@ -443,11 +489,11 @@ export const UsersPage: React.FC = () => {
           { title: 'User Management' }
         ]}
         extra={
-          hasPermission('manage_users') ? (
+          canCreateUsers ? (
             <Space>
               <Button
                 icon={<ReloadOutlined />}
-                onClick={loadUsers}
+                onClick={() => refetch()}
               >
                 Refresh
               </Button>
@@ -455,6 +501,7 @@ export const UsersPage: React.FC = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleCreate}
+                disabled={!canCreateUsers}
               >
                 Create User
               </Button>
@@ -515,6 +562,59 @@ export const UsersPage: React.FC = () => {
             </Space>
           }
         >
+          {/* Filter Controls */}
+          <div style={{ marginBottom: 16, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+            <Space wrap>
+              <Select
+                placeholder="Filter by Role"
+                style={{ width: 150 }}
+                value={filterRole}
+                onChange={setFilterRole}
+                allowClear
+                options={allRoles.map(role => ({ label: role, value: role }))}
+              />
+              <Select
+                placeholder="Filter by Status"
+                style={{ width: 150 }}
+                value={filterStatus}
+                onChange={setFilterStatus}
+                allowClear
+                options={allStatuses.map(status => ({ 
+                  label: status.charAt(0).toUpperCase() + status.slice(1), 
+                  value: status 
+                }))}
+              />
+              {allTenants.length > 1 && (
+                <Select
+                  placeholder="Filter by Company"
+                  style={{ width: 150 }}
+                  value={filterTenant}
+                  onChange={setFilterTenant}
+                  allowClear
+                  options={allTenants.map(tenant => ({ 
+                    label: tenant.name, 
+                    value: tenant.id 
+                  }))}
+                />
+              )}
+              <DatePicker.RangePicker
+                onChange={(dates) => setDateRange(dates as [Dayjs, Dayjs] | null)}
+                placeholder={['Start Date', 'End Date']}
+                value={dateRange}
+              />
+              {(searchText || filterRole || filterStatus || filterTenant || dateRange) && (
+                <Button onClick={handleClearFilters} type="default">
+                  Clear Filters
+                </Button>
+              )}
+            </Space>
+          </div>
+        </Card>
+
+        {/* Users Table */}
+        <Card
+          style={{ marginTop: 16 }}
+        >
           <Spin spinning={loading} tip="Loading users...">
             {filteredUsers.length === 0 && !loading ? (
               <Empty
@@ -554,10 +654,10 @@ export const UsersPage: React.FC = () => {
         <UserFormPanel
           open={true}
           mode={drawerMode}
-          user={selectedUser}
+          user={selectedUser || undefined}
           onClose={closeDrawer}
           onSave={handleFormSave}
-          loading={isSaving}
+          loading={createUser.isPending || updateUser.isPending}
           allRoles={allRoles}
           allTenants={allTenants}
           allStatuses={allStatuses}

@@ -170,7 +170,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       onCancel={onClose}
       width={800}
       footer={null}
-      bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+      styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
     >
       <Spin spinning={isLoading}>
         <Tabs

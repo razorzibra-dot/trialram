@@ -1,11 +1,21 @@
 /**
  * JobWorks Service
  * Business logic for job work management
+ * ⚠️ CRITICAL: Uses Service Factory Pattern for multi-backend routing
+ * 
+ * This module delegates all job work operations through the centralized Service Factory
+ * which routes requests to mock (development) or Supabase (production) based on VITE_API_MODE.
+ * 
+ * See: /src/services/serviceFactory.ts for factory routing logic
+ * 
+ * Module Distinction:
+ * - This module manages JOB WORK entity and business logic
+ * - NOT to be confused with other modules
  */
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { PaginatedResponse } from '@/modules/core/types';
-import { jobWorkService as legacyJobWorkService } from '@/services';
+import { jobWorkService as factoryJobWorkService } from '@/services/serviceFactory';
 
 export interface JobWork {
   id: string;
@@ -62,7 +72,7 @@ export class JobWorksService extends BaseService {
     try {
       try {
         // Use the legacy service to fetch real data
-        const jobWorks = await legacyJobWorkService.getJobWorks(filters as any);
+        const jobWorks = await factoryJobWorkService.getJobWorks(filters as any);
         
         // Transform to paginated response
         const { page = 1, pageSize = 20 } = filters;
@@ -104,7 +114,7 @@ export class JobWorksService extends BaseService {
    */
   async getJobWork(id: string): Promise<JobWork> {
     try {
-      return await legacyJobWorkService.getJobWork(id);
+      return await factoryJobWorkService.getJobWork(id);
     } catch (error) {
       this.handleError(`Failed to fetch job work ${id}`, error);
       throw error;
@@ -116,7 +126,7 @@ export class JobWorksService extends BaseService {
    */
   async createJobWork(data: CreateJobWorkData): Promise<JobWork> {
     try {
-      return await legacyJobWorkService.createJobWork(data as any);
+      return await factoryJobWorkService.createJobWork(data as any);
     } catch (error) {
       this.handleError('Failed to create job work', error);
       throw error;
@@ -128,7 +138,7 @@ export class JobWorksService extends BaseService {
    */
   async updateJobWork(id: string, data: Partial<CreateJobWorkData>): Promise<JobWork> {
     try {
-      return await legacyJobWorkService.updateJobWork(id, data as any);
+      return await factoryJobWorkService.updateJobWork(id, data as any);
     } catch (error) {
       this.handleError(`Failed to update job work ${id}`, error);
       throw error;
@@ -140,7 +150,7 @@ export class JobWorksService extends BaseService {
    */
   async deleteJobWork(id: string): Promise<void> {
     try {
-      await legacyJobWorkService.deleteJobWork(id);
+      await factoryJobWorkService.deleteJobWork(id);
     } catch (error) {
       this.handleError(`Failed to delete job work ${id}`, error);
       throw error;

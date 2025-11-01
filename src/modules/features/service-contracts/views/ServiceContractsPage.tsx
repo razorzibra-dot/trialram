@@ -1,7 +1,3 @@
-/**
- * Service Contracts Page - Enterprise Version
- * Redesigned with Ant Design and EnterpriseLayout
- */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,10 +16,8 @@ import {
   Popconfirm,
   Alert,
   Empty,
-  Modal,
   message,
-  Tooltip,
-  Badge
+  Tooltip
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -33,75 +27,82 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  DownloadOutlined,
-  FileTextOutlined,
   DollarOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  FilterOutlined
+  FilterOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useService } from '@/modules/core/hooks/useService';
-import { 
-  ServiceContract, 
+import ServiceContractFormModal from '@/components/service-contracts/ServiceContractFormModal';
+import {
+  ServiceContractType,
   ServiceContractFilters,
-  ServiceContractsResponse 
-} from '@/types/productSales';
+  ServiceContractStats
+} from '@/types/serviceContract';
 
 const { Search } = Input;
 const { Option } = Select;
 
-interface ContractStats {
-  total: number;
-  active: number;
-  expiring_soon: number;
-  expired: number;
-  total_value: number;
-}
+const statusTagConfig: Record<string, { color: string; icon: React.ReactNode }> = {
+  draft: { color: 'default', icon: <ClockCircleOutlined /> },
+  pending_approval: { color: 'warning', icon: <ClockCircleOutlined /> },
+  active: { color: 'success', icon: <CheckCircleOutlined /> },
+  on_hold: { color: 'warning', icon: <ClockCircleOutlined /> },
+  completed: { color: 'blue', icon: <CheckCircleOutlined /> },
+  cancelled: { color: 'default', icon: <CloseCircleOutlined /> },
+  expired: { color: 'error', icon: <CloseCircleOutlined /> },
+};
+
+const serviceTypeOptions: Array<ServiceContractType['serviceType']> = [
+  'support',
+  'maintenance',
+  'consulting',
+  'training',
+  'hosting',
+  'custom'
+];
 
 export const ServiceContractsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ Get service from module service container (standardized pattern)
   const serviceContractService = useService<any>('serviceContractService');
 
-  // State management
-  const [contracts, setContracts] = useState<ServiceContract[]>([]);
-  const [stats, setStats] = useState<ContractStats>({
-    total: 0,
-    active: 0,
-    expiring_soon: 0,
-    expired: 0,
-    total_value: 0
-  });
+  const [contracts, setContracts] = useState<ServiceContractType[]>([]);
+  const [stats, setStats] = useState<ServiceContractStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<ServiceContractFilters>({});
   const [searchText, setSearchText] = useState('');
 
-  // Modal states
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<ServiceContract | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [activeContract, setActiveContract] = useState<ServiceContractType | null>(null);
 
-  // Load data
-   
   const loadContracts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await serviceContractService.getServiceContracts(filters, currentPage, pageSize);
+      const response = await serviceContractService.getServiceContracts({
+        ...filters,
+        page: currentPage,
+        pageSize
+      });
+
       setContracts(response.data);
-      setTotalItems(response.total);
-      
-      // Calculate stats
-      calculateStats(response.data);
+      setTotalItems(response.total || 0);
+
+      const statsResponse = await serviceContractService.getServiceContractStats?.();
+      if (statsResponse) {
+        setStats(statsResponse);
+      } else {
+        calculateStats(response.data);
+      }
     } catch (err) {
       message.error('Failed to load service contracts');
       console.error('Error loading contracts:', err);
@@ -114,24 +115,39 @@ export const ServiceContractsPage: React.FC = () => {
     void loadContracts();
   }, [loadContracts]);
 
-  const calculateStats = (contractsData: ServiceContract[]) => {
-    const now = new Date();
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const calculateStats = (contractsData: ServiceContractType[]) => {
+    const derivedStats = contractsData.reduce(
+      (acc, contract) => {
+        const endDate = new Date(contract.endDate);
+        const now = new Date();
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const active = contractsData.filter(c => c.status === 'active').length;
-    const expired = contractsData.filter(c => c.status === 'expired').length;
-    const expiringSoon = contractsData.filter(c => {
-      const endDate = new Date(c.end_date);
-      return c.status === 'active' && endDate <= thirtyDaysFromNow && endDate >= now;
-    }).length;
-    const totalValue = contractsData.reduce((sum, c) => sum + (c.contract_value || 0), 0);
+        acc.total += 1;
+        acc.totalValue += contract.value || 0;
+
+        if (contract.status === 'active') acc.active += 1;
+        if (contract.status === 'expired') acc.expired += 1;
+        if (contract.status === 'active' && endDate >= now && endDate <= thirtyDaysFromNow) {
+          acc.expiringSoon += 1;
+        }
+
+        return acc;
+      },
+      { total: 0, active: 0, expired: 0, expiringSoon: 0, totalValue: 0 }
+    );
 
     setStats({
-      total: contractsData.length,
-      active,
-      expiring_soon: expiringSoon,
-      expired,
-      total_value: totalValue
+      total: derivedStats.total,
+      byStatus: {},
+      byServiceType: {},
+      activeContracts: derivedStats.active,
+      pendingApprovalContracts: 0,
+      expiredContracts: derivedStats.expired,
+      totalValue: derivedStats.totalValue,
+      averageValue: derivedStats.total > 0 ? derivedStats.totalValue / derivedStats.total : 0,
+      totalDocuments: 0,
+      openIssues: 0,
+      upcomingMilestones: derivedStats.expiringSoon
     });
   };
 
@@ -142,19 +158,36 @@ export const ServiceContractsPage: React.FC = () => {
     message.success('Data refreshed successfully');
   };
 
-  const handleCreateContract = () => {
-    setShowCreateModal(true);
+  const openCreateModal = () => {
+    setActiveContract(null);
+    setIsFormModalOpen(true);
   };
 
-  const handleViewContract = (contract: ServiceContract) => {
+  const openEditModal = (contract: ServiceContractType) => {
+    setActiveContract(contract);
+    setIsFormModalOpen(true);
+  };
+
+  const closeFormModal = (open: boolean) => {
+    setIsFormModalOpen(open);
+    if (!open) {
+      setActiveContract(null);
+    }
+  };
+
+  const handleFormSuccess = () => {
+    void loadContracts();
+  };
+
+  const handleViewContract = (contract: ServiceContractType) => {
     navigate(`/tenant/service-contracts/${contract.id}`);
   };
 
-  const handleDeleteContract = async (contract: ServiceContract) => {
+  const handleDeleteContract = async (contract: ServiceContractType) => {
     try {
       await serviceContractService.deleteServiceContract(contract.id);
       message.success('Service contract deleted successfully');
-      loadContracts();
+      void loadContracts();
     } catch (err) {
       message.error('Failed to delete service contract');
       console.error('Error deleting contract:', err);
@@ -163,17 +196,17 @@ export const ServiceContractsPage: React.FC = () => {
 
   const handleSearch = (value: string) => {
     setSearchText(value);
-    setFilters(prev => ({ ...prev, search: value }));
+    setFilters((prev) => ({ ...prev, search: value || undefined }));
     setCurrentPage(1);
   };
 
   const handleStatusFilter = (value: string) => {
-    setFilters(prev => ({ ...prev, status: value || undefined }));
+    setFilters((prev) => ({ ...prev, status: value || undefined }));
     setCurrentPage(1);
   };
 
-  const handleServiceLevelFilter = (value: string) => {
-    setFilters(prev => ({ ...prev, service_level: value || undefined }));
+  const handleServiceTypeFilter = (value: string) => {
+    setFilters((prev) => ({ ...prev, serviceType: value || undefined }));
     setCurrentPage(1);
   };
 
@@ -184,44 +217,27 @@ export const ServiceContractsPage: React.FC = () => {
   };
 
   const getStatusTag = (status: string) => {
-    const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
-      'active': { color: 'success', icon: <CheckCircleOutlined /> },
-      'expired': { color: 'error', icon: <CloseCircleOutlined /> },
-      'pending': { color: 'processing', icon: <ClockCircleOutlined /> },
-      'cancelled': { color: 'default', icon: <CloseCircleOutlined /> }
-    };
-
-    const config = statusConfig[status] || { color: 'default', icon: null };
+    const config = statusTagConfig[status] || { color: 'default', icon: null };
     return (
       <Tag color={config.color} icon={config.icon}>
-        {status.toUpperCase()}
+        {status.replace(/_/g, ' ').toUpperCase()}
       </Tag>
     );
   };
 
-  const getServiceLevelTag = (level: string) => {
-    const levelConfig: Record<string, string> = {
-      'basic': 'default',
-      'standard': 'blue',
-      'premium': 'gold',
-      'enterprise': 'purple'
-    };
-
-    return (
-      <Tag color={levelConfig[level] || 'default'}>
-        {level.toUpperCase()}
-      </Tag>
-    );
-  };
+  const getServiceTypeTag = (type: string) => (
+    <Tag color="blue">{type.toUpperCase()}</Tag>
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -237,126 +253,115 @@ export const ServiceContractsPage: React.FC = () => {
     return end <= thirtyDaysFromNow && end >= now;
   };
 
-  // Table columns
-  const columns: ColumnsType<ServiceContract> = [
+  const columns: ColumnsType<ServiceContractType> = [
     {
       title: 'Contract #',
-      dataIndex: 'contract_number',
-      key: 'contract_number',
-      width: 150,
-      render: (text: string, record: ServiceContract) => (
+      dataIndex: 'contractNumber',
+      key: 'contractNumber',
+      width: 160,
+      render: (text: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>ID: {record.id}</div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.title}</div>
         </div>
-      ),
+      )
     },
     {
       title: 'Customer',
-      dataIndex: 'customer_name',
-      key: 'customer_name',
-      width: 200,
-      render: (text: string, record: ServiceContract) => (
+      dataIndex: 'customerName',
+      key: 'customerName',
+      width: 220,
+      render: (text: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-            {record.product_name}
-          </div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.productName || 'No product linked'}</div>
         </div>
-      ),
+      )
     },
     {
-      title: 'Service Level',
-      dataIndex: 'service_level',
-      key: 'service_level',
-      width: 130,
-      render: (level: string) => getServiceLevelTag(level),
+      title: 'Service Type',
+      dataIndex: 'serviceType',
+      key: 'serviceType',
+      width: 140,
+      render: (type: string) => getServiceTypeTag(type)
     },
     {
-      title: 'Contract Value',
-      dataIndex: 'contract_value',
-      key: 'contract_value',
+      title: 'Value',
+      dataIndex: 'value',
+      key: 'value',
       width: 140,
       align: 'right',
       render: (value: number) => (
         <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatCurrency(value)}</span>
-      ),
+      )
     },
     {
       title: 'Start Date',
-      dataIndex: 'start_date',
-      key: 'start_date',
-      width: 120,
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 130,
       render: (date: string) => (
         <Space size={4}>
           <CalendarOutlined style={{ color: '#8c8c8c' }} />
           <span>{formatDate(date)}</span>
         </Space>
-      ),
+      )
     },
     {
       title: 'End Date',
-      dataIndex: 'end_date',
-      key: 'end_date',
-      width: 120,
-      render: (date: string, record: ServiceContract) => (
+      dataIndex: 'endDate',
+      key: 'endDate',
+      width: 130,
+      render: (date: string, record) => (
         <Space size={4}>
           <CalendarOutlined style={{ color: isExpiringSoon(date, record.status) ? '#faad14' : '#8c8c8c' }} />
           <span style={{ color: isExpiringSoon(date, record.status) ? '#faad14' : 'inherit' }}>
             {formatDate(date)}
           </span>
         </Space>
-      ),
+      )
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
-      render: (status: string) => getStatusTag(status),
+      width: 150,
+      render: (status: string) => getStatusTag(status)
     },
     {
-      title: 'Auto Renewal',
-      dataIndex: 'auto_renewal',
-      key: 'auto_renewal',
+      title: 'Auto Renew',
+      dataIndex: 'autoRenew',
+      key: 'autoRenew',
       width: 120,
       align: 'center',
-      render: (autoRenewal: boolean) => (
-        autoRenewal ? (
+      render: (autoRenew: boolean) => (
+        autoRenew ? (
           <Tag color="success" icon={<CheckCircleOutlined />}>Yes</Tag>
         ) : (
           <Tag color="default">No</Tag>
         )
-      ),
+      )
     },
     {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 180,
       align: 'center',
-      render: (_: unknown, record: ServiceContract) => (
+      render: (_: unknown, record: ServiceContractType) => (
         <Space size="small">
           <Tooltip title="View Details">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewContract(record)}
-            />
+            <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewContract(record)} />
           </Tooltip>
-          {record.pdf_url && (
-            <Tooltip title="Download PDF">
-              <Button
-                type="text"
-                icon={<DownloadOutlined />}
-                onClick={() => window.open(record.pdf_url, '_blank')}
-              />
+          {hasPermission('manage_service_contracts') && (
+            <Tooltip title="Edit">
+              <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
             </Tooltip>
           )}
           {hasPermission('manage_service_contracts') && (
             <Popconfirm
               title="Delete Contract"
-              description={`Are you sure you want to delete contract ${record.contract_number}?`}
+              description={`Are you sure you want to delete ${record.contractNumber}?`}
               onConfirm={() => handleDeleteContract(record)}
               okText="Delete"
               cancelText="Cancel"
@@ -368,22 +373,20 @@ export const ServiceContractsPage: React.FC = () => {
             </Popconfirm>
           )}
         </Space>
-      ),
-    },
+      )
+    }
   ];
 
   if (!hasPermission('manage_service_contracts')) {
     return (
-      <>
-        <div style={{ padding: 24 }}>
-          <Alert
-            message="Access Denied"
-            description="You don't have permission to access service contracts."
-            type="warning"
-            showIcon
-          />
-        </div>
-      </>
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Access Denied"
+          description="You don't have permission to access service contracts."
+          type="warning"
+          showIcon
+        />
+      </div>
     );
   }
 
@@ -408,26 +411,23 @@ export const ServiceContractsPage: React.FC = () => {
             >
               Refresh
             </Button>
-            {hasPermission('manage_service_contracts') && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreateContract}
-              >
-                Create Contract
-              </Button>
-            )}
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreateModal}
+            >
+              Create Contract
+            </Button>
           </Space>
         }
       />
 
       <div style={{ padding: 24 }}>
-        {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Contracts"
-              value={stats.total}
+              value={stats?.total ?? contracts.length}
               icon={<FileTextOutlined />}
               color="primary"
               description="All service contracts"
@@ -436,7 +436,7 @@ export const ServiceContractsPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Active Contracts"
-              value={stats.active}
+              value={stats?.activeContracts ?? contracts.filter((c) => c.status === 'active').length}
               icon={<CheckCircleOutlined />}
               color="success"
               description="Currently active"
@@ -445,7 +445,7 @@ export const ServiceContractsPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Expiring Soon"
-              value={stats.expiring_soon}
+              value={stats?.upcomingMilestones ?? contracts.filter((c) => isExpiringSoon(c.endDate, c.status)).length}
               icon={<ClockCircleOutlined />}
               color="warning"
               description="Within 30 days"
@@ -454,7 +454,7 @@ export const ServiceContractsPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Value"
-              value={formatCurrency(stats.total_value)}
+              value={formatCurrency(stats?.totalValue ?? contracts.reduce((sum, c) => sum + (c.value || 0), 0))}
               icon={<DollarOutlined />}
               color="info"
               description="Contract value"
@@ -462,11 +462,10 @@ export const ServiceContractsPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Expiring Soon Alert */}
-        {stats.expiring_soon > 0 && (
+        {contracts.some((c) => isExpiringSoon(c.endDate, c.status)) && (
           <Alert
             message="Contracts Expiring Soon"
-            description={`${stats.expiring_soon} contract(s) will expire within the next 30 days. Please review and take necessary action.`}
+            description={`${contracts.filter((c) => isExpiringSoon(c.endDate, c.status)).length} contract(s) will expire within the next 30 days.`}
             type="warning"
             showIcon
             icon={<ClockCircleOutlined />}
@@ -475,7 +474,6 @@ export const ServiceContractsPage: React.FC = () => {
           />
         )}
 
-        {/* Filters */}
         <Card style={{ marginBottom: 16 }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={8}>
@@ -496,28 +494,30 @@ export const ServiceContractsPage: React.FC = () => {
                 onChange={handleStatusFilter}
                 value={filters.status}
               >
-                <Option value="active">Active</Option>
-                <Option value="expired">Expired</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="cancelled">Cancelled</Option>
+                {Object.keys(statusTagConfig).map((status) => (
+                  <Option key={status} value={status}>
+                    {status.replace(/_/g, ' ').toUpperCase()}
+                  </Option>
+                ))}
               </Select>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Select
-                placeholder="Filter by service level"
+                placeholder="Filter by service type"
                 allowClear
                 style={{ width: '100%' }}
-                onChange={handleServiceLevelFilter}
-                value={filters.service_level}
+                onChange={handleServiceTypeFilter}
+                value={filters.serviceType}
               >
-                <Option value="basic">Basic</Option>
-                <Option value="standard">Standard</Option>
-                <Option value="premium">Premium</Option>
-                <Option value="enterprise">Enterprise</Option>
+                {serviceTypeOptions.map((type) => (
+                  <Option key={type} value={type}>
+                    {type.toUpperCase()}
+                  </Option>
+                ))}
               </Select>
             </Col>
             <Col xs={24} sm={12} md={4}>
-              {Object.keys(filters).length > 0 && (
+              {(filters.status || filters.serviceType || filters.search) && (
                 <Button
                   icon={<FilterOutlined />}
                   onClick={clearFilters}
@@ -530,7 +530,6 @@ export const ServiceContractsPage: React.FC = () => {
           </Row>
         </Card>
 
-        {/* Contracts Table */}
         <Card>
           <Table
             columns={columns}
@@ -539,37 +538,42 @@ export const ServiceContractsPage: React.FC = () => {
             loading={loading}
             pagination={{
               current: currentPage,
-              pageSize: pageSize,
+              pageSize,
               total: totalItems,
               showSizeChanger: true,
               showTotal: (total) => `Total ${total} contracts`,
               onChange: (page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
-              },
+              }
             }}
-            scroll={{ x: 1400 }}
+            scroll={{ x: 1200 }}
             locale={{
               emptyText: (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description="No service contracts found"
                 >
-                  {hasPermission('manage_service_contracts') && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleCreateContract}
-                    >
-                      Create First Contract
-                    </Button>
-                  )}
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={openCreateModal}
+                  >
+                    Create First Contract
+                  </Button>
                 </Empty>
-              ),
+              )
             }}
           />
         </Card>
       </div>
+
+      <ServiceContractFormModal
+        open={isFormModalOpen}
+        onOpenChange={closeFormModal}
+        serviceContract={activeContract}
+        onSuccess={handleFormSuccess}
+      />
     </>
   );
 };

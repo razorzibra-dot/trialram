@@ -1,81 +1,99 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ServiceContract, ServiceContractFormData } from '@/types/productSales';
+import { Drawer } from 'antd';
+import { ServiceContractType, ServiceContractCreateInput, ServiceContractUpdateInput } from '@/types/serviceContract';
 import { Customer } from '@/types/crm';
 import { Product } from '@/types/masters';
-import { serviceContractService, customerService, productService } from '@/services';
+import { customerService, productService } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { moduleServiceContractService } from '@/modules/features/serviceContract/services/serviceContractService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { notificationService } from '@/services/uiNotificationService';
-import { FileText, Calendar, DollarSign, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { FileText, Calendar, DollarSign, Settings } from 'lucide-react';
+
+type FormState = {
+  title: string;
+  status: ServiceContractType['status'];
+  serviceType: ServiceContractType['serviceType'];
+  priority: ServiceContractType['priority'];
+  customerId: string;
+  customerName: string;
+  productId: string;
+  productName: string;
+  startDate: string;
+  endDate: string;
+  value: number;
+  currency: string;
+  autoRenew: boolean;
+  renewalPeriodMonths: number;
+  slaTerms: string;
+  renewalTerms: string;
+  serviceScope: string;
+  description: string;
+};
+
+const statusOptions: ServiceContractType['status'][] = ['draft', 'pending_approval', 'active', 'on_hold', 'completed', 'cancelled', 'expired'];
+const serviceTypeOptions: ServiceContractType['serviceType'][] = ['support', 'maintenance', 'consulting', 'training', 'hosting', 'custom'];
+const priorityOptions: ServiceContractType['priority'][] = ['low', 'medium', 'high', 'urgent'];
+const currencyOptions = ['USD', 'EUR', 'GBP', 'INR'];
 
 interface ServiceContractFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  serviceContract?: ServiceContract | null;
-  productSaleId?: string;
+  serviceContract?: ServiceContractType | null;
   onSuccess: () => void;
 }
+
+const formatDateInput = (value?: string) => {
+  if (!value) return '';
+  if (value.includes('T')) return value.split('T')[0];
+  return value;
+};
 
 const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
   open,
   onOpenChange,
   serviceContract,
-  productSaleId,
   onSuccess
 }) => {
-  const { user, tenant } = useAuth();
+  const { tenant } = useAuth();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
-  
-  const [formData, setFormData] = useState({
-    product_sale_id: productSaleId || '',
-    contract_number: '',
-    customer_id: '',
-    customer_name: '',
-    product_id: '',
-    product_name: '',
-    start_date: '',
-    end_date: '',
-    status: 'active' as const,
-    contract_value: 0,
-    annual_value: 0,
-    terms: '',
-    warranty_period: 12,
-    service_level: 'standard' as const,
-    auto_renewal: true,
-    renewal_notice_period: 60
-  });
+
+  const defaultFormState = useCallback((): FormState => ({
+    title: '',
+    status: 'draft',
+    serviceType: 'support',
+    priority: 'medium',
+    customerId: '',
+    customerName: '',
+    productId: '',
+    productName: '',
+    startDate: '',
+    endDate: '',
+    value: 0,
+    currency: 'USD',
+    autoRenew: true,
+    renewalPeriodMonths: 12,
+    slaTerms: '',
+    renewalTerms: '',
+    serviceScope: '',
+    description: ''
+  }), []);
+
+  const [formData, setFormData] = useState<FormState>(defaultFormState());
 
   const resetForm = useCallback(() => {
-    setFormData({
-      product_sale_id: productSaleId || '',
-      contract_number: '',
-      customer_id: '',
-      customer_name: '',
-      product_id: '',
-      product_name: '',
-      start_date: '',
-      end_date: '',
-      status: 'active',
-      contract_value: 0,
-      annual_value: 0,
-      terms: '',
-      warranty_period: 12,
-      service_level: 'standard',
-      auto_renewal: true,
-      renewal_notice_period: 60
-    });
+    setFormData(defaultFormState());
     setActiveTab('basic');
-  }, [productSaleId]);
+  }, [defaultFormState]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -89,11 +107,7 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
       console.error('Error loading form data:', error);
       setCustomers([]);
       setProducts([]);
-      toast({
-        title: 'Error',
-        description: 'Failed to load form data',
-        variant: 'destructive'
-      });
+      toast.error('Failed to load form data');
     }
   }, []);
 
@@ -102,109 +116,115 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
       loadInitialData();
       if (serviceContract) {
         setFormData({
-          product_sale_id: serviceContract.product_sale_id,
-          contract_number: serviceContract.contract_number,
-          customer_id: serviceContract.customer_id,
-          customer_name: serviceContract.customer_name || '',
-          product_id: serviceContract.product_id,
-          product_name: serviceContract.product_name || '',
-          start_date: serviceContract.start_date,
-          end_date: serviceContract.end_date,
+          title: serviceContract.title || '',
           status: serviceContract.status,
-          contract_value: serviceContract.contract_value,
-          annual_value: serviceContract.annual_value,
-          terms: serviceContract.terms,
-          warranty_period: serviceContract.warranty_period,
-          service_level: serviceContract.service_level,
-          auto_renewal: serviceContract.auto_renewal,
-          renewal_notice_period: serviceContract.renewal_notice_period
+          serviceType: serviceContract.serviceType,
+          priority: serviceContract.priority,
+          customerId: serviceContract.customerId,
+          customerName: serviceContract.customerName || '',
+          productId: serviceContract.productId || '',
+          productName: serviceContract.productName || '',
+          startDate: formatDateInput(serviceContract.startDate),
+          endDate: formatDateInput(serviceContract.endDate),
+          value: serviceContract.value,
+          currency: serviceContract.currency || 'USD',
+          autoRenew: !!serviceContract.autoRenew,
+          renewalPeriodMonths: serviceContract.renewalPeriodMonths || 12,
+          slaTerms: serviceContract.slaTerms || '',
+          renewalTerms: serviceContract.renewalTerms || '',
+          serviceScope: serviceContract.serviceScope || '',
+          description: serviceContract.description || ''
         });
       } else {
         resetForm();
       }
     }
-  }, [open, serviceContract, productSaleId, tenant?.tenantId, loadInitialData, resetForm]);
+  }, [open, serviceContract, tenant?.tenantId, loadInitialData, resetForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.customer_id || !formData.product_id) {
-      toast({
-        title: 'Error',
-        description: 'Please select both customer and product',
-        variant: 'destructive'
-      });
+
+    if (!formData.customerId || !formData.title.trim() || !formData.startDate || !formData.endDate) {
+      toast.error('Please complete required fields');
       return;
     }
 
     try {
       setLoading(true);
-      
-      const contractData: Partial<ServiceContractFormData> = {
-        service_level: formData.service_level,
-        auto_renewal: formData.auto_renewal,
-        renewal_notice_period: formData.renewal_notice_period,
-        terms: formData.terms
+
+      const basePayload = {
+        title: formData.title,
+        description: formData.description,
+        customerId: formData.customerId,
+        customerName: formData.customerName,
+        productId: formData.productId || undefined,
+        productName: formData.productName || undefined,
+        serviceType: formData.serviceType,
+        priority: formData.priority,
+        value: formData.value,
+        currency: formData.currency,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        autoRenew: formData.autoRenew,
+        renewalPeriodMonths: formData.renewalPeriodMonths,
+        slaTerms: formData.slaTerms || undefined,
+        renewalTerms: formData.renewalTerms || undefined,
+        serviceScope: formData.serviceScope || undefined
       };
 
       if (serviceContract) {
-        await serviceContractService.updateServiceContract(serviceContract.id, contractData);
-        toast({
-          title: 'Success',
-          description: 'Service contract updated successfully'
-        });
-      } else {
-        // For new contracts, we need the product sale data
-        const mockProductSale = {
-          customer_id: formData.customer_id,
-          customer_name: formData.customer_name,
-          product_id: formData.product_id,
-          product_name: formData.product_name,
-          delivery_date: formData.start_date,
-          total_cost: formData.contract_value
+        const updatePayload: ServiceContractUpdateInput = {
+          ...basePayload,
+          status: formData.status
         };
-        
-        await serviceContractService.createServiceContract(
-          formData.product_sale_id || 'new',
-          mockProductSale,
-          contractData
-        );
-        toast({
-          title: 'Success',
-          description: 'Service contract created successfully'
-        });
+        await moduleServiceContractService.updateServiceContract(serviceContract.id, updatePayload);
+        toast.success('Service contract updated successfully');
+      } else {
+        const createPayload: ServiceContractCreateInput = {
+          ...basePayload,
+          status: formData.status
+        };
+        await moduleServiceContractService.createServiceContract(createPayload);
+        toast.success('Service contract created successfully');
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save service contract',
-        variant: 'destructive'
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to save service contract');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {serviceContract ? 'Edit Service Contract' : 'Create Service Contract'}
-          </DialogTitle>
-          <DialogDescription>
-            {serviceContract 
-              ? 'Update service contract details and terms' 
-              : 'Create a new service contract for product support and maintenance'
-            }
-          </DialogDescription>
-        </DialogHeader>
+  const handleClose = () => {
+    onOpenChange(false);
+  };
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+  return (
+    <Drawer
+      open={open}
+      onClose={handleClose}
+      width={840}
+      destroyOnClose
+      maskClosable={!loading}
+      closable={!loading}
+      styles={{ body: { padding: 0 } }}
+    >
+      <form onSubmit={handleSubmit} className="flex h-full flex-col">
+        <div className="border-b px-6 py-5">
+          <h2 className="text-xl font-semibold">
+            {serviceContract ? 'Edit Service Contract' : 'Create Service Contract'}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {serviceContract
+              ? 'Update service contract details and terms'
+              : 'Create a new service contract for product support and maintenance'}
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="basic" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -227,28 +247,31 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
             <TabsContent value="basic" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contract_number">Contract Number</Label>
+                  <Label htmlFor="title">Contract Title *</Label>
                   <Input
-                    id="contract_number"
-                    value={formData.contract_number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, contract_number: e.target.value }))}
-                    placeholder="Auto-generated if empty"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter contract title"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: ServiceContract['status']) => setFormData(prev => ({ ...prev, status: value }))}
+                    onValueChange={(value: ServiceContractType['status']) =>
+                      setFormData((prev) => ({ ...prev, status: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="renewed">Renewed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option.replace(/_/g, ' ').toUpperCase()}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -256,15 +279,58 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customer_id">Customer *</Label>
+                  <Label htmlFor="service_type">Service Type</Label>
                   <Select
-                    value={formData.customer_id}
+                    value={formData.serviceType}
+                    onValueChange={(value: ServiceContractType['serviceType']) =>
+                      setFormData((prev) => ({ ...prev, serviceType: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {serviceTypeOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value: ServiceContractType['priority']) =>
+                      setFormData((prev) => ({ ...prev, priority: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Customer *</Label>
+                  <Select
+                    value={formData.customerId}
                     onValueChange={(value) => {
-                      const customer = customers.find(c => c.id === value);
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        customer_id: value,
-                        customer_name: customer?.company_name || ''
+                      const customer = customers.find((c) => c.id === value);
+                      setFormData((prev) => ({
+                        ...prev,
+                        customerId: value,
+                        customerName: customer?.company_name || ''
                       }));
                     }}
                   >
@@ -281,15 +347,15 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="product_id">Product *</Label>
+                  <Label htmlFor="product">Product</Label>
                   <Select
-                    value={formData.product_id}
+                    value={formData.productId}
                     onValueChange={(value) => {
-                      const product = Array.isArray(products) ? products.find(p => p.id === value) : null;
-                      setFormData(prev => ({
+                      const product = Array.isArray(products) ? products.find((p) => p.id === value) : null;
+                      setFormData((prev) => ({
                         ...prev,
-                        product_id: value,
-                        product_name: product?.name || ''
+                        productId: value,
+                        productName: product?.name || ''
                       }));
                     }}
                   >
@@ -306,6 +372,17 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                   </Select>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter contract description"
+                  rows={4}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="dates" className="space-y-4">
@@ -315,8 +392,8 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                   <Input
                     id="start_date"
                     type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                    value={formData.startDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
                     required
                   />
                 </div>
@@ -325,8 +402,8 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
                   <Input
                     id="end_date"
                     type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
                     required
                   />
                 </div>
@@ -334,115 +411,118 @@ const ServiceContractFormModal: React.FC<ServiceContractFormModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="warranty_period">Warranty Period (Months)</Label>
+                  <Label htmlFor="renewal_period">Renewal Period (Months)</Label>
                   <Input
-                    id="warranty_period"
+                    id="renewal_period"
                     type="number"
-                    min="1"
-                    value={formData.warranty_period}
-                    onChange={(e) => setFormData(prev => ({ ...prev, warranty_period: parseInt(e.target.value) || 12 }))}
-                    placeholder="12"
+                    value={formData.renewalPeriodMonths}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, renewalPeriodMonths: Number(e.target.value) || 0 }))
+                    }
+                    min={1}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="renewal_notice_period">Renewal Notice Period (Days)</Label>
-                  <Input
-                    id="renewal_notice_period"
-                    type="number"
-                    min="1"
-                    value={formData.renewal_notice_period}
-                    onChange={(e) => setFormData(prev => ({ ...prev, renewal_notice_period: parseInt(e.target.value) || 60 }))}
-                    placeholder="60"
-                  />
+                  <Label htmlFor="auto_renew">Auto Renew</Label>
+                  <div className="flex h-10 items-center space-x-2 rounded-md border px-3">
+                    <Checkbox
+                      id="auto_renew"
+                      checked={formData.autoRenew}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, autoRenew: Boolean(checked) }))
+                      }
+                    />
+                    <Label htmlFor="auto_renew" className="cursor-pointer">
+                      Enable automatic renewal
+                    </Label>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="auto_renewal"
-                  checked={formData.auto_renewal}
-                  onCheckedChange={(checked) =>
-                    setFormData(prev => ({ ...prev, auto_renewal: !!checked }))
-                  }
+              <div className="space-y-2">
+                <Label htmlFor="renewal_terms">Renewal Terms</Label>
+                <Textarea
+                  id="renewal_terms"
+                  value={formData.renewalTerms}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, renewalTerms: e.target.value }))}
+                  placeholder="Enter renewal terms"
+                  rows={4}
                 />
-                <Label htmlFor="auto_renewal">Enable Auto-Renewal</Label>
               </div>
             </TabsContent>
 
             <TabsContent value="financial" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contract_value">Contract Value</Label>
+                  <Label htmlFor="value">Contract Value</Label>
                   <Input
-                    id="contract_value"
+                    id="value"
                     type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.contract_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, contract_value: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.00"
+                    value={formData.value}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, value: Number(e.target.value) || 0 }))}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annual_value">Annual Value</Label>
-                  <Input
-                    id="annual_value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.annual_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, annual_value: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.00"
-                  />
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, currency: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencyOptions.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sla_terms">SLA Terms</Label>
+                <Textarea
+                  id="sla_terms"
+                  value={formData.slaTerms}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, slaTerms: e.target.value }))}
+                  placeholder="Enter SLA terms"
+                  rows={4}
+                />
               </div>
             </TabsContent>
 
             <TabsContent value="service" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="service_level">Service Level</Label>
-                <Select
-                  value={formData.service_level}
-                  onValueChange={(value: ServiceContract['service_level']) => setFormData(prev => ({ ...prev, service_level: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="basic">Basic</SelectItem>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
-                    <SelectItem value="enterprise">Enterprise</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="terms">Terms & Conditions</Label>
+                <Label htmlFor="service_scope">Service Scope</Label>
                 <Textarea
-                  id="terms"
-                  value={formData.terms}
-                  onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
-                  placeholder="Enter service contract terms and conditions"
-                  rows={6}
+                  id="service_scope"
+                  value={formData.serviceScope}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, serviceScope: e.target.value }))}
+                  placeholder="Describe the scope of service"
+                  rows={4}
                 />
               </div>
             </TabsContent>
           </Tabs>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="border-t px-6 py-4">
+          <div className="flex items-center justify-end gap-3">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : serviceContract ? 'Update Contract' : 'Create Contract'}
+              {loading ? 'Saving...' : serviceContract ? 'Save Changes' : 'Create Contract'}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </div>
+      </form>
+    </Drawer>
   );
 };
 
 export default ServiceContractFormModal;
-

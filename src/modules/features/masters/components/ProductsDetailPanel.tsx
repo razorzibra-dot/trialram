@@ -89,7 +89,7 @@ export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
         onClose={onClose}
         open={isOpen}
         width={500}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <Empty description="No product selected" />
       </Drawer>
@@ -120,7 +120,7 @@ export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
       onClose={onClose}
       open={isOpen}
       width={500}
-      bodyStyle={{ padding: '24px' }}
+      styles={{ body: { padding: '24px' } }}
     >
       <Spin spinning={isLoading}>
         {/* Product Name Section */}

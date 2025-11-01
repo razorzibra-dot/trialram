@@ -10,7 +10,7 @@ import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined
 import { Briefcase, Clock, CheckCircle, DollarSign } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { JobWorksDetailPanel } from '../components/JobWorksDetailPanel';
-import { JobWorksFormPanel } from '../components/JobWorksFormPanel';
+import { JobWorksFormPanelEnhanced } from '../components/JobWorksFormPanelEnhanced';
 import { JobWork } from '../services/jobWorksService';
 import { useJobWorks, useDeleteJobWork, useJobWorkStats } from '../hooks/useJobWorks';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,8 @@ const JobWorksPage: React.FC = () => {
   // Drawer states
   const [selectedJobWork, setSelectedJobWork] = useState<JobWork | null>(null);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
+  const [showFormPanel, setShowFormPanel] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Queries
   const { data: response, isLoading: jobWorksLoading, refetch } = useJobWorks(filters);
@@ -42,6 +44,23 @@ const JobWorksPage: React.FC = () => {
   const handleRefresh = () => {
     refetch();
     message.success('Data refreshed');
+  };
+
+  const handleCreateJobWork = () => {
+    setSelectedJobWork(null);
+    setFormMode('create');
+    setShowFormPanel(true);
+  };
+
+  const handleEditJobWork = (jobWork: JobWork) => {
+    setSelectedJobWork(jobWork);
+    setFormMode('edit');
+    setShowFormPanel(true);
+  };
+
+  const handleCloseFormPanel = () => {
+    setShowFormPanel(false);
+    setSelectedJobWork(null);
   };
 
   const handleCreate = () => {
@@ -196,7 +215,7 @@ const JobWorksPage: React.FC = () => {
               type="link"
               size="small"
               icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
+              onClick={() => handleEditJobWork(record)}
             >
               Edit
             </Button>
@@ -242,7 +261,7 @@ const JobWorksPage: React.FC = () => {
               Refresh
             </Button>
             {hasPermission('jobworks:create') && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateJobWork}>
                 New Job Work
               </Button>
             )}
@@ -345,14 +364,15 @@ const JobWorksPage: React.FC = () => {
         onEdit={() => setDrawerMode('edit')}
       />
 
-      {/* Form Panel (Create/Edit) */}
-      <JobWorksFormPanel
-        visible={drawerMode === 'create' || drawerMode === 'edit'}
-        jobWork={drawerMode === 'edit' ? selectedJobWork : null}
-        onClose={() => setDrawerMode(null)}
+      {/* Form Panel (Create/Edit) - Enhanced Enterprise Version */}
+      <JobWorksFormPanelEnhanced
+        jobWork={selectedJobWork}
+        mode={formMode}
+        isOpen={showFormPanel}
+        onClose={handleCloseFormPanel}
         onSuccess={() => {
-          setDrawerMode(null);
           refetch();
+          handleCloseFormPanel();
         }}
       />
     </>

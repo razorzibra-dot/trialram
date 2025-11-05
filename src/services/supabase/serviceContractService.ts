@@ -24,7 +24,7 @@ import {
   ServiceDeliveryMilestoneCreateInput,
   ServiceContractIssueCreateInput,
 } from '@/types/serviceContract';
-import { PaginatedResponse } from '@/modules/core/types';
+import { PaginatedResponse } from '@/types/service';
 
 /**
  * Centralized row mapper for database→TypeScript field mapping

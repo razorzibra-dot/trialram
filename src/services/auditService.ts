@@ -4,28 +4,7 @@
  */
 
 import { authService } from './authService';
-
-export interface AuditLog {
-  id: string;
-  action: string;
-  resource: string;
-  resourceId: string;
-  userId: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  changes?: {
-    before: Record<string, unknown>;
-    after: Record<string, unknown>;
-  };
-  metadata?: Record<string, unknown>;
-  ipAddress: string;
-  userAgent: string;
-  createdAt: string;
-  tenantId: string;
-}
+import { AuditLog } from '@/types';
 
 class AuditService {
   private baseUrl = '/api/audit';

@@ -1,336 +1,161 @@
 /**
- * Super Admin Tenants Page - Enterprise Ant Design Version
- * Comprehensive tenant management for super administrators with full CRUD operations
+ * Super Admin Tenants Page - Tenant Management
+ * Comprehensive multi-tenant management and monitoring
+ * 
+ * **Layer Synchronization**: 
+ * - Uses factory-routed hooks from Phase 7
+ * - Displays Phase 4 components (TenantDirectoryGrid) and Phase 8 components (TenantAccessList, TenantMetricsCards)
+ * - Integrates with Phase 5 service factory pattern
+ * - No direct service imports (hooks only)
+ * 
+ * **Features**:
+ * - Grid view and table view for browsing tenants
+ * - List all tenants with health status
+ * - View tenant details and configuration
+ * - Monitor tenant metrics and statistics
+ * - Manage super user access to tenants
+ * - Export tenant information
+ * - Enhanced with Phase 4 TenantDirectoryGrid for better UX
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from 'react';
+import { Row, Col, Card, Button, Space, Alert, Drawer, Table, Tag, Badge, Tabs, Empty } from 'antd';
 import { 
-  Row, 
-  Col, 
-  Card, 
-  Button, 
-  Table, 
-  Tag, 
-  Space, 
-  Spin,
-  Alert,
-  Popconfirm,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Switch,
-  Tabs,
-  Descriptions,
-  message,
-  Dropdown,
-  type MenuProps
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { 
-  PlusOutlined,
   ReloadOutlined,
   EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  StopOutlined,
-  CheckCircleOutlined,
-  GlobalOutlined,
   SettingOutlined,
-  MoreOutlined,
   ExportOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined
+  BgColorsOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
+import { Building2, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { PageHeader, StatCard } from '@/components/common';
 import { 
-  Building2,
-  Users,
-  CheckCircle,
-  XCircle
-} from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
-import { StatCard } from '@/components/common/StatCard';
-import { useService } from '@/modules/core/hooks/useService';
-import { Tenant } from '@/types/crm';
-import { TenantSettings } from '@/types/rbac';
+  useTenantAccess,
+  useTenantDirectory,
+  useSystemHealth
+} from '@/modules/features/super-admin/hooks';
+import { 
+  TenantAccessList,
+  TenantMetricsCards,
+  MultiTenantComparison,
+  TenantDirectoryGrid
+} from '@/modules/features/super-admin/components';
+import { toast } from 'sonner';
 
-const { Option } = Select;
-const { TextArea } = Input;
-
-interface TenantFormData {
-  name: string;
-  domain: string;
-  status: string;
-  maxUsers?: number;
-  description?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-}
-
+/**
+ * Tenant management page with comprehensive monitoring
+ * Enables super admins to manage all tenants and their configurations
+ */
 const SuperAdminTenantsPage: React.FC = () => {
-  const { hasPermission, user } = useAuth();
-  const tenantService = useService<any>('tenantService');
-  const [form] = Form.useForm();
-  const [settingsForm] = Form.useForm();
+  const { hasPermission } = useAuth();
+  
+  // Hooks for data management with factory routing
+  const { 
+    tenantAccess = [],
+    isLoading: accessLoading
+  } = useTenantAccess();
+  
+  const { 
+    tenants = [],
+    stats = null,
+    isLoading: tenantsLoading
+  } = useTenantDirectory();
+  
+  const { 
+    health = {},
+    isLoading: healthLoading
+  } = useSystemHealth();
 
-  // State
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
-  const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Load tenants
-   
-  useEffect(() => {
-    fetchTenants();
-  }, [statusFilter, searchText]);
-
-  const fetchTenants = async () => {
-    try {
-      setIsLoading(true);
-      const data = await tenantService.getTenants({
-        status: statusFilter || undefined,
-        search: searchText || undefined
-      });
-      setTenants(data);
-    } catch (error) {
-      console.error('Failed to fetch tenants:', error);
-      message.error('Failed to load tenants');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle create tenant
-  const handleCreate = () => {
-    setEditingTenant(null);
-    form.resetFields();
-    setIsModalVisible(true);
-  };
-
-  // Handle edit tenant
-  const handleEdit = (tenant: Tenant) => {
-    setEditingTenant(tenant);
-    form.setFieldsValue({
-      name: tenant.name,
-      domain: tenant.domain,
-      status: tenant.status,
-      maxUsers: tenant.maxUsers,
-      description: tenant.description,
-      contactEmail: tenant.contactEmail,
-      contactPhone: tenant.contactPhone
-    });
-    setIsModalVisible(true);
-  };
-
-  // Handle view details
-  const handleViewDetails = async (tenant: Tenant) => {
-    try {
-      const fullTenant = await tenantService.getTenant(tenant.id);
-      setViewingTenant(fullTenant);
-      setIsDetailsModalVisible(true);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load tenant details';
-      message.error(errorMessage);
-    }
-  };
-
-  // Handle tenant settings
-  const handleSettings = async (tenant: Tenant) => {
-    try {
-      const settings = await tenantService.getTenantSettings(tenant.id);
-      setEditingTenant(tenant);
-      settingsForm.setFieldsValue(settings);
-      setIsSettingsModalVisible(true);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load tenant settings';
-      message.error(errorMessage);
-    }
-  };
-
-  // Handle delete tenant
-  const handleDelete = async (tenantId: string) => {
-    try {
-      await tenantService.deleteTenant(tenantId);
-      message.success('Tenant deleted successfully');
-      void fetchTenants();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete tenant';
-      message.error(errorMessage);
-    }
-  };
-
-  // Handle suspend/activate tenant
-  const handleToggleStatus = async (tenant: Tenant) => {
-    try {
-      const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
-      await tenantService.updateTenantStatus(tenant.id, newStatus);
-      message.success(`Tenant ${newStatus === 'active' ? 'activated' : 'suspended'} successfully`);
-      void fetchTenants();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update tenant status';
-      message.error(errorMessage);
-    }
-  };
-
-  // Handle form submit
-  const handleSubmit = async (values: TenantFormData) => {
-    try {
-      setSubmitting(true);
-      if (editingTenant) {
-        await tenantService.updateTenant(editingTenant.id, values);
-        message.success('Tenant updated successfully');
-      } else {
-        await tenantService.createTenant(values);
-        message.success('Tenant created successfully');
-      }
-      setIsModalVisible(false);
-      form.resetFields();
-      void fetchTenants();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save tenant';
-      message.error(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handle settings submit
-  const handleSettingsSubmit = async (values: TenantSettings) => {
-    if (!editingTenant) return;
-    
-    try {
-      setSubmitting(true);
-      await tenantService.updateTenantSettings(editingTenant.id, values);
-      message.success('Tenant settings updated successfully');
-      setIsSettingsModalVisible(false);
-      settingsForm.resetFields();
-      void fetchTenants();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update tenant settings';
-      message.error(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // UI State
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid'); // Grid or Table view
 
   // Permission check
-  const canManageTenants = user?.role === 'super_admin';
-
-  if (!canManageTenants) {
+  if (!hasPermission('super_user:manage_tenants')) {
     return (
-      <>
-        <div style={{ padding: 24 }}>
-          <Alert
-            message="Access Denied"
-            description="You don't have permission to access tenant management. Only super administrators can manage tenants."
-            type="error"
-            showIcon
-            action={
-              <Button size="small" onClick={() => window.history.back()}>
-                Go Back
-              </Button>
-            }
-          />
-        </div>
-      </>
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="Access Denied"
+          description="You don't have permission to manage tenants."
+          type="error"
+          showIcon
+        />
+      </div>
     );
   }
 
-  // Statistics
-  const stats = {
-    total: tenants.length,
-    active: tenants.filter((t) => t.status === 'active').length,
-    suspended: tenants.filter((t) => t.status === 'suspended').length,
-    totalUsers: tenants.reduce((sum, tenant) => sum + (tenant.userCount || 0), 0),
+  const isLoading = accessLoading || tenantsLoading || healthLoading;
+
+  // Calculate stats
+  const totalTenants = stats?.totalTenants || tenants.length;
+  const activeTenants = stats?.activeTenants || tenants.filter(t => t.status === 'active').length;
+  const inactiveTenants = stats?.inactiveTenants || tenants.filter(t => t.status === 'inactive').length;
+
+  // Handle tenant selection for details
+  const handleViewTenant = (tenant: any) => {
+    setSelectedTenant(tenant);
+    setIsDetailDrawerOpen(true);
   };
 
-  // Filtered tenants
-  const filteredTenants = tenants.filter(tenant => {
-    const matchesSearch = !searchText || 
-      tenant.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      tenant.domain?.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = !statusFilter || tenant.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Handle export
+  const handleExportTenants = () => {
+    try {
+      const csv = [
+        ['Tenant ID', 'Name', 'Status', 'Plan', 'Active Users', 'Total Contracts', 'Total Sales'],
+        ...tenants.map(t => [
+          t.tenantId,
+          t.name,
+          t.status,
+          t.plan,
+          t.activeUsers || 0,
+          t.totalContracts || 0,
+          t.totalSales || 0
+        ])
+      ]
+        .map(row => row.join(','))
+        .join('\n');
 
-  // Action menu for each tenant
-  const getActionMenu = (tenant: Tenant): MenuProps['items'] => [
-    {
-      key: 'view',
-      icon: <EyeOutlined />,
-      label: 'View Details',
-      onClick: () => handleViewDetails(tenant),
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: 'Edit Tenant',
-      onClick: () => handleEdit(tenant),
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => handleSettings(tenant),
-    },
-    { type: 'divider' },
-    {
-      key: 'toggle-status',
-      icon: tenant.status === 'active' ? <StopOutlined /> : <CheckCircleOutlined />,
-      label: tenant.status === 'active' ? 'Suspend Tenant' : 'Activate Tenant',
-      onClick: () => handleToggleStatus(tenant),
-    },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: 'Delete Tenant',
-      danger: true,
-      disabled: tenant.id === 'platform',
-      onClick: () => {
-        Modal.confirm({
-          title: 'Delete Tenant',
-          content: `Are you sure you want to delete "${tenant.name}"? This action cannot be undone and will delete all associated data.`,
-          okText: 'Delete',
-          okType: 'danger',
-          onOk: () => handleDelete(tenant.id),
-        });
-      },
-    },
-  ];
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tenants-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('Tenants exported successfully');
+    } catch (error) {
+      toast.error('Failed to export tenants');
+    }
+  };
 
-  // Table columns
-  const columns: ColumnsType<Tenant> = [
+  // Table columns for tenant list
+  const columns = [
     {
-      title: 'Tenant',
+      title: 'Tenant Name',
       dataIndex: 'name',
       key: 'name',
-      render: (_: unknown, record: Tenant) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ 
-            padding: 8, 
-            background: '#DBEAFE', 
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Building2 size={16} color="#1E40AF" />
-          </div>
+      render: (name: string, record: any) => (
+        <Space>
+          <Building2 size={16} />
           <div>
-            <div style={{ fontWeight: 500 }}>{record.name}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{record.domain}</div>
+            <div><strong>{name}</strong></div>
+            <div style={{ fontSize: '12px', color: '#666' }}>{record.tenantId}</div>
           </div>
-        </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Plan',
+      dataIndex: 'plan',
+      key: 'plan',
+      render: (plan: string) => (
+        <Tag color={plan === 'enterprise' ? 'purple' : plan === 'professional' ? 'blue' : 'default'}>
+          {plan?.toUpperCase()}
+        </Tag>
       ),
     },
     {
@@ -338,50 +163,43 @@ const SuperAdminTenantsPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : status === 'suspended' ? 'red' : 'default'}>
-          {status.toUpperCase()}
-        </Tag>
+        <Badge
+          status={status === 'active' ? 'success' : status === 'inactive' ? 'default' : 'error'}
+          text={status?.toUpperCase() || 'UNKNOWN'}
+        />
       ),
     },
     {
-      title: 'Users',
-      dataIndex: 'userCount',
-      key: 'userCount',
-      render: (count: number) => (
-        <Space>
-          <Users size={14} color="#6B7280" />
-          <span>{count || 0}</span>
-        </Space>
-      ),
+      title: 'Active Users',
+      dataIndex: 'activeUsers',
+      key: 'activeUsers',
+      render: (value: number) => <Tag color="blue">{value || 0}</Tag>,
     },
     {
-      title: 'Created',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
+      title: 'Total Contracts',
+      dataIndex: 'totalContracts',
+      key: 'totalContracts',
+      render: (value: number) => <Tag color="green">{value || 0}</Tag>,
     },
     {
-      title: 'Last Active',
-      dataIndex: 'lastActive',
-      key: 'lastActive',
-      render: (date: string) => date ? new Date(date).toLocaleDateString() : 'Never',
+      title: 'Total Sales',
+      dataIndex: 'totalSales',
+      key: 'totalSales',
+      render: (value: number) => <Tag color="gold">₹{(value || 0).toLocaleString()}</Tag>,
     },
     {
       title: 'Actions',
       key: 'actions',
-      align: 'right',
-      fixed: 'right',
-      width: 120,
-      render: (_: unknown, record: Tenant) => (
+      render: (_: any, record: any) => (
         <Space>
           <Button
             type="text"
+            size="small"
             icon={<EyeOutlined />}
-            onClick={() => handleViewDetails(record)}
-          />
-          <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
-            <Button type="text" icon={<MoreOutlined />} />
-          </Dropdown>
+            onClick={() => handleViewTenant(record)}
+          >
+            View
+          </Button>
         </Space>
       ),
     },
@@ -390,476 +208,202 @@ const SuperAdminTenantsPage: React.FC = () => {
   return (
     <>
       <PageHeader
-        title="Tenant Management"
-        description="Manage all tenants across the platform"
-        breadcrumbs={[
-          { label: 'Home', path: '/' },
-          { label: 'Super Admin', path: '/super-admin' },
-          { label: 'Tenants' }
-        ]}
+        title="Tenants Management"
+        description="Monitor and manage all tenants across the platform"
         extra={
           <Space>
             <Button
               icon={<ReloadOutlined spin={isLoading} />}
-              onClick={fetchTenants}
-              disabled={isLoading}
+              onClick={() => window.location.reload()}
+              loading={isLoading}
             >
               Refresh
             </Button>
             <Button
               icon={<ExportOutlined />}
-              onClick={() => message.info('Export functionality coming soon')}
+              onClick={handleExportTenants}
             >
               Export
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              Create Tenant
             </Button>
           </Space>
         }
       />
 
       <div style={{ padding: 24 }}>
-        {/* Stats Cards */}
+        {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Tenants"
-              value={stats.total}
+              value={totalTenants}
+              description={`${totalTenants} registered tenants`}
               icon={Building2}
               color="primary"
-              loading={isLoading}
+              loading={tenantsLoading}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
-              title="Active Tenants"
-              value={stats.active}
-              icon={CheckCircle}
+              title="Active"
+              value={activeTenants}
+              description={`${activeTenants} tenants active`}
+              icon={Building2}
               color="success"
-              loading={isLoading}
+              loading={tenantsLoading}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
-              title="Suspended"
-              value={stats.suspended}
-              icon={XCircle}
-              color="error"
-              loading={isLoading}
+              title="Inactive"
+              value={inactiveTenants}
+              description={`${inactiveTenants} suspended/inactive`}
+              icon={Building2}
+              color="warning"
+              loading={tenantsLoading}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
-              title="Total Users"
-              value={stats.totalUsers}
-              icon={Users}
+              title="Tenant Access"
+              value={tenantAccess.length}
+              description={`${tenantAccess.length} access records`}
+              icon={Building2}
               color="info"
-              loading={isLoading}
+              loading={accessLoading}
             />
           </Col>
         </Row>
 
-        {/* Filters */}
-        <Card style={{ marginBottom: 16 }}>
-          <Row gutter={16}>
-            <Col xs={24} sm={12} md={8}>
-              <Input
-                placeholder="Search tenants..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Select
-                placeholder="Filter by status"
-                style={{ width: '100%' }}
-                value={statusFilter || undefined}
-                onChange={setStatusFilter}
-                allowClear
+        {/* Tenant Directory - Grid/Table View */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24}>
+            <Card variant="borderless" loading={isLoading}>
+              <Tabs
+                activeKey={viewMode}
+                onChange={(key) => setViewMode(key as 'grid' | 'table')}
+                tabBarExtraContent={
+                  <Space>
+                    <Button
+                      type={viewMode === 'grid' ? 'primary' : 'default'}
+                      icon={<BgColorsOutlined />}
+                      onClick={() => setViewMode('grid')}
+                    >
+                      Grid View
+                    </Button>
+                    <Button
+                      type={viewMode === 'table' ? 'primary' : 'default'}
+                      icon={<UnorderedListOutlined />}
+                      onClick={() => setViewMode('table')}
+                    >
+                      Table View
+                    </Button>
+                  </Space>
+                }
               >
-                <Option value="active">Active</Option>
-                <Option value="suspended">Suspended</Option>
-                <Option value="inactive">Inactive</Option>
-              </Select>
+                {/* Grid View Tab */}
+                <Tabs.TabPane
+                  tab="Grid View"
+                  key="grid"
+                  label={<span><BgColorsOutlined /> Grid</span>}
+                >
+                  <TenantDirectoryGrid
+                    onTenantSelect={handleViewTenant}
+                    showActions={true}
+                  />
+                </Tabs.TabPane>
+
+                {/* Table View Tab */}
+                <Tabs.TabPane
+                  tab="Table View"
+                  key="table"
+                  label={<span><UnorderedListOutlined /> Table</span>}
+                >
+                  <Table
+                    columns={columns}
+                    dataSource={tenants}
+                    pagination={{ pageSize: 10 }}
+                    size="small"
+                    rowKey="tenantId"
+                    loading={tenantsLoading}
+                  />
+                </Tabs.TabPane>
+              </Tabs>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Metrics Overview - Optional Section */}
+        {/* Tenant metrics can be loaded separately if needed */}
+
+        {/* Tenant Access Information */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24}>
+            <Card title="Tenant Access" variant="borderless" loading={accessLoading}>
+              <TenantAccessList />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Comparison Mode */}
+        {tenants.length > 1 && (
+          <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+            <Col xs={24}>
+              <Card
+                title="Multi-Tenant Comparison"
+                variant="borderless"
+                extra={
+                  <Button
+                    type={isComparisonMode ? 'primary' : 'default'}
+                    size="small"
+                    onClick={() => setIsComparisonMode(!isComparisonMode)}
+                  >
+                    {isComparisonMode ? 'Hide Comparison' : 'Show Comparison'}
+                  </Button>
+                }
+              >
+                {isComparisonMode && <MultiTenantComparison />}
+              </Card>
             </Col>
           </Row>
-        </Card>
-
-        {/* Tenants Table */}
-        <Card 
-          title={
-            <Space>
-              <GlobalOutlined />
-              <span>Tenants ({filteredTenants.length})</span>
-            </Space>
-          }
-        >
-          <Table
-            columns={columns}
-            dataSource={filteredTenants}
-            rowKey="id"
-            loading={isLoading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => `Total ${total} tenants`,
-            }}
-            locale={{
-              emptyText: (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <GlobalOutlined style={{ fontSize: 48, color: '#9CA3AF', marginBottom: 16 }} />
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No tenants found</h3>
-                  <p style={{ color: '#6B7280', marginBottom: 16 }}>
-                    {searchText || statusFilter ? 'Try adjusting your filters' : 'Get started by creating your first tenant'}
-                  </p>
-                  {!searchText && !statusFilter && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleCreate}
-                    >
-                      Create Tenant
-                    </Button>
-                  )}
-                </div>
-              ),
-            }}
-          />
-        </Card>
+        )}
       </div>
 
-      {/* Create/Edit Tenant Modal */}
-      <Modal
-        title={editingTenant ? 'Edit Tenant' : 'Create New Tenant'}
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="name"
-            label="Tenant Name"
-            rules={[{ required: true, message: 'Please enter tenant name' }]}
-          >
-            <Input placeholder="Enter tenant name" prefix={<GlobalOutlined />} />
-          </Form.Item>
-
-          <Form.Item
-            name="domain"
-            label="Domain"
-            rules={[
-              { required: true, message: 'Please enter domain' },
-              { pattern: /^[a-z0-9-]+$/, message: 'Domain must contain only lowercase letters, numbers, and hyphens' }
-            ]}
-          >
-            <Input placeholder="tenant-domain" addonBefore="https://" addonAfter=".yourapp.com" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Please select status' }]}
-                initialValue="active"
-              >
-                <Select>
-                  <Option value="active">Active</Option>
-                  <Option value="suspended">Suspended</Option>
-                  <Option value="inactive">Inactive</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="maxUsers"
-                label="Max Users"
-                rules={[{ required: true, message: 'Please enter max users' }]}
-                initialValue={10}
-              >
-                <Input type="number" min={1} placeholder="10" prefix={<UserOutlined />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <TextArea rows={3} placeholder="Enter tenant description" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="contactEmail"
-                label="Contact Email"
-                rules={[{ type: 'email', message: 'Please enter valid email' }]}
-              >
-                <Input placeholder="contact@example.com" prefix={<MailOutlined />} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="contactPhone"
-                label="Contact Phone"
-              >
-                <Input placeholder="+1 234 567 8900" prefix={<PhoneOutlined />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setIsModalVisible(false);
-                form.resetFields();
-              }}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                {editingTenant ? 'Update Tenant' : 'Create Tenant'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Tenant Details Modal */}
-      <Modal
+      {/* Tenant Detail Drawer */}
+      <Drawer
         title="Tenant Details"
-        open={isDetailsModalVisible}
-        onCancel={() => setIsDetailsModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsDetailsModalVisible(false)}>
-            Close
-          </Button>,
-          <Button key="edit" type="primary" onClick={() => {
-            setIsDetailsModalVisible(false);
-            if (viewingTenant) handleEdit(viewingTenant);
-          }}>
-            Edit Tenant
-          </Button>,
-        ]}
-        width={700}
+        placement="right"
+        onClose={() => setIsDetailDrawerOpen(false)}
+        open={isDetailDrawerOpen}
+        width={500}
       >
-        {viewingTenant && (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Tenant Name" span={2}>
-              <Space>
-                <GlobalOutlined />
-                {viewingTenant.name}
+        {isDetailDrawerOpen && selectedTenant && (
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <Card>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div>
+                  <strong>Tenant ID:</strong> {selectedTenant.tenantId}
+                </div>
+                <div>
+                  <strong>Status:</strong>{' '}
+                  <Badge
+                    status={selectedTenant.status === 'healthy' ? 'success' : 'warning'}
+                    text={selectedTenant.status?.toUpperCase()}
+                  />
+                </div>
+                <div>
+                  <strong>Active Users:</strong> {selectedTenant.activeUsers || 0}
+                </div>
+                <div>
+                  <strong>Total Contracts:</strong> {selectedTenant.totalContracts || 0}
+                </div>
+                <div>
+                  <strong>Total Sales:</strong> ₹{(selectedTenant.totalSales || 0).toLocaleString()}
+                </div>
               </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Domain" span={2}>
-              {viewingTenant.domain}
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={viewingTenant.status === 'active' ? 'green' : 'red'}>
-                {viewingTenant.status?.toUpperCase()}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="User Count">
-              <Space>
-                <UserOutlined />
-                {viewingTenant.userCount || 0} / {viewingTenant.maxUsers || 'Unlimited'}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
-              {viewingTenant.description || 'No description'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Email">
-              {viewingTenant.contactEmail || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Phone">
-              {viewingTenant.contactPhone || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Created At">
-              <Space>
-                <CalendarOutlined />
-                {new Date(viewingTenant.createdAt).toLocaleString()}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Last Active">
-              <Space>
-                <ClockCircleOutlined />
-                {viewingTenant.lastActive ? new Date(viewingTenant.lastActive).toLocaleString() : 'Never'}
-              </Space>
-            </Descriptions.Item>
-          </Descriptions>
+            </Card>
+          </Space>
         )}
-      </Modal>
-
-      {/* Tenant Settings Modal */}
-      <Modal
-        title={`Tenant Settings - ${editingTenant?.name}`}
-        open={isSettingsModalVisible}
-        onCancel={() => {
-          setIsSettingsModalVisible(false);
-          settingsForm.resetFields();
-        }}
-        footer={null}
-        width={700}
-      >
-        <Form
-          form={settingsForm}
-          layout="vertical"
-          onFinish={handleSettingsSubmit}
-        >
-          <Tabs
-            defaultActiveKey="general"
-            items={[
-              {
-                label: 'General',
-                key: 'general',
-                children: (
-                  <>
-                    <Form.Item
-                      name="timezone"
-                      label="Timezone"
-                    >
-                      <Select placeholder="Select timezone">
-                        <Option value="UTC">UTC</Option>
-                        <Option value="America/New_York">America/New_York</Option>
-                        <Option value="America/Los_Angeles">America/Los_Angeles</Option>
-                        <Option value="Europe/London">Europe/London</Option>
-                        <Option value="Asia/Tokyo">Asia/Tokyo</Option>
-                      </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                      name="dateFormat"
-                      label="Date Format"
-                    >
-                      <Select placeholder="Select date format">
-                        <Option value="MM/DD/YYYY">MM/DD/YYYY</Option>
-                        <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
-                        <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
-                      </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                      name="currency"
-                      label="Currency"
-                    >
-                      <Select placeholder="Select currency">
-                        <Option value="USD">USD - US Dollar</Option>
-                        <Option value="EUR">EUR - Euro</Option>
-                        <Option value="GBP">GBP - British Pound</Option>
-                        <Option value="JPY">JPY - Japanese Yen</Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              },
-              {
-                label: 'Features',
-                key: 'features',
-                children: (
-                  <>
-                    <Form.Item
-                      name="enableTickets"
-                      label="Enable Tickets"
-                      valuePropName="checked"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="enableContracts"
-                      label="Enable Contracts"
-                      valuePropName="checked"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="enableReports"
-                      label="Enable Reports"
-                      valuePropName="checked"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="enableAPI"
-                      label="Enable API Access"
-                      valuePropName="checked"
-                    >
-                      <Switch />
-                    </Form.Item>
-                  </>
-                )
-              },
-              {
-                label: 'Security',
-                key: 'security',
-                children: (
-                  <>
-                    <Form.Item
-                      name="requireMFA"
-                      label="Require Multi-Factor Authentication"
-                      valuePropName="checked"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="passwordExpiry"
-                      label="Password Expiry (days)"
-                    >
-                      <Input type="number" min={0} placeholder="90" />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="sessionTimeout"
-                      label="Session Timeout (minutes)"
-                    >
-                      <Input type="number" min={5} placeholder="30" />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="ipWhitelist"
-                      label="IP Whitelist"
-                    >
-                      <TextArea rows={3} placeholder="Enter IP addresses (one per line)" />
-                    </Form.Item>
-                  </>
-                )
-              }
-            ]}
-          />
-
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setIsSettingsModalVisible(false);
-                settingsForm.resetFields();
-              }}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                Save Settings
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+      </Drawer>
     </>
   );
 };

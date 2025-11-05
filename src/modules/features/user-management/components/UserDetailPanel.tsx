@@ -86,6 +86,24 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
     });
   };
 
+  /**
+   * ✅ Task 2.5: Get tenant display for super admins
+   * Shows "Platform-Wide Super Admin" badge for super admins (tenantId=null)
+   * Shows tenant ID for regular users
+   */
+  const getTenantDisplay = (): React.ReactNode => {
+    // Super admin has null tenantId and isSuperAdmin=true
+    if (user.isSuperAdmin || user.tenantId === null) {
+      return (
+        <Tag color="purple" icon={<CrownOutlined />}>
+          Platform-Wide Super Admin
+        </Tag>
+      );
+    }
+    // Regular users have a tenant ID
+    return <code style={{ fontSize: '11px' }}>{user.tenantId}</code>;
+  };
+
   if (loading) {
     return (
       <Drawer
@@ -254,8 +272,8 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
               {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Tenant ID">
-            <code style={{ fontSize: '11px' }}>{user.tenantId}</code>
+          <Descriptions.Item label="Tenant">
+            {getTenantDisplay()}
           </Descriptions.Item>
         </Descriptions>
       </Card>

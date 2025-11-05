@@ -23,7 +23,7 @@ import {
   Smartphone,
   Calendar
 } from 'lucide-react';
-import { notificationService } from '@/services';
+import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 import { NotificationQueue as NotificationQueueType, NotificationTemplate } from '@/types/notifications';
 
 interface NotificationQueueProps {
@@ -51,7 +51,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
 
   const loadQueueItems = async () => {
     try {
-      const items = await notificationService.getNotificationQueue();
+      const items = await factoryNotificationService.getNotificationQueue();
       const filtered = items.filter(item => (filterStatus === 'all' || item.status === filterStatus) && (filterChannel === 'all' || item.channel === filterChannel));
       filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setQueueItems(filtered);
@@ -64,7 +64,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
 
   const handleCreateNotification = async (data: { templateId: string; recipientId: string; channel: string; variables: string; priority: string; scheduledAt?: string }) => {
     try {
-      await notificationService.queueNotification({
+      await factoryNotificationService.queueNotification({
         templateId: data.templateId,
         recipientId: data.recipientId,
         channel: data.channel,
@@ -82,7 +82,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
 
   const handleRetryNotification = async (queueId: string) => {
     try {
-      await notificationService.retryQueueItem(queueId);
+      await factoryNotificationService.retryQueueItem(queueId);
       await loadQueueItems();
     } catch (error) {
       console.error('Failed to retry notification:', error);
@@ -91,7 +91,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
 
   const handleCancelNotification = async (queueId: string) => {
     try {
-      await notificationService.cancelQueueItem(queueId);
+      await factoryNotificationService.cancelQueueItem(queueId);
       await loadQueueItems();
     } catch (error) {
       console.error('Failed to cancel notification:', error);
@@ -100,7 +100,7 @@ export function NotificationQueue({ className }: NotificationQueueProps) {
 
   const handleProcessQueue = async () => {
     try {
-      await notificationService.processQueue();
+      await factoryNotificationService.processQueue();
       await loadQueueItems();
     } catch (error) {
       console.error('Failed to process queue:', error);

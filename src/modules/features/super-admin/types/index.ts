@@ -5,3 +5,4 @@
 
 export * from './roleRequest';
 export * from './health';
+export * from './superAdminManagement'; // ✅ Phase 2: Super Admin Management types

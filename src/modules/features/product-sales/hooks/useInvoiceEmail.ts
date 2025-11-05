@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductSale, ProductSaleItem } from '@/types/productSales';
 import { Invoice, invoiceService } from '../services/invoiceService';
 import { invoiceEmailService, InvoiceEmailConfig, InvoiceEmailResult } from '../services/invoiceEmailService';
-import { uiNotificationService } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 
 interface SendInvoiceEmailParams {
   invoice: Invoice;
@@ -61,7 +61,7 @@ export function useInvoiceEmail() {
       });
 
       // Show success notification
-      uiNotificationService.success({
+      factoryUINotificationService.success({
         title: 'Invoice Sent Successfully',
         description: `Invoice ${params.invoice.invoice_number} has been sent to ${params.config.to}${
           params.config.cc && params.config.cc.length > 0
@@ -72,7 +72,7 @@ export function useInvoiceEmail() {
     },
     onError: (error) => {
       // Show error notification
-      uiNotificationService.error({
+      factoryUINotificationService.error({
         title: 'Failed to Send Invoice',
         description: error instanceof Error ? error.message : 'An unknown error occurred'
       });
@@ -109,7 +109,7 @@ export function useInvoiceEmail() {
       });
 
       // Show success notification
-      uiNotificationService.success({
+      factoryUINotificationService.success({
         title: 'Invoice Scheduled',
         description: `Invoice ${params.invoice.invoice_number} has been scheduled to send on ${
           params.scheduledFor.toLocaleDateString('en-US', {
@@ -124,7 +124,7 @@ export function useInvoiceEmail() {
     },
     onError: (error) => {
       // Show error notification
-      uiNotificationService.error({
+      factoryUINotificationService.error({
         title: 'Failed to Schedule Invoice',
         description: error instanceof Error ? error.message : 'An unknown error occurred'
       });

@@ -27,7 +27,8 @@
  */
 
 import { useCallback } from 'react';
-import { uiNotificationService, type NotificationType } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
+import type { NotificationType } from '@/types/notifications';
 
 interface NotificationParams {
   type: NotificationType;
@@ -43,42 +44,42 @@ export const useNotification = () => {
    * Display a quick success message (auto-dismiss)
    */
   const success = useCallback((content: string, duration?: number) => {
-    return uiNotificationService.success(content, duration);
+    return factoryUINotificationService.success(content, duration);
   }, []);
 
   /**
    * Display a quick error message (auto-dismiss)
    */
   const error = useCallback((content: string, duration?: number) => {
-    return uiNotificationService.error(content, duration);
+    return factoryUINotificationService.error(content, duration);
   }, []);
 
   /**
    * Display a quick warning message (auto-dismiss)
    */
   const warning = useCallback((content: string, duration?: number) => {
-    return uiNotificationService.warning(content, duration);
+    return factoryUINotificationService.warning(content, duration);
   }, []);
 
   /**
    * Display a quick info message (auto-dismiss)
    */
   const info = useCallback((content: string, duration?: number) => {
-    return uiNotificationService.info(content, duration);
+    return factoryUINotificationService.info(content, duration);
   }, []);
 
   /**
    * Display a loading message
    */
   const loading = useCallback((content: string) => {
-    return uiNotificationService.loading(content);
+    return factoryUINotificationService.loading(content);
   }, []);
 
   /**
    * Display a persistent notification with title and description
    */
   const notify = useCallback((params: NotificationParams) => {
-    uiNotificationService.notify({
+    factoryUINotificationService.notify({
       type: params.type,
       message: params.message,
       description: params.description,
@@ -98,7 +99,7 @@ export const useNotification = () => {
       duration?: number,
       onClose?: () => void
     ) => {
-      uiNotificationService.successNotify(message, description, duration, onClose);
+      factoryUINotificationService.successNotify(message, description, duration, onClose);
     },
     []
   );
@@ -113,7 +114,7 @@ export const useNotification = () => {
       duration?: number,
       onClose?: () => void
     ) => {
-      uiNotificationService.errorNotify(message, description, duration, onClose);
+      factoryUINotificationService.errorNotify(message, description, duration, onClose);
     },
     []
   );
@@ -128,7 +129,7 @@ export const useNotification = () => {
       duration?: number,
       onClose?: () => void
     ) => {
-      uiNotificationService.warningNotify(message, description, duration, onClose);
+      factoryUINotificationService.warningNotify(message, description, duration, onClose);
     },
     []
   );
@@ -143,7 +144,7 @@ export const useNotification = () => {
       duration?: number,
       onClose?: () => void
     ) => {
-      uiNotificationService.infoNotify(message, description, duration, onClose);
+      factoryUINotificationService.infoNotify(message, description, duration, onClose);
     },
     []
   );
@@ -152,7 +153,7 @@ export const useNotification = () => {
    * Close all notifications and messages
    */
   const closeAll = useCallback(() => {
-    uiNotificationService.closeAll();
+    factoryUINotificationService.closeAll();
   }, []);
 
   return {

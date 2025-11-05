@@ -70,6 +70,11 @@ module.exports = {
     'template-curly-spacing': ['error', 'never'],
     'no-template-curly-in-string': 'error',
     
+    // Architecture enforcement rules (Phase 4)
+    'unicode-escape-prevention/no-direct-service-imports': 'error',
+    'unicode-escape-prevention/no-service-module-imports': 'error',
+    'unicode-escape-prevention/type-import-location': 'error',
+    
     // Custom unicode escape prevention rules
     'unicode-escape-prevention/no-escaped-newlines': 'error',
     'unicode-escape-prevention/no-escaped-quotes-in-jsx': 'error',
@@ -242,6 +247,116 @@ const unicodeEscapePreventionPlugin = {
           },
         };
       },
+    },
+
+    // Architecture Enforcement Rule 1: Prevent direct service imports (Phase 4)
+    'no-direct-service-imports': {
+      meta: {
+        type: 'error',
+        docs: {
+          description: 'Services must be imported from serviceFactory, not directly from service files',
+          category: 'Architecture',
+          recommended: true
+        },
+        fixable: 'code',
+        schema: []
+      },
+      create(context) {
+        return {
+          ImportDeclaration(node) {
+            const source = node.source.value;
+            
+            // Pattern: importing directly from services (not factory)
+            // Match: @/services/complaintService, @/services/uiNotificationService, etc
+            // But NOT: @/services/serviceFactory
+            if (source.match(/^@\/services\/[^/]+Service(\.ts)?$/) && 
+                !source.includes('serviceFactory') &&
+                !source.includes('api/')) {
+              
+              context.report({
+                node,
+                message: `❌ ARCHITECTURE VIOLATION: Use serviceFactory instead of direct service import. Import from '@/services/serviceFactory' instead of '${source}'`,
+              });
+            }
+            
+            // Also catch supabase service imports
+            if (source.includes('@/services/api/supabase/') && source.includes('Service')) {
+              context.report({
+                node,
+                message: `❌ ARCHITECTURE VIOLATION: Do not import directly from Supabase services. Use '@/services/serviceFactory' instead`,
+              });
+            }
+          }
+        };
+      }
+    },
+
+    // Architecture Enforcement Rule 2: Prevent services from importing from modules (Phase 4)
+    'no-service-module-imports': {
+      meta: {
+        type: 'error',
+        docs: {
+          description: 'Services must not import from modules to prevent circular dependencies',
+          category: 'Architecture',
+          recommended: true
+        },
+        schema: []
+      },
+      create(context) {
+        const filename = context.getFilename();
+        
+        // Only check files in /services
+        if (!filename.includes('/services/')) return {};
+        
+        return {
+          ImportDeclaration(node) {
+            const source = node.source.value;
+            
+            // Pattern: service importing from modules
+            if (source.includes('@/modules/')) {
+              context.report({
+                node,
+                message: `❌ ARCHITECTURE VIOLATION: Services cannot import from modules (creates circular dependency). Use types from '@/types' instead of '${source}'`
+              });
+            }
+          }
+        };
+      }
+    },
+
+    // Architecture Enforcement Rule 3: Ensure types are imported from @/types (Phase 4)
+    'type-import-location': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description: 'Type imports must come from @/types, not from service files',
+          category: 'Architecture',
+          recommended: true
+        },
+        fixable: 'code',
+        schema: []
+      },
+      create(context) {
+        return {
+          ImportDeclaration(node) {
+            // Only check 'import type' declarations
+            if (node.importKind !== 'type') return;
+            
+            const source = node.source.value;
+            
+            // Pattern: type imported from service
+            if (source.includes('@/services/') && 
+                source.includes('Service') && 
+                !source.includes('serviceFactory')) {
+              
+              context.report({
+                node,
+                message: `❌ ARCHITECTURE VIOLATION: Types must be imported from '@/types', not from service files. Change import source from '${source}' to '@/types'`
+              });
+            }
+          }
+        };
+      }
     },
   },
 };

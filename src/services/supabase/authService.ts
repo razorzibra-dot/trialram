@@ -422,6 +422,56 @@ export class SupabaseAuthService extends BaseSupabaseService {
   }
 
   /**
+   * Check if user has a specific permission (synchronous check from cache or role)
+   * For module permissions, checks both direct permissions and role-based access
+   */
+  hasPermission(permission: string): boolean {
+    try {
+      const userStr = localStorage.getItem('sb_current_user');
+      if (!userStr) return false;
+      
+      const user = JSON.parse(userStr) as User;
+      
+      // Super admin has all permissions
+      if (user.role === 'super_admin') return true;
+      
+      // Admin role has access to module management permissions
+      if (user.role === 'admin' || user.role === 'super_admin') {
+        // Module management permissions (for dashboard, masters, user-management)
+        const adminModulePermissions = [
+          'manage_dashboard',
+          'manage_masters',
+          'manage_user_management',
+          'manage_users',
+          'manage_roles',
+          'manage_permissions',
+          'manage_rbac',
+          'view_analytics',
+          'view_reports'
+        ];
+        
+        if (adminModulePermissions.includes(permission)) {
+          return true;
+        }
+      }
+      
+      // Check cached permissions for the user
+      const cachedPermissions = this.permissionCache.get(user.id);
+      if (cachedPermissions) {
+        return cachedPermissions.has(permission);
+      }
+      
+      // If no cached permissions and not admin, deny by default
+      // The async version (getCurrentUserPermissions) will fetch from DB
+      console.log(`[SUPABASE_AUTH] Permission check for "${permission}" - admin=${user.role === 'admin'}, role=${user.role}`);
+      return user.role === 'admin' || user.role === 'super_admin';
+    } catch (error) {
+      console.error('[SUPABASE_AUTH] Error checking permission:', error);
+      return false;
+    }
+  }
+
+  /**
    * Cache for user permissions (to avoid repeated DB queries)
    */
   private permissionCache: Map<string, Set<string>> = new Map();
@@ -736,24 +786,33 @@ export class SupabaseAuthService extends BaseSupabaseService {
   /**
    * Map database user response to UI User type
    * Converts snake_case database fields to camelCase
+   * ⭐ CRITICAL: Sets isSuperAdmin flag based on role
    */
   private mapUserResponse(dbUser: any): User {
     // Handle both camelCase (from cache) and snake_case (from database)
-    const tenantId = dbUser.tenantId || dbUser.tenant_id;
+    const role = (dbUser.role || 'viewer') as User['role'];
+    const isSuperAdmin = role === 'super_admin';
+    
+    // Super admins MUST have tenantId=null; regular users must have a tenant
+    let tenantId = dbUser.tenantId || dbUser.tenant_id;
+    if (isSuperAdmin) {
+      tenantId = null; // ⭐ Force null for super admins
+    }
+    
     const firstName = dbUser.firstName || dbUser.first_name || '';
     const lastName = dbUser.lastName || dbUser.last_name || '';
     const tenantName = dbUser.tenantName || dbUser.tenant_name || '';
     const lastLogin = dbUser.lastLogin || dbUser.last_login || '';
     const createdAt = dbUser.createdAt || dbUser.created_at || new Date().toISOString();
 
-    console.log('[SUPABASE_AUTH] Mapping user - tenantId:', tenantId, 'from:', { dbUser });
+    console.log('[SUPABASE_AUTH] Mapping user - role:', role, 'isSuperAdmin:', isSuperAdmin, 'tenantId:', tenantId);
 
     return {
       id: dbUser.id,
       email: dbUser.email,
       firstName,
       lastName,
-      role: (dbUser.role || 'viewer') as User['role'],
+      role,
       status: (dbUser.status || 'active') as User['status'],
       tenantId,
       tenantName,
@@ -761,6 +820,7 @@ export class SupabaseAuthService extends BaseSupabaseService {
       createdAt,
       avatar: dbUser.avatar || '',
       phone: dbUser.phone || '',
+      isSuperAdmin, // ⭐ NEW: Critical flag for super admin module access
     };
   }
 }

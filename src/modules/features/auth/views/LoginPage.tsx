@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,7 +71,12 @@ export const LoginPage: React.FC = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      // Show error as toast notification instead of in form
+      factoryUINotificationService.errorNotify(
+        'Login Failed',
+        errorMessage
+      );
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +195,7 @@ export const LoginPage: React.FC = () => {
                   />
                 </div>
 
-                {error && (
+                {sessionExpired && error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>

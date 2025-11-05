@@ -1,97 +1,51 @@
 /**
- * Role Request Service
- * Handles role change request operations
+ * Super Admin Role Request Module Service
+ * 
+ * Layer 6: Module Service - integrates with factory pattern
+ * 
+ * This service bridges the UI layer with the factory-routed services.
+ * All service calls go through the factory pattern to ensure proper
+ * multi-backend support (mock vs Supabase).
+ * 
+ * Usage:
+ * ```typescript
+ * import { roleRequestService } from '@/modules/features/super-admin/services/roleRequestService';
+ * 
+ * // Get all requests
+ * const requests = await roleRequestService.fetchAllRequests();
+ * 
+ * // Get pending requests only
+ * const pending = await roleRequestService.fetchPendingRequests();
+ * 
+ * // Approve a request
+ * await roleRequestService.approveRequest(requestId, {
+ *   reviewComments: 'Approved',
+ *   expiresAt: '2025-03-21T00:00:00Z'
+ * }, userId);
+ * ```
  */
 
-import {
-  RoleRequest,
-  RoleRequestFilters,
-  RoleRequestStats,
-  RoleRequestResponse,
-} from '../types/roleRequest';
+import { 
+  roleRequestService as factoryRoleRequestService 
+} from '@/services/serviceFactory';
+import { RoleRequestType, RoleRequestReviewInput } from '@/types/superUserModule';
 
-class RoleRequestService {
-  private baseUrl = '/api/super-admin/role-requests';
-
+/**
+ * Super Admin Role Request Module Service
+ * 
+ * Provides business logic for role request management.
+ * All methods delegate to factory-routed services.
+ */
+class SuperAdminRoleRequestService {
   /**
-   * Get all role requests with filters
+   * Fetch all role requests with optional status filter
+   * @param status - Optional: 'pending', 'approved', 'rejected', 'cancelled'
+   * @returns List of role requests
    */
-  async getRoleRequests(filters?: RoleRequestFilters): Promise<RoleRequestResponse> {
+  async fetchAllRequests(status?: string): Promise<RoleRequestType[]> {
     try {
-      const params = new URLSearchParams();
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.tenantId) params.append('tenantId', filters.tenantId);
-      if (filters?.userId) params.append('userId', filters.userId);
-      if (filters?.search) params.append('search', filters.search);
-
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${this.baseUrl}?${params}`, {
-      //   headers: { 'Authorization': `Bearer ${getToken()}` }
-      // });
-      // const data = await response.json();
-
-      // Mock data for now
-      const mockRequests: RoleRequest[] = [
-        {
-          id: '1',
-          userId: 'user1',
-          userName: 'John Doe',
-          userEmail: 'john@example.com',
-          tenantId: 'tenant1',
-          tenantName: 'Acme Corp',
-          currentRole: 'agent',
-          requestedRole: 'manager',
-          status: 'pending',
-          reason: 'Promoted to team lead',
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '2',
-          userId: 'user2',
-          userName: 'Jane Smith',
-          userEmail: 'jane@example.com',
-          tenantId: 'tenant2',
-          tenantName: 'Tech Solutions',
-          currentRole: 'manager',
-          requestedRole: 'admin',
-          status: 'approved',
-          reason: 'Need admin privileges for system configuration',
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          reviewedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          reviewedBy: 'admin@platform.com',
-          reviewerEmail: 'admin@platform.com'
-        },
-        {
-          id: '3',
-          userId: 'user3',
-          userName: 'Mike Johnson',
-          userEmail: 'mike@example.com',
-          tenantId: 'tenant1',
-          tenantName: 'Acme Corp',
-          currentRole: 'agent',
-          requestedRole: 'supervisor',
-          status: 'rejected',
-          reason: 'Request for supervisory access',
-          rejectionReason: 'Insufficient tenure in current role',
-          createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          reviewedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          reviewedBy: 'admin@platform.com',
-          reviewerEmail: 'admin@platform.com'
-        },
-      ];
-
-      const filtered = this.filterRequests(mockRequests, filters);
-      const stats = this.calculateStats(filtered);
-
-      return {
-        data: filtered,
-        stats,
-        pagination: {
-          page: 1,
-          pageSize: 50,
-          total: filtered.length,
-        },
-      };
+      const requests = await factoryRoleRequestService.getRoleRequests(status);
+      return requests || [];
     } catch (error) {
       console.error('Failed to fetch role requests:', error);
       throw new Error('Failed to fetch role requests');
@@ -99,109 +53,303 @@ class RoleRequestService {
   }
 
   /**
-   * Get a single role request
+   * Fetch a single role request by ID
+   * @param requestId - Request ID
+   * @returns Role request details
    */
-  async getRoleRequest(id: string): Promise<RoleRequest> {
+  async fetchRequestById(requestId: string): Promise<RoleRequestType | null> {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${this.baseUrl}/${id}`, {
-      //   headers: { 'Authorization': `Bearer ${getToken()}` }
-      // });
-      // return await response.json();
+      return await factoryRoleRequestService.getRoleRequest(requestId);
+    } catch (error) {
+      console.error(`Failed to fetch request ${requestId}:`, error);
+      throw new Error(`Failed to fetch request details`);
+    }
+  }
 
-      // Mock data
-      const allRequests = await this.getRoleRequests();
-      const request = allRequests.data.find(r => r.id === id);
-      if (!request) throw new Error('Request not found');
+  /**
+   * Fetch pending role requests
+   * @returns List of pending requests
+   */
+  async fetchPendingRequests(): Promise<RoleRequestType[]> {
+    try {
+      const requests = await factoryRoleRequestService.getPendingRoleRequests();
+      return requests || [];
+    } catch (error) {
+      console.error('Failed to fetch pending requests:', error);
+      throw new Error('Failed to fetch pending requests');
+    }
+  }
+
+  /**
+   * Fetch requests for a specific user
+   * @param userId - User ID
+   * @returns List of requests for the user
+   */
+  async fetchRequestsByUserId(userId: string): Promise<RoleRequestType[]> {
+    try {
+      const requests = await factoryRoleRequestService.getRoleRequestsByUserId(userId);
+      return requests || [];
+    } catch (error) {
+      console.error(`Failed to fetch requests for user ${userId}:`, error);
+      throw new Error('Failed to fetch user requests');
+    }
+  }
+
+  /**
+   * Get statistics on role requests
+   * @returns Request counts by status
+   */
+  async fetchRequestStats(): Promise<{
+    pending: number;
+    approved: number;
+    rejected: number;
+    cancelled: number;
+    total: number;
+  }> {
+    try {
+      const stats = await factoryRoleRequestService.getRoleRequestStats();
+      return stats || {
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        cancelled: 0,
+        total: 0,
+      };
+    } catch (error) {
+      console.error('Failed to fetch request stats:', error);
+      throw new Error('Failed to fetch request statistics');
+    }
+  }
+
+  /**
+   * Create a new role request
+   * @param data - Role request creation data
+   * @returns Created role request
+   */
+  async createRequest(data: {
+    userId: string;
+    requestedRole: string;
+    reason: string;
+    tenantId?: string;
+    expiresAt?: string;
+  }): Promise<RoleRequestType> {
+    try {
+      // Validate required fields
+      if (!data.userId || !data.requestedRole || !data.reason) {
+        throw new Error('Missing required fields: userId, requestedRole, reason');
+      }
+
+      const request = await factoryRoleRequestService.createRoleRequest(data);
+      if (!request) {
+        throw new Error('Failed to create role request');
+      }
       return request;
     } catch (error) {
-      console.error('Failed to fetch role request:', error);
-      throw new Error('Failed to fetch role request details');
+      console.error('Failed to create role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Review a role request (approve or reject)
+   * @param requestId - Request ID
+   * @param reviewData - Review information
+   * @param reviewerId - ID of the reviewer
+   * @returns Updated role request
+   */
+  async reviewRequest(
+    requestId: string,
+    reviewData: RoleRequestReviewInput,
+    reviewerId: string
+  ): Promise<RoleRequestType> {
+    try {
+      // Validate required fields
+      if (!requestId || !reviewData || !reviewerId) {
+        throw new Error('Missing required fields: requestId, reviewData, reviewerId');
+      }
+
+      if (!['approved', 'rejected'].includes(reviewData.status)) {
+        throw new Error(`Invalid review status: ${reviewData.status}`);
+      }
+
+      // Add reviewer info
+      const enrichedReviewData = {
+        ...reviewData,
+        reviewedBy: reviewerId,
+      };
+
+      const request = await factoryRoleRequestService.reviewRoleRequest(
+        requestId,
+        enrichedReviewData
+      );
+
+      if (!request) {
+        throw new Error('Failed to review role request');
+      }
+
+      return request;
+    } catch (error) {
+      console.error('Failed to review role request:', error);
+      throw error;
     }
   }
 
   /**
    * Approve a role request
+   * @param requestId - Request ID
+   * @param reviewComments - Optional comments
+   * @param expiresAt - Optional expiration date
+   * @param reviewerId - ID of the reviewer
+   * @returns Updated role request
    */
-  async approveRoleRequest(id: string): Promise<RoleRequest> {
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${this.baseUrl}/${id}/approve`, {
-      //   method: 'POST',
-      //   headers: { 'Authorization': `Bearer ${getToken()}` }
-      // });
-      // return await response.json();
+  async approveRequest(
+    requestId: string,
+    reviewComments?: string,
+    expiresAt?: string,
+    reviewerId?: string
+  ): Promise<RoleRequestType> {
+    const reviewData: RoleRequestReviewInput = {
+      status: 'approved',
+      reviewComments: reviewComments || '',
+      expiresAt,
+    };
 
-      // Mock implementation
-      const request = await this.getRoleRequest(id);
-      return {
-        ...request,
-        status: 'approved' as const,
-        reviewedAt: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Failed to approve role request:', error);
-      throw new Error('Failed to approve role request');
-    }
+    return this.reviewRequest(requestId, reviewData, reviewerId || 'system');
   }
 
   /**
    * Reject a role request
+   * @param requestId - Request ID
+   * @param reviewComments - Rejection reason
+   * @param reviewerId - ID of the reviewer
+   * @returns Updated role request
    */
-  async rejectRoleRequest(id: string, reason: string): Promise<RoleRequest> {
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${this.baseUrl}/${id}/reject`, {
-      //   method: 'POST',
-      //   headers: { 'Authorization': `Bearer ${getToken()}` },
-      //   body: JSON.stringify({ reason })
-      // });
-      // return await response.json();
+  async rejectRequest(
+    requestId: string,
+    reviewComments?: string,
+    reviewerId?: string
+  ): Promise<RoleRequestType> {
+    const reviewData: RoleRequestReviewInput = {
+      status: 'rejected',
+      reviewComments: reviewComments || '',
+    };
 
-      // Mock implementation
-      const request = await this.getRoleRequest(id);
-      return {
-        ...request,
-        status: 'rejected' as const,
-        rejectionReason: reason,
-        reviewedAt: new Date().toISOString(),
-      };
+    return this.reviewRequest(requestId, reviewData, reviewerId || 'system');
+  }
+
+  /**
+   * Cancel a role request
+   * @param requestId - Request ID
+   * @returns Updated role request
+   */
+  async cancelRequest(requestId: string): Promise<RoleRequestType> {
+    try {
+      if (!requestId) {
+        throw new Error('Request ID is required');
+      }
+
+      const request = await factoryRoleRequestService.cancelRoleRequest(requestId);
+      if (!request) {
+        throw new Error('Failed to cancel role request');
+      }
+      return request;
     } catch (error) {
-      console.error('Failed to reject role request:', error);
-      throw new Error('Failed to reject role request');
+      console.error('Failed to cancel role request:', error);
+      throw error;
     }
   }
 
   /**
-   * Private helper methods
+   * Get recent role requests
+   * @param limit - Number of requests to return
+   * @returns List of recent requests
    */
-  private filterRequests(requests: RoleRequest[], filters?: RoleRequestFilters): RoleRequest[] {
-    if (!filters) return requests;
+  async fetchRecentRequests(limit: number = 10): Promise<RoleRequestType[]> {
+    try {
+      const requests = await factoryRoleRequestService.getRoleRequests();
+      if (!requests) return [];
 
-    return requests.filter(request => {
-      if (filters.status && request.status !== filters.status) return false;
-      if (filters.tenantId && request.tenantId !== filters.tenantId) return false;
-      if (filters.userId && request.userId !== filters.userId) return false;
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          request.userName.toLowerCase().includes(searchLower) ||
-          request.userEmail.toLowerCase().includes(searchLower) ||
-          request.tenantName.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
-      }
-      return true;
-    });
+      // Sort by createdAt descending and take first 'limit' items
+      return requests
+        .sort((a: RoleRequestType, b: RoleRequestType) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Failed to fetch recent requests:', error);
+      throw new Error('Failed to fetch recent requests');
+    }
   }
 
-  private calculateStats(requests: RoleRequest[]): RoleRequestStats {
-    return {
-      total: requests.length,
-      pending: requests.filter(r => r.status === 'pending').length,
-      approved: requests.filter(r => r.status === 'approved').length,
-      rejected: requests.filter(r => r.status === 'rejected').length,
-    };
+  /**
+   * Search role requests
+   * @param query - Search term (searches userId, requestedRole, reason)
+   * @returns Matching role requests
+   */
+  async searchRequests(query: string): Promise<RoleRequestType[]> {
+    try {
+      if (!query || query.trim().length === 0) {
+        return [];
+      }
+
+      const allRequests = await factoryRoleRequestService.getRoleRequests();
+      if (!allRequests) return [];
+
+      const lowerQuery = query.toLowerCase();
+      return allRequests.filter(
+        (req: RoleRequestType) =>
+          req.userId.toLowerCase().includes(lowerQuery) ||
+          req.requestedRole.toLowerCase().includes(lowerQuery) ||
+          req.reason.toLowerCase().includes(lowerQuery)
+      );
+    } catch (error) {
+      console.error('Failed to search requests:', error);
+      throw new Error('Failed to search requests');
+    }
+  }
+
+  /**
+   * Get requests by status with pagination
+   * @param status - Request status
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Items per page
+   * @returns Paginated requests
+   */
+  async fetchRequestsByStatusPaginated(
+    status: string,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<{
+    data: RoleRequestType[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    try {
+      const requests = await factoryRoleRequestService.getRoleRequests(status);
+      const total = requests?.length || 0;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+
+      return {
+        data: requests?.slice(start, end) || [],
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      console.error('Failed to fetch paginated requests:', error);
+      throw new Error('Failed to fetch paginated requests');
+    }
   }
 }
 
-export const roleRequestService = new RoleRequestService();
+/**
+ * Export singleton instance
+ */
+export const roleRequestService = new SuperAdminRoleRequestService();
+
+/**
+ * Export class for testing or custom instantiation
+ */
+export default SuperAdminRoleRequestService;

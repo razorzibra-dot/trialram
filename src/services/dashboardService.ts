@@ -11,41 +11,17 @@
  */
 
 import { DashboardStats } from '@/types/crm';
+import {
+  ActivityItem,
+  TopCustomer,
+  TicketStatsData,
+  PipelineStage
+} from '@/types';
 import { authService } from './authService';
 import { supabaseCustomerService } from './supabase/customerService';
 import { supabaseSalesService } from './supabase/salesService';
 import { supabaseTicketService } from './supabase/ticketService';
 import { multiTenantService } from './supabase/multiTenantService';
-
-interface ActivityItem {
-  id: string;
-  type: 'deal' | 'ticket' | 'customer' | 'user';
-  title: string;
-  description: string;
-  timestamp: string;
-  user: string;
-}
-
-interface TopCustomer {
-  id: string;
-  name: string;
-  totalValue: number;
-  dealCount: number;
-}
-
-interface TicketStatsData {
-  open: number;
-  inProgress: number;
-  resolved: number;
-  closed: number;
-  resolutionRate: number;
-}
-
-interface PipelineStage {
-  stage: string;
-  value: number;
-  percentage: number;
-}
 
 class DashboardService {
   /**

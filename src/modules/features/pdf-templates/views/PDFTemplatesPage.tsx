@@ -46,7 +46,7 @@ import {
 import { PageHeader, StatCard } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
-import type { PDFTemplate } from '@/services/pdfTemplateService';
+import type { PDFTemplate } from '@/types';
 import { PDFTemplateDetailPanel } from '../components/PDFTemplateDetailPanel';
 import { PDFTemplateFormPanel } from '../components/PDFTemplateFormPanel';
 

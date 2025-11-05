@@ -13,7 +13,7 @@
 
 import * as React from "react"
 import type { ToastProps } from "@/types/toast"
-import { uiNotificationService } from "@/services/uiNotificationService"
+import { uiNotificationService as factoryUINotificationService } from "@/services/serviceFactory"
 
 const TOAST_LIMIT = 1
 
@@ -89,7 +89,7 @@ export function toast({ ...props }: Omit<ToastProps, "id">) {
 
   // Show using new notification service
   if (message || description) {
-    uiNotificationService.notify({
+    factoryUINotificationService.notify({
       type,
       message: message || "Notification",
       description,

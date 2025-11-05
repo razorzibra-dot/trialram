@@ -1,17 +1,25 @@
 /**
  * Modular Router
- * Creates router configuration from registered modules
+ * Creates router configuration from registered modules with access control guards
+ * 
+ * **Module Access Control**:
+ * - All module routes are wrapped with ModuleProtectedRoute
+ * - Super admin routes enforced to super admins only (isSuperAdmin=true, tenantId=null)
+ * - Tenant routes enforced based on RBAC permissions
+ * - Unauthorized access attempts are logged to audit trail
  */
 
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { moduleRegistry } from '../ModuleRegistry';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
+import { RootRedirect } from './RootRedirect';
 
 // Import existing layouts
 import RootLayout from '@/components/layout/RootLayout';
 import SuperAdminLayout from '@/components/layout/SuperAdminLayout';
 import { EnterpriseLayout } from '@/components/layout/EnterpriseLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ModuleProtectedRoute from '@/components/auth/ModuleProtectedRoute';
 import AppProviders from '@/components/providers/AppProviders';
 
 // Import modular auth pages
@@ -62,6 +70,81 @@ const SuperAdminConfigurationPage = lazy(() => import('@/modules/features/super-
 // Note: Tenants page will be migrated to modular structure in future updates
 
 /**
+ * Wraps a route recursively with ModuleProtectedRoute guard
+ * Ensures all nested routes are protected by module access control
+ * 
+ * @param route - The route to wrap
+ * @param moduleName - The module name for access control
+ * @returns Wrapped route with access guards
+ */
+function wrapRouteWithModuleGuard(route: any, moduleName: string): any {
+  // Don't wrap if it's just a redirect or navigation route
+  if (route.path === '' || route.index === true) {
+    return route;
+  }
+
+  // Clone the route to avoid mutations
+  const wrappedRoute = { ...route };
+
+  // If the route has children, recursively wrap them too
+  if (route.children && Array.isArray(route.children)) {
+    wrappedRoute.children = route.children.map((childRoute: any) => {
+      // Preserve index routes and nested routes
+      if (childRoute.index === true || (childRoute.path === '' && childRoute.element)) {
+        return childRoute;
+      }
+      return wrapRouteWithModuleGuard(childRoute, moduleName);
+    });
+  }
+
+  // Wrap the element with ModuleProtectedRoute
+  if (wrappedRoute.element && !wrappedRoute.element.type?.name?.includes('Navigate')) {
+    wrappedRoute.element = (
+      <ModuleProtectedRoute moduleName={moduleName}>
+        {wrappedRoute.element}
+      </ModuleProtectedRoute>
+    );
+  }
+
+  return wrappedRoute;
+}
+
+/**
+ * Extracts module name from route path
+ * Maps paths like 'dashboard', 'customers', 'sales' to their module names
+ * 
+ * @param path - The route path
+ * @returns The module name, or null if unable to determine
+ */
+function getModuleNameFromPath(path?: string): string | null {
+  if (!path) return null;
+
+  // Handle special cases
+  const pathMap: Record<string, string> = {
+    'dashboard': 'dashboard',
+    'customers': 'customers',
+    'sales': 'sales',
+    'product-sales': 'product-sales',
+    'contracts': 'contracts',
+    'service-contracts': 'service-contracts',
+    'products': 'products',
+    'tickets': 'tickets',
+    'complaints': 'complaints',
+    'job-works': 'job-works',
+    'notifications': 'notifications',
+    'logs': 'audit-logs',
+    'configuration': 'configuration',
+    'tenant-configuration': 'configuration',
+    'users': 'user-management',
+    'roles': 'user-management',
+    'permissions': 'user-management',
+    'pdf-templates': 'pdf-templates',
+  };
+
+  return pathMap[path] || path;
+}
+
+/**
  * Create router with modular routes
  */
 export function createModularRouter() {
@@ -71,6 +154,13 @@ export function createModularRouter() {
   const moduleRoutes = allModuleRoutes.filter((route) => {
     // Filter out super-admin routes - they have 'super-admin' path at root level
     return route.path !== 'super-admin';
+  }).map((route) => {
+    // Wrap module routes with access guards
+    const moduleName = getModuleNameFromPath(route.path);
+    if (moduleName) {
+      return wrapRouteWithModuleGuard(route, moduleName);
+    }
+    return route;
   });
 
   const routes = [
@@ -81,7 +171,7 @@ export function createModularRouter() {
       children: [
         {
           index: true,
-          element: <Navigate to="/tenant/dashboard" replace />,
+          element: <RootRedirect />,
         },
         {
           path: "login",
@@ -145,6 +235,8 @@ export function createModularRouter() {
           element: <Navigate to="/tenant/tenant-configuration" replace />,
         },
         // Tenant Portal Routes
+        // All child routes are wrapped with ModuleProtectedRoute via moduleRoutes processing
+        // This ensures RBAC-based access control at the module level
         {
           path: "tenant",
           element: (
@@ -162,6 +254,7 @@ export function createModularRouter() {
               element: <Navigate to="dashboard" replace />,
             },
             // All modular routes are collected from registered modules
+            // Routes are pre-wrapped with ModuleProtectedRoute for module access control
             // This includes: dashboard, customers, sales, tickets, contracts, 
             // service-contracts, complaints, notifications, configuration, 
             // pdf-templates, audit-logs, user-management, job-works, masters, product-sales
@@ -169,15 +262,19 @@ export function createModularRouter() {
           ],
         },
         // Super Admin Portal Routes
+        // ⚠️ CRITICAL: All super-admin routes are wrapped with ModuleProtectedRoute
+        // to enforce super admin isolation and prevent unauthorized access
         {
           path: "super-admin",
           element: (
             <ProtectedRoute>
-              <AppProviders>
-                <EnterpriseLayout>
-                  <Outlet />
-                </EnterpriseLayout>
-              </AppProviders>
+              <ModuleProtectedRoute moduleName="super-admin">
+                <AppProviders>
+                  <SuperAdminLayout>
+                    <Outlet />
+                  </SuperAdminLayout>
+                </AppProviders>
+              </ModuleProtectedRoute>
             </ProtectedRoute>
           ),
           children: [

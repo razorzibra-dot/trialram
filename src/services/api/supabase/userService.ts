@@ -176,7 +176,11 @@ class SupabaseUserService {
       .is('deleted_at', null)
       .single();
 
+    // Handle not found case (PGRST116) and other errors
     if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error(`User not found: ${id}`);
+      }
       console.error('[UserService] Error fetching user:', error);
       throw new Error(`Failed to fetch user: ${error.message}`);
     }
@@ -399,7 +403,11 @@ class SupabaseUserService {
       .select()
       .single();
 
+    // Handle not found case (PGRST116) and other errors
     if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        throw new Error(`User not found: ${id}`);
+      }
       console.error('[UserService] Error updating user:', updateError);
       throw new Error(`Failed to update user: ${updateError.message}`);
     }
@@ -441,7 +449,16 @@ class SupabaseUserService {
       .is('deleted_at', null)
       .single();
 
-    if (fetchError || !user) {
+    // Handle not found case (PGRST116) and other errors
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        throw new Error(`User not found: ${id}`);
+      }
+      console.error('[UserService] Error fetching user for password reset:', fetchError);
+      throw new Error(`Failed to reset password: ${fetchError.message}`);
+    }
+
+    if (!user) {
       throw new Error(`User not found: ${id}`);
     }
 

@@ -3,7 +3,7 @@
  * Enhanced complaint management with lifecycle tracking
  */
 import React, { useEffect, useState } from 'react';
-import { complaintService } from '@/services/complaintService';
+import { complaintService as factoryComplaintService } from '@/services/serviceFactory';
 import { Complaint, ComplaintFilters } from '@/types/complaints';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export const ComplaintsPage: React.FC = () => {
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = statusFilter;
 
-      const data = await complaintService.getComplaints(filters);
+      const data = await factoryComplaintService.getComplaints(filters);
       setComplaints(data);
     } catch (error) {
       console.error('Failed to fetch complaints:', error);

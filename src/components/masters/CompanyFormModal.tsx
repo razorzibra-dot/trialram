@@ -28,10 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { notificationService } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService, companyService as factoryCompanyService } from '@/services/serviceFactory';
 import { Loader2, Building2 } from 'lucide-react';
 import { Company, CompanyFormData, COMPANY_INDUSTRIES, COMPANY_SIZES } from '@/types/masters';
-import { companyService } from '@/services/companyService';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Company name is required').max(100, 'Name too long'),
@@ -115,13 +114,13 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
     setIsSubmitting(true);
     try {
       if (isEditing && company) {
-        await companyService.updateCompany(company.id, data);
+        await factoryCompanyService.updateCompany(company.id, data);
         toast({
           title: 'Success',
           description: 'Company updated successfully.',
         });
       } else {
-        await companyService.createCompany(data);
+        await factoryCompanyService.createCompany(data);
         toast({
           title: 'Success',
           description: 'Company created successfully.',

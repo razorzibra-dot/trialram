@@ -1,0 +1,769 @@
+/**
+ * Super User Module Service Layer
+ * Coordinates between UI and backend services with caching and business logic
+ * This is the PRIMARY coordination layer for all super user operations
+ *
+ * Imports from factory service (never direct backend imports)
+ * Handles: validation, caching, error handling, and business logic
+ *
+ * @module superUserService
+ */
+
+import { superUserService as factorySuperUserService } from '@/services/serviceFactory';
+import {
+  SuperUserType,
+  TenantAccessType,
+  ImpersonationLogType,
+  TenantStatisticType,
+  TenantConfigOverrideType,
+  SuperUserCreateInput,
+  SuperUserUpdateInput,
+  TenantAccessCreateInput,
+  ImpersonationStartInput,
+  ConfigOverrideInput,
+  validateSuperUser,
+  validateTenantAccess,
+  validateImpersonationLog,
+  validateTenantStatistic,
+  validateConfigOverride,
+} from '@/types/superUserModule';
+import { validateSuperUserCreation } from './integrations/userManagementIntegration';
+
+/**
+ * Service cache for managing in-memory caching of frequently accessed data
+ * Prevents redundant backend calls
+ */
+interface ServiceCache {
+  superUsers: Map<string, { data: SuperUserType[]; timestamp: number }>;
+  tenantAccess: Map<string, { data: TenantAccessType[]; timestamp: number }>;
+  impersonationLogs: Map<string, { data: ImpersonationLogType[]; timestamp: number }>;
+  statistics: Map<string, { data: TenantStatisticType[]; timestamp: number }>;
+  configOverrides: Map<string, { data: TenantConfigOverrideType[]; timestamp: number }>;
+}
+
+// Cache configuration (in milliseconds)
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Initialize cache
+const cache: ServiceCache = {
+  superUsers: new Map(),
+  tenantAccess: new Map(),
+  impersonationLogs: new Map(),
+  statistics: new Map(),
+  configOverrides: new Map(),
+};
+
+/**
+ * Check if cached data is still valid
+ */
+const isCacheValid = (timestamp: number): boolean => {
+  return Date.now() - timestamp < CACHE_TTL;
+};
+
+/**
+ * Clear specific cache entries
+ */
+const clearCache = (cacheKey?: string) => {
+  if (!cacheKey) {
+    // Clear all caches
+    cache.superUsers.clear();
+    cache.tenantAccess.clear();
+    cache.impersonationLogs.clear();
+    cache.statistics.clear();
+    cache.configOverrides.clear();
+  } else {
+    // Clear specific cache (format: "type:identifier")
+    const [type] = cacheKey.split(':');
+    if (type === 'superUsers') cache.superUsers.clear();
+    if (type === 'tenantAccess') cache.tenantAccess.clear();
+    if (type === 'impersonationLogs') cache.impersonationLogs.clear();
+    if (type === 'statistics') cache.statistics.clear();
+    if (type === 'configOverrides') cache.configOverrides.clear();
+  }
+};
+
+// ============================================
+// SUPER USER MANAGEMENT
+// ============================================
+
+/**
+ * Get all super users with caching
+ * @returns Array of all super users
+ */
+export const getSuperUsers = async (): Promise<SuperUserType[]> => {
+  try {
+    const cacheKey = 'all';
+    const cached = cache.superUsers.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+
+    const data = await factorySuperUserService.getSuperUsers();
+    cache.superUsers.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to fetch super users: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Get single super user by ID
+ * @param id - Super user ID
+ * @returns Super user record or undefined
+ */
+export const getSuperUser = async (id: string): Promise<SuperUserType | undefined> => {
+  try {
+    const cacheKey = id;
+    const cached = cache.superUsers.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data[0];
+    }
+
+    const data = await factorySuperUserService.getSuperUser(id);
+    if (data) {
+      cache.superUsers.set(cacheKey, { data: [data], timestamp: Date.now() });
+    }
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to fetch super user ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Get super user record by user ID (for current user super status)
+ * @param userId - User ID to look up
+ * @returns Super user record if found
+ */
+export const getSuperUserByUserId = async (userId: string): Promise<SuperUserType | undefined> => {
+  try {
+    const cacheKey = `user:${userId}`;
+    const cached = cache.superUsers.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data[0];
+    }
+
+    const data = await factorySuperUserService.getSuperUserByUserId(userId);
+    if (data) {
+      cache.superUsers.set(cacheKey, { data: [data], timestamp: Date.now() });
+    }
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to fetch super user by user ID ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Create new super user with validation
+ * Includes User Management module integration checks
+ * @param input - Super user creation input
+ * @returns Created super user record
+ */
+export const createSuperUser = async (input: SuperUserCreateInput): Promise<SuperUserType> => {
+  try {
+    // Validate input
+    validateSuperUser(input);
+
+    // ✅ Integration Check: Validate user exists and has correct role in User Management
+    const userValidation = await validateSuperUserCreation(input);
+    if (!userValidation.valid) {
+      throw new Error(userValidation.error || 'User validation failed');
+    }
+
+    // Check for duplicates
+    const existingUsers = await factorySuperUserService.getSuperUsers();
+    const duplicate = existingUsers.find((u) => u.userId === input.userId);
+    if (duplicate) {
+      throw new Error(`Super user with user ID ${input.userId} already exists`);
+    }
+
+    const newSuperUser = await factorySuperUserService.createSuperUser(input);
+
+    // Invalidate super users cache
+    clearCache('superUsers');
+
+    return newSuperUser;
+  } catch (error) {
+    throw new Error(`Failed to create super user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Update super user with partial updates
+ * @param id - Super user ID
+ * @param input - Partial update data
+ * @returns Updated super user record
+ */
+export const updateSuperUser = async (id: string, input: SuperUserUpdateInput): Promise<SuperUserType> => {
+  try {
+    const updated = await factorySuperUserService.updateSuperUser(id, input);
+
+    // Invalidate caches
+    clearCache('superUsers');
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to update super user ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Delete super user with cascade handling
+ * @param id - Super user ID
+ * @returns Deletion result
+ */
+export const deleteSuperUser = async (id: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Get super user to verify it exists
+    const superUser = await factorySuperUserService.getSuperUser(id);
+    if (!superUser) {
+      throw new Error(`Super user ${id} not found`);
+    }
+
+    await factorySuperUserService.deleteSuperUser(id);
+
+    // Invalidate all caches related to this super user
+    clearCache('superUsers');
+    clearCache(`tenantAccess:${id}`);
+    clearCache(`impersonationLogs:${id}`);
+
+    return { success: true, message: `Super user ${id} deleted successfully` };
+  } catch (error) {
+    throw new Error(`Failed to delete super user ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// ============================================
+// TENANT ACCESS MANAGEMENT
+// ============================================
+
+/**
+ * Get tenant access list for super user (paginated)
+ * @param superUserId - Super user ID
+ * @param page - Page number (default: 1)
+ * @param limit - Records per page (default: 20)
+ * @returns Paginated access list
+ */
+export const getTenantAccessList = async (
+  superUserId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{ data: TenantAccessType[]; total: number; page: number; limit: number }> => {
+  try {
+    const cacheKey = `${superUserId}:${page}:${limit}`;
+    const cached = cache.tenantAccess.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return {
+        data: cached.data,
+        total: cached.data.length,
+        page,
+        limit,
+      };
+    }
+
+    const allAccess = await factorySuperUserService.getTenantAccess(superUserId);
+    const start = (page - 1) * limit;
+    const paginatedData = allAccess.slice(start, start + limit);
+
+    cache.tenantAccess.set(cacheKey, { data: paginatedData, timestamp: Date.now() });
+
+    return {
+      data: paginatedData,
+      total: allAccess.length,
+      page,
+      limit,
+    };
+  } catch (error) {
+    throw new Error(`Failed to fetch tenant access list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Grant tenant access with conflict checking
+ * @param input - Tenant access creation input
+ * @returns Created access record
+ */
+export const grantTenantAccess = async (input: TenantAccessCreateInput): Promise<TenantAccessType> => {
+  try {
+    // Validate input
+    validateTenantAccess(input);
+
+    // Check for existing access (conflict detection)
+    const existingAccess = await factorySuperUserService.getTenantAccess(input.superUserId);
+    const alreadyHasAccess = existingAccess.some((a) => a.tenantId === input.tenantId);
+    if (alreadyHasAccess) {
+      throw new Error(`Super user ${input.superUserId} already has access to tenant ${input.tenantId}`);
+    }
+
+    const newAccess = await factorySuperUserService.grantTenantAccess(input);
+
+    // Invalidate cache
+    clearCache(`tenantAccess:${input.superUserId}`);
+
+    return newAccess;
+  } catch (error) {
+    throw new Error(`Failed to grant tenant access: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Revoke tenant access with safe removal
+ * @param superUserId - Super user ID
+ * @param tenantId - Tenant ID
+ * @returns Revocation result
+ */
+export const revokeTenantAccess = async (
+  superUserId: string,
+  tenantId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Verify access exists before removing
+    const access = await factorySuperUserService.getTenantAccess(superUserId);
+    const hasAccess = access.some((a) => a.tenantId === tenantId);
+    if (!hasAccess) {
+      throw new Error(`Super user ${superUserId} does not have access to tenant ${tenantId}`);
+    }
+
+    await factorySuperUserService.revokeTenantAccess(superUserId, tenantId);
+
+    // Invalidate cache
+    clearCache(`tenantAccess:${superUserId}`);
+
+    return { success: true, message: `Access revoked for super user ${superUserId} from tenant ${tenantId}` };
+  } catch (error) {
+    throw new Error(`Failed to revoke tenant access: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Update access level with escalation safety
+ * @param superUserId - Super user ID
+ * @param tenantId - Tenant ID
+ * @param newLevel - New access level
+ * @returns Updated access record
+ */
+export const updateAccessLevel = async (
+  superUserId: string,
+  tenantId: string,
+  newLevel: 'full' | 'limited' | 'read_only' | 'specific_modules'
+): Promise<TenantAccessType> => {
+  try {
+    // Verify access exists
+    const access = await factorySuperUserService.getTenantAccess(superUserId);
+    const existingAccess = access.find((a) => a.tenantId === tenantId);
+    if (!existingAccess) {
+      throw new Error(`No existing access found for super user ${superUserId} to tenant ${tenantId}`);
+    }
+
+    // Update the access level
+    const updated = await factorySuperUserService.grantTenantAccess({
+      superUserId,
+      tenantId,
+      accessLevel: newLevel,
+    });
+
+    // Invalidate cache
+    clearCache(`tenantAccess:${superUserId}`);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to update access level: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// ============================================
+// IMPERSONATION OPERATIONS
+// ============================================
+
+/**
+ * Start impersonation session with secure session management
+ * @param input - Impersonation start input
+ * @returns Impersonation log record
+ */
+export const startImpersonation = async (input: ImpersonationStartInput): Promise<ImpersonationLogType> => {
+  try {
+    const session = await factorySuperUserService.startImpersonation(input);
+
+    // Invalidate impersonation cache
+    clearCache('impersonationLogs');
+
+    return session;
+  } catch (error) {
+    throw new Error(`Failed to start impersonation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * End impersonation session with action capture
+ * @param logId - Impersonation log ID
+ * @param actionsTaken - Array of actions performed during session
+ * @returns Updated impersonation log
+ */
+export const endImpersonation = async (logId: string, actionsTaken?: string[]): Promise<ImpersonationLogType> => {
+  try {
+    const updatedLog = await factorySuperUserService.endImpersonation(logId, actionsTaken);
+
+    // Invalidate cache
+    clearCache('impersonationLogs');
+
+    return updatedLog;
+  } catch (error) {
+    throw new Error(`Failed to end impersonation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Get impersonation history with pagination
+ * @param filters - Filter options (superUserId, tenantId, dateRange)
+ * @param page - Page number
+ * @param limit - Records per page
+ * @returns Paginated impersonation logs
+ */
+export const getImpersonationHistory = async (
+  filters?: {
+    superUserId?: string;
+    tenantId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  },
+  page: number = 1,
+  limit: number = 20
+): Promise<{ data: ImpersonationLogType[]; total: number; page: number; limit: number }> => {
+  try {
+    const cacheKey = `history:${JSON.stringify(filters)}:${page}:${limit}`;
+    const cached = cache.impersonationLogs.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return {
+        data: cached.data,
+        total: cached.data.length,
+        page,
+        limit,
+      };
+    }
+
+    let allLogs = await factorySuperUserService.getImpersonationLogs(filters);
+
+    // Apply filtering if provided
+    if (filters?.startDate) {
+      allLogs = allLogs.filter((log) => new Date(log.loginAt) >= filters.startDate!);
+    }
+    if (filters?.endDate) {
+      allLogs = allLogs.filter((log) => new Date(log.loginAt) <= filters.endDate!);
+    }
+
+    // Pagination
+    const start = (page - 1) * limit;
+    const paginatedData = allLogs.slice(start, start + limit);
+
+    cache.impersonationLogs.set(cacheKey, { data: paginatedData, timestamp: Date.now() });
+
+    return {
+      data: paginatedData,
+      total: allLogs.length,
+      page,
+      limit,
+    };
+  } catch (error) {
+    throw new Error(`Failed to fetch impersonation history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Get currently active impersonation sessions
+ * @returns Array of active impersonation logs
+ */
+export const getActiveImpersonations = async (): Promise<ImpersonationLogType[]> => {
+  try {
+    const cacheKey = 'active';
+    const cached = cache.impersonationLogs.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+
+    const allLogs = await factorySuperUserService.getImpersonationLogs();
+    const activeSessions = allLogs.filter((log) => !log.logoutAt);
+
+    cache.impersonationLogs.set(cacheKey, { data: activeSessions, timestamp: Date.now() });
+
+    return activeSessions;
+  } catch (error) {
+    throw new Error(`Failed to fetch active impersonations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// ============================================
+// TENANT ANALYTICS
+// ============================================
+
+/**
+ * Get tenant metrics for dashboard
+ * @param tenantId - Tenant ID
+ * @returns Metrics for tenant
+ */
+export const getTenantMetrics = async (tenantId: string): Promise<TenantStatisticType[]> => {
+  try {
+    const cacheKey = tenantId;
+    const cached = cache.statistics.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+
+    const metrics = await factorySuperUserService.getTenantStatistics(tenantId);
+    cache.statistics.set(cacheKey, { data: metrics, timestamp: Date.now() });
+
+    return metrics;
+  } catch (error) {
+    throw new Error(`Failed to fetch tenant metrics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Compare metrics across multiple tenants
+ * @param tenantIds - Array of tenant IDs
+ * @returns Comparison metrics
+ */
+export const getComparisonMetrics = async (tenantIds: string[]): Promise<Map<string, TenantStatisticType[]>> => {
+  try {
+    const comparisonMap = new Map<string, TenantStatisticType[]>();
+
+    for (const tenantId of tenantIds) {
+      const metrics = await getTenantMetrics(tenantId);
+      comparisonMap.set(tenantId, metrics);
+    }
+
+    return comparisonMap;
+  } catch (error) {
+    throw new Error(`Failed to fetch comparison metrics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Record new metric for tenant
+ * @param tenantId - Tenant ID
+ * @param metricType - Type of metric
+ * @param value - Metric value
+ * @returns Recorded metric
+ */
+export const recordMetric = async (
+  tenantId: string,
+  metricType: 'active_users' | 'total_contracts' | 'total_sales' | 'total_transactions' | 'disk_usage' | 'api_calls_daily',
+  value: number
+): Promise<TenantStatisticType> => {
+  try {
+    const metric = await factorySuperUserService.recordTenantMetric(tenantId, metricType, value);
+
+    // Invalidate cache for this tenant
+    clearCache(`statistics:${tenantId}`);
+
+    return metric;
+  } catch (error) {
+    throw new Error(`Failed to record metric: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Get metrics trend for time period
+ * @param tenantId - Tenant ID
+ * @param metricType - Metric type to track
+ * @param days - Number of days to look back
+ * @returns Array of metrics over time
+ */
+export const getMetricsTrend = async (
+  tenantId: string,
+  metricType: 'active_users' | 'total_contracts' | 'total_sales' | 'total_transactions' | 'disk_usage' | 'api_calls_daily',
+  days: number = 30
+): Promise<TenantStatisticType[]> => {
+  try {
+    const cacheKey = `trend:${tenantId}:${metricType}:${days}`;
+    const cached = cache.statistics.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+
+    const allMetrics = await factorySuperUserService.getTenantStatistics(tenantId);
+
+    // Filter for specific metric type and time range
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const trendMetrics = allMetrics.filter(
+      (m) => m.metricType === metricType && new Date(m.recordedAt) >= cutoffDate
+    );
+
+    cache.statistics.set(cacheKey, { data: trendMetrics, timestamp: Date.now() });
+
+    return trendMetrics;
+  } catch (error) {
+    throw new Error(`Failed to fetch metrics trend: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// ============================================
+// CONFIGURATION MANAGEMENT
+// ============================================
+
+/**
+ * Get configuration overrides for tenant
+ * @param tenantId - Tenant ID
+ * @returns Array of config overrides
+ */
+export const getConfigOverrides = async (tenantId: string): Promise<TenantConfigOverrideType[]> => {
+  try {
+    const cacheKey = tenantId;
+    const cached = cache.configOverrides.get(cacheKey);
+
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+
+    const overrides = await factorySuperUserService.getConfigOverrides(tenantId);
+    cache.configOverrides.set(cacheKey, { data: overrides, timestamp: Date.now() });
+
+    return overrides;
+  } catch (error) {
+    throw new Error(`Failed to fetch config overrides: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Create configuration override with validation
+ * @param input - Config override input
+ * @returns Created config override
+ */
+export const createOverride = async (input: ConfigOverrideInput): Promise<TenantConfigOverrideType> => {
+  try {
+    // Validate input
+    const validation = validateConfigOverride(input);
+    if (!validation.isValid) {
+      throw new Error(`Invalid config override data: ${validation.errors.join(', ')}`);
+    }
+
+    // Validate config key
+    validateConfigKey(input.configKey);
+
+    const override = await factorySuperUserService.createConfigOverride(input);
+
+    // Invalidate cache
+    clearCache(`configOverrides:${input.tenantId}`);
+
+    return override;
+  } catch (error) {
+    throw new Error(`Failed to create config override: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Update configuration override value
+ * @param id - Override ID
+ * @param value - New config value
+ * @returns Updated override
+ */
+export const updateOverride = async (id: string, value: unknown): Promise<TenantConfigOverrideType> => {
+  try {
+    const updated = await factorySuperUserService.updateConfigOverride(id, value);
+
+    // Invalidate all config overrides cache
+    clearCache('configOverrides');
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to update config override: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Manually expire configuration override
+ * @param id - Override ID
+ * @returns Expiration result
+ */
+export const expireOverride = async (id: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Get the override to verify it exists
+    const allOverrides = await Promise.all(
+      Array.from(cache.configOverrides.values()).map((item) => Promise.resolve(item.data))
+    );
+    const override = allOverrides
+      .flat()
+      .find((o) => o.id === id);
+    if (!override) {
+      throw new Error(`Config override ${id} not found`);
+    }
+
+    await factorySuperUserService.deleteConfigOverride(id);
+
+    // Invalidate cache
+    clearCache('configOverrides');
+
+    return { success: true, message: `Config override ${id} expired successfully` };
+  } catch (error) {
+    throw new Error(`Failed to expire config override: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Validate configuration key
+ * @param key - Config key to validate
+ * @throws Error if key is invalid
+ */
+export const validateConfigKey = (key: string): void => {
+  const validKeys = [
+    'feature_flags',
+    'maintenance_mode',
+    'api_rate_limit',
+    'session_timeout',
+    'data_retention_days',
+    'backup_frequency',
+    'notification_settings',
+    'audit_log_level',
+  ];
+
+  if (!validKeys.includes(key)) {
+    throw new Error(
+      `Invalid config key: ${key}. Valid keys are: ${validKeys.join(', ')}`
+    );
+  }
+};
+
+export const superUserService = {
+  // Super User Management
+  getSuperUsers,
+  getSuperUser,
+  getSuperUserByUserId,
+  createSuperUser,
+  updateSuperUser,
+  deleteSuperUser,
+
+  // Tenant Access Management
+  getTenantAccessList,
+  grantTenantAccess,
+  revokeTenantAccess,
+  updateAccessLevel,
+
+  // Impersonation Operations
+  startImpersonation,
+  endImpersonation,
+  getImpersonationHistory,
+  getActiveImpersonations,
+
+  // Tenant Analytics
+  getTenantMetrics,
+  getComparisonMetrics,
+  recordMetric,
+  getMetricsTrend,
+
+  // Configuration Management
+  getConfigOverrides,
+  createOverride,
+  updateOverride,
+  expireOverride,
+  validateConfigKey,
+};
+
+export default superUserService;

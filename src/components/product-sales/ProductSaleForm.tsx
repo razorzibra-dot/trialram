@@ -51,8 +51,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { productSaleService, customerService } from '@/services';
-import { productService } from '@/services/productService';
+import { productSaleService as factoryProductSaleService, customerService as factoryCustomerService, productService as factoryProductService } from '@/services/serviceFactory';
 import { ProductSale, ProductSaleFormData } from '@/types/productSales';
 import { Customer } from '@/types/crm';
 import { Product } from '@/types/masters';
@@ -120,8 +119,8 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
       // Load customers and products with tenant context
       const tenantId = tenant?.tenantId || 'tenant_1'; // Fallback to default tenant
       const [customersResponse, productsResponse] = await Promise.all([
-        customerService.getCustomers({}, 1, 100, tenantId),
-        productService.getProducts(1, 100, {}, tenantId)
+        factoryCustomerService.getCustomers({}, 1, 100, tenantId),
+        factoryProductService.getProducts(1, 100, {}, tenantId)
       ]);
 
       // Handle both array and paginated response formats
@@ -225,10 +224,10 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
       };
 
       if (isEditing && productSale) {
-        await productSaleService.updateProductSale(productSale.id, formData);
+        await factoryProductSaleService.updateProductSale(productSale.id, formData);
         toast.success('Product sale updated successfully');
       } else {
-        await productSaleService.createProductSale(formData);
+        await factoryProductSaleService.createProductSale(formData);
         toast.success('Product sale created successfully');
       }
 
@@ -246,7 +245,7 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
     
     try {
       setGeneratingPDF('receipt');
-      const response = await productSaleService.generateReceiptPDF(productSale.id);
+      const response = await factoryProductSaleService.generateReceiptPDF(productSale.id);
       toast.success('Receipt PDF generated successfully');
       // In a real implementation, this would trigger a download
       console.log('Generated receipt PDF:', response);
@@ -263,7 +262,7 @@ const ProductSaleForm: React.FC<ProductSaleFormProps> = ({
     
     try {
       setGeneratingPDF('contract');
-      const response = await productSaleService.generateContractPDF(productSale.id);
+      const response = await factoryProductSaleService.generateContractPDF(productSale.id);
       toast.success('Contract PDF generated successfully');
       // In a real implementation, this would trigger a download
       console.log('Generated contract PDF:', response);

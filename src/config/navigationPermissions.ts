@@ -31,62 +31,75 @@ export interface NavigationItemConfig extends NavigationPermission {
  */
 export const navigationConfig: NavigationItemConfig[] = [
   // ============================================
-  // COMMON ITEMS - Available to all authenticated users
+  // TENANT ITEMS - Available to non-super-admin users only
+  // ⚠️ CRITICAL: Super admins (role='super_admin') should NOT see these items
+  // They have separate super-admin routes and should be isolated
   // ============================================
   {
     key: '/tenant/dashboard',
     label: 'Dashboard',
     permission: 'read',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/customers',
     label: 'Customers',
     permission: 'manage_customers',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/sales',
     label: 'Sales',
     permission: 'manage_sales',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/product-sales',
     label: 'Product Sales',
     permission: 'manage_product_sales',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/contracts',
     label: 'Contracts',
     permission: 'manage_contracts',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/service-contracts',
     label: 'Service Contracts',
     permission: 'manage_service_contracts',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/tickets',
     label: 'Support Tickets',
     permission: 'manage_tickets',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/complaints',
     label: 'Complaints',
     permission: 'manage_complaints',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
   {
     key: '/tenant/job-works',
     label: 'Job Works',
     permission: 'manage_job_works',
+    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
   },
 
   // ============================================
-  // ADMINISTRATION SECTION - Admin & Super Admin only
+  // ADMINISTRATION SECTION - Tenant Admin only (NOT for super admins)
+  // ⚠️ CRITICAL: Super admins have separate super-admin routes
+  // They should NOT see these tenant admin items
   // ============================================
   {
     key: 'admin-section',
     label: 'Administration',
     isSection: true,
-    requiredRole: ['admin', 'super_admin'],
+    requiredRole: 'admin',
   },
   {
     key: '/tenant/masters',

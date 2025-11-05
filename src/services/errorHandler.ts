@@ -3,6 +3,8 @@
  * Provides consistent error handling, logging, and response formatting
  */
 
+import { ServiceError, ErrorContext } from '@/types';
+
 export enum ErrorCode {
   // Authentication errors
   UNAUTHORIZED = 'UNAUTHORIZED',
@@ -43,28 +45,6 @@ export enum ErrorCode {
   DATABASE_ERROR = 'DATABASE_ERROR',
   FILE_SYSTEM_ERROR = 'FILE_SYSTEM_ERROR',
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR'
-}
-
-export interface ServiceError {
-  code: ErrorCode;
-  message: string;
-  details?: Record<string, unknown>;
-  field?: string;
-  timestamp: string;
-  service: string;
-  operation: string;
-  userId?: string;
-  tenantId?: string;
-  correlationId?: string;
-}
-
-export interface ErrorContext {
-  service: string;
-  operation: string;
-  userId?: string;
-  tenantId?: string;
-  correlationId?: string;
-  metadata?: Record<string, unknown>;
 }
 
 /**

@@ -1,5 +1,59 @@
 // Notification System Types
 
+// UI Notification Service Types
+export type NotificationType = 'success' | 'error' | 'warning' | 'info';
+export type MessageType = 'success' | 'error' | 'warning' | 'info' | 'loading';
+
+/**
+ * In-app Notification type for notification center/page
+ * Used by notificationService for managing user notifications
+ */
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  is_read?: boolean;
+  read?: boolean;
+  read_at?: string;
+  action_url?: string;
+  action_label?: string;
+  category?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * UI Notification Preferences for channel selection
+ * Used by notificationService for managing user notification preferences
+ */
+export interface UINotificationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  in_app: boolean;
+  categories?: Record<string, {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    in_app: boolean;
+  }>;
+}
+
+/**
+ * Notification filters for querying notifications
+ */
+export interface NotificationFilters {
+  search?: string;
+  is_read?: boolean;
+  category?: string;
+  userId?: string;
+  read?: boolean;
+}
+
 export interface NotificationTemplate {
   id: string;
   name: string;

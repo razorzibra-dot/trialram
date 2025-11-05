@@ -4,7 +4,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { multiTenantService, type TenantContext } from '@/services/supabase/multiTenantService';
+import { multiTenantService as factoryMultiTenantService } from '@/services/serviceFactory';
+import type { TenantContext } from '@/types/tenant';
 
 export const useTenantContext = () => {
   const [tenant, setTenant] = useState<TenantContext | null>(null);
@@ -12,13 +13,13 @@ export const useTenantContext = () => {
 
   useEffect(() => {
     // Set initial tenant context
-    const currentTenant = multiTenantService.getCurrentTenant();
+    const currentTenant = factoryMultiTenantService.getCurrentTenant();
     console.log('[useTenantContext] Initialized with tenant:', currentTenant);
     setTenant(currentTenant);
     setIsLoading(false);
 
     // Subscribe to tenant changes
-    const unsubscribe = multiTenantService.subscribe((newTenant) => {
+    const unsubscribe = factoryMultiTenantService.subscribe((newTenant) => {
       console.log('[useTenantContext] Tenant changed:', newTenant);
       setTenant(newTenant);
       setIsLoading(false);

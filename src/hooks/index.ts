@@ -42,7 +42,15 @@ export { useAuth } from '@/contexts/AuthContext';
 export { useToast } from './use-toast';
 export { useNotification } from './useNotification';
 export { useToastCompat } from './useToastCompat';
-export { useMobile } from './use-mobile';
+export { useIsMobile, useBreakpoint, useResponsive } from './use-mobile';
 export { useLocalStorage } from './useLocalStorage';
 export { useScrollRestoration } from './useScrollRestoration';
 export { useEnhancedTableScroll } from './useEnhancedTableScroll';
+export { useTenantContext } from './useTenantContext';
+export { useSessionManager } from './useSessionManager';
+export { usePermissionBasedNavigation } from './usePermissionBasedNavigation';
+
+// Phase 5: Super Admin Isolation Hooks
+export { useModuleAccess, useAccessibleModules, type ModuleAccessResult } from './useModuleAccess';
+export { useCanAccessModule } from './useCanAccessModule';
+export { useImpersonationActionTracker, type ImpersonationActionTrackerHook } from './useImpersonationActionTracker';

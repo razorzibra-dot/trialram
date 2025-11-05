@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { complaintService } from '@/services/complaintService';
+import { complaintService as factoryComplaintService } from '@/services/serviceFactory';
 import { Complaint, ComplaintComment, ComplaintUpdateData } from '@/types/complaints';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { uiNotificationService } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 import { 
   Loader2, 
   MessageSquare, 
@@ -90,7 +90,7 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
   const fetchEngineers = async () => {
     try {
-      const data = await complaintService.getEngineers();
+      const data = await factoryComplaintService.getEngineers();
       setEngineers(data);
     } catch (error) {
       console.error('Failed to fetch engineers:', error);
@@ -102,13 +102,13 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
     setIsLoading(true);
     try {
-      await complaintService.addComment(complaint.id, newComment);
+      await factoryComplaintService.addComment(complaint.id, newComment);
       setNewComment('');
       onSuccess();
-      uiNotificationService.successNotify('Success', 'Comment added successfully');
+      factoryUINotificationService.successNotify('Success', 'Comment added successfully');
     } catch (error: unknown) {
       console.error('Failed to add comment:', error);
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to add comment'
       );
@@ -119,7 +119,7 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
   const handleUpdateComplaint = async () => {
     if (updateData.status === 'closed' && !updateData.engineer_resolution?.trim()) {
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Validation Error',
         'Engineer resolution is required to close a complaint'
       );
@@ -128,12 +128,12 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
     setIsUpdating(true);
     try {
-      await complaintService.updateComplaint(complaint.id, updateData);
+      await factoryComplaintService.updateComplaint(complaint.id, updateData);
       onSuccess();
-      uiNotificationService.successNotify('Success', 'Complaint updated successfully');
+      factoryUINotificationService.successNotify('Success', 'Complaint updated successfully');
     } catch (error: unknown) {
       console.error('Failed to update complaint:', error);
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to update complaint'
       );
@@ -157,12 +157,12 @@ const ComplaintDetailModal: React.FC<ComplaintDetailModalProps> = ({
 
   const handleReopen = async () => {
     try {
-      await complaintService.reopenComplaint(complaint.id);
+      await factoryComplaintService.reopenComplaint(complaint.id);
       onSuccess();
-      uiNotificationService.successNotify('Success', 'Complaint reopened successfully');
+      factoryUINotificationService.successNotify('Success', 'Complaint reopened successfully');
     } catch (error: unknown) {
       console.error('Failed to reopen complaint:', error);
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Error',
         error instanceof Error ? error.message : 'Failed to reopen complaint'
       );

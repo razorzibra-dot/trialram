@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Contract, ContractTemplate, ContractFormData, ContractParty } from '@/types/contracts';
 import { Customer } from '@/types/crm';
 import { User } from '@/types/auth';
-import { contractService, customerService, userService } from '@/services';
+import { contractService as factoryContractService, customerService as factoryCustomerService, userService as factoryUserService, uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { notificationService } from '@/services/uiNotificationService';
 import { Plus, X, FileText, Users, Calendar, DollarSign, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -130,8 +129,8 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
   const loadInitialData = useCallback(async () => {
     try {
       const [customersData, usersData] = await Promise.all([
-        customerService.getCustomers(),
-        userService.getUsers()
+        factoryCustomerService.getCustomers(),
+        factoryUserService.getUsers()
       ]);
       // Mock templates for now
       setTemplates([]);
@@ -316,13 +315,13 @@ const ContractFormModal: React.FC<ContractFormModalProps> = ({
       };
 
       if (contract) {
-        await contractService.updateContract(contract.id, contractData);
+        await factoryContractService.updateContract(contract.id, contractData);
         toast({
           title: 'Success',
           description: 'Contract updated successfully'
         });
       } else {
-        await contractService.createContract(contractData);
+        await factoryContractService.createContract(contractData);
         toast({
           title: 'Success',
           description: 'Contract created successfully'

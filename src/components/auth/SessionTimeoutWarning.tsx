@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Clock, RefreshCw, LogOut } from 'lucide-react';
 import { authService } from '@/services';
-import { uiNotificationService } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 
 interface SessionTimeoutWarningProps {
   warningThreshold?: number; // Show warning when X seconds left (default: 300 = 5 minutes)
@@ -65,7 +65,7 @@ const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
   const handleAutoLogout = async () => {
     setShowWarning(false);
     
-    uiNotificationService.errorNotify(
+    factoryUINotificationService.errorNotify(
       'Session Expired',
       'You have been automatically logged out due to inactivity.'
     );
@@ -80,7 +80,7 @@ const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
       // Attempt to refresh the token
       await authService.refreshToken();
       
-      uiNotificationService.successNotify(
+      factoryUINotificationService.successNotify(
         'Session Extended',
         'Your session has been successfully extended.'
       );
@@ -89,7 +89,7 @@ const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
     } catch (error) {
       console.error('Failed to extend session:', error);
       
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Session Extension Failed',
         'Unable to extend your session. Please log in again.'
       );

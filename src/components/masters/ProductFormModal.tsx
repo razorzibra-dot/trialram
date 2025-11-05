@@ -29,10 +29,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { notificationService } from '@/services/uiNotificationService';
 import { Loader2, Package } from 'lucide-react';
 import { Product, ProductFormData, PRODUCT_TYPES, PRODUCT_CATEGORIES, CURRENCIES } from '@/types/masters';
-import { productService } from '@/services/productService';
+import { productService as factoryProductService } from '@/services/serviceFactory';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Product name is required').max(100, 'Name too long'),
@@ -118,13 +117,13 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     setIsSubmitting(true);
     try {
       if (isEditing && product) {
-        await productService.updateProduct(product.id, data);
+        await factoryProductService.updateProduct(product.id, data);
         toast({
           title: 'Success',
           description: 'Product updated successfully.',
         });
       } else {
-        await productService.createProduct(data);
+        await factoryProductService.createProduct(data);
         toast({
           title: 'Success',
           description: 'Product created successfully.',

@@ -17,7 +17,7 @@
  */
 
 import { useCallback } from 'react';
-import { notificationService } from '@/services/notificationService';
+import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 
 interface LegacyToastProps {
   id?: string;
@@ -54,7 +54,7 @@ const createLegacyToast = (props: Omit<LegacyToastProps, 'id'>): LegacyToastRetu
   
   // Show the notification
   if (message || description) {
-    notificationService.notify({
+    factoryNotificationService.notify({
       type,
       message: message || 'Notification',
       description,
@@ -73,7 +73,7 @@ const createLegacyToast = (props: Omit<LegacyToastProps, 'id'>): LegacyToastRetu
       const updatedDescription = updatedProps.description ? String(updatedProps.description) : undefined;
       
       if (updatedMessage && updatedMessage !== message) {
-        notificationService.notify({
+        factoryNotificationService.notify({
           type,
           message: updatedMessage,
           description: updatedDescription,
@@ -99,7 +99,7 @@ export const useToastCompat = (): UseToastReturn => {
   
   const dismiss = useCallback((_toastId?: string) => {
     // Close all notifications for compatibility
-    notificationService.closeAll();
+    factoryNotificationService.closeAll();
   }, []);
   
   return {

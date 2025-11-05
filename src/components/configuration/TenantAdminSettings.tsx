@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import { ConfigurationSetting, ConfigurationAudit, configurationService } from '../../services/configurationService';
 import ConfigurationFormModal from './ConfigurationFormModal';
-import { notificationService } from '@/services/uiNotificationService';
 import { formatDistanceToNow } from 'date-fns';
 
 const TenantAdminSettings: React.FC = () => {

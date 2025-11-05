@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ContractAnalytics as ContractAnalyticsType } from '@/types/contracts';
-import { contractService } from '@/services';
+import { contractService as factoryContractService, uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { notificationService } from '@/services/uiNotificationService';
 import {
   BarChart,
   Bar,
@@ -47,7 +46,7 @@ const ContractAnalytics: React.FC = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const data = await contractService.getAnalytics();
+      const data = await factoryContractService.getAnalytics();
       setAnalytics(data);
     } catch (error) {
       toast({

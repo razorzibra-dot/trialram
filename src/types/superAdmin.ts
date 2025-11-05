@@ -163,3 +163,152 @@ export interface SuperAdminFilters {
     search?: string;
   };
 }
+
+/**
+ * Tenant Directory Entry
+ * Represents a tenant in the system with associated statistics
+ * Used by Super Admin tenant directory/management pages
+ */
+export interface TenantDirectoryEntry {
+  tenantId: string;
+  name: string;
+  status: 'active' | 'inactive' | 'suspended';
+  plan: string;
+  activeUsers: number;
+  totalContracts: number;
+  totalSales: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ CENTRALIZED SUPER ADMIN MANAGEMENT TYPES (moved from @/modules/features/super-admin/types to prevent circular dependencies)
+
+/**
+ * Super Admin DTO
+ * Represents a platform-wide super administrator user
+ */
+export interface SuperAdminDTO {
+  id: string;
+  email: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'super_admin';
+  status: 'active' | 'inactive' | 'suspended';
+  tenantId: null; // Must be null for super admin
+  isSuperAdmin: true; // Must be true for super admin
+  createdAt: string;
+  updatedAt: string;
+  avatarUrl?: string;
+  phone?: string;
+  mobile?: string;
+}
+
+/**
+ * Create Super Admin Input
+ * Fields required for creating a new super administrator
+ */
+export interface CreateSuperAdminInput {
+  email: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  status?: 'active' | 'inactive';
+  avatarUrl?: string;
+  phone?: string;
+  mobile?: string;
+}
+
+/**
+ * Promote User to Super Admin Input
+ * Fields required for promoting an existing user
+ */
+export interface PromoteSuperAdminInput {
+  userId: string;
+  reason?: string;
+}
+
+/**
+ * Super Admin Tenant Access
+ * Represents a super admin's access to a specific tenant
+ */
+export interface SuperAdminTenantAccess {
+  id: string;
+  superAdminId: string;
+  tenantId: string;
+  accessLevel: 'full' | 'read_only' | 'admin';
+  grantedAt: string;
+  expiresAt?: string | null;
+  reason?: string;
+}
+
+/**
+ * Grant Tenant Access Input
+ * Fields required for granting super admin access to a tenant
+ */
+export interface GrantTenantAccessInput {
+  superAdminId: string;
+  tenantId: string;
+  accessLevel: 'full' | 'read_only' | 'admin';
+  expiresAt?: string;
+  reason?: string;
+}
+
+/**
+ * Revoke Tenant Access Input
+ * Fields required for revoking super admin access
+ */
+export interface RevokeTenantAccessInput {
+  superAdminId: string;
+  tenantId: string;
+  reason?: string;
+}
+
+/**
+ * Super Admin Stats
+ * Analytics for super admin operations
+ */
+export interface SuperAdminStatsDTO {
+  totalSuperAdmins: number;
+  activeSuperAdmins: number;
+  inactiveSuperAdmins: number;
+  totalTenantAccesses: number;
+  activeTenantAccesses: number;
+  tenantsWithAccess: number;
+  lastUpdated: string;
+}
+
+/**
+ * Super Admin Action Log
+ * Audit log entry for super admin actions
+ */
+export interface SuperAdminActionLog {
+  id: string;
+  superAdminId: string;
+  action: string;
+  targetId: string;
+  details?: Record<string, any>;
+  timestamp: string;
+}
+
+/**
+ * Super Admin Management Service Interface
+ * Defines all operations for super admin management
+ */
+export interface ISuperAdminManagementService {
+  createSuperAdmin(data: CreateSuperAdminInput): Promise<SuperAdminDTO>;
+  getSuperAdmins(): Promise<SuperAdminDTO[]>;
+  getSuperAdminById(id: string): Promise<SuperAdminDTO>;
+  updateSuperAdmin(id: string, data: Partial<CreateSuperAdminInput>): Promise<SuperAdminDTO>;
+  deleteSuperAdmin(id: string): Promise<void>;
+  promoteSuperAdmin(data: PromoteSuperAdminInput): Promise<SuperAdminDTO>;
+  demoteSuperAdmin(userId: string, reason?: string): Promise<void>;
+  
+  grantTenantAccess(data: GrantTenantAccessInput): Promise<SuperAdminTenantAccess>;
+  revokeTenantAccess(data: RevokeTenantAccessInput): Promise<void>;
+  getTenantAccess(superAdminId: string): Promise<SuperAdminTenantAccess[]>;
+  
+  getStats(): Promise<SuperAdminStatsDTO>;
+  getActionLog(filters?: Record<string, any>): Promise<SuperAdminActionLog[]>;
+  logAction(action: string, targetId: string, details?: Record<string, any>): Promise<SuperAdminActionLog>;
+}

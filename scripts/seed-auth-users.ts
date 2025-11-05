@@ -81,6 +81,26 @@ const TEST_USERS: TestUser[] = [
     displayName: 'Admin Global',
     tenant: 'Global Trading Ltd',
   },
+
+  // Super Users
+  {
+    email: 'superuser1@platform.admin',
+    password: 'password123',
+    displayName: 'CRM Global',
+    tenant: '',
+  },
+  {
+    email: 'superuser2@platform.admin',
+    password: 'password123',
+    displayName: 'CRM Global',
+    tenant: '',
+  },
+  {
+    email: 'superuser.auditor@platform.admin',
+    password: 'password123',
+    displayName: 'CRM Global',
+    tenant: '',
+  },
 ];
 
 interface AuthUserConfig {

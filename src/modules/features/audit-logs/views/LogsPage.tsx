@@ -38,7 +38,7 @@ import { PageHeader, StatCard } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
 import dayjs, { Dayjs } from 'dayjs';
-import type { AuditLog } from '@/services/auditService';
+import type { AuditLog } from '@/types';
 
 const { RangePicker } = DatePicker;
 

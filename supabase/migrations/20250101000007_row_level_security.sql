@@ -48,6 +48,7 @@ ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pdf_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- ============================================================================
 -- 2. HELPER FUNCTION - Get Current User Tenant
@@ -91,7 +92,7 @@ CREATE POLICY "super_admin_view_all_tenants" ON tenants
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'super_admin'
+      AND users.is_super_admin = true
       AND users.deleted_at IS NULL
     )
   );
@@ -114,7 +115,7 @@ CREATE POLICY "super_admin_update_tenants" ON tenants
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'super_admin'
+      AND users.is_super_admin = true
       AND users.deleted_at IS NULL
     )
   );
@@ -139,7 +140,7 @@ CREATE POLICY "admins_manage_tenant_users" ON users
       SELECT 1 FROM users AS "current_user"
       WHERE "current_user".id = auth.uid()
       AND "current_user".tenant_id = users.tenant_id
-      AND "current_user".role IN ('admin', 'super_admin')
+      AND ("current_user".role = 'admin' OR "current_user".is_super_admin = true)
       AND "current_user".deleted_at IS NULL
     )
   );
@@ -152,7 +153,7 @@ CREATE POLICY "admins_insert_users" ON users
       SELECT 1 FROM users AS "current_user"
       WHERE "current_user".id = auth.uid()
       AND "current_user".tenant_id = users.tenant_id
-      AND "current_user".role IN ('admin', 'super_admin')
+      AND ("current_user".role = 'admin' OR "current_user".is_super_admin = true)
       AND "current_user".deleted_at IS NULL
     )
   );
@@ -314,7 +315,7 @@ CREATE POLICY "managers_manage_products" ON products
     AND EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'manager', 'super_admin')
+      AND (users.role IN ('admin', 'manager') OR users.is_super_admin = true)
       AND users.deleted_at IS NULL
     )
   );

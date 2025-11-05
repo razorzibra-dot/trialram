@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { AlertTriangle, Save, X, Info } from 'lucide-react';
-import { ConfigurationSetting, ValidationSchema, configurationService } from '../../services/configurationService';
-import { notificationService } from '@/services/uiNotificationService';
+import { ConfigurationSetting, ValidationSchema } from '@/types';
+import { configurationService } from '../../services/configurationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 
 interface ConfigurationFormModalProps {
   isOpen: boolean;

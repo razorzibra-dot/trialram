@@ -16,7 +16,7 @@ import {
   TrendingUp,
   Settings
 } from 'lucide-react';
-import { notificationService } from '@/services';
+import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 import { NotificationStats } from '@/types/notifications';
 
 interface NotificationDashboardProps {
@@ -39,8 +39,8 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
   const loadDashboardData = async () => {
     try {
       const [statsData, queueData] = await Promise.all([
-        notificationService.getNotificationStats(),
-        notificationService.getQueueStatus()
+        factoryNotificationService.getNotificationStats(),
+        factoryNotificationService.getQueueStatus()
       ]);
       
       setStats(statsData);
@@ -54,7 +54,7 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
 
   const handleRetryFailed = async () => {
     try {
-      await notificationService.retryFailedNotifications();
+      await factoryNotificationService.retryFailedNotifications();
       await loadDashboardData();
     } catch (error) {
       console.error('Failed to retry notifications:', error);
@@ -63,7 +63,7 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
 
   const handleProcessQueue = async () => {
     try {
-      await notificationService.processQueue();
+      await factoryNotificationService.processQueue();
       await loadDashboardData();
     } catch (error) {
       console.error('Failed to process queue:', error);

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSuperAdmin } from '@/contexts/SuperAdminContext';
 import { usePortal } from '@/contexts/PortalContext';
+import { useImpersonationMode } from '@/contexts/ImpersonationContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ const SuperAdminLayout: React.FC = () => {
   const { user, logout, isLoading, hasRole } = useAuth();
   const { refreshAll, systemHealth, isSuperAdmin } = useSuperAdmin();
   const { isSuperAdmin: isInSuperAdminPortal } = usePortal();
+  const { isImpersonating, activeSession, endImpersonation } = useImpersonationMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -63,6 +65,7 @@ const SuperAdminLayout: React.FC = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExitingImpersonation, setIsExitingImpersonation] = useState(false);
 
   // Redirect if not super admin
   if (!hasRole('super_admin')) {
@@ -90,6 +93,19 @@ const SuperAdminLayout: React.FC = () => {
       console.error('Refresh error:', error);
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleExitImpersonation = async () => {
+    setIsExitingImpersonation(true);
+    try {
+      await endImpersonation();
+      // Show confirmation message
+      console.log('Exited impersonation mode');
+    } catch (error) {
+      console.error('Error exiting impersonation:', error);
+    } finally {
+      setIsExitingImpersonation(false);
     }
   };
 
@@ -137,6 +153,23 @@ const SuperAdminLayout: React.FC = () => {
           href: '/super-admin/role-requests',
           icon: UserCheck,
           current: location.pathname.startsWith('/super-admin/role-requests')
+        }
+      ]
+    },
+    {
+      title: "Impersonation & Audit",
+      items: [
+        {
+          name: 'Impersonation History',
+          href: '/super-admin/impersonation-history',
+          icon: Sparkles,
+          current: location.pathname.startsWith('/super-admin/impersonation-history')
+        },
+        {
+          name: 'Audit Logs',
+          href: '/super-admin/logs',
+          icon: Database,
+          current: location.pathname.startsWith('/super-admin/logs')
         }
       ]
     },
@@ -377,6 +410,19 @@ const SuperAdminLayout: React.FC = () => {
                     {breadcrumbs[breadcrumbs.length - 1]?.name || 'Super Admin'}
                   </h1>
                 </div>
+
+                {/* Impersonation Status Info */}
+                {isImpersonating && activeSession && (
+                  <div className="flex-1 min-w-0 px-2">
+                    <div className="flex items-center space-x-2 px-3 py-1 rounded-md" style={{ backgroundColor: '#FEF3C7' }}>
+                      <Sparkles className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                      <div className="hidden md:flex items-center space-x-1 text-sm flex-1 min-w-0">
+                        <span className="text-amber-900 font-medium truncate">Impersonating:</span>
+                        <span className="text-amber-800 truncate">{activeSession.impersonatedUserId}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Center Section - Search */}
@@ -400,6 +446,33 @@ const SuperAdminLayout: React.FC = () => {
 
               {/* Right Section */}
               <div className="flex items-center space-x-1 sm:space-x-3">
+                {/* Exit Impersonation Button */}
+                {isImpersonating && activeSession && (
+                  <Button
+                    size="sm"
+                    onClick={handleExitImpersonation}
+                    disabled={isExitingImpersonation}
+                    className="px-3 text-sm font-medium"
+                    style={{
+                      backgroundColor: '#FCD34D',
+                      color: '#92400E',
+                      border: '1px solid #FBE8A8'
+                    }}
+                  >
+                    {isExitingImpersonation ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Exit...
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Exit Impersonation
+                      </>
+                    )}
+                  </Button>
+                )}
+
                 {/* Mobile Search Button */}
                 <Button variant="ghost" size="sm" className="md:hidden p-2">
                   <Search className="h-5 w-5" />
@@ -454,6 +527,30 @@ const SuperAdminLayout: React.FC = () => {
                         </Badge>
                       </div>
                     </DropdownMenuLabel>
+                    {isImpersonating && activeSession && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1 py-1">
+                            <p className="text-xs font-semibold leading-none" style={{ color: '#92400E' }}>🎭 IMPERSONATION MODE</p>
+                            <p className="text-xs leading-none" style={{ color: '#9EAAB7' }}>Impersonating:</p>
+                            <p className="text-sm font-medium leading-none" style={{ color: '#2C3E50' }}>
+                              {activeSession.impersonatedUserId}
+                            </p>
+                            {activeSession.tenantId && (
+                              <p className="text-xs leading-none" style={{ color: '#9EAAB7' }}>
+                                Tenant: {activeSession.tenantId}
+                              </p>
+                            )}
+                            {activeSession.reason && (
+                              <p className="text-xs leading-none" style={{ color: '#7A8691' }}>
+                                Reason: {activeSession.reason}
+                              </p>
+                            )}
+                          </div>
+                        </DropdownMenuLabel>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate('/tenant/dashboard')} className="hover:bg-neutral-100">
                       <Building2 className="mr-2 h-4 w-4" />

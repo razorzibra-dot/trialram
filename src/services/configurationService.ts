@@ -1,43 +1,9 @@
 import { supabase } from './database';
-
-export interface ConfigurationSetting {
-  id?: string;
-  category: string;
-  setting_key: string;
-  setting_value: unknown;
-  description?: string;
-  validation_schema?: ValidationSchema;
-  is_active?: boolean;
-  last_modified_by: string;
-  tenant_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ConfigurationAudit {
-  id?: string;
-  setting_id: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW';
-  user_id: string;
-  before_value?: unknown;
-  after_value?: unknown;
-  change_reason?: string;
-  ip_address?: string;
-  user_agent?: string;
-  tenant_id?: string;
-  created_at?: string;
-}
-
-export interface ValidationSchema {
-  type: string;
-  required?: boolean;
-  properties?: Record<string, unknown>;
-  items?: unknown;
-  enum?: string[];
-  minimum?: number;
-  maximum?: number;
-  pattern?: string;
-}
+import {
+  ConfigurationSetting,
+  ConfigurationAudit,
+  ValidationSchema
+} from '@/types';
 
 class ConfigurationService {
   private currentUser: string = 'system';

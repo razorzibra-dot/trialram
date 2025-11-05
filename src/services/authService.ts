@@ -140,10 +140,15 @@ class AuthService {
       email: 'superadmin@platform.com',
       name: 'Platform Administrator',
       role: 'super_admin',
-      tenantId: 'platform',
+      tenantId: null, // ← Super admins have NULL tenantId
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      // ⭐ NEW: Super Admin Isolation Fields
+      isSuperAdmin: true,
+      isSuperAdminMode: false,
+      impersonatedAsUserId: undefined,
+      impersonationLogId: undefined,
     },
     {
       id: 'admin_techcorp_1',
@@ -153,7 +158,8 @@ class AuthService {
       tenantId: 'techcorp',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'manager_techcorp_1',
@@ -163,7 +169,8 @@ class AuthService {
       tenantId: 'techcorp',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'agent_techcorp_1',
@@ -173,7 +180,8 @@ class AuthService {
       tenantId: 'techcorp',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'engineer_techcorp_1',
@@ -183,7 +191,8 @@ class AuthService {
       tenantId: 'techcorp',
       avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'customer_techcorp_1',
@@ -193,7 +202,8 @@ class AuthService {
       tenantId: 'techcorp',
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'admin_innovate_1',
@@ -203,7 +213,8 @@ class AuthService {
       tenantId: 'innovatecorp',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
       created_at: '2024-01-15T00:00:00Z',
-      last_login: new Date().toISOString()
+      last_login: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'manager_innovate_1',
@@ -213,7 +224,8 @@ class AuthService {
       tenantId: 'innovatecorp',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
       created_at: '2024-01-15T00:00:00Z',
-      last_login: new Date().toISOString()
+      last_login: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'agent_innovate_1',
@@ -223,7 +235,8 @@ class AuthService {
       tenantId: 'innovatecorp',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
       created_at: '2024-01-15T00:00:00Z',
-      last_login: new Date().toISOString()
+      last_login: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'engineer_innovate_1',
@@ -233,7 +246,8 @@ class AuthService {
       tenantId: 'innovatecorp',
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
       created_at: '2024-01-15T00:00:00Z',
-      last_login: new Date().toISOString()
+      last_login: new Date().toISOString(),
+      isSuperAdmin: false,
     },
     {
       id: 'customer_innovate_1',
@@ -243,7 +257,8 @@ class AuthService {
       tenantId: 'innovatecorp',
       avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=32&h=32&fit=crop&crop=face',
       created_at: '2024-01-15T00:00:00Z',
-      last_login: new Date().toISOString()
+      last_login: new Date().toISOString(),
+      isSuperAdmin: false,
     }
   ];
 
@@ -276,6 +291,7 @@ class AuthService {
       'read', 'write', 'delete',
       'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 
       'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
+      'manage_dashboard', 'manage_masters', 'manage_user_management',
       'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies',
       'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring'
     ],
@@ -283,6 +299,7 @@ class AuthService {
       'read', 'write', 'delete',
       'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints',
       'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
+      'manage_dashboard', 'manage_masters', 'manage_user_management',
       'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'
     ],
     manager: [
@@ -344,6 +361,9 @@ class AuthService {
       console.log('[AUTH] User found:', appUser.email);
 
       // Step 3: Convert to app User type
+      // ⭐ NEW: Determine super admin status
+      const isSuperAdmin = appUser.role === 'super_admin' && appUser.tenant_id === null;
+      
       const user: User = {
         id: appUser.id,
         email: appUser.email,
@@ -355,6 +375,11 @@ class AuthService {
         tenant_id: appUser.tenant_id,
         createdAt: appUser.created_at,
         lastLogin: new Date().toISOString(),
+        // ⭐ NEW: Super Admin Isolation Fields
+        isSuperAdmin,
+        isSuperAdminMode: false,
+        impersonatedAsUserId: undefined,
+        impersonationLogId: undefined,
       };
 
       // Step 4: Store session and user
@@ -416,6 +441,9 @@ class AuthService {
         return null;
       }
 
+      // ⭐ NEW: Determine super admin status
+      const isSuperAdmin = appUser.role === 'super_admin' && appUser.tenant_id === null;
+      
       const user: User = {
         id: appUser.id,
         email: appUser.email,
@@ -427,6 +455,11 @@ class AuthService {
         tenant_id: appUser.tenant_id,
         createdAt: appUser.created_at,
         lastLogin: appUser.last_login,
+        // ⭐ NEW: Super Admin Isolation Fields
+        isSuperAdmin,
+        isSuperAdminMode: false,
+        impersonatedAsUserId: undefined,
+        impersonationLogId: undefined,
       };
 
       localStorage.setItem(this.userKey, JSON.stringify(user));

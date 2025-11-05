@@ -5,8 +5,8 @@
  * ✅ RBAC permission checks integrated (Layer 3.1)
  */
 import React, { useEffect, useMemo } from 'react';
-import { Drawer, Form, Input, Select, Button, Space, Row, Col, message, Tooltip, Card, Alert } from 'antd';
-import { SaveOutlined, CloseOutlined, InfoCircleOutlined, MailOutlined, UserOutlined, PhoneOutlined, TeamOutlined, BankOutlined, IdcardOutlined, LockOutlined } from '@ant-design/icons';
+import { Drawer, Form, Input, Select, Button, Space, Row, Col, message, Tooltip, Card, Alert, Tag } from 'antd';
+import { SaveOutlined, CloseOutlined, InfoCircleOutlined, MailOutlined, UserOutlined, PhoneOutlined, TeamOutlined, BankOutlined, IdcardOutlined, LockOutlined, CrownOutlined } from '@ant-design/icons';
 import { UserDTO, CreateUserDTO, UpdateUserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { usePermissions } from '../hooks/usePermissions';
 
@@ -101,6 +101,54 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
   };
 
   const title = mode === 'create' ? 'Create New User' : 'Edit User';
+
+  /**
+   * ✅ Task 2.6: Render tenant field with super admin handling
+   * Disables tenant selection for super admins (isSuperAdmin=true, tenantId=null)
+   * Shows info alert explaining super admin scope
+   */
+  const renderTenantField = (): React.ReactNode => {
+    const isSuperAdmin = user?.isSuperAdmin === true || user?.tenantId === null;
+
+    if (isSuperAdmin) {
+      return (
+        <div style={{ marginBottom: 16 }}>
+          <Alert
+            message="Platform-Wide Super Admin"
+            description="This user is a platform-wide super administrator and has access to all tenants. Tenant assignment is not applicable."
+            type="info"
+            icon={<CrownOutlined />}
+            showIcon
+          />
+        </div>
+      );
+    }
+
+    // Regular user - show tenant selector
+    return (
+      <Form.Item
+        label={
+          <span>
+            Tenant <Tooltip title="Organization/Tenant this user belongs to. Required for non-super admins."><InfoCircleOutlined /></Tooltip>
+          </span>
+        }
+        name="tenantId"
+        rules={[{ required: true, message: 'Tenant is required for non-super admin users' }]}
+      >
+        <Select
+          placeholder="Select a tenant"
+          prefix={<TeamOutlined />}
+          disabled={mode === 'edit' && user?.role !== 'super_admin'}
+        >
+          {allTenants.map(tenant => (
+            <Select.Option key={tenant.id} value={tenant.id}>
+              {tenant.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </Form.Item>
+    );
+  };
 
   return (
     <Drawer
@@ -212,6 +260,11 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
               </Form.Item>
             </Col>
           </Row>
+        </Card>
+
+        {/* Tenant Selection Section - ✅ Task 2.6 */}
+        <Card title="Organization" style={{ marginBottom: 16 }} size="small">
+          {renderTenantField()}
         </Card>
 
         {/* Personal Information Section */}

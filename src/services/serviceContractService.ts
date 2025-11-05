@@ -25,7 +25,7 @@ import {
   ServiceDeliveryMilestoneCreateInput,
   ServiceContractIssueCreateInput,
 } from '@/types/serviceContract';
-import { PaginatedResponse } from '@/modules/core/types';
+import { PaginatedResponse } from '@/types/service';
 
 /**
  * Mock data for service contracts

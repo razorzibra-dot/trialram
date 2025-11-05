@@ -5,7 +5,8 @@
 import React from 'react';
 import { Drawer, Form, Switch, Divider, Button, Space, message } from 'antd';
 import { MailOutlined, MessageOutlined, MobileOutlined } from '@ant-design/icons';
-import { NotificationPreferences, notificationService } from '@/services/notificationService';
+import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
+import type { NotificationPreferences } from '@/types/notifications';
 
 interface NotificationPreferencesPanelProps {
   open: boolean;
@@ -32,7 +33,7 @@ export const NotificationPreferencesPanel: React.FC<NotificationPreferencesPanel
   const handleSave = async (values: NotificationPreferences) => {
     try {
       setLoading(true);
-      await notificationService.updateNotificationPreferences(values);
+      await factoryNotificationService.updateNotificationPreferences(values);
       message.success('Preferences saved successfully');
       onClose();
       onSaved?.();

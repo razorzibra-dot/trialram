@@ -71,6 +71,12 @@ class HttpInterceptor {
 
   /**
    * Add auth token to request
+   * 
+   * Adds two sets of headers:
+   * 1. Authorization: Bearer token (authentication)
+   * 2. Impersonation headers if super admin is impersonating
+   *    - X-Impersonation-Log-Id: ID of the impersonation session
+   *    - X-Super-Admin-Id: ID of the super admin performing impersonation
    */
   private addAuthToken(input: RequestInfo | URL, init?: RequestInit): { url: string, init: RequestInit } {
     const url = typeof input === 'string' ? input : input.toString();
@@ -80,6 +86,27 @@ class HttpInterceptor {
     
     if (token && !sessionManager.isTokenExpired(token)) {
       headers.set('Authorization', `Bearer ${token}`);
+    }
+    
+    // Add impersonation headers if super admin is in impersonation mode
+    try {
+      const storedSession = sessionStorage.getItem('impersonation_session');
+      if (storedSession) {
+        const { session } = JSON.parse(storedSession);
+        if (session && session.id && session.superUserId) {
+          headers.set('X-Impersonation-Log-Id', session.id);
+          headers.set('X-Super-Admin-Id', session.superUserId);
+          
+          console.debug('[HttpInterceptor] Adding impersonation headers to request', {
+            url,
+            impersonationLogId: session.id,
+            superAdminId: session.superUserId,
+          });
+        }
+      }
+    } catch (error) {
+      console.debug('[HttpInterceptor] Error reading impersonation session from storage:', error);
+      // Continue without impersonation headers - not a fatal error
     }
     
     return {

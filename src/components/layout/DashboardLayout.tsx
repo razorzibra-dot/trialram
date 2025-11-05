@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePortal } from '../../contexts/PortalContext';
 import { useSidebarScroll, usePageScroll } from '../../contexts/ScrollStateContext';
 import { useScrollRestoration } from '../../hooks/useScrollRestoration';
+import { useCanAccessModule } from '../../hooks/useCanAccessModule';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -36,12 +37,23 @@ import {
 import { cn } from '../../lib/utils';
 
 const DashboardLayout = () => {
-  const { user, logout, hasRole, hasPermission } = useAuth();
+  const { user, logout, hasRole, hasPermission, isSuperAdmin } = useAuth();
   const { currentPortal, switchPortal } = usePortal();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Module access checks
+  const canAccessSuperAdmin = useCanAccessModule('super-admin');
+  const canAccessCustomers = useCanAccessModule('customers');
+  const canAccessSales = useCanAccessModule('sales');
+  const canAccessProductSales = useCanAccessModule('productSales');
+  const canAccessContracts = useCanAccessModule('contracts');
+  const canAccessServiceContracts = useCanAccessModule('serviceContract');
+  const canAccessTickets = useCanAccessModule('tickets');
+  const canAccessComplaints = useCanAccessModule('complaints');
+  const canAccessJobWorks = useCanAccessModule('jobWorks');
 
   // Scroll state management
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -83,54 +95,87 @@ const DashboardLayout = () => {
     }
   );
 
-  // Navigation items grouped by sections
-  const navigationSections = [
-    {
+  /**
+   * Build navigation sections based on user type and module access
+   * 
+   * Super admins see only System Admin section with super-admin modules
+   * Regular users see all tenant modules they have access to
+   * 
+   * CRITICAL: Super admins are isolated and don't see regular tenant modules.
+   * Regular users cannot see super-admin modules.
+   */
+  const navigationSections = [];
+
+  // Super Admin Section - ONLY for super admins
+  if (isSuperAdmin() && canAccessSuperAdmin) {
+    navigationSections.push({
+      title: "System Admin",
+      items: [
+        { name: 'Dashboard', href: '/super-admin/dashboard', icon: LayoutDashboard, module: 'super-admin' },
+        { name: 'Tenants', href: '/super-admin/tenants', icon: Building, module: 'super-admin' },
+        { name: 'Users', href: '/super-admin/users', icon: Users, module: 'super-admin' },
+        { name: 'Analytics', href: '/super-admin/analytics', icon: Activity, module: 'super-admin' },
+        { name: 'Health Check', href: '/super-admin/health', icon: Activity, module: 'super-admin' },
+        { name: 'Configuration', href: '/super-admin/configuration', icon: Settings, module: 'super-admin' },
+        { name: 'Role Requests', href: '/super-admin/role-requests', icon: Shield, module: 'super-admin' },
+      ]
+    });
+  } else if (!isSuperAdmin()) {
+    // Regular tenant user sections - hidden from super admins
+    
+    // Core module section
+    navigationSections.push({
       title: "Core",
       items: [
-        { name: 'Dashboard', href: '/tenant/dashboard', icon: LayoutDashboard, permission: 'read' },
-        { name: 'Customers', href: '/tenant/customers', icon: Users, permission: 'read' },
-        { name: 'Sales', href: '/tenant/sales', icon: ShoppingCart, permission: 'read' },
-      ]
-    },
-    {
-      title: "Operations",
-      items: [
-        { name: 'Product Sales', href: '/tenant/product-sales', icon: Package, permission: 'manage_sales' },
-        { name: 'Contracts', href: '/tenant/contracts', icon: FileText, permission: 'manage_contracts' },
-        { name: 'Service Contracts', href: '/tenant/service-contracts', icon: Shield, permission: 'manage_contracts' },
-        { name: 'Tickets', href: '/tenant/tickets', icon: MessageSquare, permission: 'read' },
-        { name: 'Complaints', href: '/tenant/complaints', icon: MessageSquare, permission: 'read' },
-        { name: 'Job Works', href: '/tenant/job-works', icon: Wrench, permission: 'read' },
-      ]
+        canAccessCustomers && { name: 'Dashboard', href: '/tenant/dashboard', icon: LayoutDashboard, permission: 'read' },
+        canAccessCustomers && { name: 'Customers', href: '/tenant/customers', icon: Users, permission: 'read' },
+        canAccessSales && { name: 'Sales', href: '/tenant/sales', icon: ShoppingCart, permission: 'read' },
+      ].filter(Boolean)
+    });
+
+    // Operations section
+    const operationsItems = [
+      canAccessProductSales && { name: 'Product Sales', href: '/tenant/product-sales', icon: Package, permission: 'manage_sales' },
+      canAccessContracts && { name: 'Contracts', href: '/tenant/contracts', icon: FileText, permission: 'manage_contracts' },
+      canAccessServiceContracts && { name: 'Service Contracts', href: '/tenant/service-contracts', icon: Shield, permission: 'manage_contracts' },
+      canAccessTickets && { name: 'Tickets', href: '/tenant/tickets', icon: MessageSquare, permission: 'read' },
+      canAccessComplaints && { name: 'Complaints', href: '/tenant/complaints', icon: MessageSquare, permission: 'read' },
+      canAccessJobWorks && { name: 'Job Works', href: '/tenant/job-works', icon: Wrench, permission: 'read' },
+    ].filter(Boolean);
+
+    if (operationsItems.length > 0) {
+      navigationSections.push({
+        title: "Operations",
+        items: operationsItems
+      });
     }
-  ];
 
-  // Admin-only sections (Super admin has access to all)
-  if (hasRole('admin') || hasRole('super_admin')) {
-    navigationSections.push({
-      title: "Administration",
-      items: [
-        { name: 'User Management', href: '/tenant/users/list', icon: Users, permission: 'manage_users' },
-        { name: 'Role Management', href: '/tenant/users/roles', icon: Shield, permission: 'manage_roles' },
-        { name: 'Permission Matrix', href: '/tenant/users/permissions', icon: Settings, permission: 'manage_roles' },
-        { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'manage_users' },
-        { name: 'Company Master', href: '/tenant/masters/companies', icon: Building, permission: 'manage_companies' },
-        { name: 'Product Master', href: '/tenant/masters/products', icon: Package, permission: 'manage_products' },
-        { name: 'Audit Logs', href: '/tenant/logs', icon: Activity, permission: 'manage_users' },
-      ]
-    });
-  }
+    // Admin-only sections (NOT shown to super admins)
+    if (hasRole('admin')) {
+      navigationSections.push({
+        title: "Administration",
+        items: [
+          { name: 'User Management', href: '/tenant/users/list', icon: Users, permission: 'manage_users' },
+          { name: 'Role Management', href: '/tenant/users/roles', icon: Shield, permission: 'manage_roles' },
+          { name: 'Permission Matrix', href: '/tenant/users/permissions', icon: Settings, permission: 'manage_roles' },
+          { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'manage_users' },
+          { name: 'Company Master', href: '/tenant/masters/companies', icon: Building, permission: 'manage_companies' },
+          { name: 'Product Master', href: '/tenant/masters/products', icon: Package, permission: 'manage_products' },
+          { name: 'Audit Logs', href: '/tenant/logs', icon: Activity, permission: 'manage_users' },
+        ].filter(item => hasPermission(item.permission))
+      });
+    }
 
-  // Settings section (Super admin has access to all)
-  if (hasPermission('manage_users') || hasRole('super_admin')) {
-    navigationSections.push({
-      title: "Settings",
-      items: [
-        { name: 'Configuration', href: '/tenant/configuration/tenant', icon: Settings, permission: 'manage_users' },
-        { name: 'Notifications', href: '/tenant/notifications', icon: Bell, permission: 'read' },
-      ]
-    });
+    // Settings section (NOT shown to super admins)
+    if (hasPermission('manage_users')) {
+      navigationSections.push({
+        title: "Settings",
+        items: [
+          { name: 'Configuration', href: '/tenant/configuration/tenant', icon: Settings, permission: 'manage_users' },
+          { name: 'Notifications', href: '/tenant/notifications', icon: Bell, permission: 'read' },
+        ].filter(item => hasPermission(item.permission))
+      });
+    }
   }
 
 
@@ -229,10 +274,16 @@ const DashboardLayout = () => {
             </h3>
             <div className="space-y-1">
               {section.items
-                .filter(item => hasPermission(item.permission) || hasRole('super_admin'))
+                /**
+                 * Filter items based on user permissions and module access.
+                 * 
+                 * For super admin items: no filtering needed (already filtered in navigationSections)
+                 * For tenant items: check hasPermission for permission-based items
+                 */
                 .map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.href);
+                  
                   return (
                     <button
                       key={item.name}
@@ -372,16 +423,21 @@ const DashboardLayout = () => {
               </div>
             </div>
 
-            {/* Center Section - Search */}
+            {/* Center Section - Search - TASK 2.10 */}
             <div className="hidden md:flex flex-1 max-w-md mx-4">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
                   type="text"
-                  placeholder="Search customers, contracts, tickets..."
+                  placeholder={
+                    isSuperAdmin() 
+                      ? "Search tenants, users, configurations..." 
+                      : "Search customers, contracts, tickets..."
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 w-full"
+                  aria-label="Search across accessible modules"
                 />
               </div>
             </div>
@@ -401,11 +457,16 @@ const DashboardLayout = () => {
                 </Badge>
               </Button>
 
-              {/* Portal Switcher for Super Admin */}
-              {hasRole('super_admin') && (
+              {/* Portal Switcher for Super Admin - TASK 2.10 */}
+              {isSuperAdmin() && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="border-accent-300 text-accent-600 hover:bg-accent-50">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-accent-300 text-accent-600 hover:bg-accent-50"
+                      aria-label="Switch between super admin and tenant portals"
+                    >
                       <Shield className="h-4 w-4 mr-2" />
                       {currentPortal === 'super-admin' ? 'Super Admin' : 'Tenant'}
                     </Button>
@@ -413,11 +474,17 @@ const DashboardLayout = () => {
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Switch Portal</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => switchPortal('tenant')}>
+                    <DropdownMenuItem 
+                      onClick={() => switchPortal('tenant')}
+                      disabled={currentPortal === 'tenant'}
+                    >
                       <Building className="mr-2 h-4 w-4" />
                       Tenant Portal
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => switchPortal('super-admin')}>
+                    <DropdownMenuItem 
+                      onClick={() => switchPortal('super-admin')}
+                      disabled={currentPortal === 'super-admin'}
+                    >
                       <Shield className="mr-2 h-4 w-4" />
                       Super Admin Portal
                     </DropdownMenuItem>

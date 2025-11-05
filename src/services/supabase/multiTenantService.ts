@@ -18,6 +18,7 @@ class MultiTenantService {
 
   /**
    * Initialize tenant context from session
+   * ⭐ CRITICAL: Handles both tenant users and super admins (tenantId=null)
    */
   async initializeTenantContext(userId: string): Promise<TenantContext | null> {
     try {
@@ -33,11 +34,26 @@ class MultiTenantService {
       }
 
       if (!user) {
-        console.warn('User not found');
+        console.warn('[MultiTenantService] User not found');
         return null;
       }
 
-      // Fetch tenant info separately
+      // ⭐ CRITICAL: Check if user is a super admin (tenant_id = null)
+      if (user.tenant_id === null || user.role === 'super_admin') {
+        console.log('[MultiTenantService] Super admin detected - skipping tenant fetch');
+        
+        const tenantContext: TenantContext = {
+          tenantId: null as any, // Super admins have no tenant
+          tenantName: 'Platform Administration',
+          userId,
+          role: user.role,
+        };
+
+        this.setCurrentTenant(tenantContext);
+        return tenantContext;
+      }
+
+      // Fetch tenant info separately for regular tenant users
       let tenantName: string | undefined;
       try {
         const { data: tenant } = await supabaseClient
@@ -48,7 +64,7 @@ class MultiTenantService {
         
         tenantName = tenant?.name;
       } catch (tenantError) {
-        console.warn('Could not fetch tenant details:', tenantError);
+        console.warn('[MultiTenantService] Could not fetch tenant details:', tenantError);
       }
 
       const tenantContext: TenantContext = {
@@ -61,7 +77,7 @@ class MultiTenantService {
       this.setCurrentTenant(tenantContext);
       return tenantContext;
     } catch (error) {
-      console.error('Error initializing tenant context:', error);
+      console.error('[MultiTenantService] Error initializing tenant context:', error);
       return null;
     }
   }

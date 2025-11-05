@@ -106,6 +106,22 @@ import type { ContractResponse } from './api/interfaces';
 import { baseApiService } from './api/baseApiService';
 import apiConfig from '@/config/apiConfig';
 import { uiNotificationService } from './uiNotificationService';
+import { superAdminManagementService as factorySuperAdminManagementService } from './serviceFactory';
+import type {
+  SuperUserTenantAccessType,
+  ImpersonationLogType,
+  TenantStatisticType,
+  TenantConfigOverrideType,
+  SuperUserTenantAccessCreateInput,
+  SuperUserTenantAccessUpdateInput,
+  ImpersonationStartInput,
+  ImpersonationEndInput,
+  TenantStatisticCreateInput,
+  TenantConfigOverrideCreateInput,
+  TenantConfigOverrideUpdateInput,
+  AccessLevel,
+  MetricType,
+} from '@/types/superUserModule';
 
 // Type alias for UI user representation
 type UiUser = User;
@@ -537,6 +553,10 @@ export const auditService = {
   searchAuditLogs: (query: string) => getAuditService().searchAuditLogs(query),
 } as unknown as ReturnType<typeof getAuditService>;
 
+// Export compliance report service from factory (supports mock/supabase/real backends)
+import { complianceReportService as factoryComplianceReportService } from './serviceFactory';
+export const complianceReportService = factoryComplianceReportService;
+
 // Export productService from factory (supports mock/supabase/real backends)
 import { productService as factoryProductService } from './serviceFactory';
 export const productService = factoryProductService;
@@ -892,6 +912,12 @@ export { uiNotificationService };
 export { notificationService } from './serviceFactory';
 // Export the tenant service from factory
 export { tenantService } from './serviceFactory';
+// NOTE: superUserService has been archived to MARK_FOR_DELETE/deprecated_super_user_services/
+// Use superAdminManagementService for super admin operations instead
+// Export the super admin management service from factory (✅ Phase 2)
+export { superAdminManagementService } from './serviceFactory';
+// NOTE: Super user module types have been archived with superUserService
+// Legacy type exports moved to MARK_FOR_DELETE/deprecated_super_user_services/
 
 // Default export for convenience
 export default {
@@ -906,8 +932,10 @@ export default {
   notification: factoryNotificationService,  // Data notification service from factory
   uiNotification: uiNotificationService,      // UI notification (messages/alerts)
   tenant: factoryTenantService,               // Tenant service from factory
+  superAdminManagement: factorySuperAdminManagementService,  // Super admin management (✅ Phase 2)
   file: fileService,
   audit: auditService,
+  complianceReport: factoryComplianceReportService,  // Compliance report service from factory (✅ Phase 5.3)
   factory: apiServiceFactory,
   switchApiMode,
   getCurrentApiMode,

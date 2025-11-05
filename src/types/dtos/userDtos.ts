@@ -31,7 +31,8 @@ export type UserStatus = 'active' | 'inactive' | 'suspended';
  * - last_name → lastName
  * - role → role (enum)
  * - status → status (enum)
- * - tenant_id → tenantId
+ * - tenant_id → tenantId (NULL for platform-wide super admins)
+ * - is_super_admin → isSuperAdmin
  * - avatar_url → avatarUrl
  * - phone → phone
  * - mobile → mobile
@@ -66,8 +67,11 @@ export interface UserDTO {
   /** User account status */
   status: UserStatus;
 
-  /** Tenant identifier */
-  tenantId: string;
+  /** Tenant identifier - NULL for platform-wide super admins */
+  tenantId?: string | null;
+
+  /** Whether user is a platform-wide super admin */
+  isSuperAdmin?: boolean;
 
   /** Profile avatar URL */
   avatarUrl?: string;

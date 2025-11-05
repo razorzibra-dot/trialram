@@ -40,7 +40,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
-import type { Notification, NotificationPreferences } from '@/services/uiNotificationService';
+import type { Notification, NotificationPreferences } from '@/types/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
 import { NotificationDetailPanel } from '../components/NotificationDetailPanel';

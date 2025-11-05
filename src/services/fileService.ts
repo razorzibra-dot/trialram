@@ -4,20 +4,7 @@
  */
 
 import { authService } from './authService';
-
-export interface FileMetadata {
-  id: string;
-  filename: string;
-  originalName: string;
-  url: string;
-  size: number;
-  mimeType: string;
-  category?: string;
-  description?: string;
-  isPublic: boolean;
-  uploadedBy: string;
-  createdAt: string;
-}
+import { FileMetadata } from '@/types';
 
 class FileService {
   private baseUrl = '/api/files';

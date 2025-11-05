@@ -4,6 +4,7 @@
  * based on environment configuration
  */
 
+import { ApiMode } from '@/types';
 import { mockServiceContractService } from './serviceContractService'; // Mock implementation
 import { supabaseServiceContractService } from './supabase/serviceContractService'; // Supabase implementation
 import { supabaseContractService } from './supabase/contractService'; // Supabase contract service (Contract module)
@@ -18,6 +19,10 @@ import { supabaseRbacService } from './api/supabase/rbacService';
 import { supabaseNotificationService } from './supabase/notificationService';
 import { supabaseTenantService } from './supabase/tenantService';
 import { supabaseTicketService } from './supabase/ticketService';
+import { supabaseAdminManagementService } from './api/supabase/superAdminManagementService';
+import { superAdminManagementService as mockSuperAdminManagementService } from './superAdminManagementService';
+import { mockRoleRequestService } from './roleRequestService';
+import { supabaseRoleRequestService } from './api/supabase/roleRequestService';
 import { productSaleService as mockProductSaleService } from './productSaleService';
 import { salesService as mockSalesService } from './salesService';
 import { contractService as mockContractService } from './contractService'; // Mock contract service (Contract module)
@@ -28,10 +33,35 @@ import { companyService as mockCompanyService } from './companyService';
 import { userService as mockUserService } from './userService';
 import { rbacService as mockRbacService } from './rbacService';
 import { notificationService as mockNotificationService } from './notificationService';
+import { uiNotificationService as mockUINotificationService } from './uiNotificationService';
 import { tenantService as mockTenantService } from './tenantService';
 import { ticketService as mockTicketService } from './ticketService';
-
-type ApiMode = 'mock' | 'supabase' | 'real';
+import { complaintService as mockComplaintService } from './complaintService';
+import { impersonationActionTracker as mockImpersonationActionTracker } from './impersonationActionTracker';
+import { superAdminService as mockSuperAdminService } from './superAdminService';
+import { supabaseImpersonationActionTracker } from './api/supabase/impersonationActionTracker';
+import { auditService as mockAuditService } from './auditService';
+import { supabaseAuditService } from './api/supabase/auditService';
+import mockComplianceReportService from './complianceReportService';
+import { supabaseComplianceReportService } from './api/supabase/complianceReportService';
+import { auditRetentionService as mockAuditRetentionService } from './auditRetentionService';
+import { supabaseAuditRetentionService } from './api/supabase/auditRetentionService';
+import { auditDashboardService as mockAuditDashboardService } from './auditDashboardService';
+import { supabaseAuditDashboardService } from './api/supabase/auditDashboardService';
+import { mockComplianceNotificationService } from './complianceNotificationService';
+import { supabaseComplianceNotificationService } from './api/supabase/complianceNotificationService';
+import { mockRateLimitService } from './rateLimitService';
+import { supabaseRateLimitService } from './api/supabase/rateLimitService';
+import { mockImpersonationRateLimitService } from './impersonationRateLimitService';
+import { supabaseImpersonationRateLimitService } from './api/supabase/impersonationRateLimitService';
+import { supabaseImpersonationService } from './api/supabase/impersonationService';
+import { supabaseTenantMetricsService } from './api/supabase/tenantMetricsService';
+import { supabaseTenantDirectoryService } from './api/supabase/tenantDirectoryService';
+import { mockTenantDirectoryService } from './tenantDirectoryService';
+import { multiTenantService as supabaseMultiTenantService } from './supabase/multiTenantService';
+import { authService as mockAuthService } from './authService';
+import { supabaseAuthService } from './supabase/authService';
+import { sessionConfigService as mockSessionConfigService } from './sessionConfigService';
 
 class ServiceFactory {
   private apiMode: ApiMode;
@@ -64,6 +94,34 @@ class ServiceFactory {
   setApiMode(mode: ApiMode): void {
     this.apiMode = mode;
     console.log(`🔄 API mode switched to: ${mode}`);
+  }
+
+  /**
+   * Get Auth Service
+   * Handles user authentication, login/logout, token management, and role-based access
+   */
+  getAuthService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseAuthService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseAuthService;
+      case 'mock':
+      default:
+        return mockAuthService;
+    }
+  }
+
+  /**
+   * Get Session Config Service
+   * Manages session configuration with environment presets and dynamic updates
+   * Note: This service is client-side only, no backend differentiation needed
+   */
+  getSessionConfigService() {
+    // Session configuration is client-side and doesn't depend on backend
+    return mockSessionConfigService;
   }
 
   /**
@@ -220,6 +278,35 @@ class ServiceFactory {
   }
 
   /**
+   * Get Complaint Service
+   * Handles complaint/ticket management
+   */
+  getComplaintService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        // TODO: Implement Supabase complaint service
+        console.warn('Supabase complaint service not yet implemented, falling back to mock');
+        return mockComplaintService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockComplaintService;
+      case 'mock':
+      default:
+        return mockComplaintService;
+    }
+  }
+
+  /**
+   * Get UI Notification Service
+   * Handles UI notifications and messages (Ant Design based)
+   */
+  getUINotificationService() {
+    // UI notifications are stateless and don't need backend switching
+    return mockUINotificationService;
+  }
+
+  /**
    * Get Notification Service
    */
   getNotificationService() {
@@ -254,6 +341,17 @@ class ServiceFactory {
   }
 
   /**
+   * Get Multi-Tenant Service
+   * Manages tenant context initialization and session management
+   * Note: Currently Supabase-only; mock mode returns singleton instance
+   */
+  getMultiTenantService() {
+    // Multi-tenant context is infrastructure-level and only works with Supabase
+    // Mock mode uses same instance to maintain consistency during development
+    return supabaseMultiTenantService;
+  }
+
+  /**
    * Get Ticket Service
    */
   getTicketService() {
@@ -267,6 +365,45 @@ class ServiceFactory {
       case 'mock':
       default:
         return mockTicketService;
+    }
+  }
+
+  /**
+   * Get Super Admin Management Service
+   * ✅ Phase 2: Implementation Gaps - Super Admin Lifecycle Management
+   */
+  getSuperAdminManagementService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseAdminManagementService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockSuperAdminManagementService;
+      case 'mock':
+      default:
+        return mockSuperAdminManagementService;
+    }
+  }
+
+  /**
+   * Get Super Admin Service
+   * Tenant and global admin operations (getTenants, createTenant, getGlobalUsers, etc.)
+   * ⚠️ TODO: Supabase implementation needed
+   */
+  getSuperAdminService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        // TODO: Implement Supabase super admin service
+        console.warn('Supabase SuperAdmin service not yet implemented, falling back to mock');
+        return mockSuperAdminService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockSuperAdminService;
+      case 'mock':
+      default:
+        return mockSuperAdminService;
     }
   }
 
@@ -290,10 +427,236 @@ class ServiceFactory {
   }
 
   /**
+   * Get Impersonation Action Tracker
+   * Tracks actions performed during super admin impersonation sessions
+   */
+  getImpersonationActionTracker() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseImpersonationActionTracker;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockImpersonationActionTracker;
+      case 'mock':
+      default:
+        return mockImpersonationActionTracker;
+    }
+  }
+
+  /**
+   * Get Role Request Service
+   * Manages role elevation requests from users
+   */
+  getRoleRequestService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseRoleRequestService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockRoleRequestService;
+      case 'mock':
+      default:
+        return mockRoleRequestService;
+    }
+  }
+
+  /**
+   * Get Audit Service
+   * Provides audit logging and tracking functionality
+   */
+  getAuditService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseAuditService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseAuditService;
+      case 'mock':
+      default:
+        return mockAuditService;
+    }
+  }
+
+  /**
+   * Get Compliance Report Service
+   * Provides compliance report generation and export functionality
+   */
+  getComplianceReportService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseComplianceReportService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockComplianceReportService;
+      case 'mock':
+      default:
+        return mockComplianceReportService;
+    }
+  }
+
+  /**
+   * Get Audit Retention Service
+   * Manages audit log retention policies and cleanup
+   */
+  getAuditRetentionService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseAuditRetentionService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockAuditRetentionService;
+      case 'mock':
+      default:
+        return mockAuditRetentionService;
+    }
+  }
+
+  /**
+   * Get Audit Dashboard Service
+   * Provides aggregated metrics and statistics for audit dashboards
+   */
+  getAuditDashboardService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseAuditDashboardService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockAuditDashboardService;
+      case 'mock':
+      default:
+        return mockAuditDashboardService;
+    }
+  }
+
+  /**
+   * Get Compliance Notification Service
+   * Provides alert system for suspicious activity detection
+   */
+  getComplianceNotificationService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseComplianceNotificationService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockComplianceNotificationService;
+      case 'mock':
+      default:
+        return mockComplianceNotificationService;
+    }
+  }
+
+  /**
+   * Get Impersonation Service
+   * Manages super user impersonation audit logs and session tracking
+   */
+  getImpersonationService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseImpersonationService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        // Mock implementation from hooks
+        return { getImpersonationLogs: async () => [], getActiveImpersonations: async () => [] };
+      case 'mock':
+      default:
+        // Mock implementation from hooks - will be set by hook
+        return { getImpersonationLogs: async () => [], getActiveImpersonations: async () => [] };
+    }
+  }
+
+  /**
+   * Get Tenant Metrics Service
+   * Manages tenant statistics and analytics
+   */
+  getTenantMetricsService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseTenantMetricsService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        // Mock implementation from hooks
+        return { getTenantMetrics: async () => [] };
+      case 'mock':
+      default:
+        // Mock implementation from hooks - will be set by hook
+        return { getTenantMetrics: async () => [] };
+    }
+  }
+
+  /**
+   * Get Tenant Directory Service
+   * Manages tenant directory and listings
+   */
+  getTenantDirectoryService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseTenantDirectoryService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockTenantDirectoryService;
+      case 'mock':
+      default:
+        return mockTenantDirectoryService;
+    }
+  }
+
+  /**
+   * Get Rate Limit Service
+   * Manages rate limiting for impersonation operations
+   */
+  getRateLimitService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseRateLimitService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockRateLimitService;
+      case 'mock':
+      default:
+        return mockRateLimitService;
+    }
+  }
+
+  /**
+   * Get Impersonation Rate Limit Service
+   * ✅ Phase 6.1: Implement Rate Limiting for Impersonation (Layer 5: Factory)
+   * Manages rate limiting specifically for super admin impersonation sessions
+   * Enforces: 10/hour, 5 concurrent, 30 min duration limits
+   */
+  getImpersonationRateLimitService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseImpersonationRateLimitService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockImpersonationRateLimitService;
+      case 'mock':
+      default:
+        return mockImpersonationRateLimitService;
+    }
+  }
+
+  /**
    * Get Service (generic method for future extensibility)
    */
   getService(serviceName: string) {
     switch (serviceName.toLowerCase()) {
+      case 'sessionconfig':
+      case 'session_config':
+      case 'session-config':
+        return this.getSessionConfigService();
       case 'contract':
       case 'contracts':
         return this.getContractService();
@@ -306,6 +669,13 @@ class ServiceFactory {
       case 'sales':
       case 'sale':
         return this.getSalesService();
+      case 'complaint':
+      case 'complaints':
+        return this.getComplaintService();
+      case 'uinotification':
+      case 'ui_notification':
+      case 'ui-notification':
+        return this.getUINotificationService();
       case 'customer':
         return this.getCustomerService();
       case 'jobwork':
@@ -332,6 +702,40 @@ class ServiceFactory {
       case 'ticket':
       case 'tickets':
         return this.getTicketService();
+      case 'superuser':
+      case 'super_user':
+        return this.getSuperUserService();
+      case 'superadminmanagement':
+      case 'super_admin_management':
+      case 'admin_management':
+        return this.getSuperAdminManagementService();
+      case 'audit':
+      case 'auditlog':
+      case 'audit_log':
+        return this.getAuditService();
+      case 'auditretention':
+      case 'audit_retention':
+      case 'retention':
+        return this.getAuditRetentionService();
+      case 'auditdashboard':
+      case 'audit_dashboard':
+      case 'dashboard':
+        return this.getAuditDashboardService();
+      case 'compliancenotification':
+      case 'compliance_notification':
+      case 'notification_compliance':
+      case 'alert':
+        return this.getComplianceNotificationService();
+      case 'ratelimit':
+      case 'rate_limit':
+      case 'rate-limit':
+        return this.getRateLimitService();
+      case 'impersonationratelimit':
+      case 'impersonation_rate_limit':
+      case 'impersonation-rate-limit':
+      case 'impersonationlimit':
+      case 'impersonation_limit':
+        return this.getImpersonationRateLimitService();
       // Add other services as needed
       default:
         throw new Error(`Unknown service: ${serviceName}`);
@@ -366,6 +770,62 @@ class ServiceFactory {
 
 // Export singleton instance
 export const serviceFactory = new ServiceFactory();
+
+// Export for convenience - Auth Service
+// Handles user authentication, login/logout, token management, role-based access
+export const authService = {
+  get instance() {
+    return serviceFactory.getAuthService();
+  },
+  login: (...args: Parameters<typeof mockAuthService.login>) =>
+    serviceFactory.getAuthService().login(...args),
+  logout: (...args: Parameters<typeof mockAuthService.logout>) =>
+    serviceFactory.getAuthService().logout(...args),
+  restoreSession: (...args: Parameters<typeof mockAuthService.restoreSession>) =>
+    serviceFactory.getAuthService().restoreSession(...args),
+  getCurrentUser: (...args: Parameters<typeof mockAuthService.getCurrentUser>) =>
+    serviceFactory.getAuthService().getCurrentUser(...args),
+  getToken: (...args: Parameters<typeof mockAuthService.getToken>) =>
+    serviceFactory.getAuthService().getToken(...args),
+  isAuthenticated: (...args: Parameters<typeof mockAuthService.isAuthenticated>) =>
+    serviceFactory.getAuthService().isAuthenticated(...args),
+  hasRole: (...args: Parameters<typeof mockAuthService.hasRole>) =>
+    serviceFactory.getAuthService().hasRole(...args),
+  hasPermission: (...args: Parameters<typeof mockAuthService.hasPermission>) =>
+    serviceFactory.getAuthService().hasPermission(...args),
+  isSuperAdmin: (...args: Parameters<typeof mockAuthService.isSuperAdmin>) =>
+    serviceFactory.getAuthService().isSuperAdmin(...args),
+  canAccessSuperAdminPortal: (...args: Parameters<typeof mockAuthService.canAccessSuperAdminPortal>) =>
+    serviceFactory.getAuthService().canAccessSuperAdminPortal(...args),
+  canAccessTenantPortal: (...args: Parameters<typeof mockAuthService.canAccessTenantPortal>) =>
+    serviceFactory.getAuthService().canAccessTenantPortal(...args),
+  hasAnyRole: (...args: Parameters<typeof mockAuthService.hasAnyRole>) =>
+    serviceFactory.getAuthService().hasAnyRole(...args),
+  hasAllPermissions: (...args: Parameters<typeof mockAuthService.hasAllPermissions>) =>
+    serviceFactory.getAuthService().hasAllPermissions(...args),
+  hasAnyPermission: (...args: Parameters<typeof mockAuthService.hasAnyPermission>) =>
+    serviceFactory.getAuthService().hasAnyPermission(...args),
+  getUserTenant: (...args: Parameters<typeof mockAuthService.getUserTenant>) =>
+    serviceFactory.getAuthService().getUserTenant(...args),
+  getTenantUsers: (...args: Parameters<typeof mockAuthService.getTenantUsers>) =>
+    serviceFactory.getAuthService().getTenantUsers(...args),
+  getAllTenants: (...args: Parameters<typeof mockAuthService.getAllTenants>) =>
+    serviceFactory.getAuthService().getAllTenants(...args),
+  getUserPermissions: (...args: Parameters<typeof mockAuthService.getUserPermissions>) =>
+    serviceFactory.getAuthService().getUserPermissions(...args),
+  getAvailableRoles: (...args: Parameters<typeof mockAuthService.getAvailableRoles>) =>
+    serviceFactory.getAuthService().getAvailableRoles(...args),
+  refreshToken: (...args: Parameters<typeof mockAuthService.refreshToken>) =>
+    serviceFactory.getAuthService().refreshToken(...args),
+  getDemoAccounts: (...args: Parameters<typeof mockAuthService.getDemoAccounts>) =>
+    serviceFactory.getAuthService().getDemoAccounts(...args),
+  getPermissionDescription: (...args: Parameters<typeof mockAuthService.getPermissionDescription>) =>
+    serviceFactory.getAuthService().getPermissionDescription(...args),
+  getRoleHierarchy: (...args: Parameters<typeof mockAuthService.getRoleHierarchy>) =>
+    serviceFactory.getAuthService().getRoleHierarchy(...args),
+  canManageUser: (...args: Parameters<typeof mockAuthService.canManageUser>) =>
+    serviceFactory.getAuthService().canManageUser(...args),
+};
 
 // Export for convenience - Service Contract Service (Service Contracts module)
 export const serviceContractService = {
@@ -660,6 +1120,74 @@ export const rbacService = {
     serviceFactory.getRbacService().validateRolePermissions(...args),
 };
 
+// Export for convenience - Complaint Service
+export const complaintService = {
+  get instance() {
+    return serviceFactory.getComplaintService();
+  },
+  getComplaints: (...args: Parameters<typeof mockComplaintService.getComplaints>) =>
+    serviceFactory.getComplaintService().getComplaints(...args),
+  getComplaint: (...args: Parameters<typeof mockComplaintService.getComplaint>) =>
+    serviceFactory.getComplaintService().getComplaint(...args),
+  createComplaint: (...args: Parameters<typeof mockComplaintService.createComplaint>) =>
+    serviceFactory.getComplaintService().createComplaint(...args),
+  updateComplaint: (...args: Parameters<typeof mockComplaintService.updateComplaint>) =>
+    serviceFactory.getComplaintService().updateComplaint(...args),
+  closeComplaint: (...args: Parameters<typeof mockComplaintService.closeComplaint>) =>
+    serviceFactory.getComplaintService().closeComplaint(...args),
+  addComment: (...args: Parameters<typeof mockComplaintService.addComment>) =>
+    serviceFactory.getComplaintService().addComment(...args),
+  getComplaintStats: (...args: Parameters<typeof mockComplaintService.getComplaintStats>) =>
+    serviceFactory.getComplaintService().getComplaintStats(...args),
+  getComplaintTypes: (...args: Parameters<typeof mockComplaintService.getComplaintTypes>) =>
+    serviceFactory.getComplaintService().getComplaintTypes(...args),
+  getComplaintStatuses: (...args: Parameters<typeof mockComplaintService.getComplaintStatuses>) =>
+    serviceFactory.getComplaintService().getComplaintStatuses(...args),
+  getPriorities: (...args: Parameters<typeof mockComplaintService.getPriorities>) =>
+    serviceFactory.getComplaintService().getPriorities(...args),
+  getEngineers: (...args: Parameters<typeof mockComplaintService.getEngineers>) =>
+    serviceFactory.getComplaintService().getEngineers(...args),
+  reopenComplaint: (...args: Parameters<typeof mockComplaintService.reopenComplaint>) =>
+    serviceFactory.getComplaintService().reopenComplaint(...args),
+};
+
+// Export for convenience - UI Notification Service
+export const uiNotificationService = {
+  get instance() {
+    return serviceFactory.getUINotificationService();
+  },
+  // Quick messages (auto-dismiss)
+  success: (...args: Parameters<typeof mockUINotificationService.success>) =>
+    serviceFactory.getUINotificationService().success(...args),
+  error: (...args: Parameters<typeof mockUINotificationService.error>) =>
+    serviceFactory.getUINotificationService().error(...args),
+  warning: (...args: Parameters<typeof mockUINotificationService.warning>) =>
+    serviceFactory.getUINotificationService().warning(...args),
+  info: (...args: Parameters<typeof mockUINotificationService.info>) =>
+    serviceFactory.getUINotificationService().info(...args),
+  loading: (...args: Parameters<typeof mockUINotificationService.loading>) =>
+    serviceFactory.getUINotificationService().loading(...args),
+  
+  // Persistent notifications (with title + description)
+  notify: (...args: Parameters<typeof mockUINotificationService.notify>) =>
+    serviceFactory.getUINotificationService().notify(...args),
+  successNotify: (...args: Parameters<typeof mockUINotificationService.successNotify>) =>
+    serviceFactory.getUINotificationService().successNotify(...args),
+  errorNotify: (...args: Parameters<typeof mockUINotificationService.errorNotify>) =>
+    serviceFactory.getUINotificationService().errorNotify(...args),
+  warningNotify: (...args: Parameters<typeof mockUINotificationService.warningNotify>) =>
+    serviceFactory.getUINotificationService().warningNotify(...args),
+  infoNotify: (...args: Parameters<typeof mockUINotificationService.infoNotify>) =>
+    serviceFactory.getUINotificationService().infoNotify(...args),
+  
+  // Utilities
+  closeAll: (...args: Parameters<typeof mockUINotificationService.closeAll>) =>
+    serviceFactory.getUINotificationService().closeAll(...args),
+  config: mockUINotificationService.config,
+  message: mockUINotificationService.message,
+  notification: mockUINotificationService.notification,
+};
+
 // Export for convenience - Notification Service
 export const notificationService = {
   get instance() {
@@ -755,6 +1283,410 @@ export const ticketService = {
     serviceFactory.getTicketService().getTicketCategories(...args),
   getTicketPriorities: (...args: Parameters<typeof mockTicketService.getTicketPriorities>) =>
     serviceFactory.getTicketService().getTicketPriorities(...args),
+};
+
+// Export for convenience - Super Admin Management Service
+// ✅ Phase 2: Implementation Gaps - Super Admin Lifecycle Management
+export const superAdminManagementService = {
+  get instance() {
+    return serviceFactory.getSuperAdminManagementService();
+  },
+  createSuperAdmin: (...args: Parameters<typeof mockSuperAdminManagementService.createSuperAdmin>) =>
+    serviceFactory.getSuperAdminManagementService().createSuperAdmin(...args),
+  promoteSuperAdmin: (...args: Parameters<typeof mockSuperAdminManagementService.promoteSuperAdmin>) =>
+    serviceFactory.getSuperAdminManagementService().promoteSuperAdmin(...args),
+  getSuperAdmin: (...args: Parameters<typeof mockSuperAdminManagementService.getSuperAdmin>) =>
+    serviceFactory.getSuperAdminManagementService().getSuperAdmin(...args),
+  getAllSuperAdmins: (...args: Parameters<typeof mockSuperAdminManagementService.getAllSuperAdmins>) =>
+    serviceFactory.getSuperAdminManagementService().getAllSuperAdmins(...args),
+  grantTenantAccess: (...args: Parameters<typeof mockSuperAdminManagementService.grantTenantAccess>) =>
+    serviceFactory.getSuperAdminManagementService().grantTenantAccess(...args),
+  revokeTenantAccess: (...args: Parameters<typeof mockSuperAdminManagementService.revokeTenantAccess>) =>
+    serviceFactory.getSuperAdminManagementService().revokeTenantAccess(...args),
+  getSuperAdminTenantAccess: (...args: Parameters<typeof mockSuperAdminManagementService.getSuperAdminTenantAccess>) =>
+    serviceFactory.getSuperAdminManagementService().getSuperAdminTenantAccess(...args),
+  getSuperAdminStats: (...args: Parameters<typeof mockSuperAdminManagementService.getSuperAdminStats>) =>
+    serviceFactory.getSuperAdminManagementService().getSuperAdminStats(...args),
+  getActionLogs: (...args: Parameters<typeof mockSuperAdminManagementService.getActionLogs>) =>
+    serviceFactory.getSuperAdminManagementService().getActionLogs(...args),
+  demoteSuperAdmin: (...args: Parameters<typeof mockSuperAdminManagementService.demoteSuperAdmin>) =>
+    serviceFactory.getSuperAdminManagementService().demoteSuperAdmin(...args),
+  isSuperAdmin: (...args: Parameters<typeof mockSuperAdminManagementService.isSuperAdmin>) =>
+    serviceFactory.getSuperAdminManagementService().isSuperAdmin(...args),
+  getAllTenantAccesses: (...args: Parameters<typeof mockSuperAdminManagementService.getAllTenantAccesses>) =>
+    serviceFactory.getSuperAdminManagementService().getAllTenantAccesses(...args),
+};
+
+// Export for convenience - Super Admin Service
+// Tenant and global admin operations (getTenants, createTenant, getGlobalUsers, etc.)
+export const superAdminService = {
+  get instance() {
+    return serviceFactory.getSuperAdminService();
+  },
+  getTenants: (...args: Parameters<typeof mockSuperAdminService.getTenants>) =>
+    serviceFactory.getSuperAdminService().getTenants(...args),
+  createTenant: (...args: Parameters<typeof mockSuperAdminService.createTenant>) =>
+    serviceFactory.getSuperAdminService().createTenant(...args),
+  updateTenant: (...args: Parameters<typeof mockSuperAdminService.updateTenant>) =>
+    serviceFactory.getSuperAdminService().updateTenant(...args),
+  deleteTenant: (...args: Parameters<typeof mockSuperAdminService.deleteTenant>) =>
+    serviceFactory.getSuperAdminService().deleteTenant(...args),
+  getGlobalUsers: (...args: Parameters<typeof mockSuperAdminService.getGlobalUsers>) =>
+    serviceFactory.getSuperAdminService().getGlobalUsers(...args),
+  updateGlobalUser: (...args: Parameters<typeof mockSuperAdminService.updateGlobalUser>) =>
+    serviceFactory.getSuperAdminService().updateGlobalUser(...args),
+  getRoleRequests: (...args: Parameters<typeof mockSuperAdminService.getRoleRequests>) =>
+    serviceFactory.getSuperAdminService().getRoleRequests(...args),
+  approveRoleRequest: (...args: Parameters<typeof mockSuperAdminService.approveRoleRequest>) =>
+    serviceFactory.getSuperAdminService().approveRoleRequest(...args),
+  rejectRoleRequest: (...args: Parameters<typeof mockSuperAdminService.rejectRoleRequest>) =>
+    serviceFactory.getSuperAdminService().rejectRoleRequest(...args),
+  getPlatformUsage: (...args: Parameters<typeof mockSuperAdminService.getPlatformUsage>) =>
+    serviceFactory.getSuperAdminService().getPlatformUsage(...args),
+  getSystemHealth: (...args: Parameters<typeof mockSuperAdminService.getSystemHealth>) =>
+    serviceFactory.getSuperAdminService().getSystemHealth(...args),
+  getAnalyticsData: (...args: Parameters<typeof mockSuperAdminService.getAnalyticsData>) =>
+    serviceFactory.getSuperAdminService().getAnalyticsData(...args),
+  getAvailablePlans: (...args: Parameters<typeof mockSuperAdminService.getAvailablePlans>) =>
+    serviceFactory.getSuperAdminService().getAvailablePlans(...args),
+  getAvailableFeatures: (...args: Parameters<typeof mockSuperAdminService.getAvailableFeatures>) =>
+    serviceFactory.getSuperAdminService().getAvailableFeatures(...args),
+  getTenantStatuses: (...args: Parameters<typeof mockSuperAdminService.getTenantStatuses>) =>
+    serviceFactory.getSuperAdminService().getTenantStatuses(...args),
+  getUserRoles: (...args: Parameters<typeof mockSuperAdminService.getUserRoles>) =>
+    serviceFactory.getSuperAdminService().getUserRoles(...args),
+  getUserStatuses: (...args: Parameters<typeof mockSuperAdminService.getUserStatuses>) =>
+    serviceFactory.getSuperAdminService().getUserStatuses(...args),
+};
+
+// Export for convenience - Impersonation Action Tracker
+// ✅ Phase 3.10: Track Actions During Impersonation
+export const impersonationActionTracker = {
+  get instance() {
+    return serviceFactory.getImpersonationActionTracker();
+  },
+  trackPageView: (...args: Parameters<typeof mockImpersonationActionTracker.trackPageView>) =>
+    serviceFactory.getImpersonationActionTracker().trackPageView(...args),
+  trackApiCall: (...args: Parameters<typeof mockImpersonationActionTracker.trackApiCall>) =>
+    serviceFactory.getImpersonationActionTracker().trackApiCall(...args),
+  trackCrudAction: (...args: Parameters<typeof mockImpersonationActionTracker.trackCrudAction>) =>
+    serviceFactory.getImpersonationActionTracker().trackCrudAction(...args),
+  trackExport: (...args: Parameters<typeof mockImpersonationActionTracker.trackExport>) =>
+    serviceFactory.getImpersonationActionTracker().trackExport(...args),
+  trackSearch: (...args: Parameters<typeof mockImpersonationActionTracker.trackSearch>) =>
+    serviceFactory.getImpersonationActionTracker().trackSearch(...args),
+  trackPrint: (...args: Parameters<typeof mockImpersonationActionTracker.trackPrint>) =>
+    serviceFactory.getImpersonationActionTracker().trackPrint(...args),
+  getSessionActions: (...args: Parameters<typeof mockImpersonationActionTracker.getSessionActions>) =>
+    serviceFactory.getImpersonationActionTracker().getSessionActions(...args),
+  getActionCount: (...args: Parameters<typeof mockImpersonationActionTracker.getActionCount>) =>
+    serviceFactory.getImpersonationActionTracker().getActionCount(...args),
+  getActionSummary: (...args: Parameters<typeof mockImpersonationActionTracker.getActionSummary>) =>
+    serviceFactory.getImpersonationActionTracker().getActionSummary(...args),
+  clearSessionActions: (...args: Parameters<typeof mockImpersonationActionTracker.clearSessionActions>) =>
+    serviceFactory.getImpersonationActionTracker().clearSessionActions(...args),
+};
+
+// Export for convenience - Role Request Service
+// ✅ Phase 4.7: Create Role Request Review UI
+export const roleRequestService = {
+  get instance() {
+    return serviceFactory.getRoleRequestService();
+  },
+  getRoleRequests: (...args: Parameters<typeof mockRoleRequestService.getRoleRequests>) =>
+    serviceFactory.getRoleRequestService().getRoleRequests(...args),
+  getRoleRequest: (...args: Parameters<typeof mockRoleRequestService.getRoleRequest>) =>
+    serviceFactory.getRoleRequestService().getRoleRequest(...args),
+  getPendingRoleRequests: (...args: Parameters<typeof mockRoleRequestService.getPendingRoleRequests>) =>
+    serviceFactory.getRoleRequestService().getPendingRoleRequests(...args),
+  getRoleRequestsByUserId: (...args: Parameters<typeof mockRoleRequestService.getRoleRequestsByUserId>) =>
+    serviceFactory.getRoleRequestService().getRoleRequestsByUserId(...args),
+  createRoleRequest: (...args: Parameters<typeof mockRoleRequestService.createRoleRequest>) =>
+    serviceFactory.getRoleRequestService().createRoleRequest(...args),
+  reviewRoleRequest: (...args: Parameters<typeof mockRoleRequestService.reviewRoleRequest>) =>
+    serviceFactory.getRoleRequestService().reviewRoleRequest(...args),
+  cancelRoleRequest: (...args: Parameters<typeof mockRoleRequestService.cancelRoleRequest>) =>
+    serviceFactory.getRoleRequestService().cancelRoleRequest(...args),
+  getRoleRequestStats: (...args: Parameters<typeof mockRoleRequestService.getRoleRequestStats>) =>
+    serviceFactory.getRoleRequestService().getRoleRequestStats(...args),
+};
+
+// Export for convenience - Audit Service
+// ✅ Phase 5.1: Create Audit Log Viewer UI
+export const auditService = {
+  get instance() {
+    return serviceFactory.getAuditService();
+  },
+  getAuditLogs: (...args: Parameters<typeof mockAuditService.getAuditLogs>) =>
+    serviceFactory.getAuditService().getAuditLogs(...args),
+  getAuditLog: (...args: Parameters<typeof supabaseAuditService.getAuditLog>) =>
+    serviceFactory.getAuditService().getAuditLog?.(...args),
+  searchAuditLogs: (...args: Parameters<typeof mockAuditService.searchAuditLogs>) =>
+    serviceFactory.getAuditService().searchAuditLogs(...args),
+  getAuditStats: (...args: Parameters<typeof mockAuditService.getAuditStats>) =>
+    serviceFactory.getAuditService().getAuditStats(...args),
+  exportAuditLogs: (...args: Parameters<typeof mockAuditService.exportAuditLogs>) =>
+    serviceFactory.getAuditService().exportAuditLogs(...args),
+  logAction: (...args: Parameters<typeof mockAuditService.logAction>) =>
+    serviceFactory.getAuditService().logAction(...args),
+};
+
+// Export for convenience - Compliance Report Service
+// ✅ Phase 5.3: Create Compliance Report Generator (Layer 5: Factory)
+export const complianceReportService = {
+  get instance() {
+    return serviceFactory.getComplianceReportService();
+  },
+  generateReport: (...args: Parameters<typeof mockComplianceReportService.generateReport>) =>
+    serviceFactory.getComplianceReportService().generateReport(...args),
+  exportReport: (...args: Parameters<typeof mockComplianceReportService.exportReport>) =>
+    serviceFactory.getComplianceReportService().exportReport(...args),
+  downloadReport: (...args: Parameters<typeof mockComplianceReportService.downloadReport>) =>
+    serviceFactory.getComplianceReportService().downloadReport(...args),
+};
+
+// Export for convenience - Audit Retention Service
+// ✅ Phase 5.5: Implement Audit Log Retention Policy (Layer 5: Factory)
+export const auditRetentionService = {
+  get instance() {
+    return serviceFactory.getAuditRetentionService();
+  },
+  getRetentionPolicies: (...args: Parameters<typeof mockAuditRetentionService.getRetentionPolicies>) =>
+    serviceFactory.getAuditRetentionService().getRetentionPolicies(...args),
+  getRetentionPolicy: (...args: Parameters<typeof mockAuditRetentionService.getRetentionPolicy>) =>
+    serviceFactory.getAuditRetentionService().getRetentionPolicy(...args),
+  createRetentionPolicy: (...args: Parameters<typeof mockAuditRetentionService.createRetentionPolicy>) =>
+    serviceFactory.getAuditRetentionService().createRetentionPolicy(...args),
+  updateRetentionPolicy: (...args: Parameters<typeof mockAuditRetentionService.updateRetentionPolicy>) =>
+    serviceFactory.getAuditRetentionService().updateRetentionPolicy(...args),
+  deleteRetentionPolicy: (...args: Parameters<typeof mockAuditRetentionService.deleteRetentionPolicy>) =>
+    serviceFactory.getAuditRetentionService().deleteRetentionPolicy(...args),
+  executeRetentionCleanup: (...args: Parameters<typeof mockAuditRetentionService.executeRetentionCleanup>) =>
+    serviceFactory.getAuditRetentionService().executeRetentionCleanup(...args),
+  getRetentionStats: (...args: Parameters<typeof mockAuditRetentionService.getRetentionStats>) =>
+    serviceFactory.getAuditRetentionService().getRetentionStats(...args),
+  getArchives: (...args: Parameters<typeof mockAuditRetentionService.getArchives>) =>
+    serviceFactory.getAuditRetentionService().getArchives(...args),
+  getCleanupHistory: (...args: Parameters<typeof mockAuditRetentionService.getCleanupHistory>) =>
+    serviceFactory.getAuditRetentionService().getCleanupHistory(...args),
+  scheduleRetentionCleanup: (...args: Parameters<typeof mockAuditRetentionService.scheduleRetentionCleanup>) =>
+    serviceFactory.getAuditRetentionService().scheduleRetentionCleanup(...args),
+};
+
+// Export for convenience - Audit Dashboard Service
+// ✅ Phase 5.6: Create Audit Summary Dashboard (Layer 5: Factory)
+export const auditDashboardService = {
+  get instance() {
+    return serviceFactory.getAuditDashboardService();
+  },
+  getDashboardMetrics: (...args: Parameters<typeof mockAuditDashboardService.getDashboardMetrics>) =>
+    serviceFactory.getAuditDashboardService().getDashboardMetrics(...args),
+  getActionsByType: (...args: Parameters<typeof mockAuditDashboardService.getActionsByType>) =>
+    serviceFactory.getAuditDashboardService().getActionsByType(...args),
+  getActionsByUser: (...args: Parameters<typeof mockAuditDashboardService.getActionsByUser>) =>
+    serviceFactory.getAuditDashboardService().getActionsByUser(...args),
+  getTimeline: (...args: Parameters<typeof mockAuditDashboardService.getTimeline>) =>
+    serviceFactory.getAuditDashboardService().getTimeline(...args),
+  getTopUnauthorizedUsers: (...args: Parameters<typeof mockAuditDashboardService.getTopUnauthorizedUsers>) =>
+    serviceFactory.getAuditDashboardService().getTopUnauthorizedUsers(...args),
+  getDashboardData: (...args: Parameters<typeof mockAuditDashboardService.getDashboardData>) =>
+    serviceFactory.getAuditDashboardService().getDashboardData(...args),
+  exportDashboardData: (...args: Parameters<typeof mockAuditDashboardService.exportDashboardData>) =>
+    serviceFactory.getAuditDashboardService().exportDashboardData(...args),
+};
+
+// Export for convenience - Compliance Notification Service
+// ✅ Phase 5.7: Add Compliance Notifications (Layer 5: Factory)
+export const complianceNotificationService = {
+  get instance() {
+    return serviceFactory.getComplianceNotificationService();
+  },
+  getAlertRules: (...args: Parameters<typeof mockComplianceNotificationService.getAlertRules>) =>
+    serviceFactory.getComplianceNotificationService().getAlertRules(...args),
+  getAlertRule: (...args: Parameters<typeof mockComplianceNotificationService.getAlertRule>) =>
+    serviceFactory.getComplianceNotificationService().getAlertRule(...args),
+  createAlertRule: (...args: Parameters<typeof mockComplianceNotificationService.createAlertRule>) =>
+    serviceFactory.getComplianceNotificationService().createAlertRule(...args),
+  updateAlertRule: (...args: Parameters<typeof mockComplianceNotificationService.updateAlertRule>) =>
+    serviceFactory.getComplianceNotificationService().updateAlertRule(...args),
+  deleteAlertRule: (...args: Parameters<typeof mockComplianceNotificationService.deleteAlertRule>) =>
+    serviceFactory.getComplianceNotificationService().deleteAlertRule(...args),
+  toggleAlertRule: (...args: Parameters<typeof mockComplianceNotificationService.toggleAlertRule>) =>
+    serviceFactory.getComplianceNotificationService().toggleAlertRule(...args),
+  checkAndNotifyAlerts: (...args: Parameters<typeof mockComplianceNotificationService.checkAndNotifyAlerts>) =>
+    serviceFactory.getComplianceNotificationService().checkAndNotifyAlerts(...args),
+  getGeneratedAlerts: (...args: Parameters<typeof mockComplianceNotificationService.getGeneratedAlerts>) =>
+    serviceFactory.getComplianceNotificationService().getGeneratedAlerts(...args),
+  getAlertHistory: (...args: Parameters<typeof mockComplianceNotificationService.getAlertHistory>) =>
+    serviceFactory.getComplianceNotificationService().getAlertHistory(...args),
+  getAlertStats: (...args: Parameters<typeof mockComplianceNotificationService.getAlertStats>) =>
+    serviceFactory.getComplianceNotificationService().getAlertStats(...args),
+  sendTestNotification: (...args: Parameters<typeof mockComplianceNotificationService.sendTestNotification>) =>
+    serviceFactory.getComplianceNotificationService().sendTestNotification(...args),
+  acknowledgeAlert: (...args: Parameters<typeof mockComplianceNotificationService.acknowledgeAlert>) =>
+    serviceFactory.getComplianceNotificationService().acknowledgeAlert(...args),
+};
+
+// Export for convenience - Rate Limit Service
+// ✅ Phase 6.1: Implement Rate Limiting for Impersonation (Layer 5: Factory)
+export const rateLimitService = {
+  get instance() {
+    return serviceFactory.getRateLimitService();
+  },
+  checkImpersonationRateLimit: (...args: Parameters<typeof mockRateLimitService.checkImpersonationRateLimit>) =>
+    serviceFactory.getRateLimitService().checkImpersonationRateLimit(...args),
+  recordImpersonationStart: (...args: Parameters<typeof mockRateLimitService.recordImpersonationStart>) =>
+    serviceFactory.getRateLimitService().recordImpersonationStart(...args),
+  recordImpersonationEnd: (...args: Parameters<typeof mockRateLimitService.recordImpersonationEnd>) =>
+    serviceFactory.getRateLimitService().recordImpersonationEnd(...args),
+  checkSessionDurationExceeded: (...args: Parameters<typeof mockRateLimitService.checkSessionDurationExceeded>) =>
+    serviceFactory.getRateLimitService().checkSessionDurationExceeded(...args),
+  getRateLimitStats: (...args: Parameters<typeof mockRateLimitService.getRateLimitStats>) =>
+    serviceFactory.getRateLimitService().getRateLimitStats(...args),
+  getActiveSessions: (...args: Parameters<typeof mockRateLimitService.getActiveSessions>) =>
+    serviceFactory.getRateLimitService().getActiveSessions(...args),
+  forceTerminateSession: (...args: Parameters<typeof mockRateLimitService.forceTerminateSession>) =>
+    serviceFactory.getRateLimitService().forceTerminateSession(...args),
+  getViolations: (...args: Parameters<typeof mockRateLimitService.getViolations>) =>
+    serviceFactory.getRateLimitService().getViolations(...args),
+  clearViolations: (...args: Parameters<typeof mockRateLimitService.clearViolations>) =>
+    serviceFactory.getRateLimitService().clearViolations(...args),
+  cleanupExpiredSessions: (...args: Parameters<typeof mockRateLimitService.cleanupExpiredSessions>) =>
+    serviceFactory.getRateLimitService().cleanupExpiredSessions(...args),
+  resetRateLimits: (...args: Parameters<typeof mockRateLimitService.resetRateLimits>) =>
+    serviceFactory.getRateLimitService().resetRateLimits(...args),
+};
+
+// Export for convenience - Impersonation Rate Limit Service
+// ✅ Phase 6.1: Implement Rate Limiting for Impersonation (Layer 5: Factory)
+export const impersonationRateLimitService = {
+  get instance() {
+    return serviceFactory.getImpersonationRateLimitService();
+  },
+  getConfig: (...args: Parameters<typeof mockImpersonationRateLimitService.getConfig>) =>
+    serviceFactory.getImpersonationRateLimitService().getConfig(...args),
+  updateConfig: (...args: Parameters<typeof mockImpersonationRateLimitService.updateConfig>) =>
+    serviceFactory.getImpersonationRateLimitService().updateConfig(...args),
+  checkRateLimit: (...args: Parameters<typeof mockImpersonationRateLimitService.checkRateLimit>) =>
+    serviceFactory.getImpersonationRateLimitService().checkRateLimit(...args),
+  recordSessionStart: (...args: Parameters<typeof mockImpersonationRateLimitService.recordSessionStart>) =>
+    serviceFactory.getImpersonationRateLimitService().recordSessionStart(...args),
+  recordSessionEnd: (...args: Parameters<typeof mockImpersonationRateLimitService.recordSessionEnd>) =>
+    serviceFactory.getImpersonationRateLimitService().recordSessionEnd(...args),
+  getStatus: (...args: Parameters<typeof mockImpersonationRateLimitService.getStatus>) =>
+    serviceFactory.getImpersonationRateLimitService().getStatus(...args),
+  getActiveSessions: (...args: Parameters<typeof mockImpersonationRateLimitService.getActiveSessions>) =>
+    serviceFactory.getImpersonationRateLimitService().getActiveSessions(...args),
+  resetLimits: (...args: Parameters<typeof mockImpersonationRateLimitService.resetLimits>) =>
+    serviceFactory.getImpersonationRateLimitService().resetLimits(...args),
+};
+
+// Export for convenience - Impersonation Service
+// Manages super user impersonation audit logs and session tracking
+export const impersonationService = {
+  get instance() {
+    return serviceFactory.getImpersonationService();
+  },
+  getImpersonationLogs: (...args: Parameters<typeof supabaseImpersonationService.getImpersonationLogs>) =>
+    serviceFactory.getImpersonationService().getImpersonationLogs(...args),
+  getImpersonationLogsByUserId: (...args: Parameters<typeof supabaseImpersonationService.getImpersonationLogsByUserId>) =>
+    serviceFactory.getImpersonationService().getImpersonationLogsByUserId(...args),
+  getImpersonationLogById: (...args: Parameters<typeof supabaseImpersonationService.getImpersonationLogById>) =>
+    serviceFactory.getImpersonationService().getImpersonationLogById(...args),
+  startImpersonation: (...args: Parameters<typeof supabaseImpersonationService.startImpersonation>) =>
+    serviceFactory.getImpersonationService().startImpersonation(...args),
+  endImpersonation: (...args: Parameters<typeof supabaseImpersonationService.endImpersonation>) =>
+    serviceFactory.getImpersonationService().endImpersonation(...args),
+  getActiveImpersonations: (...args: Parameters<typeof supabaseImpersonationService.getActiveImpersonations>) =>
+    serviceFactory.getImpersonationService().getActiveImpersonations(...args),
+};
+
+// Export for convenience - Tenant Metrics Service
+// Manages tenant statistics and analytics
+export const tenantMetricsService = {
+  get instance() {
+    return serviceFactory.getTenantMetricsService();
+  },
+  getTenantMetrics: (...args: Parameters<typeof supabaseTenantMetricsService.getTenantMetrics>) =>
+    serviceFactory.getTenantMetricsService().getTenantMetrics(...args),
+  getComparisonMetrics: (...args: Parameters<typeof supabaseTenantMetricsService.getComparisonMetrics>) =>
+    serviceFactory.getTenantMetricsService().getComparisonMetrics(...args),
+  getMetricsTrend: (...args: Parameters<typeof supabaseTenantMetricsService.getMetricsTrend>) =>
+    serviceFactory.getTenantMetricsService().getMetricsTrend(...args),
+  recordMetric: (...args: Parameters<typeof supabaseTenantMetricsService.recordMetric>) =>
+    serviceFactory.getTenantMetricsService().recordMetric(...args),
+};
+
+// Export for convenience - Tenant Directory Service
+// Manages tenant directory and listings
+export const tenantDirectoryService = {
+  get instance() {
+    return serviceFactory.getTenantDirectoryService();
+  },
+  getAllTenants: (...args: Parameters<typeof supabaseTenantDirectoryService.getAllTenants>) =>
+    serviceFactory.getTenantDirectoryService().getAllTenants(...args),
+  getTenant: (...args: Parameters<typeof supabaseTenantDirectoryService.getTenant>) =>
+    serviceFactory.getTenantDirectoryService().getTenant(...args),
+  getTenantsByStatus: (...args: Parameters<typeof supabaseTenantDirectoryService.getTenantsByStatus>) =>
+    serviceFactory.getTenantDirectoryService().getTenantsByStatus(...args),
+  getTenantStats: (...args: Parameters<typeof supabaseTenantDirectoryService.getTenantStats>) =>
+    serviceFactory.getTenantDirectoryService().getTenantStats(...args),
+  updateTenantStats: (...args: Parameters<typeof supabaseTenantDirectoryService.updateTenantStats>) =>
+    serviceFactory.getTenantDirectoryService().updateTenantStats(...args),
+};
+
+// Export for convenience - Session Config Service
+// Manages session configuration with environment presets and dynamic updates
+export const sessionConfigService = {
+  get instance() {
+    return serviceFactory.getSessionConfigService();
+  },
+  getConfig: (...args: Parameters<typeof mockSessionConfigService.getConfig>) =>
+    serviceFactory.getSessionConfigService().getConfig(...args),
+  setConfig: (...args: Parameters<typeof mockSessionConfigService.setConfig>) =>
+    serviceFactory.getSessionConfigService().setConfig(...args),
+  loadPreset: (...args: Parameters<typeof mockSessionConfigService.loadPreset>) =>
+    serviceFactory.getSessionConfigService().loadPreset(...args),
+  updateConfigValue: (...args: Parameters<typeof mockSessionConfigService.updateConfigValue>) =>
+    serviceFactory.getSessionConfigService().updateConfigValue(...args),
+  resetToDefault: (...args: Parameters<typeof mockSessionConfigService.resetToDefault>) =>
+    serviceFactory.getSessionConfigService().resetToDefault(...args),
+  getConfigAsString: (...args: Parameters<typeof mockSessionConfigService.getConfigAsString>) =>
+    serviceFactory.getSessionConfigService().getConfigAsString(...args),
+  onConfigChange: (...args: Parameters<typeof mockSessionConfigService.onConfigChange>) =>
+    serviceFactory.getSessionConfigService().onConfigChange(...args),
+  validateConfig: (...args: Parameters<typeof mockSessionConfigService.validateConfig>) =>
+    serviceFactory.getSessionConfigService().validateConfig(...args),
+  initializeFromEnvironment: (...args: Parameters<typeof mockSessionConfigService.initializeFromEnvironment>) =>
+    serviceFactory.getSessionConfigService().initializeFromEnvironment(...args),
+};
+
+// Export for convenience - Multi-Tenant Service
+// Manages tenant context initialization and session management
+export const multiTenantService = {
+  get instance() {
+    return serviceFactory.getMultiTenantService();
+  },
+  initializeTenantContext: (...args: Parameters<typeof supabaseMultiTenantService.initializeTenantContext>) =>
+    serviceFactory.getMultiTenantService().initializeTenantContext(...args),
+  getCurrentTenant: (...args: Parameters<typeof supabaseMultiTenantService.getCurrentTenant>) =>
+    serviceFactory.getMultiTenantService().getCurrentTenant(...args),
+  getCurrentTenantId: (...args: Parameters<typeof supabaseMultiTenantService.getCurrentTenantId>) =>
+    serviceFactory.getMultiTenantService().getCurrentTenantId(...args),
+  getCurrentUserId: (...args: Parameters<typeof supabaseMultiTenantService.getCurrentUserId>) =>
+    serviceFactory.getMultiTenantService().getCurrentUserId(...args),
+  setCurrentTenant: (...args: Parameters<typeof supabaseMultiTenantService.setCurrentTenant>) =>
+    serviceFactory.getMultiTenantService().setCurrentTenant(...args),
+  subscribe: (...args: Parameters<typeof supabaseMultiTenantService.subscribe>) =>
+    serviceFactory.getMultiTenantService().subscribe(...args),
+  clearTenantContext: (...args: Parameters<typeof supabaseMultiTenantService.clearTenantContext>) =>
+    serviceFactory.getMultiTenantService().clearTenantContext(...args),
+  hasRole: (...args: Parameters<typeof supabaseMultiTenantService.hasRole>) =>
+    serviceFactory.getMultiTenantService().hasRole(...args),
+  getUserTenants: (...args: Parameters<typeof supabaseMultiTenantService.getUserTenants>) =>
+    serviceFactory.getMultiTenantService().getUserTenants(...args),
+  switchTenant: (...args: Parameters<typeof supabaseMultiTenantService.switchTenant>) =>
+    serviceFactory.getMultiTenantService().switchTenant(...args),
 };
 
 export type { ApiMode };

@@ -40,7 +40,8 @@ import {
   supabaseCustomerService,
   supabaseTicketService,
   supabaseContractService,
-  supabaseNotificationService
+  supabaseNotificationService,
+  supabaseAuthService as supabaseAuthServiceInstance
 } from '../supabase';
 
 // Service interfaces
@@ -243,8 +244,23 @@ class ApiServiceFactory {
    */
   public getAuthService(): IAuthService {
     if (!this.authServiceInstance) {
-      // Auth service only has mock implementation, all modes use mock
-      this.authServiceInstance = mockAuthService as IAuthService;
+      const mode = getServiceBackend('auth');
+      
+      switch (mode) {
+        case 'supabase':
+          console.log('[API Factory] 🗄️  Using Supabase for Auth Service');
+          this.authServiceInstance = supabaseAuthServiceInstance as unknown as IAuthService;
+          break;
+        case 'real':
+          console.log('[API Factory] 🔌 Using Real API for Auth Service');
+          // Real backend not implemented yet, fall back to mock
+          this.authServiceInstance = mockAuthService as IAuthService;
+          break;
+        case 'mock':
+        default:
+          console.log('[API Factory] 🎭 Using Mock for Auth Service');
+          this.authServiceInstance = mockAuthService as IAuthService;
+      }
     }
     return this.authServiceInstance;
   }

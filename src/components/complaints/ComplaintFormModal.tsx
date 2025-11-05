@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { complaintService } from '@/services/complaintService';
-import { customerService } from '@/services';
+import { complaintService as factoryComplaintService, customerService as factoryCustomerService } from '@/services/serviceFactory';
 import { ComplaintFormData } from '@/types/complaints';
 import { Customer } from '@/types/crm';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { uiNotificationService } from '@/services/uiNotificationService';
+import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -59,7 +58,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
 
   const fetchCustomers = async () => {
     try {
-      const data = await customerService.getCustomers();
+      const data = await factoryCustomerService.getCustomers();
       setCustomers(data);
     } catch (error) {
       console.error('Failed to fetch customers:', error);
@@ -68,7 +67,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
 
   const fetchEngineers = async () => {
     try {
-      const data = await complaintService.getEngineers();
+      const data = await factoryComplaintService.getEngineers();
       setEngineers(data);
     } catch (error) {
       console.error('Failed to fetch engineers:', error);
@@ -79,7 +78,7 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.description.trim() || !formData.customer_id) {
-      uiNotificationService.errorNotify(
+      factoryUINotificationService.errorNotify(
         'Validation Error',
         'Please fill in all required fields'
       );
@@ -88,15 +87,15 @@ const ComplaintFormModal: React.FC<ComplaintFormModalProps> = ({
 
     setIsLoading(true);
     try {
-      await complaintService.createComplaint(formData);
-      uiNotificationService.successNotify('Success', 'Complaint created successfully');
+      await factoryComplaintService.createComplaint(formData);
+      factoryUINotificationService.successNotify('Success', 'Complaint created successfully');
       onSuccess();
       onOpenChange(false);
       resetForm();
     } catch (error: unknown) {
       console.error('Failed to create complaint:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create complaint';
-      uiNotificationService.errorNotify('Error', errorMessage);
+      factoryUINotificationService.errorNotify('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

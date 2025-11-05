@@ -1,0 +1,819 @@
+/**
+ * Super User Module - Supabase Service Implementation
+ * 
+ * This service provides real database operations for the Super User module
+ * using Supabase PostgreSQL backend. Used when VITE_API_MODE=supabase.
+ * 
+ * CRITICAL: All methods MUST match the same signatures and validation logic
+ * as the Mock service (src/services/superUserService.ts)
+ * 
+ * Column Mapping Convention (ESSENTIAL FOR LAYER SYNC):
+ * - Database columns: snake_case (e.g., super_user_id)
+ * - TypeScript fields: camelCase (e.g., superUserId)
+ * - SELECT queries MUST map: `column_name as camelCaseName`
+ * 
+ * Layer Sync Rule:
+ * - All mappers handle snake_case → camelCase conversion
+ * - Null values checked appropriately
+ * - Type conversions (string to number, JSONB parsing)
+ * - Date formatting consistent with TypeScript types
+ * 
+ * Last Updated: 2025-02-11
+ */
+
+import { supabaseClient as supabase } from '../../supabase/client';
+import {
+    SuperUserTenantAccessType,
+    ImpersonationLogType,
+    TenantStatisticType,
+    TenantConfigOverrideType,
+    SuperUserTenantAccessCreateInput,
+    SuperUserTenantAccessUpdateInput,
+    ImpersonationStartInput,
+    ImpersonationEndInput,
+    TenantStatisticCreateInput,
+    TenantConfigOverrideCreateInput,
+    TenantConfigOverrideUpdateInput,
+    validateSuperUserTenantAccessCreate,
+    validateImpersonationStart,
+    validateImpersonationEnd,
+    validateTenantStatisticCreate,
+    validateTenantConfigOverrideCreate,
+    validateTenantConfigOverrideUpdate,
+} from '@/types/superUserModule';
+
+/**
+ * =====================================================
+ * ROW MAPPERS - Database to TypeScript Conversion
+ * =====================================================
+ * 
+ * These functions convert database rows (with snake_case columns)
+ * to TypeScript objects (with camelCase fields).
+ * 
+ * CRITICAL FOR LAYER SYNC:
+ * - Handle null/undefined values properly
+ * - Convert types (string → number, parse JSONB)
+ * - Consistent field naming across all layers
+ */
+
+/**
+ * Map super_user_tenant_access row to TypeScript type
+ * Converts snake_case database columns to camelCase TypeScript fields
+ */
+function mapSuperUserTenantAccessRow(row: any): SuperUserTenantAccessType {
+    return {
+        id: row.id,
+        superUserId: row.super_user_id,
+        tenantId: row.tenant_id,
+        accessLevel: row.access_level,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+/**
+ * Map super_user_impersonation_logs row to TypeScript type
+ * Converts JSONB actions_taken to parsed object
+ */
+function mapImpersonationLogRow(row: any): ImpersonationLogType {
+    return {
+        id: row.id,
+        superUserId: row.super_user_id,
+        impersonatedUserId: row.impersonated_user_id,
+        tenantId: row.tenant_id,
+        reason: row.reason || undefined,
+        loginAt: row.login_at,
+        logoutAt: row.logout_at || undefined,
+        actionsTaken: row.actions_taken ? (Array.isArray(row.actions_taken) ? row.actions_taken : JSON.parse(row.actions_taken)) : undefined,
+        ipAddress: row.ip_address || undefined,
+        userAgent: row.user_agent || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+/**
+ * Map tenant_statistics row to TypeScript type
+ * Converts DECIMAL metric_value to JavaScript number
+ */
+function mapTenantStatisticRow(row: any): TenantStatisticType {
+    return {
+        id: row.id,
+        tenantId: row.tenant_id,
+        metricType: row.metric_type,
+        metricValue: row.metric_value ? parseFloat(row.metric_value) : undefined,
+        recordedAt: row.recorded_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+/**
+ * Map tenant_config_overrides row to TypeScript type
+ * Converts JSONB config_value to parsed object
+ */
+function mapTenantConfigOverrideRow(row: any): TenantConfigOverrideType {
+    return {
+        id: row.id,
+        tenantId: row.tenant_id,
+        configKey: row.config_key,
+        configValue: row.config_value
+            ? typeof row.config_value === 'string'
+                ? JSON.parse(row.config_value)
+                : row.config_value
+            : {},
+        overrideReason: row.override_reason || undefined,
+        createdBy: row.created_by || undefined,
+        createdAt: row.created_at,
+        expiresAt: row.expires_at || undefined,
+        updatedAt: row.updated_at,
+    };
+}
+
+/**
+ * =====================================================
+ * SUPABASE SERVICE - All Methods
+ * =====================================================
+ */
+
+export const supabaseSuperUserService = {
+    /**
+     * ===== TENANT ACCESS MANAGEMENT =====
+     */
+
+    /**
+     * Get all super user tenant access records from database
+     * @returns Array of tenant access records
+     * @throws Error if query fails
+     */
+    async getSuperUserTenantAccess(): Promise<SuperUserTenantAccessType[]> {
+        try {
+            const { data, error } = await supabase
+                .from('super_user_tenant_access')
+                .select('id, super_user_id as superUserId, tenant_id as tenantId, access_level as accessLevel, created_at as createdAt, updated_at as updatedAt')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapSuperUserTenantAccessRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch super user tenant access: ${error}`);
+        }
+    },
+
+    /**
+     * Get tenant access for a specific super user
+     * @param superUserId - Super user ID
+     * @returns Array of tenant access records for this super user
+     * @throws Error if query fails
+     */
+    async getTenantAccessByUserId(
+        superUserId: string
+    ): Promise<SuperUserTenantAccessType[]> {
+        try {
+            if (!superUserId) {
+                throw new Error('Super user ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_tenant_access')
+                .select('id, super_user_id as superUserId, tenant_id as tenantId, access_level as accessLevel, created_at as createdAt, updated_at as updatedAt')
+                .eq('super_user_id', superUserId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapSuperUserTenantAccessRow);
+        } catch (error) {
+            throw new Error(
+                `Failed to fetch tenant access for user ${superUserId}: ${error}`
+            );
+        }
+    },
+
+    /**
+     * Get a specific tenant access record
+     * @param id - Tenant access ID
+     * @returns Tenant access record
+     * @throws Error if not found or query fails
+     */
+    async getSuperUserTenantAccessById(id: string): Promise<SuperUserTenantAccessType> {
+        try {
+            if (!id) {
+                throw new Error('Access ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_tenant_access')
+                .select('id, super_user_id as superUserId, tenant_id as tenantId, access_level as accessLevel, created_at as createdAt, updated_at as updatedAt')
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Tenant access ${id} not found`);
+            }
+
+            return mapSuperUserTenantAccessRow(data);
+        } catch (error) {
+            throw new Error(`Failed to fetch tenant access: ${error}`);
+        }
+    },
+
+    /**
+     * Grant a super user access to a tenant
+     * @param input - Create input
+     * @returns Created tenant access record
+     * @throws Error if validation fails or duplicate exists
+     */
+    async grantTenantAccess(
+        input: SuperUserTenantAccessCreateInput
+    ): Promise<SuperUserTenantAccessType> {
+        try {
+            // Validate input exactly like mock service
+            validateSuperUserTenantAccessCreate(input);
+
+            const { data, error } = await supabase
+                .from('super_user_tenant_access')
+                .insert([
+                    {
+                        super_user_id: input.superUserId,
+                        tenant_id: input.tenantId,
+                        access_level: input.accessLevel || 'limited',
+                    },
+                ])
+                .select('id, super_user_id as superUserId, tenant_id as tenantId, access_level as accessLevel, created_at as createdAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                // Check for duplicate constraint violation
+                if (error.code === '23505') {
+                    throw new Error(
+                        `Super user ${input.superUserId} already has access to tenant ${input.tenantId}`
+                    );
+                }
+                throw error;
+            }
+
+            return mapSuperUserTenantAccessRow(data);
+        } catch (error) {
+            throw new Error(`Failed to grant tenant access: ${error}`);
+        }
+    },
+
+    /**
+     * Update tenant access level
+     * @param id - Access ID
+     * @param input - Update input
+     * @returns Updated tenant access record
+     * @throws Error if not found or validation fails
+     */
+    async updateTenantAccessLevel(
+        id: string,
+        input: SuperUserTenantAccessUpdateInput
+    ): Promise<SuperUserTenantAccessType> {
+        try {
+            if (!id) {
+                throw new Error('Access ID is required');
+            }
+            if (!input.accessLevel) {
+                throw new Error('Access level is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_tenant_access')
+                .update({
+                    access_level: input.accessLevel,
+                })
+                .eq('id', id)
+                .select('id, super_user_id as superUserId, tenant_id as tenantId, access_level as accessLevel, created_at as createdAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Tenant access ${id} not found`);
+            }
+
+            return mapSuperUserTenantAccessRow(data);
+        } catch (error) {
+            throw new Error(`Failed to update tenant access: ${error}`);
+        }
+    },
+
+    /**
+     * Revoke super user access to a tenant
+     * @param superUserId - Super user ID
+     * @param tenantId - Tenant ID
+     * @throws Error if not found
+     */
+    async revokeTenantAccess(superUserId: string, tenantId: string): Promise<void> {
+        try {
+            if (!superUserId || !tenantId) {
+                throw new Error('Super user ID and tenant ID are required');
+            }
+
+            const { error } = await supabase
+                .from('super_user_tenant_access')
+                .delete()
+                .eq('super_user_id', superUserId)
+                .eq('tenant_id', tenantId);
+
+            if (error) {
+                throw error;
+            }
+        } catch (error) {
+            throw new Error(`Failed to revoke tenant access: ${error}`);
+        }
+    },
+
+    /**
+     * ===== IMPERSONATION MANAGEMENT =====
+     */
+
+    /**
+     * Get all impersonation logs
+     * @returns Array of impersonation logs
+     */
+    async getImpersonationLogs(): Promise<ImpersonationLogType[]> {
+        try {
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .order('login_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapImpersonationLogRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch impersonation logs: ${error}`);
+        }
+    },
+
+    /**
+     * Get impersonation logs for a specific super user
+     * @param superUserId - Super user ID
+     * @returns Array of impersonation logs for this user
+     */
+    async getImpersonationLogsByUserId(superUserId: string): Promise<ImpersonationLogType[]> {
+        try {
+            if (!superUserId) {
+                throw new Error('Super user ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .eq('super_user_id', superUserId)
+                .order('login_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapImpersonationLogRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch impersonation logs for user ${superUserId}: ${error}`);
+        }
+    },
+
+    /**
+     * Get a specific impersonation log
+     * @param id - Log ID
+     * @returns Impersonation log record
+     */
+    async getImpersonationLogById(id: string): Promise<ImpersonationLogType> {
+        try {
+            if (!id) {
+                throw new Error('Log ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Impersonation log ${id} not found`);
+            }
+
+            return mapImpersonationLogRow(data);
+        } catch (error) {
+            throw new Error(`Failed to fetch impersonation log: ${error}`);
+        }
+    },
+
+    /**
+     * Start an impersonation session
+     * @param input - Start input
+     * @returns Created impersonation log
+     */
+    async startImpersonation(input: ImpersonationStartInput): Promise<ImpersonationLogType> {
+        try {
+            // Validate input exactly like mock service
+            validateImpersonationStart(input);
+
+            // Get current user from auth
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) {
+                throw new Error('No authenticated user found');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .insert([
+                    {
+                        super_user_id: user.id,
+                        impersonated_user_id: input.impersonatedUserId,
+                        tenant_id: input.tenantId,
+                        reason: input.reason || null,
+                        login_at: new Date().toISOString(),
+                        actions_taken: [],
+                        ip_address: input.ipAddress || null,
+                        user_agent: input.userAgent || null,
+                    },
+                ])
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            return mapImpersonationLogRow(data);
+        } catch (error) {
+            throw new Error(`Failed to start impersonation: ${error}`);
+        }
+    },
+
+    /**
+     * End an impersonation session
+     * @param logId - Log ID to end
+     * @param actionsTaken - Actions captured
+     * @returns Updated impersonation log
+     */
+    async endImpersonation(
+        logId: string,
+        actionsTaken?: Record<string, unknown>[]
+    ): Promise<ImpersonationLogType> {
+        try {
+            if (!logId) {
+                throw new Error('Log ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .update({
+                    logout_at: new Date().toISOString(),
+                    actions_taken: actionsTaken || [],
+                })
+                .eq('id', logId)
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Impersonation log ${logId} not found`);
+            }
+
+            return mapImpersonationLogRow(data);
+        } catch (error) {
+            throw new Error(`Failed to end impersonation: ${error}`);
+        }
+    },
+
+    /**
+     * Get currently active impersonation sessions
+     * @returns Array of active impersonation logs (with no logout_at)
+     */
+    async getActiveImpersonations(): Promise<ImpersonationLogType[]> {
+        try {
+            const { data, error } = await supabase
+                .from('super_user_impersonation_logs')
+                .select('id, super_user_id as superUserId, impersonated_user_id as impersonatedUserId, tenant_id as tenantId, reason, login_at as loginAt, logout_at as logoutAt, actions_taken as actionsTaken, ip_address as ipAddress, user_agent as userAgent, created_at as createdAt, updated_at as updatedAt')
+                .is('logout_at', null)
+                .order('login_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapImpersonationLogRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch active impersonations: ${error}`);
+        }
+    },
+
+    /**
+     * ===== TENANT STATISTICS MANAGEMENT =====
+     */
+
+    /**
+     * Get all tenant statistics
+     * @returns Array of tenant statistics
+     */
+    async getTenantStatistics(): Promise<TenantStatisticType[]> {
+        try {
+            const { data, error } = await supabase
+                .from('tenant_statistics')
+                .select('id, tenant_id as tenantId, metric_type as metricType, metric_value as metricValue, recorded_at as recordedAt, updated_at as updatedAt')
+                .order('recorded_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapTenantStatisticRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch tenant statistics: ${error}`);
+        }
+    },
+
+    /**
+     * Get statistics for a specific tenant
+     * @param tenantId - Tenant ID
+     * @returns Array of statistics for this tenant
+     */
+    async getTenantStatisticsByTenantId(tenantId: string): Promise<TenantStatisticType[]> {
+        try {
+            if (!tenantId) {
+                throw new Error('Tenant ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('tenant_statistics')
+                .select('id, tenant_id as tenantId, metric_type as metricType, metric_value as metricValue, recorded_at as recordedAt, updated_at as updatedAt')
+                .eq('tenant_id', tenantId)
+                .order('recorded_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapTenantStatisticRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch tenant statistics for tenant ${tenantId}: ${error}`);
+        }
+    },
+
+    /**
+     * Record a new tenant metric
+     * @param input - Create input
+     * @returns Created statistic record
+     */
+    async recordTenantMetric(input: TenantStatisticCreateInput): Promise<TenantStatisticType> {
+        try {
+            // Validate input exactly like mock service
+            validateTenantStatisticCreate(input);
+
+            const { data, error } = await supabase
+                .from('tenant_statistics')
+                .insert([
+                    {
+                        tenant_id: input.tenantId,
+                        metric_type: input.metricType,
+                        metric_value: input.metricValue,
+                    },
+                ])
+                .select(`
+                    id,
+                    tenant_id as tenantId,
+                    metric_type as metricType,
+                    metric_value as metricValue,
+                    recorded_at as recordedAt,
+                    updated_at as updatedAt
+                `)
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            return mapTenantStatisticRow(data);
+        } catch (error) {
+            throw new Error(`Failed to record tenant metric: ${error}`);
+        }
+    },
+
+    /**
+     * ===== CONFIGURATION OVERRIDES MANAGEMENT =====
+     */
+
+    /**
+     * Get all configuration overrides
+     * @returns Array of configuration overrides
+     */
+    async getTenantConfigOverrides(): Promise<TenantConfigOverrideType[]> {
+        try {
+            const { data, error } = await supabase
+                .from('tenant_config_overrides')
+                .select('id, tenant_id as tenantId, config_key as configKey, config_value as configValue, override_reason as overrideReason, created_by as createdBy, created_at as createdAt, expires_at as expiresAt, updated_at as updatedAt')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapTenantConfigOverrideRow);
+        } catch (error) {
+            throw new Error(`Failed to fetch tenant config overrides: ${error}`);
+        }
+    },
+
+    /**
+     * Get configuration overrides for a specific tenant
+     * @param tenantId - Tenant ID
+     * @returns Array of overrides for this tenant
+     */
+    async getTenantConfigOverridesByTenantId(
+        tenantId: string
+    ): Promise<TenantConfigOverrideType[]> {
+        try {
+            if (!tenantId) {
+                throw new Error('Tenant ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('tenant_config_overrides')
+                .select('id, tenant_id as tenantId, config_key as configKey, config_value as configValue, override_reason as overrideReason, created_by as createdBy, created_at as createdAt, expires_at as expiresAt, updated_at as updatedAt')
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            return (data || []).map(mapTenantConfigOverrideRow);
+        } catch (error) {
+            throw new Error(
+                `Failed to fetch config overrides for tenant ${tenantId}: ${error}`
+            );
+        }
+    },
+
+    /**
+     * Get a specific configuration override
+     * @param id - Override ID
+     * @returns Configuration override record
+     */
+    async getTenantConfigOverrideById(id: string): Promise<TenantConfigOverrideType> {
+        try {
+            if (!id) {
+                throw new Error('Override ID is required');
+            }
+
+            const { data, error } = await supabase
+                .from('tenant_config_overrides')
+                .select('id, tenant_id as tenantId, config_key as configKey, config_value as configValue, override_reason as overrideReason, created_by as createdBy, created_at as createdAt, expires_at as expiresAt, updated_at as updatedAt')
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Config override ${id} not found`);
+            }
+
+            return mapTenantConfigOverrideRow(data);
+        } catch (error) {
+            throw new Error(`Failed to fetch config override: ${error}`);
+        }
+    },
+
+    /**
+     * Create a configuration override
+     * @param input - Create input
+     * @returns Created override record
+     */
+    async createTenantConfigOverride(
+        input: TenantConfigOverrideCreateInput
+    ): Promise<TenantConfigOverrideType> {
+        try {
+            // Validate input exactly like mock service
+            validateTenantConfigOverrideCreate(input);
+
+            // Get current user from auth
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            const { data, error } = await supabase
+                .from('tenant_config_overrides')
+                .insert([
+                    {
+                        tenant_id: input.tenantId,
+                        config_key: input.configKey,
+                        config_value: input.configValue,
+                        override_reason: input.overrideReason || null,
+                        created_by: user?.id || null,
+                        expires_at: input.expiresAt || null,
+                    },
+                ])
+                .select('id, tenant_id as tenantId, config_key as configKey, config_value as configValue, override_reason as overrideReason, created_by as createdBy, created_at as createdAt, expires_at as expiresAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                // Check for duplicate constraint violation
+                if (error.code === '23505') {
+                    throw new Error(
+                        `Config override for key "${input.configKey}" already exists for tenant ${input.tenantId}`
+                    );
+                }
+                throw error;
+            }
+
+            return mapTenantConfigOverrideRow(data);
+        } catch (error) {
+            throw new Error(`Failed to create config override: ${error}`);
+        }
+    },
+
+    /**
+     * Update a configuration override
+     * @param id - Override ID
+     * @param input - Update input
+     * @returns Updated override record
+     */
+    async updateTenantConfigOverride(
+        id: string,
+        input: TenantConfigOverrideUpdateInput
+    ): Promise<TenantConfigOverrideType> {
+        try {
+            if (!id) {
+                throw new Error('Override ID is required');
+            }
+
+            validateTenantConfigOverrideUpdate(input);
+
+            const { data, error } = await supabase
+                .from('tenant_config_overrides')
+                .update({
+                    config_value: input.configValue,
+                    expires_at: input.expiresAt,
+                    override_reason: input.overrideReason,
+                })
+                .eq('id', id)
+                .select('id, tenant_id as tenantId, config_key as configKey, config_value as configValue, override_reason as overrideReason, created_by as createdBy, created_at as createdAt, expires_at as expiresAt, updated_at as updatedAt')
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                throw new Error(`Config override ${id} not found`);
+            }
+
+            return mapTenantConfigOverrideRow(data);
+        } catch (error) {
+            throw new Error(`Failed to update config override: ${error}`);
+        }
+    },
+
+    /**
+     * Delete a configuration override
+     * @param id - Override ID
+     */
+    async deleteTenantConfigOverride(id: string): Promise<void> {
+        try {
+            if (!id) {
+                throw new Error('Override ID is required');
+            }
+
+            const { error } = await supabase
+                .from('tenant_config_overrides')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                throw error;
+            }
+        } catch (error) {
+            throw new Error(`Failed to delete config override: ${error}`);
+        }
+    },
+};
+
+export default supabaseSuperUserService;

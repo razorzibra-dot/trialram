@@ -11,6 +11,25 @@ class SupabaseSalesService {
   private table = 'sales';
 
   /**
+   * Get tenant ID from user with null-safety
+   * ⭐ FIX: Handles super admins with null tenant_id
+   */
+  private getTenantId(user: any): string | null {
+    return user.tenant_id || user.tenantId || null;
+  }
+
+  /**
+   * Add tenant filter to query if user has a tenant
+   * ⭐ FIX: Prevents undefined tenant_id queries
+   */
+  private addTenantFilter(query: any, tenantId: string | null): any {
+    if (tenantId) {
+      return query.eq('tenant_id', tenantId);
+    }
+    return query;
+  }
+
+  /**
    * Transform database snake_case to TypeScript camelCase
    */
   private toTypeScript(dbDeal: any): Deal {
@@ -115,12 +134,19 @@ class SupabaseSalesService {
       
       if (!user) throw new Error('Unauthorized');
 
+      const tenantId = this.getTenantId(user);
+      
       let query = supabase
         .from(this.table)
-        .select('*, sale_items(*)')
-        .eq('tenant_id', user.tenant_id);
+        .select('*, sale_items(*)');
 
-      console.log('[Supabase Sales Service] 🔍 Querying table:', this.table, 'for tenant:', user.tenant_id);
+      query = this.addTenantFilter(query, tenantId);
+      
+      if (tenantId) {
+        console.log('[Supabase Sales Service] 🔍 Filtering by tenant:', tenantId);
+      } else {
+        console.log('[Supabase Sales Service] 🔓 No tenant filter (super admin cross-tenant query)');
+      }
 
       // Apply role-based filtering for agents
       if (user.role === 'agent') {
@@ -183,12 +209,14 @@ class SupabaseSalesService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Unauthorized');
 
-      const { data, error } = await supabase
+      const tenantId = this.getTenantId(user);
+      let query = supabase
         .from(this.table)
         .select('*, sale_items(*)')
-        .eq('id', id)
-        .eq('tenant_id', user.tenant_id)
-        .single();
+        .eq('id', id);
+
+      query = this.addTenantFilter(query, tenantId);
+      const { data, error } = await query.single();
 
       if (error) throw error;
       if (!data) throw new Error('Deal not found');
@@ -223,9 +251,10 @@ class SupabaseSalesService {
         throw new Error('Insufficient permissions');
       }
 
+      const tenantId = this.getTenantId(user);
       const newDeal = {
         ...this.toDatabase(dealData),
-        tenant_id: user.tenant_id,
+        tenant_id: tenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -257,12 +286,14 @@ class SupabaseSalesService {
       }
 
       // Verify ownership for agents
-      const { data: existingDeal, error: fetchError } = await supabase
+      const tenantId = this.getTenantId(user);
+      let fetchQuery = supabase
         .from(this.table)
         .select('*')
-        .eq('id', id)
-        .eq('tenant_id', user.tenant_id)
-        .single();
+        .eq('id', id);
+      fetchQuery = this.addTenantFilter(fetchQuery, tenantId);
+      
+      const { data: existingDeal, error: fetchError } = await fetchQuery.single();
 
       if (fetchError || !existingDeal) throw new Error('Deal not found');
 
@@ -275,13 +306,13 @@ class SupabaseSalesService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      let updateQuery = supabase
         .from(this.table)
         .update(dbUpdates)
-        .eq('id', id)
-        .eq('tenant_id', user.tenant_id)
-        .select()
-        .single();
+        .eq('id', id);
+      updateQuery = this.addTenantFilter(updateQuery, tenantId);
+      
+      const { data, error } = await updateQuery.select().single();
 
       if (error) throw error;
       return this.toTypeScript(data);
@@ -304,12 +335,14 @@ class SupabaseSalesService {
       }
 
       // Verify ownership for agents
-      const { data: existingDeal, error: fetchError } = await supabase
+      const tenantId = this.getTenantId(user);
+      let fetchQuery = supabase
         .from(this.table)
         .select('*')
-        .eq('id', id)
-        .eq('tenant_id', user.tenant_id)
-        .single();
+        .eq('id', id);
+      fetchQuery = this.addTenantFilter(fetchQuery, tenantId);
+      
+      const { data: existingDeal, error: fetchError } = await fetchQuery.single();
 
       if (fetchError || !existingDeal) throw new Error('Deal not found');
 
@@ -317,11 +350,13 @@ class SupabaseSalesService {
         throw new Error('Access denied');
       }
 
-      const { error } = await supabase
+      let deleteQuery = supabase
         .from(this.table)
         .delete()
-        .eq('id', id)
-        .eq('tenant_id', user.tenant_id);
+        .eq('id', id);
+      deleteQuery = this.addTenantFilter(deleteQuery, tenantId);
+      
+      const { error } = await deleteQuery;
 
       if (error) throw error;
     } catch (error) {
@@ -349,10 +384,12 @@ class SupabaseSalesService {
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Unauthorized');
 
+      const tenantId = this.getTenantId(user);
       let query = supabase
         .from(this.table)
-        .select('*')
-        .eq('tenant_id', user.tenant_id);
+        .select('*');
+
+      query = this.addTenantFilter(query, tenantId);
 
       // Apply role-based filtering for agents
       if (user.role === 'agent') {

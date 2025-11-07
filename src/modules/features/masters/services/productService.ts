@@ -24,6 +24,12 @@ export interface ProductStats {
 export class ProductService extends BaseService {
   /**
    * Get products with filtering and pagination
+   * @param {ProductFilters} filters - Filter options (search, category, status, price range)
+   * @returns {Promise<PaginatedResponse<Product>>} Paginated list of products
+   * @example
+   * const response = await productService.getProducts({ category: 'Software', status: 'active' });
+   * console.log(response.data); // Array of products
+   * console.log(response.total); // Total count
    */
   async getProducts(filters: ProductFilters = {}): Promise<PaginatedResponse<Product>> {
     try {

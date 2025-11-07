@@ -37,9 +37,9 @@ import {
 } from '@ant-design/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
-import { useProductStats, useImportProducts, useProducts, useDeleteProduct } from '../hooks/useProducts';
+import { useProductStats, useImportProducts, useProducts, useDeleteProduct, useCreateProduct, useUpdateProduct } from '../hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product, ProductFilters } from '@/types/masters';
+import { Product, ProductFilters, ProductFormData } from '@/types/masters';
 import { ProductsDetailPanel } from '../components/ProductsDetailPanel';
 import { ProductsFormPanel } from '../components/ProductsFormPanel';
 
@@ -66,6 +66,8 @@ export const ProductsPage: React.FC = () => {
   const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useProducts(filters);
   const importProducts = useImportProducts();
   const deleteProduct = useDeleteProduct();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
 
   const handleRefresh = () => {
     refetchStats();
@@ -97,18 +99,25 @@ export const ProductsPage: React.FC = () => {
     setDrawerMode('edit');
   };
 
-  const handleFormSave = async (values: Partial<Product>) => {
+  const handleFormSave = async (values: Partial<ProductFormData>) => {
     try {
       setIsSaving(true);
-      // TODO: Implement actual save logic using useUpdateProduct or useCreateProduct
-      console.log('Saving product:', values);
-      message.success(`Product ${drawerMode === 'create' ? 'created' : 'updated'} successfully`);
-      await refetchProducts();
-      await refetchStats();
+      
+      if (drawerMode === 'create') {
+        // Create new product
+        await createProduct.mutateAsync(values as ProductFormData);
+      } else if (drawerMode === 'edit' && selectedProduct) {
+        // Update existing product
+        await updateProduct.mutateAsync({
+          id: selectedProduct.id,
+          data: values,
+        });
+      }
+      
       handleDrawerClose();
     } catch (error) {
       console.error('Error saving product:', error);
-      message.error('Failed to save product');
+      message.error(error instanceof Error ? error.message : 'Failed to save product');
     } finally {
       setIsSaving(false);
     }

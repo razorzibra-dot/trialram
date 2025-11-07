@@ -3,19 +3,23 @@
 export interface Company {
   id: string;
   name: string;
-  address: string;
-  phone: string;
-  email: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   website?: string;
   industry: string;
-  size: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
-  status: 'active' | 'inactive' | 'prospect';
+  size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
+  status?: 'active' | 'inactive' | 'prospect';
   description?: string;
   logo_url?: string;
+  registration_number?: string;
+  tax_id?: string;
+  founded_year?: string | number;
+  notes?: string;
   tenant_id: string;
   created_at: string;
   updated_at: string;
-  created_by: string;
+  created_by?: string;
 }
 
 export interface Product {
@@ -24,6 +28,7 @@ export interface Product {
   description?: string;
   category: string;
   brand?: string;
+  manufacturer?: string;
   type?: string;
   sku: string;
 
@@ -33,16 +38,16 @@ export interface Product {
   currency?: string;
 
   // Product Classification
-  status: 'active' | 'inactive' | 'discontinued';
-  is_active: boolean;
-  is_service: boolean;
+  status?: 'active' | 'inactive' | 'discontinued';
+  is_active?: boolean;
+  is_service?: boolean;
 
   // Stock Management
   stock_quantity?: number;
   min_stock_level?: number;
   max_stock_level?: number;
   reorder_level?: number;
-  track_stock: boolean;
+  track_stock?: boolean;
   unit?: string;
   min_order_quantity?: number;
 
@@ -61,6 +66,7 @@ export interface Product {
   image_url?: string;
   warranty_period?: number; // in months
   service_contract_available?: boolean;
+  notes?: string;
 
   // System Information
   tenant_id: string;
@@ -82,37 +88,33 @@ export interface ProductSpecification {
 // Form interfaces for creating/editing
 export interface CompanyFormData {
   name: string;
-  address: string;
-  phone: string;
-  email: string;
-  website?: string;
   industry: string;
-  size: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
-  status: 'active' | 'inactive' | 'prospect';
-  description?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  address?: string;
+  size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
+  status?: 'active' | 'inactive' | 'prospect';
+  registration_number?: string;
+  tax_id?: string;
+  founded_year?: string | number;
+  notes?: string;
 }
 
 export interface ProductFormData {
   name: string;
-  type?: string;
-  category: string;
-  description?: string;
-  price: number;
-  cost?: number;
-  currency?: string;
   sku: string;
-  status: 'active' | 'inactive' | 'discontinued';
+  category: string;
+  brand?: string;
+  manufacturer?: string;
+  price: number;
+  cost_price?: number;
   stock_quantity?: number;
-  min_stock_level?: number;
-  max_stock_level?: number;
+  reorder_level?: number;
   unit?: string;
-  weight?: number;
-  dimensions?: string;
-  supplier_id?: string;
-  supplier_name?: string;
-  tags?: string[];
-  warranty_period?: number;
-  service_contract_available?: boolean;
+  status?: 'active' | 'inactive' | 'discontinued';
+  description?: string;
+  notes?: string;
 }
 
 // Customer form data - unified interface for all customer forms
@@ -155,6 +157,8 @@ export interface CompanyFilters {
   industry?: string;
   size?: string;
   status?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ProductFilters {
@@ -164,6 +168,8 @@ export interface ProductFilters {
   status?: string;
   price_min?: number;
   price_max?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 // CustomerMasterFilters removed - use CustomerFilters from crm.ts instead

@@ -1,6 +1,7 @@
 -- =====================================================
 -- MIGRATION: Fix Super Admin Data Visibility
--- Created: 2025-03-04
+-- Created: 2025-03-05
+-- Version: 20250305 (renamed from 20250304 to avoid conflict)
 -- Problem: Super admins couldn't see users/tenants
 --          "users_view_tenant_users" policy excluded NULL tenant_id
 --          "tenants" table had no super admin access policy

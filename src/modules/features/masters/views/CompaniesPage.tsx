@@ -35,9 +35,9 @@ import {
 } from '@ant-design/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
-import { useCompanyStats, useImportCompanies, useCompanies, useDeleteCompany } from '../hooks/useCompanies';
+import { useCompanyStats, useImportCompanies, useCompanies, useDeleteCompany, useCreateCompany, useUpdateCompany } from '../hooks/useCompanies';
 import { useAuth } from '@/contexts/AuthContext';
-import { Company, CompanyFilters } from '@/types/masters';
+import { Company, CompanyFilters, CompanyFormData } from '@/types/masters';
 import { CompaniesDetailPanel } from '../components/CompaniesDetailPanel';
 import { CompaniesFormPanel } from '../components/CompaniesFormPanel';
 
@@ -64,6 +64,8 @@ export const CompaniesPage: React.FC = () => {
   const { data: companiesData, isLoading: companiesLoading, refetch: refetchCompanies } = useCompanies(filters);
   const importCompanies = useImportCompanies();
   const deleteCompany = useDeleteCompany();
+  const createCompany = useCreateCompany();
+  const updateCompany = useUpdateCompany();
 
   const handleRefresh = () => {
     refetchStats();
@@ -95,18 +97,25 @@ export const CompaniesPage: React.FC = () => {
     setDrawerMode('edit');
   };
 
-  const handleFormSave = async (values: Partial<Company>) => {
+  const handleFormSave = async (values: Partial<CompanyFormData>) => {
     try {
       setIsSaving(true);
-      // TODO: Implement actual save logic using useUpdateCompany or useCreateCompany
-      console.log('Saving company:', values);
-      message.success(`Company ${drawerMode === 'create' ? 'created' : 'updated'} successfully`);
-      await refetchCompanies();
-      await refetchStats();
+      
+      if (drawerMode === 'create') {
+        // Create new company
+        await createCompany.mutateAsync(values as CompanyFormData);
+      } else if (drawerMode === 'edit' && selectedCompany) {
+        // Update existing company
+        await updateCompany.mutateAsync({
+          id: selectedCompany.id,
+          data: values,
+        });
+      }
+      
       handleDrawerClose();
     } catch (error) {
       console.error('Error saving company:', error);
-      message.error('Failed to save company');
+      message.error(error instanceof Error ? error.message : 'Failed to save company');
     } finally {
       setIsSaving(false);
     }

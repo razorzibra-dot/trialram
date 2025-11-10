@@ -2,20 +2,11 @@ export interface JobWork {
   id: string;
   job_ref_id: string; // Format: CUSTSHORT-YYYYMMDD-XXXXXX
 
-  // Customer Relationship (integrated with unified Customer model)
+  // Customer Relationship (normalized - IDs only, no denormalized names)
   customer_id: string;
-  customer_name?: string;
-  customer_short_name?: string;
-  customer_contact?: string;
-  customer_email?: string;
-  customer_phone?: string;
 
-  // Product Relationship (integrated with unified Product model)
+  // Product Relationship (normalized - IDs only, no denormalized names)
   product_id: string;
-  product_name?: string;
-  product_sku?: string;
-  product_category?: string;
-  product_unit?: string;
 
   // Job Specifications
   pieces: number;
@@ -29,12 +20,9 @@ export interface JobWork {
   final_price: number; // Final calculated price (pieces * effective_price)
   currency?: string;
 
-  // Assignment and Engineering
+  // Assignment and Engineering (normalized - IDs only, no denormalized names)
   receiver_engineer_id: string;
-  receiver_engineer_name?: string;
-  receiver_engineer_email?: string;
   assigned_by?: string;
-  assigned_by_name?: string;
 
   // Status and Workflow
   status: 'pending' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';

@@ -1,11 +1,12 @@
 /**
  * useCompanySizes Hook
- * Fetches company size options dynamically from configuration
- * Supports both mock and Supabase modes
+ * Fetches company size options dynamically from reference_data table
+ * ✅ Supports both mock and Supabase modes via service factory
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useTenantContext } from '@/hooks/useTenantContext';
+import { referenceDataService } from '@/services/serviceFactory';
+import { ReferenceData } from '@/types/referenceData.types';
 
 export interface CompanySize {
   id: string;
@@ -16,24 +17,32 @@ export interface CompanySize {
 }
 
 /**
- * Mock company sizes data
+ * Convert ReferenceData to CompanySize interface
+ * Metadata can contain minEmployees and maxEmployees as JSON
  */
-const MOCK_COMPANY_SIZES: CompanySize[] = [
-  { id: '1', name: 'Startup', description: 'Startup companies', minEmployees: 1, maxEmployees: 50 },
-  { id: '2', name: 'Small', description: 'Small businesses', minEmployees: 51, maxEmployees: 250 },
-  { id: '3', name: 'Medium', description: 'Medium-sized companies', minEmployees: 251, maxEmployees: 1000 },
-  { id: '4', name: 'Large', description: 'Large enterprises', minEmployees: 1001, maxEmployees: 5000 },
-  { id: '5', name: 'Enterprise', description: 'Enterprise-level organizations', minEmployees: 5001 },
-];
+function mapReferenceDataToCompanySize(data: ReferenceData): CompanySize {
+  const metadata = data.metadata as any || {};
+  return {
+    id: data.id,
+    name: data.label,
+    description: data.description,
+    minEmployees: metadata.minEmployees,
+    maxEmployees: metadata.maxEmployees,
+  };
+}
 
 /**
- * Fetch company sizes from mock data or API
- * In future, this can be extended to fetch from Supabase
+ * Fetch company sizes from reference_data service
+ * ✅ Uses service factory to automatically route between mock and supabase
  */
 async function fetchCompanySizes(): Promise<CompanySize[]> {
-  // Currently returns mock data
-  // TODO: In future, fetch from Supabase configuration table
-  return MOCK_COMPANY_SIZES;
+  try {
+    const referenceData = await referenceDataService.getReferenceData('company_size');
+    return referenceData.map(mapReferenceDataToCompanySize);
+  } catch (error) {
+    console.error('Error fetching company sizes:', error);
+    throw error;
+  }
 }
 
 /**
@@ -41,12 +50,9 @@ async function fetchCompanySizes(): Promise<CompanySize[]> {
  * @returns {Object} Query object with data, isLoading, error
  */
 export function useCompanySizes() {
-  const { tenant } = useTenantContext();
-
   return useQuery({
     queryKey: ['companySizes'],
     queryFn: fetchCompanySizes,
-    enabled: !!tenant?.id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 3,
   });

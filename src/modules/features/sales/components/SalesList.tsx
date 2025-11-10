@@ -162,12 +162,12 @@ export const SalesList: React.FC<SalesListProps> = ({
       },
     },
     {
-      key: 'customer_name',
-      header: 'Customer',
+      key: 'customer_id',
+      header: 'Customer ID',
       sortable: true,
       render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
-        return deal.customer_name || <span className="text-gray-400">Unassigned</span>;
+        return deal.customer_id || <span className="text-gray-400">Unassigned</span>;
       },
     },
     {
@@ -197,12 +197,12 @@ export const SalesList: React.FC<SalesListProps> = ({
       },
     },
     {
-      key: 'assigned_to_name',
-      header: 'Owner',
+      key: 'assigned_to',
+      header: 'Owner ID',
       sortable: true,
       render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
-        return deal.assigned_to_name || <span className="text-gray-400">Unassigned</span>;
+        return deal.assigned_to || <span className="text-gray-400">Unassigned</span>;
       },
     },
     {

@@ -36,8 +36,8 @@ interface ExportColumn {
 
 const EXPORT_COLUMNS: ExportColumn[] = [
   { key: 'sale_number', label: 'Sale Number', default: true },
-  { key: 'customer_name', label: 'Customer Name', default: true },
-  { key: 'product_name', label: 'Product Name', default: true },
+  { key: 'customer_id', label: 'Customer ID', default: true },
+  { key: 'product_id', label: 'Product ID', default: true },
   { key: 'quantity', label: 'Quantity', default: true },
   { key: 'unit_price', label: 'Unit Price', default: true },
   { key: 'total_value', label: 'Total Value', default: true },

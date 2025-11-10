@@ -44,8 +44,8 @@ export interface ColumnConfig {
 // Default column configuration
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: 'sale_number', title: 'Sale #', visible: true, order: 0 },
-  { key: 'customer_name', title: 'Customer', visible: true, order: 1 },
-  { key: 'product_name', title: 'Product', visible: true, order: 2 },
+  { key: 'customer_id', title: 'Customer ID', visible: true, order: 1 },
+  { key: 'product_id', title: 'Product ID', visible: true, order: 2 },
   { key: 'quantity', title: 'Quantity', visible: true, order: 3 },
   { key: 'unit_price', title: 'Unit Price', visible: true, order: 4 },
   { key: 'total_value', title: 'Total Value', visible: true, order: 5 },

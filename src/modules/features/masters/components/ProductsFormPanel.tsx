@@ -7,6 +7,8 @@ import React, { useEffect } from 'react';
 import { Drawer, Form, Input, Select, Button, Spin, message, Row, Col, InputNumber } from 'antd';
 import { Product } from '@/types/masters';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
+import { DynamicSelect, DynamicMultiSelect } from '@/components/forms';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 interface ProductsFormPanelProps {
   product: Product | null;
@@ -18,21 +20,6 @@ interface ProductsFormPanelProps {
   onSave: (values: Partial<Product>) => Promise<void>;
 }
 
-const statusOptions = [
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-  { label: 'Discontinued', value: 'discontinued' },
-];
-
-const unitOptions = [
-  { label: 'Pieces', value: 'pieces' },
-  { label: 'Boxes', value: 'boxes' },
-  { label: 'Cartons', value: 'cartons' },
-  { label: 'KG', value: 'kg' },
-  { label: 'Liters', value: 'liters' },
-  { label: 'Meters', value: 'meters' },
-];
-
 export const ProductsFormPanel: React.FC<ProductsFormPanelProps> = ({
   product,
   isOpen,
@@ -43,14 +30,25 @@ export const ProductsFormPanel: React.FC<ProductsFormPanelProps> = ({
   onSave,
 }) => {
   const [form] = Form.useForm();
+  const { getRefDataByCategory } = useReferenceData();
   const title = mode === 'create' ? 'Add New Product' : 'Edit Product';
+
+  const statusOptions = getRefDataByCategory('product_status').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
+  
+  const unitOptions = getRefDataByCategory('product_unit').map(u => ({ 
+    label: u.label, 
+    value: u.key 
+  }));
 
   useEffect(() => {
     if (isOpen && product && mode === 'edit') {
       form.setFieldsValue({
         name: product.name,
         sku: product.sku,
-        category: product.category,
+        category_id: product.category_id,
         brand: product.brand,
         manufacturer: product.manufacturer,
         price: product.price,
@@ -61,6 +59,7 @@ export const ProductsFormPanel: React.FC<ProductsFormPanelProps> = ({
         status: product.status,
         description: product.description,
         notes: product.notes,
+        supplier_id: product.supplier_id,
       });
     } else if (mode === 'create') {
       form.resetFields();
@@ -131,10 +130,13 @@ export const ProductsFormPanel: React.FC<ProductsFormPanelProps> = ({
             <Col span={12}>
               <Form.Item
                 label="Category"
-                name="category"
-                rules={[{ required: true, message: 'Please enter category' }]}
+                name="category_id"
+                rules={[{ required: true, message: 'Please select category' }]}
               >
-                <Input placeholder="e.g., Electronics" />
+                <DynamicSelect 
+                  type="categories" 
+                  placeholder="Select category"
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -181,6 +183,18 @@ export const ProductsFormPanel: React.FC<ProductsFormPanelProps> = ({
             <Select
               options={unitOptions}
               placeholder="Select unit"
+            />
+          </Form.Item>
+
+          {/* Supplier */}
+          <Form.Item
+            label="Supplier"
+            name="supplier_id"
+          >
+            <DynamicSelect 
+              type="suppliers" 
+              placeholder="Select supplier (optional)"
+              allowClear
             />
           </Form.Item>
 

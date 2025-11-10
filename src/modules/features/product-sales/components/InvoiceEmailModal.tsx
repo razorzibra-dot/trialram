@@ -35,9 +35,11 @@ import {
   CopyOutlined
 } from '@ant-design/icons';
 import { ProductSale, ProductSaleItem } from '@/types/productSales';
+import { Customer } from '@/types/crm';
 import { Invoice } from '../services/invoiceService';
 import { useInvoiceEmail } from '../hooks/useInvoiceEmail';
 import { InvoiceEmailConfig } from '../services/invoiceEmailService';
+import { getCustomerName } from '../utils/dataEnrichment';
 import dayjs from 'dayjs';
 
 interface InvoiceEmailModalProps {
@@ -45,6 +47,7 @@ interface InvoiceEmailModalProps {
   invoice: Invoice;
   sale: ProductSale;
   saleItems: ProductSaleItem[];
+  customers: Customer[];
   onClose: () => void;
   onSuccess?: (result: any) => void;
   pdfBlob?: Blob;
@@ -63,12 +66,14 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   invoice,
   sale,
   saleItems,
+  customers,
   onClose,
   onSuccess,
   pdfBlob
 }) => {
   const [form] = Form.useForm<Record<string, string>>();
   const { sendEmail, isSendingEmail, sendEmailError, scheduleEmail, isSchedulingEmail, scheduleEmailError } = useInvoiceEmail();
+  const customerEmail = customers.find(c => c.id === sale.customer_id)?.email || '';
 
   const [activeTab, setActiveTab] = useState<'send' | 'schedule' | 'preview'>('send');
   const [includeAttachment, setIncludeAttachment] = useState(true);
@@ -155,7 +160,6 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     }
   };
 
-  const customerEmail = sale.customer_email || invoice.customer_email || '';
   const isLoading = isSendingEmail || isSchedulingEmail;
 
   return (
@@ -323,7 +327,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                       </Col>
                       <Col span={12}>
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          <div><strong>Customer:</strong> {invoice.customer_name}</div>
+                          <div><strong>Customer:</strong> {getCustomerName(sale.customer_id, customers) || 'N/A'}</div>
                           <div><strong>Date:</strong> {new Date(invoice.generated_at).toLocaleDateString()}</div>
                         </div>
                       </Col>
@@ -497,7 +501,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                       </Col>
                       <Col span={12}>
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          <div><strong>Customer:</strong> {invoice.customer_name}</div>
+                          <div><strong>Customer:</strong> {getCustomerName(sale.customer_id, customers) || 'N/A'}</div>
                           <div><strong>Date:</strong> {new Date(invoice.generated_at).toLocaleDateString()}</div>
                         </div>
                       </Col>
@@ -553,7 +557,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                         </head>
                         <body>
                           <div style="max-width: 600px; margin: 0 auto;">
-                            <p><strong>To:</strong> ${sale.customer_email || 'customer@example.com'}</p>
+                            <p><strong>To:</strong> ${customerEmail || 'customer@example.com'}</p>
                             <p><strong>Subject:</strong> Invoice ${invoice.invoice_number}</p>
                             <hr />
                             <p><em>Email content will be displayed here...</em></p>

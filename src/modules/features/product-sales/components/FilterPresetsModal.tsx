@@ -131,8 +131,6 @@ export const FilterPresetsModal: React.FC<FilterPresetsModalProps> = ({
     
     if (filters.search) parts.push(`Search: ${filters.search}`);
     if (filters.sale_id) parts.push(`Sale ID: ${filters.sale_id}`);
-    if (filters.customer_name) parts.push(`Customer: ${filters.customer_name}`);
-    if (filters.product_name) parts.push(`Product: ${filters.product_name}`);
     if (filters.status) parts.push(`Status: ${filters.status}`);
     if (filters.warranty_status) parts.push(`Warranty: ${filters.warranty_status}`);
     if (filters.min_amount) parts.push(`Min: $${filters.min_amount}`);

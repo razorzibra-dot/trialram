@@ -54,3 +54,13 @@ export { usePermissionBasedNavigation } from './usePermissionBasedNavigation';
 export { useModuleAccess, useAccessibleModules, type ModuleAccessResult } from './useModuleAccess';
 export { useCanAccessModule } from './useCanAccessModule';
 export { useImpersonationActionTracker, type ImpersonationActionTrackerHook } from './useImpersonationActionTracker';
+
+// PHASE 1.5: Dynamic Data Loading Hooks (Layer 7)
+export {
+  useCategories,
+  useSuppliers,
+  useStatusOptions,
+  useReferenceDataOptions,
+  useReferenceDataByCategory,
+  useAllReferenceData,
+} from './useReferenceDataOptions';

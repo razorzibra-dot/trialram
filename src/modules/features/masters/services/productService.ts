@@ -7,6 +7,7 @@ import { BaseService } from '@/modules/core/services/BaseService';
 import { PaginatedResponse } from '@/modules/core/types';
 import { Product, ProductFormData, ProductFilters } from '@/types/masters';
 import { productService as factoryProductService } from '@/services/serviceFactory';
+import { referenceDataLoader } from '@/services/serviceFactory';
 
 export interface ProductStats {
   total: number;
@@ -249,35 +250,45 @@ export class ProductService extends BaseService {
   }
 
   /**
-   * Get product statuses
+   * Get product statuses from database
+   * ✅ DYNAMIC - Loaded from reference_data table
    */
   async getProductStatuses(): Promise<string[]> {
-    return ['active', 'inactive', 'discontinued'];
+    try {
+      const statuses = await referenceDataLoader.loadReferenceData('product_status');
+      return statuses.map(s => s.label);
+    } catch (error) {
+      this.handleError('Failed to fetch product statuses', error);
+      return ['active', 'inactive', 'discontinued'];
+    }
   }
 
   /**
-   * Get product categories
+   * Get product categories from database
+   * ✅ DYNAMIC - Loaded from product_categories table
    */
   async getProductCategories(): Promise<string[]> {
-    return [
-      'Electronics',
-      'Software',
-      'Hardware',
-      'Services',
-      'Consulting',
-      'Training',
-      'Support',
-      'Maintenance',
-      'Licensing',
-      'Other'
-    ];
+    try {
+      const categories = await referenceDataLoader.loadCategories();
+      return categories.map(c => c.name);
+    } catch (error) {
+      this.handleError('Failed to fetch product categories', error);
+      return [];
+    }
   }
 
   /**
-   * Get product types
+   * Get product types from database
+   * ✅ DYNAMIC - Loaded from reference_data table
    */
   async getProductTypes(): Promise<string[]> {
-    return ['Product', 'Service', 'Digital', 'Subscription', 'Bundle'];
+    try {
+      const types = await referenceDataLoader.loadReferenceData('product_type');
+      return types.map(t => t.label);
+    } catch (error) {
+      this.handleError('Failed to fetch product types', error);
+      return ['Product', 'Service', 'Digital', 'Subscription', 'Bundle'];
+    }
   }
 
   /**

@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import { Drawer, Form, Input, Select, Button, Spin, message, Row, Col } from 'antd';
 import { Company } from '@/types/masters';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 interface CompaniesFormPanelProps {
   company: Company | null;
@@ -18,19 +19,7 @@ interface CompaniesFormPanelProps {
   onSave: (values: Partial<Company>) => Promise<void>;
 }
 
-const sizeOptions = [
-  { label: 'Startup', value: 'startup' },
-  { label: 'Small', value: 'small' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'Large', value: 'large' },
-  { label: 'Enterprise', value: 'enterprise' },
-];
 
-const statusOptions = [
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-  { label: 'Prospect', value: 'prospect' },
-];
 
 export const CompaniesFormPanel: React.FC<CompaniesFormPanelProps> = ({
   company,
@@ -42,7 +31,18 @@ export const CompaniesFormPanel: React.FC<CompaniesFormPanelProps> = ({
   onSave,
 }) => {
   const [form] = Form.useForm();
+  const { getRefDataByCategory } = useReferenceData();
   const title = mode === 'create' ? 'Add New Company' : 'Edit Company';
+
+  const sizeOptions = getRefDataByCategory('company_size').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
+  
+  const statusOptions = getRefDataByCategory('company_status').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
 
   useEffect(() => {
     if (isOpen && company && mode === 'edit') {

@@ -19,13 +19,18 @@ import {
   Tag,
 } from 'antd';
 import { ProductSale, ProductSaleItem } from '@/types/productSales';
+import { Customer } from '@/types/crm';
+import { Product } from '@/types/masters';
 import { useGenerateInvoice } from '../hooks/useGenerateInvoice';
 import { invoiceService } from '../services/invoiceService';
+import { getCustomerName, getProductName } from '../utils/dataEnrichment';
 
 interface InvoiceGenerationModalProps {
   visible: boolean;
   sale: ProductSale | null;
   saleItems: ProductSaleItem[];
+  customers: Customer[];
+  products: Product[];
   onClose: () => void;
   onSuccess?: (invoiceNumber: string) => void;
 }
@@ -37,6 +42,8 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
   visible,
   sale,
   saleItems,
+  customers,
+  products,
   onClose,
   onSuccess,
 }) => {
@@ -57,7 +64,7 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
     if (saleItems.length > 0) {
       const items = saleItems.map(item => ({
         product_id: item.product_id,
-        product_name: item.product_name || 'Product',
+        product_name: getProductName(item.product_id, products) || 'Product',
         description: item.description || '',
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -68,7 +75,7 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
       const totals = invoiceService.calculateTotals(items, taxRate);
       setCalculatedTotals(totals);
     }
-  }, [taxRate, saleItems]);
+  }, [taxRate, saleItems, products]);
 
   const handleGenerate = async (values: any) => {
     if (!sale) {
@@ -79,6 +86,8 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
       const result = await generateInvoiceMutation.mutateAsync({
         sale,
         saleItems,
+        customers,
+        products,
         taxRate,
         currency,
         paymentTerms: values.paymentTerms || 'Net 30',
@@ -125,17 +134,17 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
               <Row gutter={16}>
                 <Col span={12}>
                   <p>
-                    <strong>Sale ID:</strong> {sale.sale_number}
+                    <strong>Sale ID:</strong> {sale.id}
                   </p>
                 </Col>
                 <Col span={12}>
                   <p>
-                    <strong>Customer:</strong> {sale.customer_name}
+                    <strong>Customer:</strong> {getCustomerName(sale.customer_id, customers) || 'N/A'}
                   </p>
                 </Col>
                 <Col span={12}>
                   <p>
-                    <strong>Email:</strong> {sale.customer_email || 'N/A'}
+                    <strong>Email:</strong> {customers.find(c => c.id === sale.customer_id)?.email || 'N/A'}
                   </p>
                 </Col>
                 <Col span={12}>
@@ -228,7 +237,7 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
                 <tbody>
                   {saleItems.map((item, index) => (
                     <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '8px' }}>{item.product_name}</td>
+                      <td style={{ padding: '8px' }}>{getProductName(item.product_id, products) || 'N/A'}</td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>{item.quantity}</td>
                       <td style={{ padding: '8px', textAlign: 'right' }}>
                         {invoiceService.formatCurrency(item.unit_price, currency)}

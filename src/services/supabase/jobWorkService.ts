@@ -54,7 +54,7 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
       if (filters?.search) {
         const search = `%${filters.search}%`;
         query = query.or(
-          `job_ref_id.ilike.${search},customer_name.ilike.${search},product_name.ilike.${search},comments.ilike.${search}`
+          `job_ref_id.ilike.${search},customer_id.ilike.${search},product_id.ilike.${search},comments.ilike.${search}`
         );
       }
       if (filters?.date_from) {
@@ -323,17 +323,14 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
       id: data.id,
       job_ref_id: data.job_ref_id,
       customer_id: data.customer_id,
-      customer_name: data.customer_name,
-      customer_short_name: data.customer_short_name,
       product_id: data.product_id,
-      product_name: data.product_name,
       pieces: parseFloat(data.pieces),
       size: data.size,
       default_price: parseFloat(data.default_price),
       manual_price: data.manual_price ? parseFloat(data.manual_price) : undefined,
       final_price: parseFloat(data.final_price),
+      base_price: data.base_price ? parseFloat(data.base_price) : parseFloat(data.default_price),
       receiver_engineer_id: data.receiver_engineer_id,
-      receiver_engineer_name: data.receiver_engineer_name,
       comments: data.comments,
       status: data.status,
       tenant_id: data.tenant_id,

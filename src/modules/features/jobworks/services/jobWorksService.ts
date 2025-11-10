@@ -24,9 +24,7 @@ export interface JobWork {
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   customer_id: string;
-  customer_name?: string;
   assigned_to?: string;
-  assigned_to_name?: string;
   start_date?: string;
   due_date?: string;
   completion_date?: string;
@@ -266,14 +264,14 @@ export class JobWorksService extends BaseService {
       }
 
       // CSV format
-      const headers = ['ID', 'Title', 'Status', 'Priority', 'Customer', 'Assigned To', 'Due Date', 'Cost'];
+      const headers = ['ID', 'Title', 'Status', 'Priority', 'Customer ID', 'Assigned To', 'Due Date', 'Cost'];
       const rows = jobWorks.map(job => [
         job.id,
         job.title,
         job.status,
         job.priority,
-        job.customer_name || '',
-        job.assigned_to_name || '',
+        job.customer_id || '',
+        job.assigned_to || '',
         job.due_date || '',
         job.cost || 0
       ]);

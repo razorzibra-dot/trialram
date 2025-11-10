@@ -73,8 +73,8 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
     format: 'csv',
     selectedColumns: [
       'sale_number',
-      'customer_name',
-      'product_name',
+      'customer_id',
+      'product_id',
       'quantity',
       'unit_price',
       'total_value',
@@ -141,8 +141,8 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
       format: 'csv',
       selectedColumns: [
         'sale_number',
-        'customer_name',
-        'product_name',
+        'customer_id',
+        'product_id',
         'quantity',
         'unit_price',
         'total_value',
@@ -154,8 +154,8 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
 
   const columnOptions = [
     { label: 'Sale #', value: 'sale_number' },
-    { label: 'Customer', value: 'customer_name' },
-    { label: 'Product', value: 'product_name' },
+    { label: 'Customer ID', value: 'customer_id' },
+    { label: 'Product ID', value: 'product_id' },
     { label: 'Quantity', value: 'quantity' },
     { label: 'Unit Price', value: 'unit_price' },
     { label: 'Total Value', value: 'total_value' },
@@ -303,13 +303,13 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
             format: 'csv',
             selectedColumns: [
               'sale_number',
-              'customer_name',
-              'product_name',
+              'customer_id',
+              'product_id',
               'quantity',
               'unit_price',
               'total_value',
               'status',
-              'sale_date'
+              'created_at'
             ]
           })
         }

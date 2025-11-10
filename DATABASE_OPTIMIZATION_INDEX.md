@@ -17,6 +17,30 @@ author: AI Agent
 
 ---
 
+## ⭐ NEW: Dynamic Data Loading Architecture
+
+**📄 File**: `DATABASE_DYNAMIC_DATA_LOADING_ARCHITECTURE.md` (NEW)  
+**Status**: Architecture complete, ready for implementation  
+**Effort**: ~1-2 weeks  
+
+**Purpose**: Eliminates hardcoded dropdowns and reference data
+- No more adding categories/statuses = code deployment
+- All reference data loaded from database at runtime
+- Single source of truth
+- Multi-tenant customization support
+- Extensible generic reference data table
+
+**Key Components**:
+1. Reference data tables: status_options, reference_data
+2. Data loader service: referenceDataLoader.ts
+3. React context: ReferenceDataContext
+4. Custom hooks: useCategories(), useSuppliers(), useStatusOptions()
+5. Components: <DynamicSelect>, <DynamicMultiSelect>
+
+**When to Read**: Before starting Phase 3 code updates to understand where DynamicSelect components come from
+
+---
+
 ## 📋 Main Documents
 
 ### 1. Quick Reference (START HERE)

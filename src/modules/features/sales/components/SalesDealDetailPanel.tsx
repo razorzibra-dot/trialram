@@ -245,7 +245,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
                   Deal Value
                 </div>
                 <Statistic
-                  value={deal.value || deal.amount || 0}
+                  value={deal.value || 0}
                   prefix="$"
                   suffix=""
                   valueStyle={{ color: '#0ea5e9', fontSize: 18, fontWeight: 600 }}

@@ -58,6 +58,8 @@ import {
 } from '@ant-design/icons';
 import { Complaint } from '@/types/complaints';
 import dayjs from 'dayjs';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
+import { DynamicSelect } from '@/components/forms';
 
 interface ComplaintsFormPanelProps {
   complaint: Complaint | null;
@@ -66,103 +68,7 @@ interface ComplaintsFormPanelProps {
   onClose: () => void;
 }
 
-// Enterprise status configuration with SLA definitions
-const STATUSES = [
-  { label: 'New', value: 'new', color: 'warning', icon: '📌' },
-  { label: 'In Progress', value: 'in_progress', color: 'processing', icon: '⏳' },
-  { label: 'On Hold', value: 'on_hold', color: 'default', icon: '⏸' },
-  { label: 'Closed', value: 'closed', color: 'success', icon: '✓' },
-];
 
-// Priority levels with SLA time expectations (optimized for technical support)
-const PRIORITIES = [
-  { 
-    label: 'Low', 
-    value: 'low', 
-    color: 'default', 
-    responseTime: '24 hours',
-    resolutionTime: '7 days',
-    icon: '📊'
-  },
-  { 
-    label: 'Medium', 
-    value: 'medium', 
-    color: 'processing', 
-    responseTime: '8 hours',
-    resolutionTime: '3 days',
-    icon: '⚠️'
-  },
-  { 
-    label: 'High', 
-    value: 'high', 
-    color: 'warning', 
-    responseTime: '2 hours',
-    resolutionTime: '24 hours',
-    icon: '🔴'
-  },
-  { 
-    label: 'Urgent', 
-    value: 'urgent', 
-    color: 'red', 
-    responseTime: '30 minutes',
-    resolutionTime: '4 hours',
-    icon: '🚨'
-  },
-];
-
-// Complaint type configuration with SLA and routing
-const COMPLAINT_TYPES = [
-  { 
-    label: 'Equipment Breakdown', 
-    value: 'breakdown', 
-    color: 'red',
-    department: 'Maintenance Team',
-    slaResponse: '1 hour',
-    slaResolution: '4 hours',
-    icon: <BugOutlined />
-  },
-  { 
-    label: 'Preventive Maintenance', 
-    value: 'preventive', 
-    color: 'blue',
-    department: 'Service Team',
-    slaResponse: '8 hours',
-    slaResolution: '5 days',
-    icon: <ToolOutlined />
-  },
-  { 
-    label: 'Software Update', 
-    value: 'software_update', 
-    color: 'cyan',
-    department: 'Software Team',
-    slaResponse: '4 hours',
-    slaResolution: '2 days',
-    icon: <FileTextOutlined />
-  },
-  { 
-    label: 'Optimization Request', 
-    value: 'optimize', 
-    color: 'green',
-    department: 'Technical Team',
-    slaResponse: '24 hours',
-    slaResolution: '7 days',
-    icon: <CheckCircleOutlined />
-  },
-];
-
-// Suggested tags for quick categorization
-const SUGGESTED_TAGS = [
-  'urgent_response_needed',
-  'customer_escalation',
-  'warranty_claim',
-  'requires_parts',
-  'requires_technician_visit',
-  'documentation_needed',
-  'customer_training',
-  'follow_up_required',
-  'critical_system',
-  'multiple_units',
-];
 
 export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
   complaint,
@@ -178,6 +84,26 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
   const [complaintNumber, setComplaintNumber] = useState<string>('');
   const [customerAlert, setCustomerAlert] = useState<string>('');
   const [formInstance, setFormInstance] = useState<any>(null);
+  const { getRefDataByCategory } = useReferenceData();
+
+  const statusOptions = getRefDataByCategory('complaint_status').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
+  
+  const priorityOptions = getRefDataByCategory('complaint_priority').map(p => ({ 
+    label: p.label, 
+    value: p.key,
+    metadata: p.metadata
+  }));
+  
+  const complaintTypeOptions = getRefDataByCategory('complaint_type').map(t => ({ 
+    label: t.label, 
+    value: t.key,
+    metadata: t.metadata
+  }));
+  
+  const suggestedTags = getRefDataByCategory('complaint_tag').map(t => t.key);
 
   // Initialize complaint number on mount
   useEffect(() => {
@@ -195,24 +121,39 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
 
   // Calculate SLA information based on type and priority
   const slaDeatails = useMemo(() => {
-    const typeConfig = COMPLAINT_TYPES.find(t => t.value === complaintType);
-    const priorityConfig = PRIORITIES.find(p => p.value === priority);
+    const typeConfig = complaintTypeOptions.find(t => t.value === complaintType);
+    const priorityConfig = priorityOptions.find(p => p.value === priority);
     
     if (!typeConfig || !priorityConfig) return null;
 
+    const typeMetadata = typeConfig.metadata || {};
+    const priorityMetadata = priorityConfig.metadata || {};
+
     return {
-      type: typeConfig,
-      priority: priorityConfig,
-      responseDeadline: dayjs().add(2, 'hours'), // Simplified
-      resolutionDeadline: dayjs().add(1, 'day'), // Simplified
+      type: {
+        label: typeConfig.label,
+        value: typeConfig.value,
+        color: typeMetadata.color || 'blue',
+        slaResponse: typeMetadata.slaResponse || typeMetadata.responseTime || 'N/A',
+        slaResolution: typeMetadata.slaResolution || typeMetadata.resolutionTime || 'N/A',
+      },
+      priority: {
+        label: priorityConfig.label,
+        value: priorityConfig.value,
+        responseTime: priorityMetadata.responseTime || 'N/A',
+        resolutionTime: priorityMetadata.resolutionTime || 'N/A',
+      },
+      responseDeadline: dayjs().add(2, 'hours'),
+      resolutionDeadline: dayjs().add(1, 'day'),
     };
-  }, [complaintType, priority]);
+  }, [complaintType, priority, complaintTypeOptions, priorityOptions]);
 
   // Get department based on type
   const assignedDepartment = useMemo(() => {
-    const typeConfig = COMPLAINT_TYPES.find(t => t.value === complaintType);
-    return typeConfig?.department || 'Support Team';
-  }, [complaintType]);
+    const typeConfig = complaintTypeOptions.find(t => t.value === complaintType);
+    const typeMetadata = typeConfig?.metadata || {};
+    return typeMetadata.department || 'Support Team';
+  }, [complaintType, complaintTypeOptions]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (values: any) => {
@@ -318,10 +259,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                     placeholder="Select priority"
                     value={priority}
                     onChange={setPriority}
-                    options={PRIORITIES.map(p => ({
-                      label: `${p.icon} ${p.label}`,
-                      value: p.value,
-                    }))}
+                    options={priorityOptions}
                   />
                 </Form.Item>
               </Col>
@@ -335,10 +273,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                     placeholder="Select complaint type"
                     value={complaintType}
                     onChange={setComplaintType}
-                    options={COMPLAINT_TYPES.map(t => ({
-                      label: `${t.label}`,
-                      value: t.value,
-                    }))}
+                    options={complaintTypeOptions}
                   />
                 </Form.Item>
               </Col>
@@ -457,7 +392,10 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                   name="customer_id"
                   rules={[{ required: true, message: 'Please select customer' }]}
                 >
-                  <Select placeholder="Select customer" />
+                  <DynamicSelect 
+                    type="customers" 
+                    placeholder="Select customer"
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -465,7 +403,8 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                   label="Assigned Engineer"
                   name="assigned_engineer_id"
                 >
-                  <Select 
+                  <DynamicSelect 
+                    type="users"
                     placeholder="Assign to engineer"
                     allowClear
                   />
@@ -543,18 +482,22 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                 Suggested Tags (Click to add)
               </label>
               <Space wrap>
-                {SUGGESTED_TAGS.map(suggestedTag => (
-                  <Tag
-                    key={suggestedTag}
-                    onClick={() => addTag(suggestedTag)}
-                    style={{
-                      cursor: 'pointer',
-                      opacity: tags.includes(suggestedTag) ? 0.5 : 1,
-                    }}
-                  >
-                    + {suggestedTag}
-                  </Tag>
-                ))}
+                {suggestedTags.length > 0 ? (
+                  suggestedTags.map(suggestedTag => (
+                    <Tag
+                      key={suggestedTag}
+                      onClick={() => addTag(suggestedTag)}
+                      style={{
+                        cursor: 'pointer',
+                        opacity: tags.includes(suggestedTag) ? 0.5 : 1,
+                      }}
+                    >
+                      + {suggestedTag}
+                    </Tag>
+                  ))
+                ) : (
+                  <span style={{ color: '#999' }}>No suggested tags available</span>
+                )}
               </Space>
             </div>
           </div>

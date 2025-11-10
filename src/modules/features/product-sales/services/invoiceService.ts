@@ -4,6 +4,8 @@
  */
 
 import { ProductSale, ProductSaleItem } from '@/types/productSales';
+import { Customer } from '@/types/crm';
+import { Product } from '@/types/masters';
 import { pdfTemplateService } from '@/services/pdfTemplateService';
 import { auditService } from '@/services';
 
@@ -84,20 +86,25 @@ function calculateInvoiceTotals(
 
 /**
  * Convert ProductSale to InvoiceLineItems
+ * Looks up product names from the products array (normalized structure)
  */
 function convertSaleItemsToInvoiceItems(
   saleItems: ProductSaleItem[],
+  products: Product[],
   taxRate: number = 0
 ): InvoiceLineItem[] {
-  return saleItems.map(item => ({
-    product_id: item.product_id,
-    product_name: item.product_name || 'Product',
-    description: item.description || '',
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    tax_rate: taxRate,
-    line_total: item.quantity * item.unit_price,
-  }));
+  return saleItems.map(item => {
+    const product = products.find(p => p.id === item.product_id);
+    return {
+      product_id: item.product_id,
+      product_name: product?.name || 'Product',
+      description: item.description || '',
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      tax_rate: taxRate,
+      line_total: item.quantity * item.unit_price,
+    };
+  });
 }
 
 /**
@@ -156,10 +163,13 @@ function renderInvoiceHTML(invoice: Invoice, template: any): string {
 export const invoiceService = {
   /**
    * Generate invoice from ProductSale
+   * Requires customers and products arrays to look up denormalized fields
    */
   async generateInvoice(
     sale: ProductSale,
     saleItems: ProductSaleItem[],
+    customers: Customer[],
+    products: Product[],
     options: InvoiceGenerationOptions = {}
   ): Promise<Invoice> {
     try {
@@ -170,11 +180,15 @@ export const invoiceService = {
         currency = 'USD',
       } = options;
 
+      // Look up customer name
+      const customer = customers.find(c => c.id === sale.customer_id);
+      const customerName = customer?.name || 'Valued Customer';
+
       // Generate invoice number
       const invoiceNumber = generateInvoiceNumber();
 
       // Convert sale items to invoice items
-      const invoiceItems = convertSaleItemsToInvoiceItems(saleItems, taxRate);
+      const invoiceItems = convertSaleItemsToInvoiceItems(saleItems, products, taxRate);
 
       // Calculate totals
       const { subtotal, tax, total } = calculateInvoiceTotals(invoiceItems, taxRate);
@@ -188,8 +202,8 @@ export const invoiceService = {
         sale_id: sale.id,
         invoice_number: invoiceNumber,
         customer_id: sale.customer_id,
-        customer_name: sale.customer_name || 'Valued Customer',
-        customer_email: sale.customer_email,
+        customer_name: customerName,
+        customer_email: customer?.email,
         customer_address: sale.billing_address || sale.shipping_address,
         items: invoiceItems,
         subtotal,

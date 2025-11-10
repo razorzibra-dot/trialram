@@ -62,6 +62,10 @@ import { multiTenantService as supabaseMultiTenantService } from './supabase/mul
 import { authService as mockAuthService } from './authService';
 import { supabaseAuthService } from './supabase/authService';
 import { sessionConfigService as mockSessionConfigService } from './sessionConfigService';
+import { mockReferenceDataService } from './referenceDataService';
+import { supabaseReferenceDataService } from './api/supabase/referenceDataService';
+import { mockReferenceDataLoader } from './referenceDataLoader';
+import { supabaseReferenceDataLoader } from './api/supabase/referenceDataLoader';
 
 class ServiceFactory {
   private apiMode: ApiMode;
@@ -649,6 +653,46 @@ class ServiceFactory {
   }
 
   /**
+   * Get Reference Data Service
+   * ✅ Phase 1.5: Dynamic Data Loading Architecture
+   * Loads all reference data (dropdowns, statuses, categories, suppliers) from database
+   * Replaces hardcoded enums and static dropdown options
+   */
+  getReferenceDataService() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseReferenceDataService;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to Supabase');
+        return supabaseReferenceDataService;
+      case 'mock':
+      default:
+        return mockReferenceDataService;
+    }
+  }
+
+  /**
+   * Get Reference Data Loader Service
+   * ✅ Phase 1.5.2: Reference Data Loader
+   * Loads status options, categories, suppliers, and generic reference data
+   * Optimized for UI dropdown population with filtering and sorting
+   */
+  getReferenceDataLoader() {
+    switch (this.apiMode) {
+      case 'supabase':
+        return supabaseReferenceDataLoader;
+      case 'real':
+        // TODO: Implement real API service
+        console.warn('Real API service not yet implemented, falling back to mock');
+        return mockReferenceDataLoader;
+      case 'mock':
+      default:
+        return mockReferenceDataLoader;
+    }
+  }
+
+  /**
    * Get Service (generic method for future extensibility)
    */
   getService(serviceName: string) {
@@ -736,6 +780,10 @@ class ServiceFactory {
       case 'impersonationlimit':
       case 'impersonation_limit':
         return this.getImpersonationRateLimitService();
+      case 'referencedata':
+      case 'reference_data':
+      case 'reference-data':
+        return this.getReferenceDataService();
       // Add other services as needed
       default:
         throw new Error(`Unknown service: ${serviceName}`);
@@ -1017,6 +1065,9 @@ export const productService = {
   subscribeToProducts: (...args: Parameters<typeof supabaseProductService.subscribeToProducts>) =>
     serviceFactory.getProductService().subscribeToProducts(...args),
 };
+
+// Duplicate productSaleService export removed - already defined above (line ~931)
+// Using the same factory-routed export for consistency
 
 // Export for convenience - Company Service
 export const companyService = {
@@ -1687,6 +1738,77 @@ export const multiTenantService = {
     serviceFactory.getMultiTenantService().getUserTenants(...args),
   switchTenant: (...args: Parameters<typeof supabaseMultiTenantService.switchTenant>) =>
     serviceFactory.getMultiTenantService().switchTenant(...args),
+};
+
+// Export for convenience - Reference Data Service
+// ✅ PHASE 1.5: DYNAMIC DATA LOADING - Layer 5 (Factory)
+export const referenceDataService = {
+  get instance() {
+    return serviceFactory.getReferenceDataService();
+  },
+  getAllReferenceData: (...args: Parameters<typeof mockReferenceDataService.getAllReferenceData>) =>
+    serviceFactory.getReferenceDataService().getAllReferenceData(...args),
+  loadAllReferenceData: (...args: Parameters<typeof mockReferenceDataService.loadAllReferenceData>) =>
+    serviceFactory.getReferenceDataService().loadAllReferenceData(...args),
+  getStatusOptions: (...args: Parameters<typeof mockReferenceDataService.getStatusOptions>) =>
+    serviceFactory.getReferenceDataService().getStatusOptions(...args),
+  getReferenceData: (...args: Parameters<typeof mockReferenceDataService.getReferenceData>) =>
+    serviceFactory.getReferenceDataService().getReferenceData(...args),
+  getCategories: (...args: Parameters<typeof mockReferenceDataService.getCategories>) =>
+    serviceFactory.getReferenceDataService().getCategories(...args),
+  getSuppliers: (...args: Parameters<typeof mockReferenceDataService.getSuppliers>) =>
+    serviceFactory.getReferenceDataService().getSuppliers(...args),
+  createStatusOption: (...args: Parameters<typeof mockReferenceDataService.createStatusOption>) =>
+    serviceFactory.getReferenceDataService().createStatusOption(...args),
+  createReferenceData: (...args: Parameters<typeof mockReferenceDataService.createReferenceData>) =>
+    serviceFactory.getReferenceDataService().createReferenceData(...args),
+  createCategory: (...args: Parameters<typeof mockReferenceDataService.createCategory>) =>
+    serviceFactory.getReferenceDataService().createCategory(...args),
+  createSupplier: (...args: Parameters<typeof mockReferenceDataService.createSupplier>) =>
+    serviceFactory.getReferenceDataService().createSupplier(...args),
+  updateStatusOption: (...args: Parameters<typeof mockReferenceDataService.updateStatusOption>) =>
+    serviceFactory.getReferenceDataService().updateStatusOption(...args),
+  updateReferenceData: (...args: Parameters<typeof mockReferenceDataService.updateReferenceData>) =>
+    serviceFactory.getReferenceDataService().updateReferenceData(...args),
+  updateCategory: (...args: Parameters<typeof mockReferenceDataService.updateCategory>) =>
+    serviceFactory.getReferenceDataService().updateCategory(...args),
+  updateSupplier: (...args: Parameters<typeof mockReferenceDataService.updateSupplier>) =>
+    serviceFactory.getReferenceDataService().updateSupplier(...args),
+  deleteStatusOption: (...args: Parameters<typeof mockReferenceDataService.deleteStatusOption>) =>
+    serviceFactory.getReferenceDataService().deleteStatusOption(...args),
+  deleteReferenceData: (...args: Parameters<typeof mockReferenceDataService.deleteReferenceData>) =>
+    serviceFactory.getReferenceDataService().deleteReferenceData(...args),
+  deleteCategory: (...args: Parameters<typeof mockReferenceDataService.deleteCategory>) =>
+    serviceFactory.getReferenceDataService().deleteCategory(...args),
+  deleteSupplier: (...args: Parameters<typeof mockReferenceDataService.deleteSupplier>) =>
+    serviceFactory.getReferenceDataService().deleteSupplier(...args),
+};
+
+// Export for convenience - Reference Data Loader
+// ✅ PHASE 1.5.2: DYNAMIC DATA LOADING - Layer 5 (Factory)
+// Optimized for initial data loading and UI dropdown population
+export const referenceDataLoader = {
+  get instance() {
+    return serviceFactory.getReferenceDataLoader();
+  },
+  loadAllReferenceData: (...args: Parameters<typeof mockReferenceDataLoader.loadAllReferenceData>) =>
+    serviceFactory.getReferenceDataLoader().loadAllReferenceData(...args),
+  loadStatusOptions: (...args: Parameters<typeof mockReferenceDataLoader.loadStatusOptions>) =>
+    serviceFactory.getReferenceDataLoader().loadStatusOptions(...args),
+  loadReferenceData: (...args: Parameters<typeof mockReferenceDataLoader.loadReferenceData>) =>
+    serviceFactory.getReferenceDataLoader().loadReferenceData(...args),
+  loadCategories: (...args: Parameters<typeof mockReferenceDataLoader.loadCategories>) =>
+    serviceFactory.getReferenceDataLoader().loadCategories(...args),
+  loadSuppliers: (...args: Parameters<typeof mockReferenceDataLoader.loadSuppliers>) =>
+    serviceFactory.getReferenceDataLoader().loadSuppliers(...args),
+  createStatusOption: (...args: Parameters<typeof mockReferenceDataLoader.createStatusOption>) =>
+    serviceFactory.getReferenceDataLoader().createStatusOption(...args),
+  createReferenceData: (...args: Parameters<typeof mockReferenceDataLoader.createReferenceData>) =>
+    serviceFactory.getReferenceDataLoader().createReferenceData(...args),
+  createCategory: (...args: Parameters<typeof mockReferenceDataLoader.createCategory>) =>
+    serviceFactory.getReferenceDataLoader().createCategory(...args),
+  createSupplier: (...args: Parameters<typeof mockReferenceDataLoader.createSupplier>) =>
+    serviceFactory.getReferenceDataLoader().createSupplier(...args),
 };
 
 export type { ApiMode };

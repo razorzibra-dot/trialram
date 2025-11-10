@@ -5,6 +5,7 @@ class ProductService {
   private baseUrl = '/api/products';
 
   // Mock data for demonstration
+  // ✅ NORMALIZED: Removed denormalized fields (category, supplier_name, is_active)
   private mockProducts: Product[] = [
     {
       id: '1',
@@ -12,19 +13,18 @@ class ProductService {
       sku: 'IMA-001',
       type: 'Hardware',
       description: 'High-performance industrial motor assembly for manufacturing equipment',
-      category: 'Motors',
+      category_id: 'cat_1', // ✅ NORMALIZED: category_id instead of category string
       price: 1500,
       currency: 'USD',
-      cost: 1000,
+      cost_price: 1000,
       stock_quantity: 25,
       min_stock_level: 5,
       max_stock_level: 100,
       unit: 'piece',
       weight: 15.5,
       dimensions: '30x20x15 cm',
-      supplier_id: '1',
-      supplier_name: 'Motor Tech Solutions',
-      status: 'active',
+      supplier_id: '1', // ✅ NORMALIZED: No supplier_name field
+      status: 'active', // ✅ NORMALIZED: Removed is_active (use status only)
       warranty_period: 12,
       service_contract_available: true,
       tags: ['industrial', 'motor', 'assembly'],
@@ -38,10 +38,10 @@ class ProductService {
       sku: 'CBC-002',
       type: 'Hardware',
       description: 'Durable conveyor belt component for automated production lines',
-      category: 'Conveyor Systems',
+      category_id: 'cat_2',
       price: 800,
       currency: 'USD',
-      cost: 500,
+      cost_price: 500,
       stock_quantity: 50,
       min_stock_level: 10,
       max_stock_level: 200,
@@ -49,7 +49,6 @@ class ProductService {
       weight: 8.2,
       dimensions: '25x15x10 cm',
       supplier_id: '2',
-      supplier_name: 'Conveyor Pro Ltd',
       status: 'active',
       warranty_period: 6,
       service_contract_available: true,
@@ -64,10 +63,10 @@ class ProductService {
       sku: 'CSM-003',
       type: 'Software',
       description: 'Advanced control system module with programmable logic controller',
-      category: 'Control Systems',
+      category_id: 'cat_3',
       price: 2000,
       currency: 'USD',
-      cost: 1300,
+      cost_price: 1300,
       stock_quantity: 15,
       min_stock_level: 3,
       max_stock_level: 50,
@@ -75,7 +74,6 @@ class ProductService {
       weight: 5.8,
       dimensions: '20x15x8 cm',
       supplier_id: '3',
-      supplier_name: 'Control Tech Inc',
       status: 'active',
       warranty_period: 24,
       service_contract_available: true,
@@ -109,8 +107,10 @@ class ProductService {
 
     // Apply filters
     if (filters) {
+      // ✅ NORMALIZED: Changed from filters.category (string) to category_id (FK)
+      // Note: filters.category should now be category_id when called from components
       if (filters.category) {
-        products = products.filter(p => p.category === filters.category);
+        products = products.filter(p => p.category_id === filters.category);
       }
       if (filters.status) {
         products = products.filter(p => p.status === filters.status);
@@ -182,25 +182,25 @@ class ProductService {
       throw new Error('SKU already exists');
     }
 
+    // ✅ NORMALIZED: Use category_id, supplier_id (not denormalized strings)
     const newProduct: Product = {
       id: `prod_${Date.now()}`,
       name: data.name,
       sku: data.sku,
       type: data.type,
-      category: data.category,
+      category_id: data.category_id, // ✅ NORMALIZED: Use category_id FK
       description: data.description || '',
       price: data.price,
       currency: data.currency || 'USD',
-      cost: data.price * 0.7, // Default cost as 70% of price
-      stock_quantity: 0,
-      min_stock_level: 5,
-      max_stock_level: 100,
-      unit: 'piece',
+      cost_price: data.cost_price || data.price * 0.7, // Default cost as 70% of price
+      stock_quantity: data.stock_quantity || 0,
+      min_stock_level: data.min_stock_level || 5,
+      max_stock_level: data.max_stock_level || 100,
+      unit: data.unit || 'piece',
       weight: 0,
       dimensions: '',
-      supplier_id: '',
-      supplier_name: '',
-      status: data.status,
+      supplier_id: data.supplier_id, // ✅ NORMALIZED: No supplier_name
+      status: data.status || 'active',
       warranty_period: data.warranty_period || 0,
       service_contract_available: data.service_contract_available || false,
       tags: [],
@@ -237,18 +237,20 @@ class ProductService {
       throw new Error('SKU already exists');
     }
 
+    // ✅ NORMALIZED: Use category_id, supplier_id (not denormalized strings)
     const updatedProduct: Product = {
       ...this.mockProducts[index],
-      name: data.name,
-      sku: data.sku,
-      type: data.type,
-      category: data.category,
-      description: data.description || '',
-      price: data.price,
-      currency: data.currency || 'USD',
-      status: data.status,
-      warranty_period: data.warranty_period || 0,
-      service_contract_available: data.service_contract_available || false,
+      ...(data.name && { name: data.name }),
+      ...(data.sku && { sku: data.sku }),
+      ...(data.type && { type: data.type }),
+      ...(data.category_id && { category_id: data.category_id }), // ✅ NORMALIZED
+      ...(data.description && { description: data.description }),
+      ...(data.price && { price: data.price }),
+      ...(data.currency && { currency: data.currency }),
+      ...(data.supplier_id !== undefined && { supplier_id: data.supplier_id }), // ✅ NORMALIZED
+      ...(data.status && { status: data.status }),
+      ...(data.warranty_period && { warranty_period: data.warranty_period }),
+      ...(data.service_contract_available !== undefined && { service_contract_available: data.service_contract_available }),
       updated_at: new Date().toISOString()
     };
 

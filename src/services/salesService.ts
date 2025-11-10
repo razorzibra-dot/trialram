@@ -10,9 +10,7 @@ class SalesService {
       id: '1',
       title: 'Enterprise Software License',
       customer_id: '1',
-      customer_name: 'TechCorp Solutions',
       value: 150000,
-      amount: 150000,
       currency: 'USD',
       stage: 'negotiation',
       status: 'open',
@@ -26,7 +24,6 @@ class SalesService {
       campaign: 'Q1_Enterprise_Push',
       notes: 'High-value prospect with strong technical alignment. Decision maker meeting scheduled.',
       assigned_to: '2',
-      assigned_to_name: 'Sarah Manager',
       tags: ['enterprise', 'software', 'annual'],
       items: [
         {
@@ -63,9 +60,7 @@ class SalesService {
       id: '2',
       title: 'Manufacturing Equipment',
       customer_id: '2',
-      customer_name: 'Global Manufacturing Inc',
       value: 75000,
-      amount: 75000,
       currency: 'USD',
       stage: 'proposal',
       status: 'open',
@@ -79,7 +74,6 @@ class SalesService {
       campaign: 'Equipment_Sales_2024',
       notes: 'Waiting for technical specifications approval from engineering team.',
       assigned_to: '3',
-      assigned_to_name: 'Mike Agent',
       tags: ['equipment', 'manufacturing', 'installation'],
       items: [
         {
@@ -116,9 +110,7 @@ class SalesService {
       id: '3',
       title: 'Startup Package',
       customer_id: '3',
-      customer_name: 'StartupXYZ',
       value: 25000,
-      amount: 25000,
       currency: 'USD',
       stage: 'qualified',
       status: 'open',
@@ -132,7 +124,6 @@ class SalesService {
       campaign: 'Startup_Week_2024',
       notes: 'Met at startup conference. Founder very interested in our services.',
       assigned_to: '2',
-      assigned_to_name: 'Sarah Manager',
       tags: ['startup', 'consulting', 'small_deal'],
       items: [],
       tenant_id: 'tenant_1',
@@ -144,9 +135,7 @@ class SalesService {
       id: '4',
       title: 'Retail Integration Platform',
       customer_id: '4',
-      customer_name: 'Retail Giants Ltd',
       value: 200000,
-      amount: 200000,
       currency: 'USD',
       stage: 'closed_won',
       status: 'won',
@@ -160,7 +149,6 @@ class SalesService {
       campaign: 'Retail_Solutions',
       notes: 'Successfully closed. Customer signed contract. Implementation starts Feb 5.',
       assigned_to: '1',
-      assigned_to_name: 'John Admin',
       tags: ['retail', 'integration', 'won', 'large_deal'],
       items: [],
       tenant_id: 'tenant_1',
@@ -172,9 +160,7 @@ class SalesService {
       id: '5',
       title: 'Cloud Migration Services',
       customer_id: '1',
-      customer_name: 'TechCorp Solutions',
       value: 85000,
-      amount: 85000,
       currency: 'USD',
       stage: 'lead',
       status: 'open',
@@ -188,7 +174,6 @@ class SalesService {
       campaign: 'Cloud_Migration_Q2',
       notes: 'Initial discovery call completed. Waiting for IT director availability for technical discussion.',
       assigned_to: '3',
-      assigned_to_name: 'Mike Agent',
       tags: ['cloud', 'migration', 'services', 'existing_customer'],
       items: [],
       tenant_id: 'tenant_1',
@@ -231,7 +216,6 @@ class SalesService {
         const search = filters.search.toLowerCase();
         deals = deals.filter(d => 
           d.title.toLowerCase().includes(search) ||
-          d.customer_name?.toLowerCase().includes(search) ||
           d.description.toLowerCase().includes(search)
         );
       }
@@ -549,10 +533,9 @@ class SalesService {
       deals = deals.filter(d => d.assigned_to === user.id);
     }
 
-    // Search across title, customer_name, and description
+    // Search across title and description
     return deals.filter(d =>
       d.title.toLowerCase().includes(searchLower) ||
-      d.customer_name?.toLowerCase().includes(searchLower) ||
       d.description.toLowerCase().includes(searchLower)
     );
   }
@@ -570,16 +553,16 @@ class SalesService {
 
     if (format === 'csv') {
       // CSV format
-      const headers = ['ID', 'Title', 'Customer', 'Value', 'Stage', 'Status', 'Probability', 'Assigned To'];
+      const headers = ['ID', 'Title', 'Customer ID', 'Value', 'Stage', 'Status', 'Probability', 'Assigned To ID'];
       const rows = deals.map(d => [
         d.id,
         d.title,
-        d.customer_name,
+        d.customer_id,
         d.value,
         d.stage,
         d.status,
         d.probability,
-        d.assigned_to_name
+        d.assigned_to
       ]);
 
       const csvContent = [
@@ -623,9 +606,7 @@ class SalesService {
           id: Date.now().toString() + Math.random(),
           title,
           customer_id: 'imported',
-          customer_name: customerName,
           value: parseInt(value) || 0,
-          amount: parseInt(value) || 0,
           currency: 'USD',
           stage: stage || 'lead',
           status: status || 'open',
@@ -639,7 +620,6 @@ class SalesService {
           campaign: '',
           notes: `Imported from CSV on ${new Date().toLocaleDateString()}`,
           assigned_to: user.id,
-          assigned_to_name: assignedToName || 'Unassigned',
           tags: ['imported'],
           items: [],
           tenant_id: user.tenant_id,

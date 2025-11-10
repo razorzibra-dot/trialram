@@ -8,6 +8,8 @@ import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, DateP
 import dayjs from 'dayjs';
 import { JobWork, CreateJobWorkData } from '../services/jobWorksService';
 import { useCreateJobWork, useUpdateJobWork } from '../hooks/useJobWorks';
+import { DynamicSelect } from '@/components/forms';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 interface JobWorksFormPanelProps {
   visible: boolean;
@@ -26,8 +28,19 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
   const [loading, setLoading] = useState(false);
   const createJobWork = useCreateJobWork();
   const updateJobWork = useUpdateJobWork();
+  const { getRefDataByCategory } = useReferenceData();
 
   const isEditMode = !!jobWork;
+
+  const statusOptions = getRefDataByCategory('jobwork_status').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
+  
+  const priorityOptions = getRefDataByCategory('jobwork_priority').map(p => ({ 
+    label: p.label, 
+    value: p.key 
+  }));
 
   useEffect(() => {
     if (visible && jobWork) {
@@ -121,11 +134,14 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Customer ID"
+          label="Customer"
           name="customer_id"
           rules={[{ required: true, message: 'Please select a customer' }]}
         >
-          <Input placeholder="Enter customer ID" />
+          <DynamicSelect 
+            type="customers" 
+            placeholder="Select customer"
+          />
         </Form.Item>
 
         <Divider />
@@ -138,12 +154,7 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
           name="status"
           initialValue="pending"
         >
-          <Select placeholder="Select status">
-            <Select.Option value="pending">Pending</Select.Option>
-            <Select.Option value="in_progress">In Progress</Select.Option>
-            <Select.Option value="completed">Completed</Select.Option>
-            <Select.Option value="cancelled">Cancelled</Select.Option>
-          </Select>
+          <Select placeholder="Select status" options={statusOptions} />
         </Form.Item>
 
         <Form.Item
@@ -151,12 +162,7 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
           name="priority"
           rules={[{ required: true, message: 'Please select priority' }]}
         >
-          <Select placeholder="Select priority">
-            <Select.Option value="low">Low</Select.Option>
-            <Select.Option value="medium">Medium</Select.Option>
-            <Select.Option value="high">High</Select.Option>
-            <Select.Option value="urgent">Urgent</Select.Option>
-          </Select>
+          <Select placeholder="Select priority" options={priorityOptions} />
         </Form.Item>
 
         <Divider />

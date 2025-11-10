@@ -1,76 +1,76 @@
 {
-  "createdAt": "2025-11-06T05:19:28.564Z",
+  "createdAt": "2025-11-09T23:56:30.361Z",
   "supabaseUrl": "http://127.0.0.1:54321",
   "users": [
     {
       "email": "admin@acme.com",
       "displayName": "Admin Acme",
       "tenant": "Acme Corporation",
-      "userId": "ff93a259-d386-45d5-b576-c20618d9b273",
-      "createdAt": "2025-11-06T05:19:27.606Z"
+      "userId": "5278ae57-db79-4120-b285-6a2082779b0c",
+      "createdAt": "2025-11-09T23:56:29.648Z"
     },
     {
       "email": "manager@acme.com",
       "displayName": "Manager Acme",
       "tenant": "Acme Corporation",
-      "userId": "6df5900a-72a9-46f6-b341-5e6b06a15200",
-      "createdAt": "2025-11-06T05:19:27.729Z"
+      "userId": "92ec9125-1dae-44c4-abc8-a2ba741a6f3b",
+      "createdAt": "2025-11-09T23:56:29.744Z"
     },
     {
       "email": "engineer@acme.com",
       "displayName": "Engineer Acme",
       "tenant": "Acme Corporation",
-      "userId": "a882ba43-dd9e-4a86-978d-226ad36d974b",
-      "createdAt": "2025-11-06T05:19:27.823Z"
+      "userId": "b1010925-d7ac-40ed-851a-f27d2dce6b9b",
+      "createdAt": "2025-11-09T23:56:29.835Z"
     },
     {
       "email": "user@acme.com",
       "displayName": "User Acme",
       "tenant": "Acme Corporation",
-      "userId": "ed3db4eb-ee47-47fc-921d-3ae0d61c341d",
-      "createdAt": "2025-11-06T05:19:27.917Z"
+      "userId": "74c70038-a4b0-4fc1-a0b7-ac9dbba6734a",
+      "createdAt": "2025-11-09T23:56:29.923Z"
     },
     {
       "email": "admin@techsolutions.com",
       "displayName": "Admin Tech",
       "tenant": "Tech Solutions Inc",
-      "userId": "87ca38d2-abd3-40ca-88ca-2c0ed2acc6ad",
-      "createdAt": "2025-11-06T05:19:28.016Z"
+      "userId": "15372c20-b39b-4475-b579-7f5929c891e9",
+      "createdAt": "2025-11-09T23:56:30.002Z"
     },
     {
       "email": "manager@techsolutions.com",
       "displayName": "Manager Tech",
       "tenant": "Tech Solutions Inc",
-      "userId": "d278fe00-a57f-40fd-bf16-87027e34f6f5",
-      "createdAt": "2025-11-06T05:19:28.113Z"
+      "userId": "ca9c1627-17b7-49b8-8b1b-7ba69308850f",
+      "createdAt": "2025-11-09T23:56:30.082Z"
     },
     {
       "email": "admin@globaltrading.com",
       "displayName": "Admin Global",
       "tenant": "Global Trading Ltd",
-      "userId": "031a4035-39d6-4282-b613-1bdab761609f",
-      "createdAt": "2025-11-06T05:19:28.209Z"
+      "userId": "2dfdab55-61d3-4987-93f2-64a3db93fde8",
+      "createdAt": "2025-11-09T23:56:30.167Z"
     },
     {
       "email": "superuser1@platform.admin",
       "displayName": "CRM Global",
       "tenant": "",
-      "userId": "5f22a8a6-43d3-4ebc-af72-82f9ec77c5ea",
-      "createdAt": "2025-11-06T05:19:28.297Z"
+      "userId": "4e0f4f70-73c7-45ac-a948-6ba225ca36d0",
+      "createdAt": "2025-11-09T23:56:30.254Z"
     },
     {
       "email": "superuser2@platform.admin",
       "displayName": "CRM Global",
       "tenant": "",
-      "userId": "aee6e4e6-54ce-4414-8c5c-ea6ea2e23fa1",
-      "createdAt": "2025-11-06T05:19:28.416Z"
+      "userId": "b4c9831c-4be7-4f28-b4b5-37a9a230084d",
+      "createdAt": "2025-11-09T23:56:30.340Z"
     },
     {
       "email": "superuser.auditor@platform.admin",
       "displayName": "CRM Global",
       "tenant": "",
-      "userId": "e7163e18-0723-4c32-a937-eb6c956eeb9d",
-      "createdAt": "2025-11-06T05:19:28.528Z"
+      "userId": "0cfdd140-593b-4750-9745-6a1e60a1e7bd",
+      "createdAt": "2025-11-09T23:56:30.425Z"
     }
   ]
 }

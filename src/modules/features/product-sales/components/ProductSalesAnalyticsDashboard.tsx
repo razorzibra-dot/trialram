@@ -130,19 +130,19 @@ export const ProductSalesAnalyticsDashboard: React.FC<ProductSalesAnalyticsDashb
   const warrantyColumns: ColumnsType<ProductSale> = [
     {
       title: 'Sale #',
-      dataIndex: 'sale_number',
-      key: 'sale_number',
+      dataIndex: 'id',
+      key: 'id',
       render: (text: string) => <strong>{text}</strong>
     },
     {
-      title: 'Customer',
-      dataIndex: 'customer_name',
-      key: 'customer_name'
+      title: 'Customer ID',
+      dataIndex: 'customer_id',
+      key: 'customer_id'
     },
     {
-      title: 'Product',
-      dataIndex: 'product_name',
-      key: 'product_name'
+      title: 'Product ID',
+      dataIndex: 'product_id',
+      key: 'product_id'
     },
     {
       title: 'Warranty Expires',

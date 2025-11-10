@@ -78,7 +78,6 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
           description: contractData.description,
           type: 'service_agreement', // Default type
           customer_id: contractData.customer_id,
-          customer_name: contractData.customer_name,
           value: contractData.value,
           currency: contractData.currency,
           start_date: dayjs(contractData.start_date),
@@ -159,7 +158,7 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
           <>
             <Alert
               message="Converting Sales Deal to Contract"
-              description={`Deal: ${deal.title} (${deal.customer_name || 'Unknown Customer'})`}
+              description={`Deal: ${deal.title} (Customer ID: ${deal.customer_id})`}
               type="info"
               showIcon
               style={{ marginBottom: 24 }}
@@ -251,13 +250,6 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
               name="customer_id"
               label="Customer ID"
               rules={[{ required: true, message: 'Customer is required' }]}
-            >
-              <Input disabled />
-            </Form.Item>
-
-            <Form.Item
-              name="customer_name"
-              label="Customer Name"
             >
               <Input disabled />
             </Form.Item>

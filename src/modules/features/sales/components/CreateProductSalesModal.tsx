@@ -126,7 +126,6 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
             tax: item.tax || 0,
             total_price: item.line_total || 0,
             customer_id: deal.customer_id,
-            customer_name: deal.customer_name || '',
             sale_date: new Date().toISOString().split('T')[0],
             assigned_to: deal.assigned_to,
             notes: `Created from deal: ${deal.title}`,
@@ -287,7 +286,7 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
           <>
             <Alert
               message="Creating Product Sales from Deal"
-              description={`Deal: ${deal.title} | Customer: ${deal.customer_name || 'Unknown'} | Stage: ${deal.stage}`}
+              description={`Deal: ${deal.title} | Customer ID: ${deal.customer_id} | Stage: ${deal.stage}`}
               type="info"
               icon={<CheckCircleOutlined />}
               showIcon

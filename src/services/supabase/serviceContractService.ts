@@ -37,9 +37,7 @@ function mapServiceContractRow(row: any): ServiceContractType {
     title: row.title,
     description: row.description,
     customerId: row.customer_id,
-    customerName: row.customer_name,
     productId: row.product_id,
-    productName: row.product_name,
     serviceType: row.service_type,
     status: row.status,
     priority: row.priority,
@@ -62,9 +60,7 @@ function mapServiceContractRow(row: any): ServiceContractType {
     scheduledHoursPerWeek: row.scheduled_hours_per_week,
     timeZone: row.time_zone,
     assignedToUserId: row.assigned_to_user_id,
-    assignedToName: row.assigned_to_name,
     secondaryContactId: row.secondary_contact_id,
-    secondaryContactName: row.secondary_contact_name,
     approvalStatus: row.approval_status,
     approvedByUserId: row.approved_by_user_id,
     approvedAt: row.approved_at,
@@ -89,7 +85,6 @@ function mapDocumentRow(row: any): ServiceContractDocumentType {
     filePath: row.file_path,
     documentType: row.document_type,
     uploadedByUserId: row.uploaded_by_user_id,
-    uploadedByName: row.uploaded_by_name,
     description: row.description,
     tags: row.tags,
     isActive: row.is_active,
@@ -115,7 +110,6 @@ function mapMilestoneRow(row: any): ServiceDeliveryMilestoneType {
     status: row.status,
     completionPercentage: row.completion_percentage,
     assignedToUserId: row.assigned_to_user_id,
-    assignedToName: row.assigned_to_name,
     notes: row.notes,
     dependencies: row.dependencies,
     createdAt: row.created_at,
@@ -136,7 +130,6 @@ function mapIssueRow(row: any): ServiceContractIssueType {
     resolutionNotes: row.resolution_notes,
     resolutionDate: row.resolution_date,
     assignedToUserId: row.assigned_to_user_id,
-    assignedToName: row.assigned_to_name,
     reportedDate: row.reported_date,
     targetResolutionDate: row.target_resolution_date,
     impactDescription: row.impact_description,
@@ -161,7 +154,7 @@ export const supabaseServiceContractService = {
       if (filters.search) {
         const search = filters.search;
         query = query.or(
-          `contract_number.ilike.%${search}%,title.ilike.%${search}%,customer_name.ilike.%${search}%,description.ilike.%${search}%`
+          `contract_number.ilike.%${search}%,title.ilike.%${search}%,description.ilike.%${search}%`
         );
       }
 
@@ -263,9 +256,7 @@ export const supabaseServiceContractService = {
             title: data.title,
             description: data.description,
             customer_id: data.customerId,
-            customer_name: data.customerName,
             product_id: data.productId,
-            product_name: data.productName,
             service_type: data.serviceType,
             status: 'draft',
             priority: data.priority || 'medium',
@@ -286,9 +277,7 @@ export const supabaseServiceContractService = {
             scheduled_hours_per_week: data.scheduledHoursPerWeek,
             time_zone: data.timeZone,
             assigned_to_user_id: data.assignedToUserId,
-            assigned_to_name: data.assignedToName,
             secondary_contact_id: data.secondaryContactId,
-            secondary_contact_name: data.secondaryContactName,
             tags: data.tags,
             custom_fields: data.customFields,
             created_by: (await supabaseClient.auth.getUser()).data.user?.id,
@@ -333,9 +322,7 @@ export const supabaseServiceContractService = {
         scheduledHoursPerWeek: 'scheduled_hours_per_week',
         timeZone: 'time_zone',
         assignedToUserId: 'assigned_to_user_id',
-        assignedToName: 'assigned_to_name',
         secondaryContactId: 'secondary_contact_id',
-        secondaryContactName: 'secondary_contact_name',
         approvalStatus: 'approval_status',
         complianceNotes: 'compliance_notes',
         tags: 'tags',
@@ -535,7 +522,6 @@ export const supabaseServiceContractService = {
             status: 'pending',
             completion_percentage: 0,
             assigned_to_user_id: data.assignedToUserId,
-            assigned_to_name: data.assignedToName,
             notes: data.notes,
             dependencies: data.dependencies,
           },
@@ -586,7 +572,6 @@ export const supabaseServiceContractService = {
             category: data.category,
             status: 'open',
             assigned_to_user_id: data.assignedToUserId,
-            assigned_to_name: data.assignedToName,
             reported_date: new Date().toISOString().split('T')[0],
             target_resolution_date: data.targetResolutionDate,
             impact_description: data.impactDescription,
@@ -624,25 +609,25 @@ export const supabaseServiceContractService = {
         'ID',
         'Contract Number',
         'Title',
-        'Customer',
+        'Customer ID',
         'Service Type',
         'Status',
         'Value',
         'Start Date',
         'End Date',
-        'Assigned To',
+        'Assigned To User ID',
       ];
       const rows = (contracts || []).map((c: any) => [
         c.id,
         c.contract_number,
         c.title,
-        c.customer_name,
+        c.customer_id,
         c.service_type,
         c.status,
         c.value,
         c.start_date,
         c.end_date,
-        c.assigned_to_name || '',
+        c.assigned_to_user_id || '',
       ]);
 
       const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\r\n');

@@ -15,17 +15,14 @@ class JobWorkService {
       id: '1',
       job_ref_id: 'TECH-20240128-000001',
       customer_id: '1',
-      customer_name: 'TechCorp Solutions',
-      customer_short_name: 'TECH',
       product_id: '1',
-      product_name: 'Industrial Motor Assembly',
       pieces: 5,
       size: 'Large',
       default_price: 1500,
       manual_price: 1400,
-      final_price: 7000, // 5 pieces * 1400
+      final_price: 7000,
+      base_price: 1500,
       receiver_engineer_id: '3',
-      receiver_engineer_name: 'Mike Engineer',
       comments: 'Urgent delivery required for production line repair',
       status: 'in_progress',
       tenant_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -36,16 +33,13 @@ class JobWorkService {
       id: '2',
       job_ref_id: 'GLOB-20240127-000002',
       customer_id: '2',
-      customer_name: 'Global Manufacturing Inc',
-      customer_short_name: 'GLOB',
       product_id: '2',
-      product_name: 'Conveyor Belt Component',
       pieces: 10,
       size: 'Medium',
       default_price: 800,
-      final_price: 8000, // 10 pieces * 800
+      final_price: 8000,
+      base_price: 800,
       receiver_engineer_id: '4',
-      receiver_engineer_name: 'Sarah Engineer',
       comments: 'Standard maintenance replacement parts',
       status: 'completed',
       tenant_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -57,16 +51,13 @@ class JobWorkService {
       id: '3',
       job_ref_id: 'STAR-20240126-000003',
       customer_id: '3',
-      customer_name: 'StartupXYZ',
-      customer_short_name: 'STAR',
       product_id: '3',
-      product_name: 'Control System Module',
       pieces: 2,
       size: 'Small',
       default_price: 2000,
-      final_price: 4000, // 2 pieces * 2000
+      final_price: 4000,
+      base_price: 2000,
       receiver_engineer_id: '3',
-      receiver_engineer_name: 'Mike Engineer',
       comments: 'Custom configuration required',
       status: 'delivered',
       tenant_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -79,16 +70,13 @@ class JobWorkService {
       id: '4',
       job_ref_id: 'RETA-20240125-000004',
       customer_id: '4',
-      customer_name: 'Retail Giants Ltd',
-      customer_short_name: 'RETA',
       product_id: '1',
-      product_name: 'Industrial Motor Assembly',
       pieces: 3,
       size: 'Medium',
       default_price: 1200,
-      final_price: 3600, // 3 pieces * 1200
+      final_price: 3600,
+      base_price: 1200,
       receiver_engineer_id: '4',
-      receiver_engineer_name: 'Sarah Engineer',
       comments: 'Quality inspection required before delivery',
       status: 'pending',
       tenant_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -129,8 +117,8 @@ class JobWorkService {
         const search = filters.search.toLowerCase();
         jobWorks = jobWorks.filter(jw => 
           jw.job_ref_id.toLowerCase().includes(search) ||
-          jw.customer_name?.toLowerCase().includes(search) ||
-          jw.product_name?.toLowerCase().includes(search) ||
+          jw.customer_id?.toLowerCase().includes(search) ||
+          jw.product_id?.toLowerCase().includes(search) ||
           jw.comments?.toLowerCase().includes(search)
         );
       }
@@ -194,14 +182,13 @@ class JobWorkService {
       id: Date.now().toString(),
       job_ref_id: jobRefId,
       customer_id: jobWorkData.customer_id,
-      customer_name: customer.name,
-      customer_short_name: customer.short_name,
       product_id: jobWorkData.product_id,
       pieces: jobWorkData.pieces,
       size: jobWorkData.size,
       default_price: priceCalc.calculated_price,
       manual_price: jobWorkData.manual_price,
       final_price: finalPrice,
+      base_price: priceCalc.base_price,
       receiver_engineer_id: jobWorkData.receiver_engineer_id,
       comments: jobWorkData.comments,
       status: 'pending',
@@ -414,34 +401,7 @@ class JobWorkService {
     }
   }
 
-  private async enrichJobWorkWithRelatedData(jobWork: JobWork): Promise<JobWork> {
-    try {
-      // Get customer data
-      const customer = await customerService.getCustomer(jobWork.customer_id);
 
-      // Get product data
-      const product = await productService.getProduct(jobWork.product_id);
-
-      // Enrich job work with related data
-      return {
-        ...jobWork,
-        customer_name: customer.company_name,
-        customer_contact: customer.contact_name,
-        customer_email: customer.email,
-        customer_phone: customer.phone,
-        customer_short_name: this.generateCustomerShortName(customer.company_name),
-        product_name: product.name,
-        product_sku: product.sku,
-        product_category: product.category,
-        product_unit: product.unit,
-        base_price: product.price,
-        currency: product.currency || 'USD'
-      };
-    } catch (error) {
-      // Return original job work if enrichment fails
-      return jobWork;
-    }
-  }
 }
 
 export const jobWorkService = new JobWorkService();

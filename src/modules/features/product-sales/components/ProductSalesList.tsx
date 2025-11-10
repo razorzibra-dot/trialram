@@ -220,30 +220,26 @@ export const ProductSalesList: React.FC<ProductSalesListProps> = ({
           </Tooltip>
         ),
       },
-      // Customer Name
+      // Customer ID
       {
-        key: 'customer_name',
+        key: 'customer_id',
         title: 'Customer',
-        dataIndex: 'customer_name',
+        dataIndex: 'customer_id',
         width: 150,
         sorter: true,
-        render: (name: string, sale: ProductSale) => (
-          <Tooltip title={`ID: ${sale.customer_id}`}>
-            <span className="font-medium">{name || 'N/A'}</span>
-          </Tooltip>
+        render: (customerId: string) => (
+          <span className="font-mono text-xs">{customerId.substring(0, 12)}...</span>
         ),
       },
-      // Product Name
+      // Product ID
       {
-        key: 'product_name',
+        key: 'product_id',
         title: 'Product',
-        dataIndex: 'product_name',
+        dataIndex: 'product_id',
         width: 150,
         sorter: true,
-        render: (name: string, sale: ProductSale) => (
-          <Tooltip title={`ID: ${sale.product_id}`}>
-            <span>{name || 'N/A'}</span>
-          </Tooltip>
+        render: (productId: string) => (
+          <span className="font-mono text-xs">{productId.substring(0, 12)}...</span>
         ),
       },
       // Quantity

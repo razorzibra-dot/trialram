@@ -484,7 +484,7 @@ export const ServiceContractDetailPage: React.FC = () => {
     <>
       <PageHeader
         title={`Contract ${contract.contract_number}`}
-        description={contract.customer_name}
+        description={`Customer ID: ${contract.customer_id}`}
         breadcrumb={{
           items: [
             { title: 'Service Contracts', path: '/tenant/service-contracts' },
@@ -604,10 +604,10 @@ export const ServiceContractDetailPage: React.FC = () => {
                   />
                 </Descriptions.Item>
                 <Descriptions.Item label="Customer">
-                  {contract.customer_name}
+                  {contract.customer_id}
                 </Descriptions.Item>
                 <Descriptions.Item label="Product">
-                  {contract.product_name}
+                  {contract.product_id || 'N/A'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Start Date">
                   <CalendarOutlined /> {dayjs(contract.start_date).format('YYYY-MM-DD')}

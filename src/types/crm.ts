@@ -1,7 +1,7 @@
 export interface Customer {
   id: string;
-  companyName: string;
-  contactName: string;
+  company_name: string;
+  contact_name: string;
   email?: string;
   phone?: string;
   mobile?: string;
@@ -12,27 +12,27 @@ export interface Customer {
   industry?: string;
   size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   status: 'active' | 'inactive' | 'prospect' | 'suspended';
-  customerType?: 'individual' | 'business' | 'enterprise';
-  creditLimit?: number;
-  paymentTerms?: string;
-  taxId?: string;
-  annualRevenue?: number;
-  totalSalesAmount?: number;
-  totalOrders?: number;
-  averageOrderValue?: number;
-  lastPurchaseDate?: string;
+  customer_type?: 'individual' | 'business' | 'enterprise';
+  credit_limit?: number;
+  payment_terms?: string;
+  tax_id?: string;
+  annual_revenue?: number;
+  total_sales_amount?: number;
+  total_orders?: number;
+  average_order_value?: number;
+  last_purchase_date?: string;
   tags: CustomerTag[];
   notes?: string;
-  assignedTo?: string;
+  assigned_to?: string;
   source?: string;
   rating?: string;
-  lastContactDate?: string;
-  nextFollowUpDate?: string;
-  tenantId: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: string;
-  deletedAt?: string;
+  last_contact_date?: string;
+  next_follow_up_date?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  deleted_at?: string;
 }
 
 export interface CustomerTag {
@@ -50,11 +50,9 @@ export interface Sale {
 
   // Customer Relationship
   customer_id: string;
-  customer_name?: string;
 
   // Financial Information
   value: number;
-  amount: number; // Alias for value for backend compatibility
   currency: string;
   probability: number;
   weighted_amount?: number;
@@ -73,7 +71,6 @@ export interface Sale {
 
   // Assignment
   assigned_to: string;
-  assigned_to_name?: string;
 
   // Additional Information
   notes?: string;
@@ -115,9 +112,6 @@ export interface Ticket {
 
   // Customer Relationship
   customer_id?: string; // Optional to match backend nullable
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
 
   // Status and Classification
   status: 'open' | 'in_progress' | 'pending' | 'resolved' | 'closed';
@@ -128,9 +122,7 @@ export interface Ticket {
 
   // Assignment and Reporting
   assigned_to?: string; // Optional to match backend
-  assigned_to_name?: string;
   reported_by?: string;
-  reported_by_name?: string;
 
   // Dates and SLA
   due_date?: string;

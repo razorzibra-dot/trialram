@@ -318,16 +318,16 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={12}>
               <Statistic
-                title="Total Value"
-                value={formatCurrency(productSale.total_value || 0)}
+                title="Total Cost"
+                value={formatCurrency(productSale.total_cost || 0)}
                 prefix={<DollarOutlined />}
                 valueStyle={{ color: '#1890ff', fontSize: 18 }}
               />
             </Col>
             <Col xs={12}>
               <Statistic
-                title="Quantity"
-                value={productSale.quantity}
+                title="Units"
+                value={productSale.units}
                 prefix={<ShoppingCartOutlined />}
                 valueStyle={{ fontSize: 18 }}
               />
@@ -339,19 +339,10 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           {/* Sale Information */}
           <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Sale Information</h3>
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Sale Number">
-              {productSale.sale_number}
-            </Descriptions.Item>
             <Descriptions.Item label="Status">
               <Tag color={getStatusColor(productSale.status)}>
                 {displayStatus}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Sale Date">
-              <span style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ marginRight: 8 }} />
-                {formatDate(productSale.sale_date)}
-              </span>
             </Descriptions.Item>
             {productSale.delivery_date && (
               <Descriptions.Item label="Delivery Date">
@@ -365,52 +356,30 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
 
           <Divider />
 
-          {/* Customer Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Customer Information</h3>
+          {/* Customer Reference */}
+          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Customer Reference</h3>
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Customer Name">
+            <Descriptions.Item label="Customer ID">
               <span style={{ display: 'flex', alignItems: 'center' }}>
                 <UserOutlined style={{ marginRight: 8 }} />
-                {productSale.customer_name}
+                <span className="font-mono text-xs">{productSale.customer_id}</span>
               </span>
             </Descriptions.Item>
-            <Descriptions.Item label="Customer ID">
-              {productSale.customer_id}
-            </Descriptions.Item>
-            {productSale.customer_email && (
-              <Descriptions.Item label="Email">
-                <a href={`mailto:${productSale.customer_email}`}>
-                  <MailOutlined style={{ marginRight: 8 }} />
-                  {productSale.customer_email}
-                </a>
-              </Descriptions.Item>
-            )}
           </Descriptions>
 
           <Divider />
 
-          {/* Product Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Product Information</h3>
+          {/* Product Reference */}
+          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Product Reference</h3>
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Product Name">
+            <Descriptions.Item label="Product ID">
               <span style={{ display: 'flex', alignItems: 'center' }}>
                 <ShoppingCartOutlined style={{ marginRight: 8 }} />
-                {productSale.product_name}
+                <span className="font-mono text-xs">{productSale.product_id}</span>
               </span>
             </Descriptions.Item>
-            <Descriptions.Item label="Product ID">
-              {productSale.product_id}
-            </Descriptions.Item>
-            <Descriptions.Item label="Quantity">
-              {productSale.quantity}
-            </Descriptions.Item>
-            <Descriptions.Item label="Unit Price">
-              {formatCurrency(productSale.unit_price || 0)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Total Value">
-              <span style={{ fontWeight: 600, color: '#1890ff' }}>
-                {formatCurrency(productSale.total_value || 0)}
-              </span>
+            <Descriptions.Item label="Cost Per Unit">
+              {formatCurrency(productSale.cost_per_unit || 0)}
             </Descriptions.Item>
           </Descriptions>
 
@@ -419,14 +388,11 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           {/* Warranty Information */}
           <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Warranty Information</h3>
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Warranty Period">
-              {productSale.warranty_period ? `${productSale.warranty_period} months` : 'Not specified'}
-            </Descriptions.Item>
-            {productSale.warranty_expiry_date && (
-              <Descriptions.Item label="Warranty Expiry Date">
+            {productSale.warranty_expiry && (
+              <Descriptions.Item label="Warranty Expiry">
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                   <CalendarOutlined style={{ marginRight: 8 }} />
-                  {formatDate(productSale.warranty_expiry_date)}
+                  {formatDate(productSale.warranty_expiry)}
                 </span>
               </Descriptions.Item>
             )}

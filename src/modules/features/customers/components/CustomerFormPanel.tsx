@@ -38,6 +38,10 @@ import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
 import { useIndustries } from '../hooks/useIndustries';
 import { useCompanySizes } from '../hooks/useCompanySizes';
 import { useActiveUsers } from '../hooks/useUsers';
+import { useCustomerStatus } from '../hooks/useCustomerStatus';
+import { useCustomerTypes } from '../hooks/useCustomerTypes';
+import { useLeadSource } from '../hooks/useLeadSource';
+import { useLeadRating } from '../hooks/useLeadRating';
 
 interface CustomerFormPanelProps {
   visible: boolean;
@@ -74,34 +78,7 @@ const sectionStyles = {
   },
 };
 
-// Configuration objects for consistent display
-const statusConfig = {
-  active: { emoji: '✅', color: '#f0f5ff' },
-  inactive: { emoji: '❌', color: '#fafafa' },
-  prospect: { emoji: '⏳', color: '#fffbe6' },
-  suspended: { emoji: '🛑', color: '#fff1f0' },
-};
 
-const customerTypeConfig = {
-  business: { emoji: '🏢', label: 'Business' },
-  individual: { emoji: '👤', label: 'Individual' },
-  corporate: { emoji: '🏛️', label: 'Corporate' },
-  government: { emoji: '🏛️', label: 'Government' },
-};
-
-const ratingConfig = {
-  hot: { emoji: '🔥', label: 'Hot Lead' },
-  warm: { emoji: '☀️', label: 'Warm Lead' },
-  cold: { emoji: '❄️', label: 'Cold Lead' },
-};
-
-const sourceConfig = {
-  referral: { emoji: '👥', label: 'Referral' },
-  website: { emoji: '🌐', label: 'Website' },
-  sales_team: { emoji: '📞', label: 'Sales Team' },
-  event: { emoji: '🎯', label: 'Event' },
-  other: { emoji: '📋', label: 'Other' },
-};
 
 export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   visible,
@@ -114,13 +91,16 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
 
-  // Fetch dynamic dropdown data
   const { data: industries = [], isLoading: industriesLoading } = useIndustries();
   const { data: companySizes = [], isLoading: sizesLoading } = useCompanySizes();
   const { data: users = [], isLoading: usersLoading } = useActiveUsers();
+  const { data: statuses = [], isLoading: statusesLoading } = useCustomerStatus();
+  const { data: customerTypes = [], isLoading: typesLoading } = useCustomerTypes();
+  const { data: leadSources = [], isLoading: sourcesLoading } = useLeadSource();
+  const { data: leadRatings = [], isLoading: ratingsLoading } = useLeadRating();
 
   const isEditMode = !!customer;
-  const isLoadingDropdowns = industriesLoading || sizesLoading || usersLoading;
+  const isLoadingDropdowns = industriesLoading || sizesLoading || usersLoading || statusesLoading || typesLoading || sourcesLoading || ratingsLoading;
 
   useEffect(() => {
     if (visible && customer) {
@@ -230,10 +210,10 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                 rules={[{ required: true, message: 'Please select status' }]}
                 tooltip="Status of the customer relationship"
               >
-                <Select size="large" placeholder="Select status">
-                  {Object.entries(statusConfig).map(([key, { emoji }]) => (
-                    <Select.Option key={key} value={key}>
-                      {emoji} {key.charAt(0).toUpperCase() + key.slice(1)}
+                <Select size="large" placeholder="Select status" loading={statusesLoading} disabled={statusesLoading}>
+                  {statuses.map((status) => (
+                    <Select.Option key={status.id} value={status.key}>
+                      {status.metadata?.emoji} {status.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -387,10 +367,10 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item label="Customer Type" name="customer_type">
-                <Select size="large" placeholder="Select customer type" allowClear>
-                  {Object.entries(customerTypeConfig).map(([key, { emoji, label }]) => (
-                    <Select.Option key={key} value={key}>
-                      {emoji} {label}
+                <Select size="large" placeholder="Select customer type" allowClear loading={typesLoading} disabled={typesLoading}>
+                  {customerTypes.map((type) => (
+                    <Select.Option key={type.id} value={type.key}>
+                      {type.metadata?.emoji} {type.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -505,10 +485,10 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                 name="source"
                 tooltip="How this customer was acquired"
               >
-                <Select size="large" placeholder="Select source" allowClear>
-                  {Object.entries(sourceConfig).map(([key, { emoji, label }]) => (
-                    <Select.Option key={key} value={key}>
-                      {emoji} {label}
+                <Select size="large" placeholder="Select source" allowClear loading={sourcesLoading} disabled={sourcesLoading}>
+                  {leadSources.map((source) => (
+                    <Select.Option key={source.id} value={source.key}>
+                      {source.metadata?.emoji} {source.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -520,10 +500,10 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                 name="rating"
                 tooltip="Quality rating of the lead opportunity"
               >
-                <Select size="large" placeholder="Select rating" allowClear>
-                  {Object.entries(ratingConfig).map(([key, { emoji, label }]) => (
-                    <Select.Option key={key} value={key}>
-                      {emoji} {label}
+                <Select size="large" placeholder="Select rating" allowClear loading={ratingsLoading} disabled={ratingsLoading}>
+                  {leadRatings.map((rating) => (
+                    <Select.Option key={rating.id} value={rating.key}>
+                      {rating.metadata?.emoji} {rating.label}
                     </Select.Option>
                   ))}
                 </Select>

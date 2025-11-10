@@ -1,0 +1,1572 @@
+
+> crm-portal@0.1.0 lint
+> eslint . --report-unused-disable-directives --max-warnings 0
+
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\scripts\seed-database.ts
+  64:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\__tests__\module-access-control.test.ts
+  206:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\__tests__\templates\integration-normalization.test.template.ts
+  85:39  error  Parsing error: '>' expected
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\__tests__\templates\performance-normalization.test.template.ts
+  45:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\__tests__\templates\service-normalization.test.template.ts
+  89:33  error  Parsing error: ',' expected
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\auth\SessionTimeoutWarning.tsx
+  63:6  warning  React Hook useEffect has a missing dependency: 'handleAutoLogout'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\auth\__tests__\ModuleProtectedRoute.test.tsx
+   70:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  333:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\common\__tests__\ImpersonationBanner.test.tsx
+   51:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  214:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  244:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\configuration\ConfigurationFormModal.tsx
+  96:6  warning  React Hook useEffect has a missing dependency: 'generateFormFields'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\configuration\SuperAdminSettings.tsx
+  87:6  warning  React Hook useEffect has a missing dependency: 'filterSettings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\configuration\TenantAdminSettings.tsx
+  88:6  warning  React Hook useEffect has a missing dependency: 'filterSettings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractApprovalWorkflow.tsx
+  78:6  warning  React Hook useEffect has missing dependencies: 'loadApprovalRecords' and 'loadApprovalWorkflow'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractAttachmentManager.tsx
+  82:6  warning  React Hook useEffect has a missing dependency: 'loadAttachments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractAuditTrail.tsx
+  72:6  warning  React Hook useEffect has a missing dependency: 'loadAuditTrail'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractComplianceTracker.tsx
+  79:6  warning  React Hook useEffect has a missing dependency: 'loadComplianceItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractDocumentGenerator.tsx
+  49:6  warning  React Hook useEffect has missing dependencies: 'loadExistingDocument' and 'loadTemplates'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  55:6  warning  React Hook useEffect has a missing dependency: 'initializeVariables'. Either include it or remove the dependency array                         react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractRenewalManager.tsx
+  67:6  warning  React Hook useEffect has a missing dependency: 'loadRenewalReminders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\ContractVersioning.tsx
+  68:6  warning  React Hook useEffect has a missing dependency: 'loadVersions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\contracts\DigitalSignatureWorkflow.tsx
+  57:6  warning  React Hook useEffect has a missing dependency: 'loadSignatures'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\forms\DynamicMultiSelect.tsx
+   69:21  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+   70:26  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+  169:17  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+  170:7   warning  The 'options' array makes the dependencies of useMemo Hook (at line 205) change on every render. To fix this, wrap the initialization of 'options' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\forms\DynamicSelect.tsx
+   58:21  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+   59:26  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+  153:17  warning  Unexpected any. Specify a different type                                                                                                                                      @typescript-eslint/no-explicit-any
+  154:7   warning  The 'options' array makes the dependencies of useMemo Hook (at line 189) change on every render. To fix this, wrap the initialization of 'options' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\layout\DashboardLayout.tsx
+  221:6  warning  React Hook useEffect has a missing dependency: 'sidebarScrollRestoration'. Either include it or remove the dependency array                                react-hooks/exhaustive-deps
+  230:6  warning  React Hook useEffect has a missing dependency: 'pageScrollRestoration'. Either include it or remove the dependency array                                   react-hooks/exhaustive-deps
+  238:6  warning  React Hook useEffect has missing dependencies: 'pageScrollRestoration' and 'sidebarScrollRestoration'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\layout\EnterpriseLayout.tsx
+  182:6  warning  React Hook useMemo has an unnecessary dependency: 'location.pathname'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\layout\__tests__\SuperAdminLayout.impersonation-header.test.tsx
+   90:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  255:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  304:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  341:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  372:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  410:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  447:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\layout\__tests__\SuperAdminLayout.sidebar.test.tsx
+  75:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  82:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\masters\MasterDataSelect.tsx
+  65:6  warning  React Hook useEffect has a missing dependency: 'loadInitialOptions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\notifications\NotificationQueue.tsx
+  50:6  warning  React Hook useEffect has a missing dependency: 'loadQueueItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\notifications\TemplateManager.tsx
+   43:6  warning  React Hook useEffect has a missing dependency: 'loadTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  503:6  warning  React Hook useEffect has a missing dependency: 'loadPreview'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\pdf\PDFPreviewModal.tsx
+  26:6  warning  React Hook useEffect has a missing dependency: 'generatePreview'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\accessible-table.tsx
+  375:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\accessible-toast.tsx
+  185:6  warning  React Hook React.useEffect has a missing dependency: 'getPoliteness'. Either include it or remove the dependency array          react-hooks/exhaustive-deps
+  277:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\badge.tsx
+  137:45  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\button.tsx
+  108:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\enhanced-button.tsx
+  239:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\enhanced-card.tsx
+  263:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\enhanced-input.tsx
+  364:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\enhanced-modal.tsx
+  353:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\enhanced-sidebar.tsx
+  17:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\form.tsx
+  168:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\label.tsx
+  44:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\navigation-menu.tsx
+  119:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\sidebar.tsx
+  760:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\sonner.tsx
+  29:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\components\ui\toggle.tsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\config\backendConfig.ts
+  63:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  68:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\contexts\PortalContext.tsx
+  14:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\contexts\ReferenceDataContext.tsx
+  453:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\contexts\ScrollStateContext.tsx
+  217:25  warning  The ref value 'autoSaveIntervals.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'autoSaveIntervals.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  253:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                     react-refresh/only-export-components
+  262:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                     react-refresh/only-export-components
+  280:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                     react-refresh/only-export-components
+  300:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                     react-refresh/only-export-components
+  319:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                     react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\contexts\SuperAdminContext.tsx
+   51:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components      react-refresh/only-export-components
+  322:6   warning  React Hook useEffect has missing dependencies: 'isSuperAdmin' and 'refreshAll'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\contexts\ThemeContext.tsx
+  43:6   warning  React Hook useEffect has a missing dependency: 'getActualTheme'. Either include it or remove the dependency array               react-hooks/exhaustive-deps
+  62:6   warning  React Hook useEffect has a missing dependency: 'getActualTheme'. Either include it or remove the dependency array               react-hooks/exhaustive-deps
+  77:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\hooks\__tests__\useModuleAccess.test.ts
+   35:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  214:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  249:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  323:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  357:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  417:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  450:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  494:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  529:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  557:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\hooks\useNotification.ts
+  87:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\hooks\useScrollRestoration.ts
+  127:6  warning  React Hook useEffect has a missing dependency: 'elementRef'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\hooks\useService.ts
+  42:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\__tests__\ModuleRegistry.access-control.test.ts
+  117:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  255:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  302:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  320:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  337:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  366:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  376:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  386:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  405:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  406:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  411:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  424:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\core\hooks\queryPatterns.ts
+  110:36  warning  Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  126:6   warning  React Hook useCallback has a missing dependency: 'states'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  130:6   warning  React Hook useCallback has a missing dependency: 'states'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  134:6   warning  React Hook useCallback has a missing dependency: 'states'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\core\services\ServiceContainer.ts
+   54:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\audit-logs\routes.tsx
+  12:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\audit-logs\views\LogsPage.tsx
+  55:35  warning  Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  85:6   warning  React Hook useCallback has a missing dependency: 'auditService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\complaints\components\ComplaintsFormPanel.tsx
+  180:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\complaints\routes.tsx
+  12:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\complaints\views\ComplaintsPage.tsx
+  44:39  warning  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  77:6   warning  React Hook useCallback has a missing dependency: 'complaintService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  86:6   warning  React Hook useCallback has a missing dependency: 'complaintService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\complaints\views\ComplaintsPageNew.tsx
+  62:6  warning  React Hook useEffect has a missing dependency: 'fetchComplaints'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\configuration\components\ConfigTestResultPanel.tsx
+  102:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\configuration\hooks\useConfigurationTests.ts
+  33:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  96:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\configuration\routes.tsx
+  31:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\configuration\views\ConfigurationTestPage.tsx
+   49:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\configuration\views\TenantConfigurationPage.tsx
+   56:36  warning  Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  115:6   warning  React Hook useCallback has a missing dependency: 'tenantService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\contracts\components\ContractDetailPanel.tsx
+  199:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  252:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  255:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  276:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  301:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  302:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  326:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  327:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  328:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  329:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  346:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  347:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  349:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  369:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  370:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  372:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  385:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  386:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  388:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\contracts\components\ContractFormPanel.tsx
+  180:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  314:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  361:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  419:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  420:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  421:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  422:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  458:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  459:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  461:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  503:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  504:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  505:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  506:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\contracts\routes.tsx
+  16:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\contracts\services\contractService.ts
+  109:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\contracts\views\ContractDetailPage.tsx
+  71:6  warning  React Hook useEffect has a missing dependency: 'loadContract'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\customers\hooks\useCustomers.ts
+  303:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  304:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  308:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  314:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  316:95  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  319:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  335:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  336:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  337:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  338:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  339:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  340:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  341:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  351:82  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\customers\routes.tsx
+  17:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\customers\services\customerService.ts
+  320:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  321:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  322:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  323:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  324:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  325:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  339:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  352:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  353:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  354:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  368:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  376:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\customers\views\CustomerDetailPage.tsx
+   96:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\customers\views\CustomerListPage.tsx
+   50:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  859:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\dashboard\routes.tsx
+  15:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\jobworks\components\JobWorksFormPanelEnhanced.tsx
+  204:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\jobworks\routes.tsx
+  15:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\jobworks\services\jobWorksService.ts
+   75:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\companyService.test.ts
+  100:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  269:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\hooks.test.tsx
+  194:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\integration.test.tsx
+  203:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  244:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  696:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\productService.test.ts
+   95:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  213:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\serviceParity.test.ts
+   80:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  272:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  319:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  352:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\__tests__\utils.test.ts
+   63:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  249:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\components\ErrorBoundary.tsx
+  271:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\routes.tsx
+  16:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\masters\utils\validation.ts
+   95:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  230:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  251:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  266:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  284:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  295:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  306:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  318:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  331:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  356:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  390:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  413:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  447:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  465:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\notifications\routes.tsx
+  12:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\notifications\views\NotificationsPage.tsx
+   57:42  warning  Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  109:6   warning  React Hook useEffect has a missing dependency: 'notificationService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\pdf-templates\routes.tsx
+  12:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\pdf-templates\views\PDFTemplatesPage.tsx
+  67:41  warning  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  93:6   warning  React Hook useCallback has a missing dependency: 'pdfTemplateService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\AdvancedFiltersModal.tsx
+  70:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\DynamicColumnsModal.tsx
+  317:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  330:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  353:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\ExportModal.tsx
+  82:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\InvoiceEmailModal.tsx
+   49:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\InvoiceGenerationModal.tsx
+  73:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\NotificationHistoryPanel.tsx
+  93:6  warning  React Hook useEffect has a missing dependency: 'loadNotificationHistory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\NotificationPreferencesModal.tsx
+  119:6  warning  React Hook useEffect has a missing dependency: 'loadPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\ProductSaleDetailPanel.tsx
+  72:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\ProductSaleFormPanel.tsx
+  119:41  warning  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  207:6   warning  React Hook useEffect has a missing dependency: 'loadCustomers'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  243:6   warning  React Hook useEffect has a missing dependency: 'loadProducts'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  303:6   warning  React Hook useEffect has a missing dependency: 'saleItems.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\components\ReportsModal.tsx
+   60:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  479:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useCreateProductSale.ts
+   24:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useGenerateInvoice.ts
+  52:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSale.ts
+  20:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSales.ts
+  34:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  83:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSalesAnalytics.ts
+   83:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSalesFilters.ts
+  88:6  warning  React Hook useEffect has a missing dependency: 'setFilters'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSalesForm.ts
+  137:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useProductSalesPermissions.ts
+  88:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  89:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  90:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  92:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  96:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useStatusTransition.ts
+  125:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\hooks\useUpdateProductSale.ts
+   24:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\routes.tsx
+  14:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\invoiceService.ts
+  118:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\productSalesAuditService.ts
+  105:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\productSalesNotificationService.ts
+   18:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  445:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  458:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\productSalesRbacService.ts
+  69:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\reportGenerationService.ts
+  207:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  376:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  394:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\services\statusTransitionService.ts
+  22:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\store\productSalesStore.ts
+  274:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  276:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  278:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  279:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  281:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  282:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  283:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  284:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  287:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  288:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  289:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  290:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  292:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  293:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  294:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  295:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  298:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  299:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  301:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  302:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\product-sales\views\ProductSalesPage.tsx
+   80:41  warning  Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  496:6   warning  React Hook useMemo has a missing dependency: 'handleDeleteSale'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\sales\__tests__\multiTenantSafety.test.ts
+   18:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  160:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  239:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  255:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  259:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  263:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  283:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  289:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  310:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  316:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\sales\components\CreateProductSalesModal.tsx
+  187:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\sales\components\SalesDealFormPanel.tsx
+   25:25  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   92:6   warning  React Hook useEffect has a missing dependency: 'loadCustomers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   98:6   warning  React Hook useEffect has a missing dependency: 'loadProducts'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  181:6   warning  React Hook useEffect has a missing dependency: 'customers'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  676:37  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  677:34  warning  Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\sales\routes.tsx
+  15:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\sales\services\salesService.ts
+  402:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\service-contracts\routes.tsx
+  13:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\service-contracts\views\ServiceContractDetailPage.tsx
+  105:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  251:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  331:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\service-contracts\views\ServiceContractsPage.tsx
+  72:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\__tests__\integration.test.ts
+  148:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\__tests__\multiTenantSafety.test.ts
+  195:9  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\__tests__\superUserService.test.ts
+  129:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  395:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  474:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\__tests__\superUserSync.test.ts
+  367:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\AuditSummaryDashboard.tsx
+   95:9   warning  The 'timeline' logical expression could make the dependencies of useMemo Hook (at line 193) change on every render. To fix this, wrap the initialization of 'timeline' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  175:21  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  262:33  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  375:54  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  469:56  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  488:27  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  488:35  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  520:44  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  543:29  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  543:37  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  552:45  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+  592:35  warning  Unexpected any. Specify a different type                                                                                                                                                          @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\ComplianceReportGenerator.tsx
+  117:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\ConfigOverrideForm.tsx
+  134:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\ConfigOverrideTable.tsx
+  149:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\GrantAccessModal.tsx
+  99:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\MultiTenantComparison.tsx
+   86:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\RateLimitWarning.tsx
+  167:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\ServiceDetailPanel.tsx
+  123:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\SuperUserFormPanel.tsx
+  137:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\TenantDirectoryGrid.tsx
+  108:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  456:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\components\__tests__\QuickImpersonationWidget.test.tsx
+  56:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\hooks\useAuditLogs.ts
+  251:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\hooks\useComplianceNotifications.ts
+  148:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  417:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\hooks\useImpersonationRateLimit.ts
+  333:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\hooks\useRoleRequests.ts
+  24:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\hooks\useTenantMetrics.ts
+  185:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\routes.tsx
+  43:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\auditService.ts
+   85:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  198:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\complianceNotificationService.ts
+  185:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\impersonationRateLimitService.ts
+  130:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\integrations\auditLoggingIntegration.ts
+   58:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  160:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  282:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  299:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  314:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\integrations\index.ts
+  83:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:9   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  85:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\integrations\rbacIntegration.ts
+   90:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  350:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  354:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\services\integrations\tenantManagementIntegration.ts
+  177:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\types\__tests__\superAdminManagement.test.ts
+   83:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  293:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  322:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\types\superAdminManagement.ts
+  141:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\views\SuperAdminHealthPage.tsx
+  59:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\views\SuperAdminLogsPage.tsx
+   62:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  307:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\views\SuperAdminRoleRequestsPage.tsx
+   85:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  198:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  413:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  433:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\views\SuperAdminTenantsPage.tsx
+   72:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\super-admin\views\__tests__\SuperAdminUsersPage.test.tsx
+  31:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  74:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\tickets\components\TicketsFormPanel.tsx
+  257:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\tickets\routes.tsx
+  16:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\tickets\views\TicketDetailPage.tsx
+  107:6  warning  React Hook useEffect has a missing dependency: 'loadTicketData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\tickets\views\TicketsPage.tsx
+   68:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\__tests__\e2e.test.tsx
+  20:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\__tests__\integration.test.ts
+   55:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\__tests__\multiTenantSafety.test.ts
+  648:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\guards\__tests__\permissionGuards.test.ts
+  184:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\hooks\__tests__\useUsers.test.ts
+  223:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\hooks\useActivity.ts
+   23:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  251:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  252:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\hooks\usePermissions.ts
+  58:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\views\RoleManagementPage.tsx
+  75:34  warning  Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  97:6   warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\views\UserManagementPage.tsx
+  63:34  warning  Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  81:6   warning  React Hook React.useEffect has a missing dependency: 'loadUsers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\features\user-management\views\__tests__\UsersPage.test.tsx
+  110:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  450:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  509:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  519:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  538:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\routing\LazyRoute.tsx
+  37:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  61:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  69:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\routing\ModularRouter.tsx
+  80:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\routing\RouteGuard.tsx
+  63:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\routing\__tests__\ModularRouter.access-guards.test.tsx
+  26:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\shared\hooks\useDataTable.ts
+  79:9  warning  The 'data' logical expression could make the dependencies of useCallback Hook (at line 122) change on every render. To fix this, wrap the initialization of 'data' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  79:9  warning  The 'data' logical expression could make the dependencies of useMemo Hook (at line 163) change on every render. To fix this, wrap the initialization of 'data' in its own useMemo() Hook      react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\modules\test-modular.tsx
+  72:6  warning  React Hook React.useEffect has a missing dependency: 'runTests'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\salesService.test.ts
+   21:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   26:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   37:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  213:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  248:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  260:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  269:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  304:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  315:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  325:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  336:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  374:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\salesServiceFactory.test.ts
+   24:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\superAdminConsistency.test.ts
+  91:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\superAdminSecurity.test.ts
+   59:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  357:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  372:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  439:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\userService.mock.test.ts
+   93:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  289:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  298:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\userServiceFactory.test.ts
+  142:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\__tests__\userServiceSync.test.ts
+   83:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  263:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  322:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\auditDashboardService.ts
+   20:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   37:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  294:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  354:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  358:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  358:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  360:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\auditRetentionService.ts
+   25:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  409:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  539:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\auditService.ts
+   32:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\complianceNotificationService.ts
+   43:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  282:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  405:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  438:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\complianceReportService.ts
+   60:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  240:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\impersonationRateLimitService.ts
+   40:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\impersonationService.ts
+  21:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\rbacService.ts
+  451:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\referenceDataLoader.ts
+  38:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\referenceDataService.ts
+  30:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\roleRequestService.ts
+  32:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\salesService.ts
+   17:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   25:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   25:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  407:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  411:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  469:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  470:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  471:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  472:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  478:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  480:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  482:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  484:84  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  731:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\superAdminManagementService.ts
+  372:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  425:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  452:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\tenantDirectoryService.ts
+   34:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\tenantMetricsService.ts
+  17:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\api\supabase\userService.ts
+   46:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  594:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\complianceNotificationService.ts
+  304:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\complianceReportService.ts
+  78:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\contractService.ts
+  400:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\impersonationRateLimitService.ts
+  285:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\index.ts
+  190:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\notificationService.ts
+  14:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\performanceMonitoring.ts
+  10:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\performanceWrapper.ts
+  14:61   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:27   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:82   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:100  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:18   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:65   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:75   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\productSaleService.ts
+  546:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\rbacService.ts
+  403:92  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\serviceContractService.ts
+  331:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  332:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  389:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  394:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  461:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  520:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  523:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  590:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  591:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\serviceFactory.ts
+  926:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\authService.ts
+  193:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  321:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  336:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  354:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  375:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  510:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  728:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  791:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\baseService.ts
+   22:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  249:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  295:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\client.ts
+   28:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   28:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   78:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  281:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  281:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\companyService.ts
+   30:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  332:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  345:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\contractService.ts
+   37:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  375:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  409:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  440:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  509:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  524:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  543:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  579:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  618:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\customerService.ts
+  219:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  220:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  310:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  673:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  677:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  678:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  679:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\jobWorkService.ts
+  321:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\multiTenantService.ts
+   46:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\notificationService.ts
+   16:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  408:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  426:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  466:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  477:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  539:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  564:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  581:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  589:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\productSaleService.ts
+  240:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  508:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\productService.ts
+   24:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  198:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  205:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  315:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  431:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\queryBuilders.ts
+   12:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   12:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   12:76  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:76  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   97:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  261:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\salesService.ts
+   40:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  261:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  379:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  608:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  628:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  643:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  686:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\serviceContractService.ts
+   33:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  386:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  428:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  635:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\supabase\ticketService.ts
+  220:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  377:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\services\superAdminManagementService.ts
+  290:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\test\mocks\handlers.ts
+   49:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\test\setup.ts
+  39:6   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\dtos\commonDtos.ts
+   39:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\dtos\productSalesDtos.ts
+  134:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  237:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\dtos\userDtos.ts
+  275:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\notifications.ts
+  17:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\referenceData.types.ts
+  57:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\service.ts
+  23:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  88:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\serviceContract.ts
+   82:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  227:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\types\superAdmin.ts
+  290:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\RZ\source\repos\PDS-CRM-Application\CRMV9_NEWTHEME\src\utils\navigationFilterTests.ts
+  334:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 1067 problems (2 errors, 1065 warnings)
+

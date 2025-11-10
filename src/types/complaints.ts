@@ -3,12 +3,10 @@ export interface Complaint {
   title: string;
   description: string;
   customer_id: string;
-  customer_name?: string;
   type: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
   status: 'new' | 'in_progress' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigned_engineer_id?: string;
-  assigned_engineer_name?: string;
   engineer_resolution?: string;
   comments: ComplaintComment[];
   tenant_id: string;
@@ -21,8 +19,6 @@ export interface ComplaintComment {
   id: string;
   complaint_id: string;
   user_id: string;
-  user_name: string;
-  user_role: string;
   content: string;
   created_at: string;
   parent_id?: string; // For threaded comments

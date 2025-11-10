@@ -32,6 +32,8 @@ import {
 import type { TabsProps } from 'antd';
 import dayjs from 'dayjs';
 import { ProductSale, ProductSalesAnalytics } from '@/types/productSales';
+import { Customer } from '@/types/crm';
+import { Product } from '@/types/masters';
 import {
   reportGenerationService,
   MonthlySalesReport,
@@ -40,11 +42,14 @@ import {
   RevenueReport,
   ReportSchedule,
 } from '../services/reportGenerationService';
+import { getCustomerName, getProductName, enrichProductSales } from '../utils/dataEnrichment';
 
 interface ReportsModalProps {
   visible: boolean;
   data: ProductSale[];
   analytics: ProductSalesAnalytics | null;
+  customers: Customer[];
+  products: Product[];
   onClose: () => void;
 }
 
@@ -52,6 +57,8 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
   visible,
   data,
   analytics,
+  customers,
+  products,
   onClose,
 }) => {
   const [form] = Form.useForm();
@@ -78,6 +85,8 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
     { label: 'Monthly', value: 'monthly' },
   ];
 
+  const enrichedData = enrichProductSales(data, customers, products);
+
   /**
    * Generate the requested report
    */
@@ -95,38 +104,40 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
       switch (reportType) {
         case 'monthly_sales': {
           const month = form.getFieldValue('month') || dayjs().format('MM-YYYY');
-          report = reportGenerationService.generateMonthlySalesReport(data, analytics, month);
+          report = reportGenerationService.generateMonthlySalesReport(enrichedData, analytics, month);
           reportTitle = `Monthly Sales Report - ${month}`;
           break;
         }
 
         case 'customer_sales': {
-          const customerName = form.getFieldValue('customer_name');
-          if (!customerName) {
+          const customerId = form.getFieldValue('customer_id');
+          if (!customerId) {
             message.error('Please select a customer');
             setLoading(false);
             return;
           }
-          report = reportGenerationService.generateCustomerSalesReport(data, customerName);
+          const customerName = getCustomerName(customerId, customers);
+          report = reportGenerationService.generateCustomerSalesReport(enrichedData, customerName);
           reportTitle = `Customer Sales Report - ${customerName}`;
           break;
         }
 
         case 'product_sales': {
-          const productName = form.getFieldValue('product_name');
-          if (!productName) {
+          const productId = form.getFieldValue('product_id');
+          if (!productId) {
             message.error('Please select a product');
             setLoading(false);
             return;
           }
-          report = reportGenerationService.generateProductSalesReport(data, productName);
+          const productName = getProductName(productId, products);
+          report = reportGenerationService.generateProductSalesReport(enrichedData, productName);
           reportTitle = `Product Sales Report - ${productName}`;
           break;
         }
 
         case 'revenue_report': {
           const period = form.getFieldValue('period') || dayjs().format('YYYY-MM');
-          report = reportGenerationService.generateRevenueReport(data, analytics, period);
+          report = reportGenerationService.generateRevenueReport(enrichedData, analytics, period);
           reportTitle = `Revenue Report - ${period}`;
           break;
         }
@@ -225,16 +236,20 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
    * Get available customers
    */
   const getCustomerOptions = () => {
-    const customers = Array.from(new Set(data.map(s => s.customer_name).filter(Boolean)));
-    return customers.map(customer => ({ label: customer, value: customer }));
+    const uniqueCustomerIds = Array.from(new Set(data.map(s => s.customer_id).filter(Boolean)));
+    return uniqueCustomerIds
+      .map(id => ({ label: getCustomerName(id, customers) || 'N/A', value: id }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   /**
    * Get available products
    */
   const getProductOptions = () => {
-    const products = Array.from(new Set(data.map(s => s.product_name).filter(Boolean)));
-    return products.map(product => ({ label: product, value: product }));
+    const uniqueProductIds = Array.from(new Set(data.map(s => s.product_id).filter(Boolean)));
+    return uniqueProductIds
+      .map(id => ({ label: getProductName(id, products) || 'N/A', value: id }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   const tabItems: TabsProps['items'] = [
@@ -274,7 +289,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
 
             {reportType === 'customer_sales' && (
               <Form.Item
-                name="customer_name"
+                name="customer_id"
                 label="Customer"
                 required
               >
@@ -287,7 +302,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
 
             {reportType === 'product_sales' && (
               <Form.Item
-                name="product_name"
+                name="product_id"
                 label="Product"
                 required
               >

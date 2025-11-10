@@ -21,6 +21,7 @@ import {
 import dayjs from 'dayjs';
 import { Contract } from '@/types/contracts';
 import { useCreateContract, useUpdateContract } from '../hooks/useContracts';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 interface ContractFormPanelProps {
   visible: boolean;
@@ -85,8 +86,24 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
   const [loading, setLoading] = useState(false);
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
+  const { getRefDataByCategory } = useReferenceData();
 
   const isEditMode = !!contract;
+
+  const typeOptions = getRefDataByCategory('contract_type').map(t => ({ 
+    label: t.label, 
+    value: t.key 
+  }));
+  
+  const statusOptions = getRefDataByCategory('contract_status').map(s => ({ 
+    label: s.label, 
+    value: s.key 
+  }));
+  
+  const priorityOptions = getRefDataByCategory('contract_priority').map(p => ({ 
+    label: p.label, 
+    value: p.key 
+  }));
 
   useEffect(() => {
     if (visible && contract) {
@@ -246,23 +263,8 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
                   placeholder="Select contract type"
                   size="large"
                   optionLabelProp="label"
-                >
-                  <Select.Option value="service_agreement" label="📋 Service Agreement">
-                    Service Agreement
-                  </Select.Option>
-                  <Select.Option value="nda" label="🔒 NDA">
-                    NDA
-                  </Select.Option>
-                  <Select.Option value="purchase_order" label="📦 Purchase Order">
-                    Purchase Order
-                  </Select.Option>
-                  <Select.Option value="employment" label="👤 Employment">
-                    Employment
-                  </Select.Option>
-                  <Select.Option value="custom" label="⚙️ Custom">
-                    Custom
-                  </Select.Option>
-                </Select>
+                  options={typeOptions}
+                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -276,14 +278,8 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
                   placeholder="Select contract status"
                   size="large"
                   optionLabelProp="label"
-                >
-                  <Select.Option value="draft" label="📝 Draft">Draft</Select.Option>
-                  <Select.Option value="pending_approval" label="⏳ Pending">Pending Approval</Select.Option>
-                  <Select.Option value="active" label="✅ Active">Active</Select.Option>
-                  <Select.Option value="renewed" label="🔄 Renewed">Renewed</Select.Option>
-                  <Select.Option value="expired" label="❌ Expired">Expired</Select.Option>
-                  <Select.Option value="terminated" label="🛑 Terminated">Terminated</Select.Option>
-                </Select>
+                  options={statusOptions}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -298,12 +294,8 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
               placeholder="Select priority level"
               size="large"
               optionLabelProp="label"
-            >
-              <Select.Option value="low" label="🟢 Low">Low</Select.Option>
-              <Select.Option value="medium" label="🟡 Medium">Medium</Select.Option>
-              <Select.Option value="high" label="🟠 High">High</Select.Option>
-              <Select.Option value="urgent" label="🔴 Urgent">Urgent</Select.Option>
-            </Select>
+              options={priorityOptions}
+            />
           </Form.Item>
         </Card>
 

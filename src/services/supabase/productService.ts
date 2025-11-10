@@ -122,14 +122,15 @@ export class SupabaseProductService extends BaseSupabaseService {
 
       const tenant = await this.ensureTenantContext();
 
+      // ✅ NORMALIZED: Remove denormalized fields (category, supplier_name, is_active)
       const { data: created, error } = await getSupabaseClient()
         .from('products')
         .insert([
           {
             name: data.name,
             description: data.description,
-            category_id: data.category_id,
-            category: (data as any).category,
+            category_id: data.category_id, // ✅ NORMALIZED: Use FK only
+            // ✅ REMOVED: category string (denormalized)
             brand: (data as any).brand,
             manufacturer: (data as any).manufacturer,
             type: (data as any).type,
@@ -143,7 +144,10 @@ export class SupabaseProductService extends BaseSupabaseService {
             min_stock_level: (data as any).min_stock_level,
             max_stock_level: (data as any).max_stock_level,
             track_stock: (data as any).track_stock,
-            status: data.status || 'active',
+            status: data.status || 'active', // ✅ NORMALIZED: Use status only
+            // ✅ REMOVED: is_active boolean (redundant with status)
+            supplier_id: (data as any).supplier_id, // ✅ NORMALIZED: Use FK only
+            // ✅ REMOVED: supplier_name string (denormalized)
             image_url: data.image_url,
             notes: (data as any).notes,
             specifications: data.specifications,
@@ -178,13 +182,14 @@ export class SupabaseProductService extends BaseSupabaseService {
 
       const tenant = await this.ensureTenantContext();
 
+      // ✅ NORMALIZED: Remove denormalized fields (category, supplier_name, is_active)
       const { data, error } = await getSupabaseClient()
         .from('products')
         .update({
           name: updates.name,
           description: updates.description,
-          category_id: updates.category_id,
-          category: (updates as any).category,
+          category_id: updates.category_id, // ✅ NORMALIZED: Use FK only
+          // ✅ REMOVED: category string (denormalized)
           brand: (updates as any).brand,
           manufacturer: (updates as any).manufacturer,
           type: (updates as any).type,
@@ -198,7 +203,10 @@ export class SupabaseProductService extends BaseSupabaseService {
           min_stock_level: (updates as any).min_stock_level,
           max_stock_level: (updates as any).max_stock_level,
           track_stock: (updates as any).track_stock,
-          status: updates.status,
+          status: updates.status, // ✅ NORMALIZED: Use status only
+          // ✅ REMOVED: is_active boolean (redundant with status)
+          supplier_id: (updates as any).supplier_id, // ✅ NORMALIZED: Use FK only
+          // ✅ REMOVED: supplier_name string (denormalized)
           image_url: updates.image_url,
           notes: (updates as any).notes,
           specifications: updates.specifications,

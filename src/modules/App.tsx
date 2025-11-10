@@ -12,6 +12,7 @@ import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 import { moduleRegistry, initializeModules } from './ModuleRegistry';
 import { createModularRouter } from './routing/ModularRouter';
 import { bootstrapApplication } from './bootstrap';
+import { ReferenceDataProvider } from '@/contexts/ReferenceDataContext';
 import type { RouteObject } from 'react-router-dom';
 
 // Create React Query client
@@ -108,10 +109,12 @@ const ModularApp: React.FC = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-gray-50">
-          <RouterProvider router={router} />
-        </div>
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReferenceDataProvider>
+          <div className="min-h-screen bg-gray-50">
+            <RouterProvider router={router} />
+          </div>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </ReferenceDataProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

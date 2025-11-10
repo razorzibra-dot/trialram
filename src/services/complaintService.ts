@@ -11,20 +11,16 @@ class ComplaintService {
       title: 'Production Line Breakdown - Assembly Unit 3',
       description: 'Assembly unit 3 has stopped working completely. Production is halted and urgent repair is needed.',
       customer_id: '1',
-      customer_name: 'TechCorp Solutions',
       type: 'breakdown',
       status: 'in_progress',
       priority: 'urgent',
       assigned_engineer_id: '3',
-      assigned_engineer_name: 'Mike Engineer',
       engineer_resolution: '',
       comments: [
         {
           id: 'c1',
           complaint_id: '1',
           user_id: '1',
-          user_name: 'John Admin',
-          user_role: 'admin',
           content: 'Complaint received and assigned to Mike Engineer for immediate attention.',
           created_at: '2024-01-28T09:15:00Z'
         },
@@ -32,8 +28,6 @@ class ComplaintService {
           id: 'c2',
           complaint_id: '1',
           user_id: '3',
-          user_name: 'Mike Engineer',
-          user_role: 'engineer',
           content: 'On-site inspection completed. Issue identified as motor failure. Replacement parts ordered.',
           created_at: '2024-01-28T11:30:00Z'
         }
@@ -47,20 +41,16 @@ class ComplaintService {
       title: 'Preventive Maintenance - Conveyor System',
       description: 'Scheduled preventive maintenance for conveyor system to prevent future breakdowns.',
       customer_id: '2',
-      customer_name: 'Global Manufacturing Inc',
       type: 'preventive',
       status: 'new',
       priority: 'medium',
       assigned_engineer_id: '4',
-      assigned_engineer_name: 'Sarah Engineer',
       engineer_resolution: '',
       comments: [
         {
           id: 'c3',
           complaint_id: '2',
           user_id: '2',
-          user_name: 'Sarah Manager',
-          user_role: 'manager',
           content: 'Preventive maintenance scheduled for next week.',
           created_at: '2024-01-27T14:20:00Z'
         }
@@ -74,20 +64,16 @@ class ComplaintService {
       title: 'Software Update - Control System v2.1',
       description: 'Update control system software to latest version v2.1 with enhanced features.',
       customer_id: '3',
-      customer_name: 'StartupXYZ',
       type: 'software_update',
       status: 'closed',
       priority: 'low',
       assigned_engineer_id: '3',
-      assigned_engineer_name: 'Mike Engineer',
       engineer_resolution: 'Software successfully updated to v2.1. All systems tested and working properly. Customer training provided.',
       comments: [
         {
           id: 'c4',
           complaint_id: '3',
           user_id: '3',
-          user_name: 'Mike Engineer',
-          user_role: 'engineer',
           content: 'Software update completed successfully. System is now running v2.1.',
           created_at: '2024-01-26T16:45:00Z'
         }
@@ -102,20 +88,16 @@ class ComplaintService {
       title: 'System Optimization - Performance Enhancement',
       description: 'Optimize system performance to improve efficiency and reduce energy consumption.',
       customer_id: '4',
-      customer_name: 'Retail Giants Ltd',
       type: 'optimize',
       status: 'in_progress',
       priority: 'high',
       assigned_engineer_id: '4',
-      assigned_engineer_name: 'Sarah Engineer',
       engineer_resolution: '',
       comments: [
         {
           id: 'c5',
           complaint_id: '4',
           user_id: '4',
-          user_name: 'Sarah Engineer',
-          user_role: 'engineer',
           content: 'Performance analysis completed. Implementing optimization strategies.',
           created_at: '2024-01-25T13:30:00Z'
         }
@@ -167,7 +149,7 @@ class ComplaintService {
         complaints = complaints.filter(c => 
           c.title.toLowerCase().includes(search) ||
           c.description.toLowerCase().includes(search) ||
-          c.customer_name?.toLowerCase().includes(search)
+          c.customer_id?.toLowerCase().includes(search)
         );
       }
       if (filters.date_from) {
@@ -309,8 +291,6 @@ class ComplaintService {
       id: Date.now().toString(),
       complaint_id: complaintId,
       user_id: user.id,
-      user_name: user.name,
-      user_role: user.role,
       content,
       created_at: new Date().toISOString(),
       parent_id: parentId

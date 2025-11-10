@@ -229,7 +229,6 @@ export class SupabaseSalesService extends BaseSupabaseService {
             description: data.description,
             customer_id: data.customer_id,
             value: data.value || 0,
-            amount: data.amount || 0,
             probability: data.probability || 50,
             stage: data.stage || 'lead',
             status: data.status || 'open',
@@ -641,31 +640,13 @@ export class SupabaseSalesService extends BaseSupabaseService {
    * Ensures all fields are safely accessed with proper defaults
    */
   private mapSaleResponse(dbSale: any): Sale {
-    // Safely extract customer name from relationship or fallback to stored value
-    let customerName = '';
-    if (dbSale.customer && typeof dbSale.customer === 'object') {
-      customerName = dbSale.customer.company_name || dbSale.customer.contact_name || '';
-    } else if (typeof dbSale.customer_name === 'string') {
-      customerName = dbSale.customer_name;
-    }
-
-    // Safely extract assigned_to_name
-    let assignedToName = '';
-    if (dbSale.assigned_user && typeof dbSale.assigned_user === 'object') {
-      assignedToName = dbSale.assigned_user.display_name || dbSale.assigned_user.email || '';
-    } else if (typeof dbSale.assigned_to_name === 'string') {
-      assignedToName = dbSale.assigned_to_name;
-    }
-
     return {
       id: dbSale.id || '',
       sale_number: dbSale.sale_number || '',
       title: dbSale.title || 'Untitled Deal',
       description: dbSale.description || '',
       customer_id: dbSale.customer_id || '',
-      customer_name: customerName,
       value: Number(dbSale.value) || 0,
-      amount: Number(dbSale.amount || dbSale.value) || 0,
       currency: dbSale.currency || 'USD',
       probability: Number(dbSale.probability) || 50,
       weighted_amount: (Number(dbSale.value) || 0) * ((Number(dbSale.probability) || 50) / 100),
@@ -678,7 +659,6 @@ export class SupabaseSalesService extends BaseSupabaseService {
       last_activity_date: dbSale.last_activity_date || '',
       next_activity_date: dbSale.next_activity_date || '',
       assigned_to: dbSale.assigned_to || '',
-      assigned_to_name: assignedToName,
       notes: dbSale.notes || '',
       tags: Array.isArray(dbSale.tags) ? dbSale.tags : [],
       competitor_info: dbSale.competitor_info || '',

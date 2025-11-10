@@ -1,5 +1,6 @@
 import { 
   ProductSale, 
+  ProductSaleWithDetails,
   ProductSaleFormData, 
   ProductSaleFilters, 
   ProductSalesResponse,
@@ -33,11 +34,10 @@ class SupabaseProductSaleService {
       query = addTenantFilter(query, tenantId);
 
       // Apply filters
+      // Note: customer_name and product_name filters require JOINs which are handled in client-side filtering
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        query = query.or(
-          `customer_name.ilike.%${searchLower}%,product_name.ilike.%${searchLower}%,notes.ilike.%${searchLower}%`
-        );
+        query = query.ilike('notes', `%${searchLower}%`);
       }
 
       if (filters.customer_id) {
@@ -70,14 +70,6 @@ class SupabaseProductSaleService {
 
       if (filters.sale_id) {
         query = query.ilike('id', `%${filters.sale_id}%`);
-      }
-
-      if (filters.customer_name) {
-        query = query.ilike('customer_name', `%${filters.customer_name}%`);
-      }
-
-      if (filters.product_name) {
-        query = query.ilike('product_name', `%${filters.product_name}%`);
       }
 
       if (filters.notes) {
@@ -368,9 +360,8 @@ class SupabaseProductSaleService {
       // Top products
       const productMap = new Map<string, { count: number; revenue: number; units: number }>();
       mappedSales.forEach(sale => {
-        const key = `${sale.product_id}|${sale.product_name}`;
-        const existing = productMap.get(key) || { count: 0, revenue: 0, units: 0 };
-        productMap.set(key, {
+        const existing = productMap.get(sale.product_id) || { count: 0, revenue: 0, units: 0 };
+        productMap.set(sale.product_id, {
           count: existing.count + 1,
           revenue: existing.revenue + sale.total_cost,
           units: existing.units + sale.units
@@ -380,11 +371,10 @@ class SupabaseProductSaleService {
       const topProducts = Array.from(productMap.entries())
         .sort((a, b) => b[1].revenue - a[1].revenue)
         .slice(0, 10)
-        .map(([key, data]) => {
-          const [productId, productName] = key.split('|');
+        .map(([productId, data]) => {
           return {
             productId: productId,
-            productName: productName,
+            productName: `Product ${productId.substring(0, 8)}`,
             quantity: data.units,
             revenue: data.revenue,
           };
@@ -393,9 +383,8 @@ class SupabaseProductSaleService {
       // Top customers
       const customerMap = new Map<string, { count: number; revenue: number; lastPurchase: string }>();
       mappedSales.forEach(sale => {
-        const key = `${sale.customer_id}|${sale.customer_name}`;
-        const existing = customerMap.get(key) || { count: 0, revenue: 0, lastPurchase: '' };
-        customerMap.set(key, {
+        const existing = customerMap.get(sale.customer_id) || { count: 0, revenue: 0, lastPurchase: '' };
+        customerMap.set(sale.customer_id, {
           count: existing.count + 1,
           revenue: existing.revenue + sale.total_cost,
           lastPurchase: sale.delivery_date > existing.lastPurchase ? sale.delivery_date : existing.lastPurchase
@@ -405,11 +394,10 @@ class SupabaseProductSaleService {
       const topCustomers = Array.from(customerMap.entries())
         .sort((a, b) => b[1].revenue - a[1].revenue)
         .slice(0, 10)
-        .map(([key, data]) => {
-          const [customerId, customerName] = key.split('|');
+        .map(([customerId, data]) => {
           return {
             customerId: customerId,
-            customerName: customerName,
+            customerName: `Customer ${customerId.substring(0, 8)}`,
             totalSales: data.count,
             revenue: data.revenue,
           };
@@ -509,9 +497,7 @@ class SupabaseProductSaleService {
     return {
       id: row.id,
       customer_id: row.customer_id,
-      customer_name: row.customer_name || '',
       product_id: row.product_id,
-      product_name: row.product_name || '',
       units: row.units,
       cost_per_unit: row.cost_per_unit,
       total_cost: row.total_cost,

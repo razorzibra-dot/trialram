@@ -1,5 +1,6 @@
 import { 
   ProductSale, 
+  ProductSaleWithDetails,
   ProductSaleFormData, 
   ProductSaleFilters, 
   ProductSalesResponse,
@@ -11,15 +12,67 @@ import { PDFGenerationResponse } from '@/types/pdfTemplates';
 
 import { authService } from './authService';
 
-// Mock data for development - TENANT-AWARE (Aligned with seed.sql data)
-// These UUIDs match the seed.sql sample data for consistency
+interface MockCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface MockProduct {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+}
+
+const mockCustomersMap: Map<string, MockCustomer> = new Map([
+  ['a50e8400-e29b-41d4-a716-446655440001', {
+    id: 'a50e8400-e29b-41d4-a716-446655440001',
+    name: 'ABC Manufacturing',
+    email: 'contact@abcmfg.com',
+    phone: '+1-555-0101'
+  }],
+  ['a50e8400-e29b-41d4-a716-446655440002', {
+    id: 'a50e8400-e29b-41d4-a716-446655440002',
+    name: 'XYZ Logistics',
+    email: 'info@xyzlogistics.com',
+    phone: '+1-555-0102'
+  }],
+  ['a50e8400-e29b-41d4-a716-446655440004', {
+    id: 'a50e8400-e29b-41d4-a716-446655440004',
+    name: 'Innovation Labs',
+    email: 'support@innovationlabs.com',
+    phone: '+1-555-0104'
+  }]
+]);
+
+const mockProductsMap: Map<string, MockProduct> = new Map([
+  ['950e8400-e29b-41d4-a716-446655440003', {
+    id: '950e8400-e29b-41d4-a716-446655440003',
+    name: 'Hydraulic Press Machine',
+    sku: 'HPM-2024-001',
+    price: 75000.00
+  }],
+  ['950e8400-e29b-41d4-a716-446655440002', {
+    id: '950e8400-e29b-41d4-a716-446655440002',
+    name: 'Sensor Array Kit',
+    sku: 'SAK-2024-001',
+    price: 3500.00
+  }],
+  ['950e8400-e29b-41d4-a716-446655440005', {
+    id: '950e8400-e29b-41d4-a716-446655440005',
+    name: 'Enterprise CRM License',
+    sku: 'ECS-2024-001',
+    price: 15000.00
+  }]
+]);
+
 const mockProductSalesBase: ProductSale[] = [
   {
     id: 'd50e8400-e29b-41d4-a716-446655440001',
     customer_id: 'a50e8400-e29b-41d4-a716-446655440001',
-    customer_name: 'ABC Manufacturing',
     product_id: '950e8400-e29b-41d4-a716-446655440003',
-    product_name: 'Hydraulic Press Machine',
     units: 1.00,
     cost_per_unit: 75000.00,
     total_cost: 75000.00,
@@ -29,7 +82,7 @@ const mockProductSalesBase: ProductSale[] = [
     notes: 'Heavy machinery delivery with installation service included.',
     attachments: [],
     service_contract_id: 'c50e8400-e29b-41d4-a716-446655440001',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001', // Acme Corporation
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
     created_at: '2024-06-15T10:30:00Z',
     updated_at: '2024-06-15T10:30:00Z',
     created_by: 'a3c91c65-343d-4ff4-b9ab-f36adb371495'
@@ -37,9 +90,7 @@ const mockProductSalesBase: ProductSale[] = [
   {
     id: 'd50e8400-e29b-41d4-a716-446655440002',
     customer_id: 'a50e8400-e29b-41d4-a716-446655440002',
-    customer_name: 'XYZ Logistics',
     product_id: '950e8400-e29b-41d4-a716-446655440002',
-    product_name: 'Sensor Array Kit',
     units: 2.00,
     cost_per_unit: 3500.00,
     total_cost: 7000.00,
@@ -49,7 +100,7 @@ const mockProductSalesBase: ProductSale[] = [
     notes: 'IoT sensor kit for warehouse monitoring.',
     attachments: [],
     service_contract_id: 'c50e8400-e29b-41d4-a716-446655440002',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001', // Acme Corporation
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
     created_at: '2024-06-10T14:20:00Z',
     updated_at: '2024-06-10T14:20:00Z',
     created_by: 'd078f352-e074-4b26-bd3d-94d5751aa50c'
@@ -57,9 +108,7 @@ const mockProductSalesBase: ProductSale[] = [
   {
     id: 'd50e8400-e29b-41d4-a716-446655440003',
     customer_id: 'a50e8400-e29b-41d4-a716-446655440004',
-    customer_name: 'Innovation Labs',
     product_id: '950e8400-e29b-41d4-a716-446655440005',
-    product_name: 'Enterprise CRM License',
     units: 1.00,
     cost_per_unit: 15000.00,
     total_cost: 15000.00,
@@ -69,7 +118,7 @@ const mockProductSalesBase: ProductSale[] = [
     notes: 'CRM software license for startup. Renewal due soon.',
     attachments: [],
     service_contract_id: 'c50e8400-e29b-41d4-a716-446655440003',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440002', // Tech Solutions Inc
+    tenant_id: '550e8400-e29b-41d4-a716-446655440002',
     created_at: '2024-06-01T10:00:00Z',
     updated_at: '2024-06-01T10:00:00Z',
     created_by: 'e7bf21ab-b09f-450c-a389-081c1f8179b4'
@@ -94,6 +143,31 @@ class ProductSaleService {
     throw new Error('Unauthorized: Unable to determine tenant context');
   }
 
+  private joinProductSaleWithDetails(sale: ProductSale): ProductSaleWithDetails {
+    const customer = mockCustomersMap.get(sale.customer_id);
+    const product = mockProductsMap.get(sale.product_id);
+
+    if (!customer || !product) {
+      throw new Error(`Missing customer or product data for sale ${sale.id}`);
+    }
+
+    return {
+      ...sale,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone
+      },
+      product: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: product.price
+      }
+    };
+  }
+
   // Get all product sales with filtering and pagination
   async getProductSales(
     filters: ProductSaleFilters = {},
@@ -114,11 +188,13 @@ class ProductSaleService {
       // Apply filters
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        filteredSales = filteredSales.filter(sale =>
-          sale.customer_name?.toLowerCase().includes(searchLower) ||
-          sale.product_name?.toLowerCase().includes(searchLower) ||
-          sale.notes.toLowerCase().includes(searchLower)
-        );
+        filteredSales = filteredSales.filter(sale => {
+          const customer = mockCustomersMap.get(sale.customer_id);
+          const product = mockProductsMap.get(sale.product_id);
+          return (customer?.name.toLowerCase().includes(searchLower) ?? false) ||
+                 (product?.name.toLowerCase().includes(searchLower) ?? false) ||
+                 sale.notes.toLowerCase().includes(searchLower);
+        });
       }
 
       if (filters.customer_id) {
@@ -154,19 +230,8 @@ class ProductSaleService {
         filteredSales = filteredSales.filter(sale => sale.id.toLowerCase().includes(saleIdLower));
       }
 
-      if (filters.customer_name) {
-        const customerLower = filters.customer_name.toLowerCase();
-        filteredSales = filteredSales.filter(sale => 
-          sale.customer_name?.toLowerCase().includes(customerLower)
-        );
-      }
-
-      if (filters.product_name) {
-        const productLower = filters.product_name.toLowerCase();
-        filteredSales = filteredSales.filter(sale => 
-          sale.product_name?.toLowerCase().includes(productLower)
-        );
-      }
+      // Note: customer_name and product_name filters removed - use customer_id and product_id instead
+      // For full-text search by name, use the generic 'search' filter above
 
       if (filters.notes) {
         const notesLower = filters.notes.toLowerCase();
@@ -275,9 +340,7 @@ class ProductSaleService {
       const newSale: ProductSale = {
         id: `ps-${Date.now()}`,
         customer_id: data.customer_id,
-        customer_name: 'Customer Name', // Would be fetched from customer service
         product_id: data.product_id,
-        product_name: 'Product Name', // Would be fetched from product service
         units: data.units,
         cost_per_unit: data.cost_per_unit,
         total_cost: data.units * data.cost_per_unit,
@@ -285,7 +348,7 @@ class ProductSaleService {
         warranty_expiry: warrantyExpiry.toISOString().split('T')[0],
         status,
         notes: data.notes,
-        attachments: [], // File uploads would be handled separately
+        attachments: [],
         tenant_id: finalTenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -403,19 +466,55 @@ class ProductSaleService {
         { month: '2024-06', sales_count: 22, revenue: 125000 }
       ];
 
-      // Top products
-      const topProducts = [
-        { product_id: 'prod-001', product_name: 'Enterprise CRM Suite', total_sales: 15, total_revenue: 125000, units_sold: 45 },
-        { product_id: 'prod-002', product_name: 'Analytics Dashboard Pro', total_sales: 8, total_revenue: 65000, units_sold: 28 },
-        { product_id: 'prod-003', product_name: 'Security Module', total_sales: 5, total_revenue: 35000, units_sold: 15 }
-      ];
+      // Top products - calculate from mock data
+      const productMap = new Map<string, { count: number; revenue: number; units: number }>();
+      tenantSales.forEach(sale => {
+        const existing = productMap.get(sale.product_id) || { count: 0, revenue: 0, units: 0 };
+        productMap.set(sale.product_id, {
+          count: existing.count + 1,
+          revenue: existing.revenue + sale.total_cost,
+          units: existing.units + sale.units
+        });
+      });
 
-      // Top customers
-      const topCustomers = [
-        { customer_id: 'cust-001', customer_name: 'Acme Corporation', total_sales: 3, total_revenue: 45000, last_purchase: '2024-06-15' },
-        { customer_id: 'cust-002', customer_name: 'TechStart Inc', total_sales: 2, total_revenue: 28000, last_purchase: '2024-06-10' },
-        { customer_id: 'cust-003', customer_name: 'Global Enterprises', total_sales: 4, total_revenue: 85000, last_purchase: '2024-06-20' }
-      ];
+      const topProducts = Array.from(productMap.entries())
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 10)
+        .map(([productId, data]) => {
+          const product = mockProductsMap.get(productId);
+          return {
+            product_id: productId,
+            product_name: product?.name || 'Unknown Product',
+            total_sales: data.count,
+            total_revenue: data.revenue,
+            units_sold: data.units
+          };
+        });
+
+      // Top customers - calculate from mock data
+      const customerMap = new Map<string, { count: number; revenue: number; lastPurchase: string }>();
+      tenantSales.forEach(sale => {
+        const existing = customerMap.get(sale.customer_id) || { count: 0, revenue: 0, lastPurchase: '' };
+        customerMap.set(sale.customer_id, {
+          count: existing.count + 1,
+          revenue: existing.revenue + sale.total_cost,
+          lastPurchase: sale.created_at > existing.lastPurchase ? sale.created_at : existing.lastPurchase
+        });
+      });
+
+      const topCustomers = Array.from(customerMap.entries())
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 10)
+        .map(([customerId, data]) => {
+          const customer = mockCustomersMap.get(customerId);
+          return {
+            customer_id: customerId,
+            customer_name: customer?.name || 'Unknown Customer',
+            total_sales: data.count,
+            total_revenue: data.revenue,
+            last_purchase: data.lastPurchase.split('T')[0]
+          };
+        });
 
       // Status distribution
       const statusCounts = tenantSales.reduce((acc, sale) => {
@@ -484,7 +583,7 @@ class ProductSaleService {
       };
 
       // Add attachment to the sale
-      const sale = mockProductSales.find(s => s.id === saleId);
+      const sale = mockProductSalesBase.find(s => s.id === saleId);
       if (sale) {
         sale.attachments.push(attachment);
       }
@@ -501,7 +600,7 @@ class ProductSaleService {
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const sale = mockProductSales.find(s => s.id === saleId);
+      const sale = mockProductSalesBase.find(s => s.id === saleId);
       if (sale) {
         const index = sale.attachments.findIndex(att => att.id === attachmentId);
         if (index !== -1) {
@@ -517,7 +616,7 @@ class ProductSaleService {
   // Generate PDF for product sale
   async generatePdf(saleId: string): Promise<PDFGenerationResponse> {
     try {
-      const sale = mockProductSales.find(s => s.id === saleId);
+      const sale = mockProductSalesBase.find(s => s.id === saleId);
       if (!sale) {
         throw new Error('Product sale not found');
       }
@@ -546,6 +645,7 @@ class ProductSaleService {
   async generateServiceContract(saleId: string): Promise<any> {
     try {
       const sale = await this.getProductSaleById(saleId);
+      const saleWithDetails = this.joinProductSaleWithDetails(sale);
       
       // Generate contract number
       const currentYear = new Date().getFullYear();
@@ -557,9 +657,7 @@ class ProductSaleService {
         product_sale_id: sale.id,
         contract_number: contractNumber,
         customer_id: sale.customer_id,
-        customer_name: sale.customer_name,
         product_id: sale.product_id,
-        product_name: sale.product_name,
         start_date: sale.delivery_date,
         end_date: sale.warranty_expiry,
         status: 'active',
@@ -576,7 +674,6 @@ class ProductSaleService {
         created_by: sale.created_by
       };
       
-      // In production, this would be saved to the database
       console.log('Generated service contract:', serviceContractData);
       
       return serviceContractData;
@@ -601,6 +698,7 @@ class ProductSaleService {
   async generateContractPDF(saleId: string): Promise<PDFGenerationResponse> {
     try {
       const sale = await this.getProductSaleById(saleId);
+      const saleWithDetails = this.joinProductSaleWithDetails(sale);
       const templates = await pdfTemplateService.getTemplates();
       const contractTemplate = templates.find(t => t.type === 'contract' && t.isDefault);
       
@@ -611,11 +709,11 @@ class ProductSaleService {
       return await pdfTemplateService.generatePDF({
         templateId: contractTemplate.id,
         data: {
-          customerName: sale.customer_name,
+          customerName: saleWithDetails.customer.name,
           companyName: 'Your Company Name',
           deliveryDate: sale.delivery_date,
           totalAmount: `$${sale.total_cost.toFixed(2)}`,
-          productName: sale.product_name,
+          productName: saleWithDetails.product.name,
           warrantyPeriod: '1 Year',
           contractNumber: `CNT-${sale.id}`
         },
@@ -631,6 +729,7 @@ class ProductSaleService {
   async generateReceiptPDF(saleId: string): Promise<PDFGenerationResponse> {
     try {
       const sale = await this.getProductSaleById(saleId);
+      const saleWithDetails = this.joinProductSaleWithDetails(sale);
       const templates = await pdfTemplateService.getTemplates();
       const receiptTemplate = templates.find(t => t.type === 'receipt' && t.isDefault);
       
@@ -641,11 +740,11 @@ class ProductSaleService {
       return await pdfTemplateService.generatePDF({
         templateId: receiptTemplate.id,
         data: {
-          customerName: sale.customer_name,
+          customerName: saleWithDetails.customer.name,
           companyName: 'Your Company Name',
           deliveryDate: sale.delivery_date,
           totalAmount: `$${sale.total_cost.toFixed(2)}`,
-          productName: sale.product_name,
+          productName: saleWithDetails.product.name,
           quantity: sale.units.toString(),
           unitPrice: `$${sale.cost_per_unit.toFixed(2)}`,
           receiptNumber: `RCP-${sale.id}`

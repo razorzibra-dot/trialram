@@ -26,11 +26,9 @@ export interface ServiceContractType {
   title: string;
   description?: string;
 
-  // Related Entities
+  // Related Entities (normalized - no denormalized names)
   customerId: string;
-  customerName: string;
   productId?: string;
-  productName?: string;
 
   // Service Details
   serviceType: 'support' | 'maintenance' | 'consulting' | 'training' | 'hosting' | 'custom';
@@ -65,11 +63,9 @@ export interface ServiceContractType {
   scheduledHoursPerWeek?: number;
   timeZone?: string;
 
-  // Assignment
+  // Assignment (normalized - no denormalized names)
   assignedToUserId?: string;
-  assignedToName?: string;
   secondaryContactId?: string;
-  secondaryContactName?: string;
 
   // Approval & Compliance
   approvalStatus?: 'approved' | 'rejected' | 'pending' | 'in_review';
@@ -105,7 +101,6 @@ export interface ServiceContractDocumentType {
   filePath: string;
   documentType: 'sla_document' | 'schedule' | 'attachment' | 'email' | 'signed_contract' | 'amendment' | 'other';
   uploadedByUserId?: string;
-  uploadedByName?: string;
   description?: string;
   tags?: string[];
   isActive: boolean;
@@ -136,7 +131,6 @@ export interface ServiceDeliveryMilestoneType {
   status: 'pending' | 'in_progress' | 'completed' | 'delayed' | 'cancelled';
   completionPercentage: number;
   assignedToUserId?: string;
-  assignedToName?: string;
   notes?: string;
   dependencies?: string[];
   createdAt: string;
@@ -161,7 +155,6 @@ export interface ServiceContractIssueType {
   resolutionNotes?: string;
   resolutionDate?: string;
   assignedToUserId?: string;
-  assignedToName?: string;
   reportedDate: string;
   targetResolutionDate?: string;
   impactDescription?: string;
@@ -183,7 +176,6 @@ export interface ServiceContractActivityLogType {
   activityDescription?: string;
   changes?: Record<string, any>;
   userId?: string;
-  userName?: string;
   activityDate: string;
   tenantId: string;
 }
@@ -198,9 +190,7 @@ export interface ServiceContractCreateInput {
   title: string;
   description?: string;
   customerId: string;
-  customerName: string;
   productId?: string;
-  productName?: string;
   serviceType: string;
   priority?: string;
   value: number;
@@ -220,9 +210,7 @@ export interface ServiceContractCreateInput {
   scheduledHoursPerWeek?: number;
   timeZone?: string;
   assignedToUserId?: string;
-  assignedToName?: string;
   secondaryContactId?: string;
-  secondaryContactName?: string;
   tags?: string[];
   customFields?: Record<string, any>;
 }
@@ -249,9 +237,7 @@ export interface ServiceContractUpdateInput {
   scheduledHoursPerWeek?: number;
   timeZone?: string;
   assignedToUserId?: string;
-  assignedToName?: string;
   secondaryContactId?: string;
-  secondaryContactName?: string;
   approvalStatus?: string;
   complianceNotes?: string;
   tags?: string[];
@@ -278,7 +264,6 @@ export interface ServiceDeliveryMilestoneCreateInput {
   deliverableDescription?: string;
   acceptanceCriteria?: string;
   assignedToUserId?: string;
-  assignedToName?: string;
   notes?: string;
   dependencies?: string[];
 }
@@ -290,7 +275,6 @@ export interface ServiceContractIssueCreateInput {
   severity: string;
   category: string;
   assignedToUserId?: string;
-  assignedToName?: string;
   targetResolutionDate?: string;
   impactDescription?: string;
 }
@@ -306,7 +290,6 @@ export interface ServiceContractFilters {
   status?: string;
   serviceType?: string;
   customerId?: string;
-  customerName?: string;
   assignedTo?: string;
   priority?: string;
   approvalStatus?: string;
@@ -365,9 +348,7 @@ export interface ServiceContractWizardData {
   title?: string;
   description?: string;
   customerId?: string;
-  customerName?: string;
   productId?: string;
-  productName?: string;
   serviceType?: string;
 
   // Step 2: Service Details
@@ -389,9 +370,7 @@ export interface ServiceContractWizardData {
 
   // Step 5: Team & Assignment
   assignedToUserId?: string;
-  assignedToName?: string;
   secondaryContactId?: string;
-  secondaryContactName?: string;
 
   // Step 6: Scheduling
   deliverySchedule?: string;
@@ -416,9 +395,7 @@ export const ServiceContractCreateSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(5000).optional(),
   customerId: z.string().uuid(),
-  customerName: z.string().min(1).max(255),
   productId: z.string().uuid().optional(),
-  productName: z.string().max(255).optional(),
   serviceType: z.enum(['support', 'maintenance', 'consulting', 'training', 'hosting', 'custom']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   value: z.number().min(0).max(999999.99),
@@ -438,9 +415,7 @@ export const ServiceContractCreateSchema = z.object({
   scheduledHoursPerWeek: z.number().int().min(1).max(168).optional(),
   timeZone: z.string().max(50).optional(),
   assignedToUserId: z.string().uuid().optional(),
-  assignedToName: z.string().max(255).optional(),
   secondaryContactId: z.string().uuid().optional(),
-  secondaryContactName: z.string().max(255).optional(),
   tags: z.string().array().optional(),
   customFields: z.record(z.any()).optional(),
 });

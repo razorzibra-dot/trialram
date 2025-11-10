@@ -26,7 +26,9 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  category: string;
+  // ✅ NORMALIZED: category_id instead of category (remove denormalized string)
+  category_id?: string;
+  categoryName?: string; // Optional: populated via JOIN or view if needed
   brand?: string;
   manufacturer?: string;
   type?: string;
@@ -38,8 +40,8 @@ export interface Product {
   currency?: string;
 
   // Product Classification
+  // ✅ NORMALIZED: Use status enum only (removed redundant is_active)
   status?: 'active' | 'inactive' | 'discontinued';
-  is_active?: boolean;
   is_service?: boolean;
 
   // Stock Management
@@ -56,8 +58,8 @@ export interface Product {
   dimensions?: string;
 
   // Supplier Information
+  // ✅ NORMALIZED: supplier_id only (removed denormalized supplier_name)
   supplier_id?: string;
-  supplier_name?: string;
 
   // Additional Information
   tags?: string[];
@@ -104,7 +106,8 @@ export interface CompanyFormData {
 export interface ProductFormData {
   name: string;
   sku: string;
-  category: string;
+  // ✅ NORMALIZED: Use category_id (user selects from dropdown)
+  category_id?: string;
   brand?: string;
   manufacturer?: string;
   price: number;
@@ -112,9 +115,12 @@ export interface ProductFormData {
   stock_quantity?: number;
   reorder_level?: number;
   unit?: string;
+  // ✅ NORMALIZED: Use status enum only
   status?: 'active' | 'inactive' | 'discontinued';
   description?: string;
   notes?: string;
+  // ✅ NORMALIZED: supplier_id instead of supplier_name
+  supplier_id?: string;
 }
 
 // Customer form data - unified interface for all customer forms

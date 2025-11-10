@@ -31,8 +31,7 @@ export interface SearchQuery {
 
 export interface AdvancedSearchInputs {
   sale_id?: string;
-  customer_name?: string;
-  product_name?: string;
+  search?: string;
   notes?: string;
   full_text?: string;
 }
@@ -97,14 +96,13 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
         searchInputs.full_text = values.full_text;
       } else {
         if (values.sale_id) searchInputs.sale_id = values.sale_id;
-        if (values.customer_name) searchInputs.customer_name = values.customer_name;
-        if (values.product_name) searchInputs.product_name = values.product_name;
+        if (values.search) searchInputs.search = values.search;
         if (values.notes) searchInputs.notes = values.notes;
       }
 
       // Add to suggestions if it's a new search
       const searchString = values.full_text || 
-        `${values.sale_id || ''} ${values.customer_name || ''} ${values.product_name || ''}`.trim();
+        `${values.sale_id || ''} ${values.search || ''}`.trim();
       
       if (searchString && !suggestions.includes(searchString)) {
         const updatedSuggestions = [searchString, ...suggestions].slice(0, 10);
@@ -139,8 +137,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
         name: queryName,
         query: {
           sale_id: values.sale_id,
-          customer_name: values.customer_name,
-          product_name: values.product_name,
+          search: values.search,
           notes: values.notes,
           full_text: values.full_text,
         },
@@ -161,8 +158,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
   const handleLoadSearch = (query: SearchQuery) => {
     form.setFieldsValue({
       sale_id: query.query.sale_id,
-      customer_name: query.query.customer_name,
-      product_name: query.query.product_name,
+      search: query.query.search,
       notes: query.query.notes,
       full_text: query.query.full_text,
     });
@@ -240,26 +236,16 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
             </Form.Item>
 
             <Form.Item 
-              label="Customer Name" 
-              name="customer_name"
+              label="Search" 
+              name="search"
             >
               <AutoComplete
-                placeholder="Search by customer name..."
+                placeholder="Search by customer or product name..."
                 options={getAutoCompleteOptions()}
-                onSelect={(value) => form.setFieldValue('customer_name', value)}
+                onSelect={(value) => form.setFieldValue('search', value)}
                 filterOption={(inputValue, option) =>
                   (option?.label ?? '').toLowerCase().includes(inputValue.toLowerCase())
                 }
-              />
-            </Form.Item>
-
-            <Form.Item 
-              label="Product Name" 
-              name="product_name"
-            >
-              <Input 
-                placeholder="Search by product name" 
-                allowClear
               />
             </Form.Item>
 
@@ -353,11 +339,8 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
                       {query.query.sale_id && (
                         <Tag>ID: {query.query.sale_id}</Tag>
                       )}
-                      {query.query.customer_name && (
-                        <Tag>Customer: {query.query.customer_name}</Tag>
-                      )}
-                      {query.query.product_name && (
-                        <Tag>Product: {query.query.product_name}</Tag>
+                      {query.query.search && (
+                        <Tag>Search: {query.query.search}</Tag>
                       )}
                       {query.query.notes && (
                         <Tag>Notes: {query.query.notes}</Tag>

@@ -268,13 +268,13 @@ export const ServiceContractsPage: React.FC = () => {
     },
     {
       title: 'Customer',
-      dataIndex: 'customerName',
-      key: 'customerName',
+      dataIndex: 'customerId',
+      key: 'customerId',
       width: 220,
       render: (text: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.productName || 'No product linked'}</div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.productId || 'No product linked'}</div>
         </div>
       )
     },

@@ -8,19 +8,15 @@ export interface Contract {
 
   // Customer Relationship (Primary)
   customer_id: string;
-  customer_name?: string;
-  customer_contact?: string;
 
   // Phase 3.3: Deal Relationship (Link to Sales Deal)
   deal_id?: string;
-  deal_title?: string;
 
   // Additional Parties (Secondary)
   parties: ContractParty[];
 
   // Financial Information
   value: number;
-  total_value: number; // Alias for backend compatibility
   currency: string;
   payment_terms?: string;
   delivery_terms?: string;
@@ -45,7 +41,6 @@ export interface Contract {
   // Assignment and Management
   created_by: string;
   assigned_to?: string;
-  assigned_to_name?: string;
 
   // Document Management
   content?: string;
@@ -102,7 +97,6 @@ export interface ApprovalRecord {
   id: string;
   stage: string;
   approver: string;
-  approver_name: string;
   status: 'pending' | 'approved' | 'rejected';
   comments?: string;
   timestamp: string;

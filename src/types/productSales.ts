@@ -3,9 +3,7 @@
 export interface ProductSale {
   id: string;
   customer_id: string;
-  customer_name?: string;
   product_id: string;
-  product_name?: string;
   units: number;
   cost_per_unit: number;
   total_cost: number;
@@ -21,14 +19,27 @@ export interface ProductSale {
   created_by: string;
 }
 
+export interface ProductSaleWithDetails extends ProductSale {
+  customer: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  product: {
+    id: string;
+    name: string;
+    sku?: string;
+    price?: number;
+  };
+}
+
 export interface ServiceContract {
   id: string;
   product_sale_id: string;
   contract_number: string;
   customer_id: string;
-  customer_name?: string;
   product_id: string;
-  product_name?: string;
   start_date: string;
   end_date: string;
   status: 'active' | 'expired' | 'renewed' | 'cancelled';
@@ -44,6 +55,20 @@ export interface ServiceContract {
   created_at: string;
   updated_at: string;
   created_by: string;
+}
+
+export interface ServiceContractWithDetails extends ServiceContract {
+  customer: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  product: {
+    id: string;
+    name: string;
+    sku?: string;
+  };
 }
 
 export interface FileAttachment {
@@ -78,9 +103,7 @@ export interface ProductSaleFilters {
   search?: string;
   sale_id?: string;
   customer_id?: string;
-  customer_name?: string;
   product_id?: string;
-  product_name?: string;
   status?: string;
   date_from?: string;
   date_to?: string;
@@ -92,6 +115,7 @@ export interface ProductSaleFilters {
   start_date?: string;
   end_date?: string;
   notes?: string;
+  // Removed: customer_name and product_name - use search filter instead
 }
 
 export interface ServiceContractFilters {

@@ -22,7 +22,7 @@ import {
 import { DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { ProductSaleFilters, PRODUCT_SALE_STATUSES } from '@/types/productSales';
-import { useService } from '@/hooks/useService';
+import { customerService, productService } from '@/services/serviceFactory';
 
 const { RangePicker } = DatePicker;
 
@@ -51,9 +51,6 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [presetName, setPresetName] = useState('');
   const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
   const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
-
-  const customerService = useService('customerService');
-  const productService = useService('productService');
 
   // Load customers and products
   useEffect(() => {
@@ -93,7 +90,7 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
     if (visible) {
       loadData();
     }
-  }, [visible, customerService, productService]);
+  }, [visible]);
 
   // Load presets from localStorage
   useEffect(() => {

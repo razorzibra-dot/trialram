@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductSale } from '@/types/productSales';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { productSaleService } from '@/services/serviceFactory';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 import { productSalesKeys } from './useProductSales';
 import { productSalesAuditService } from '../services/productSalesAuditService';
 import { productSalesRbacService } from '../services/productSalesRbacService';
@@ -21,7 +21,7 @@ import { productSalesRbacService } from '../services/productSalesRbacService';
 export const useDeleteProductSale = () => {
   const queryClient = useQueryClient();
   const { deleteSale, setDeleting, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async ({ id, sale }: { id: string; sale?: ProductSale }) => {
@@ -88,26 +88,14 @@ export const useDeleteProductSale = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      // Show success notification
-      toast({
-        title: 'Success',
-        description: 'Product sale deleted successfully',
-        variant: 'default',
-      });
+      success('Product sale deleted successfully');
     },
 
-    onError: (error: Error) => {
-      // Only show error if not cancelled by user
-      if (!error.message.includes('cancelled')) {
-        const errorMessage = error.message || 'Failed to delete product sale';
-
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-
-        console.error('Delete product sale error:', error);
+    onError: (err: Error) => {
+      if (!err.message.includes('cancelled')) {
+        const errorMessage = err.message || 'Failed to delete product sale';
+        error(errorMessage);
+        console.error('Delete product sale error:', err);
       }
     },
   });
@@ -121,7 +109,7 @@ export const useDeleteProductSale = () => {
 export const useBulkDeleteProductSales = () => {
   const queryClient = useQueryClient();
   const { bulkDeleteSales, setDeleting, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (ids: string[]) => {
@@ -176,21 +164,12 @@ export const useBulkDeleteProductSales = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      toast({
-        title: 'Success',
-        description: `${ids.length} product sale(s) deleted successfully`,
-        variant: 'default',
-      });
+      success(`${ids.length} product sale(s) deleted successfully`);
     },
 
-    onError: (error: Error) => {
-      // Only show error if not cancelled by user
-      if (!error.message.includes('cancelled')) {
-        toast({
-          title: 'Error',
-          description: error.message || 'Failed to delete product sales',
-          variant: 'destructive',
-        });
+    onError: (err: Error) => {
+      if (!err.message.includes('cancelled')) {
+        error(err.message || 'Failed to delete product sales');
       }
     },
   });

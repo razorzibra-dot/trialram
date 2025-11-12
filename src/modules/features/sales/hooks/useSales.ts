@@ -10,7 +10,7 @@ import { SalesService, SalesFilters, CreateDealData, DealStats } from '../servic
 import { useSalesStore } from '../store/salesStore';
 import { salesService as factorySalesService } from '@/services/serviceFactory';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 
 // Module service instance
 const moduleSalesService = new SalesService();
@@ -147,7 +147,7 @@ export const useCreateDeal = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const { addDeal, setCreating } = useSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (data: CreateDealData) => {
@@ -162,17 +162,10 @@ export const useCreateDeal = () => {
       addDeal(newDeal);
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Deal created successfully',
-      });
+      success('Deal created successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create deal',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to create deal');
     },
   });
 };
@@ -185,7 +178,7 @@ export const useUpdateDeal = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const { updateDeal, setUpdating } = useSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateDealData> }) => {
@@ -195,9 +188,9 @@ export const useUpdateDeal = () => {
         const result = await factorySalesService.updateDeal(id, data);
         console.log('✅ [useUpdateDeal] mutationFn completed:', { id, resultId: result.id });
         return result;
-      } catch (error) {
-        console.error('❌ [useUpdateDeal] mutationFn error:', error);
-        throw error;
+      } catch (err) {
+        console.error('❌ [useUpdateDeal] mutationFn error:', err);
+        throw err;
       } finally {
         setUpdating(false);
       }
@@ -208,18 +201,11 @@ export const useUpdateDeal = () => {
       queryClient.invalidateQueries({ queryKey: salesKeys.deal(updatedDeal.id) });
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Deal updated successfully',
-      });
+      success('Deal updated successfully');
     },
-    onError: (error) => {
-      console.error('❌ [useUpdateDeal] onError triggered:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update deal',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      console.error('❌ [useUpdateDeal] onError triggered:', err);
+      error(err instanceof Error ? err.message : 'Failed to update deal');
     },
   });
 };
@@ -232,7 +218,7 @@ export const useDeleteDeal = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const { removeDeal, setDeleting } = useSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -248,17 +234,10 @@ export const useDeleteDeal = () => {
       removeDeal(deletedId);
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Deal deleted successfully',
-      });
+      success('Deal deleted successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete deal',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to delete deal');
     },
   });
 };
@@ -271,7 +250,7 @@ export const useUpdateDealStage = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const { updateDeal } = useSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
@@ -281,17 +260,10 @@ export const useUpdateDealStage = () => {
       updateDeal(updatedDeal.id, updatedDeal);
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Deal stage updated successfully',
-      });
+      success('Deal stage updated successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update deal stage',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update deal stage');
     },
   });
 };
@@ -304,7 +276,7 @@ export const useBulkDeals = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const { clearSelection } = useSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   const bulkUpdate = useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[]; updates: Partial<CreateDealData> }) => {
@@ -314,17 +286,10 @@ export const useBulkDeals = () => {
       clearSelection();
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: `${updatedDeals.length} deals updated successfully`,
-      });
+      success(`${updatedDeals.length} deals updated successfully`);
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update deals',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update deals');
     },
   });
 
@@ -337,17 +302,10 @@ export const useBulkDeals = () => {
       clearSelection();
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      toast({
-        title: 'Success',
-        description: `${deletedIds.length} deals deleted successfully`,
-      });
+      success(`${deletedIds.length} deals deleted successfully`);
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete deals',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to delete deals');
     },
   });
 
@@ -379,14 +337,13 @@ export const useSearchDeals = () => {
 export const useExportDeals = () => {
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (format: 'csv' | 'json' = 'csv') => {
       return await factorySalesService.exportDeals(format);
     },
     onSuccess: (data, format) => {
-      // Create download link
       const blob = new Blob([data], { 
         type: format === 'csv' ? 'text/csv' : 'application/json' 
       });
@@ -399,17 +356,10 @@ export const useExportDeals = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Success',
-        description: 'Deals exported successfully',
-      });
+      success('Deals exported successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to export deals',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to export deals');
     },
   });
 };

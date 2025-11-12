@@ -2,6 +2,10 @@
  * useService Hook
  * Provides factory-routed service access for any service name
  * Supports multi-backend routing (mock vs Supabase)
+ * 
+ * @deprecated Use useService from '@/modules/core/hooks/useService' instead
+ * This factory-based version will be removed in future versions.
+ * The new container-based version provides better dependency injection.
  */
 
 import {

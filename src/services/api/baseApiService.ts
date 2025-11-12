@@ -12,7 +12,7 @@ import axios, {
 } from 'axios';
 import { apiConfig, getApiHeaders } from '@/config/apiConfig';
 import { ApiResponse, ApiError } from './interfaces';
-import { toast } from '@/hooks/use-toast';
+import { uiNotificationService } from '@/services/serviceFactory';
 
 export interface RequestConfig extends InternalAxiosRequestConfig {
   skipAuth?: boolean;
@@ -226,11 +226,7 @@ class BaseApiService {
    * Handle 403 Forbidden errors
    */
   private handle403Error(error: AxiosError): void {
-    toast({
-      title: 'Access Denied',
-      description: 'You don\'t have permission to perform this action.',
-      variant: 'destructive',
-    });
+    uiNotificationService.error('You don\'t have permission to perform this action.');
   }
 
   /**
@@ -238,12 +234,7 @@ class BaseApiService {
    */
   private handleGenericError(error: AxiosError): void {
     const message = this.getErrorMessage(error);
-    
-    toast({
-      title: 'Request Failed',
-      description: message,
-      variant: 'destructive',
-    });
+    uiNotificationService.error(message);
   }
 
   /**
@@ -251,12 +242,7 @@ class BaseApiService {
    */
   private handleRequestError(error: AxiosError): void {
     console.error('[API Request Error]', error);
-    
-    toast({
-      title: 'Request Error',
-      description: 'Failed to send request. Please try again.',
-      variant: 'destructive',
-    });
+    uiNotificationService.error('Failed to send request. Please try again.');
   }
 
   /**

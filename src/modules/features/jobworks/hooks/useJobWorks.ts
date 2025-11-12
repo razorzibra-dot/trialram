@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { JobWorksService, JobWorksFilters, CreateJobWorkData } from '../services/jobWorksService';
 import { useService } from '@/modules/core/hooks/useService';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 import { useTenantContext } from '@/hooks/useTenantContext';
 
 // Query Keys
@@ -72,24 +72,17 @@ export const useJobWorkStats = () => {
 export const useCreateJobWork = () => {
   const queryClient = useQueryClient();
   const jobWorksService = useService<JobWorksService>('jobWorksService');
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (data: CreateJobWorkData) => jobWorksService.createJobWork(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.jobworks() });
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Job work created successfully',
-      });
+      success('Job work created successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create job work',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to create job work');
     },
   });
 };
@@ -100,7 +93,7 @@ export const useCreateJobWork = () => {
 export const useUpdateJobWork = () => {
   const queryClient = useQueryClient();
   const jobWorksService = useService<JobWorksService>('jobWorksService');
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateJobWorkData> }) => 
@@ -109,17 +102,10 @@ export const useUpdateJobWork = () => {
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.jobwork(updatedJobWork.id) });
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.jobworks() });
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Job work updated successfully',
-      });
+      success('Job work updated successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update job work',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update job work');
     },
   });
 };
@@ -130,24 +116,17 @@ export const useUpdateJobWork = () => {
 export const useDeleteJobWork = () => {
   const queryClient = useQueryClient();
   const jobWorksService = useService<JobWorksService>('jobWorksService');
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (id: string) => jobWorksService.deleteJobWork(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.jobworks() });
       queryClient.invalidateQueries({ queryKey: jobWorksKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Job work deleted successfully',
-      });
+      success('Job work deleted successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete job work',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to delete job work');
     },
   });
 };

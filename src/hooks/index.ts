@@ -2,46 +2,34 @@
  * Hooks Index
  * Central export point for all custom React hooks
  * 
- * PHASE 4 HOOKS (Supabase Integration):
- * =====================================
- * - useSupabaseCustomers  - Customer management with real-time sync
- * - useSupabaseSales      - Sales pipeline and deal management
- * - useSupabaseTickets    - Support ticket management with SLA tracking
- * - useSupabaseContracts  - Contract lifecycle management
- * 
- * EXISTING HOOKS (Utility):
- * ========================
+ * UTILITY HOOKS:
+ * ==============
  * - useAuth           - Authentication and authorization
- * - useToast          - Toast notifications
+ * - useNotification   - Ant Design notifications (replaces deprecated useToast)
  * - useMobile         - Mobile responsiveness
  * - useLocalStorage   - Local storage persistence
  * - useScrollRestoration - Scroll position restoration
  * - useEnhancedTableScroll - Enhanced table scrolling
+ * - useTenantContext  - Multi-tenancy context
+ * - useSessionManager - Session management
+ * - usePermissionBasedNavigation - RBAC navigation
+ * - useModuleAccess   - Super-admin module access control
  * 
- * USAGE:
- * ======
- * import { 
- *   useSupabaseCustomers, 
- *   useSupabaseSales,
- *   useSupabaseTickets,
- *   useSupabaseContracts
- * } from '@/hooks';
+ * FEATURE HOOKS:
+ * ==============
+ * Feature-specific hooks are now located in their respective modules:
+ * - Customers: @/modules/features/customers/hooks
+ * - Sales: @/modules/features/sales/hooks
+ * - Tickets: @/modules/features/tickets/hooks
+ * - Contracts: @/modules/features/contracts/hooks
  */
-
-// Phase 4: Supabase Integration Hooks
-export { useSupabaseCustomers } from './useSupabaseCustomers';
-export { useSupabaseSales } from './useSupabaseSales';
-export { useSupabaseTickets } from './useSupabaseTickets';
-export { useSupabaseContracts } from './useSupabaseContracts';
 
 // Service Factory Hooks
 export { useService } from './useService';
 
 // Existing utility hooks
 export { useAuth } from '@/contexts/AuthContext';
-export { useToast } from './use-toast';
 export { useNotification } from './useNotification';
-export { useToastCompat } from './useToastCompat';
 export { useIsMobile, useBreakpoint, useResponsive } from './use-mobile';
 export { useLocalStorage } from './useLocalStorage';
 export { useScrollRestoration } from './useScrollRestoration';

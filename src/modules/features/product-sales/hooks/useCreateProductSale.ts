@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductSale, ProductSaleFormData } from '@/types/productSales';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useService } from '@/modules/core/hooks/useService';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 import { productSalesKeys } from './useProductSales';
 import { productSalesAuditService } from '../services/productSalesAuditService';
 import { productSalesRbacService } from '../services/productSalesRbacService';
@@ -20,7 +20,7 @@ import { productSalesRbacService } from '../services/productSalesRbacService';
 export const useCreateProductSale = () => {
   const queryClient = useQueryClient();
   const { addSale, setSaving, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
   const service = useService<any>('productSaleService');
 
   return useMutation({
@@ -73,27 +73,15 @@ export const useCreateProductSale = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      // Show success notification
-      toast({
-        title: 'Success',
-        description: 'Product sale created successfully',
-        variant: 'default',
-      });
+      success('Product sale created successfully');
 
       return newSale;
     },
 
-    onError: (error: Error) => {
-      const errorMessage = error.message || 'Failed to create product sale';
-
-      // Show error notification
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-
-      console.error('Create product sale error:', error);
+    onError: (err: Error) => {
+      const errorMessage = err.message || 'Failed to create product sale';
+      error(errorMessage);
+      console.error('Create product sale error:', err);
     },
   });
 };
@@ -105,7 +93,7 @@ export const useCreateProductSale = () => {
 export const useCreateProductSaleWithContract = () => {
   const queryClient = useQueryClient();
   const { addSale, setSaving, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
   const service = useService<any>('productSaleService');
 
   return useMutation({
@@ -152,21 +140,13 @@ export const useCreateProductSaleWithContract = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      toast({
-        title: 'Success',
-        description: 'Product sale and service contract created successfully',
-        variant: 'default',
-      });
+      success('Product sale and service contract created successfully');
 
       return result;
     },
 
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create product sale with contract',
-        variant: 'destructive',
-      });
+    onError: (err: Error) => {
+      error(err.message || 'Failed to create product sale with contract');
     },
   });
 };

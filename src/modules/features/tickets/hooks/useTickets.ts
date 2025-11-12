@@ -9,7 +9,7 @@ import { Ticket } from '@/types/crm';
 import { TicketService, TicketFilters, CreateTicketData } from '../services/ticketService';
 import { useTicketStore } from '../store/ticketStore';
 import { useService } from '@/modules/core/hooks/useService';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 
 // Query Keys
 export const ticketKeys = {
@@ -110,7 +110,7 @@ export const useCreateTicket = () => {
   const queryClient = useQueryClient();
   const ticketService = useService<TicketService>('ticketService');
   const { addTicket, setCreating } = useTicketStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (data: CreateTicketData) => {
@@ -125,17 +125,10 @@ export const useCreateTicket = () => {
       addTicket(newTicket);
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Ticket created successfully',
-      });
+      success('Ticket created successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create ticket',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to create ticket');
     },
   });
 };
@@ -147,7 +140,7 @@ export const useUpdateTicket = () => {
   const queryClient = useQueryClient();
   const ticketService = useService<TicketService>('ticketService');
   const { updateTicket, setUpdating } = useTicketStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateTicketData> }) => {
@@ -163,17 +156,10 @@ export const useUpdateTicket = () => {
       queryClient.invalidateQueries({ queryKey: ticketKeys.ticket(updatedTicket.id) });
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Ticket updated successfully',
-      });
+      success('Ticket updated successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update ticket',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update ticket');
     },
   });
 };
@@ -185,7 +171,7 @@ export const useDeleteTicket = () => {
   const queryClient = useQueryClient();
   const ticketService = useService<TicketService>('ticketService');
   const { removeTicket, setDeleting } = useTicketStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -201,17 +187,10 @@ export const useDeleteTicket = () => {
       removeTicket(deletedId);
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Ticket deleted successfully',
-      });
+      success('Ticket deleted successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete ticket',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to delete ticket');
     },
   });
 };
@@ -223,7 +202,7 @@ export const useUpdateTicketStatus = () => {
   const queryClient = useQueryClient();
   const ticketService = useService<TicketService>('ticketService');
   const { updateTicket } = useTicketStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -233,17 +212,10 @@ export const useUpdateTicketStatus = () => {
       updateTicket(updatedTicket.id, updatedTicket);
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: 'Ticket status updated successfully',
-      });
+      success('Ticket status updated successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update ticket status',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update ticket status');
     },
   });
 };
@@ -255,7 +227,7 @@ export const useBulkTickets = () => {
   const queryClient = useQueryClient();
   const ticketService = useService<TicketService>('ticketService');
   const { clearSelection } = useTicketStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   const bulkUpdate = useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[]; updates: Partial<CreateTicketData> }) => {
@@ -265,17 +237,10 @@ export const useBulkTickets = () => {
       clearSelection();
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: `${updatedTickets.length} tickets updated successfully`,
-      });
+      success(`${updatedTickets.length} tickets updated successfully`);
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update tickets',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to update tickets');
     },
   });
 
@@ -288,17 +253,10 @@ export const useBulkTickets = () => {
       clearSelection();
       queryClient.invalidateQueries({ queryKey: ticketKeys.tickets() });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
-      toast({
-        title: 'Success',
-        description: `${deletedIds.length} tickets deleted successfully`,
-      });
+      success(`${deletedIds.length} tickets deleted successfully`);
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete tickets',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to delete tickets');
     },
   });
 
@@ -328,14 +286,13 @@ export const useSearchTickets = () => {
  */
 export const useExportTickets = () => {
   const ticketService = useService<TicketService>('ticketService');
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (format: 'csv' | 'json' = 'csv') => {
       return await ticketService.exportTickets(format);
     },
     onSuccess: (data, format) => {
-      // Create download link
       const blob = new Blob([data], { 
         type: format === 'csv' ? 'text/csv' : 'application/json' 
       });
@@ -348,17 +305,10 @@ export const useExportTickets = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Success',
-        description: 'Tickets exported successfully',
-      });
+      success('Tickets exported successfully');
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to export tickets',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to export tickets');
     },
   });
 };

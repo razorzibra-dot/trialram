@@ -9,7 +9,6 @@ import { useCallback, useEffect } from 'react';
 import { ProductSale, ProductSaleFormData, ProductSaleFilters } from '@/types/productSales';
 import { useCreateProductSale } from './useCreateProductSale';
 import { useUpdateProductSale } from './useUpdateProductSale';
-import { useToast } from '@/hooks/use-toast';
 
 /**
  * Form mode enumeration
@@ -31,7 +30,6 @@ export const useProductSalesForm = (
   const [form] = Form.useForm();
   const createMutation = useCreateProductSale();
   const updateMutation = useUpdateProductSale();
-  const { toast } = useToast();
 
   // Populate form with initial data in edit mode
   useEffect(() => {

@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductSale } from '@/types/productSales';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useService } from '@/modules/core/hooks/useService';
-import { useToast } from '@/hooks/use-toast';
+import { useNotification } from '@/hooks/useNotification';
 import { productSalesKeys } from './useProductSales';
 import { productSalesAuditService } from '../services/productSalesAuditService';
 import { productSalesRbacService } from '../services/productSalesRbacService';
@@ -20,7 +20,7 @@ import { productSalesRbacService } from '../services/productSalesRbacService';
 export const useUpdateProductSale = () => {
   const queryClient = useQueryClient();
   const { updateSale, setSaving, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
   const service = useService<any>('productSaleService');
 
   return useMutation({
@@ -93,26 +93,15 @@ export const useUpdateProductSale = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      // Show success notification
-      toast({
-        title: 'Success',
-        description: 'Product sale updated successfully',
-        variant: 'default',
-      });
+      success('Product sale updated successfully');
 
       return updatedSale;
     },
 
-    onError: (error: Error) => {
-      const errorMessage = error.message || 'Failed to update product sale';
-
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-
-      console.error('Update product sale error:', error);
+    onError: (err: Error) => {
+      const errorMessage = err.message || 'Failed to update product sale';
+      error(errorMessage);
+      console.error('Update product sale error:', err);
     },
   });
 };
@@ -124,7 +113,7 @@ export const useUpdateProductSale = () => {
 export const useBulkUpdateProductSales = () => {
   const queryClient = useQueryClient();
   const { bulkUpdateSales, setSaving, setError, clearError } = useProductSalesStore();
-  const { toast } = useToast();
+  const { success, error } = useNotification();
   const service = useService<any>('productSaleService');
 
   return useMutation({
@@ -179,21 +168,13 @@ export const useBulkUpdateProductSales = () => {
         queryKey: productSalesKeys.list(),
       });
 
-      toast({
-        title: 'Success',
-        description: `${variables.ids.length} product sales updated successfully`,
-        variant: 'default',
-      });
+      success(`${variables.ids.length} product sales updated successfully`);
 
       return results;
     },
 
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update product sales',
-        variant: 'destructive',
-      });
+    onError: (err: Error) => {
+      error(err.message || 'Failed to update product sales');
     },
   });
 };

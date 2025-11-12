@@ -1,6 +1,6 @@
 import { authService } from '@/services';
 import { sessionManager } from './sessionManager';
-import { toast } from '@/hooks/use-toast';
+import { uiNotificationService } from '@/services/serviceFactory';
 
 export interface InterceptorCallbacks {
   onUnauthorized?: () => void;
@@ -185,14 +185,8 @@ class HttpInterceptor {
    */
   private handle403Error(response: Response): void {
     const message = 'Access denied. You don\'t have permission to perform this action.';
-    
-    toast({
-      title: 'Access Denied',
-      description: message,
-      variant: 'destructive',
-    });
+    uiNotificationService.error(message);
 
-    // Notify callback
     if (this.callbacks.onForbidden) {
       this.callbacks.onForbidden();
     }
@@ -203,12 +197,7 @@ class HttpInterceptor {
    */
   private handleNetworkError(error: Error | unknown): void {
     const message = 'Network error. Please check your connection and try again.';
-    
-    toast({
-      title: 'Connection Error',
-      description: message,
-      variant: 'destructive',
-    });
+    uiNotificationService.error(message);
   }
 
   /**
@@ -268,23 +257,15 @@ class HttpInterceptor {
    * Redirect to login page
    */
   private redirectToLogin(message?: string): void {
-    // Clear session data
     sessionManager.clearSession();
     
-    // Show toast message
     if (message) {
-      toast({
-        title: 'Authentication Required',
-        description: message,
-        variant: 'destructive',
-      });
+      uiNotificationService.error(message);
     }
 
-    // Notify callback
     if (this.callbacks.onUnauthorized) {
       this.callbacks.onUnauthorized();
     } else {
-      // Fallback: redirect to login
       window.location.href = '/login';
     }
   }

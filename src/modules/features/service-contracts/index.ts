@@ -48,3 +48,34 @@ export const serviceContractsModule: FeatureModule = {
 // Export views for direct imports if needed
 export { default as ServiceContractsPage } from './views/ServiceContractsPage';
 export { default as ServiceContractDetailPage } from './views/ServiceContractDetailPage';
+
+// Export components
+export { default as ServiceContractFormModal } from './components/ServiceContractFormModal';
+
+// Export hooks
+export {
+  useServiceContracts,
+  useServiceContract,
+  useCreateServiceContract,
+  useUpdateServiceContract,
+  useDeleteServiceContract,
+  useServiceContractStats,
+  useServiceContractDocuments,
+  useAddServiceContractDocument,
+  useServiceDeliveryMilestones,
+  useAddServiceDeliveryMilestone,
+  useServiceContractIssues,
+  useAddServiceContractIssue,
+} from './hooks/useServiceContracts';
+
+// Export services
+export { moduleServiceContractService } from './services/serviceContractService';
+
+// Export types
+export type {
+  ServiceContractType,
+  ServiceContractCreateInput,
+  ServiceContractUpdateInput,
+  ServiceContractFilters,
+  ServiceContractStats,
+} from '@/types/serviceContract';

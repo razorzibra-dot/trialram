@@ -13,7 +13,6 @@ export * from './hooks/useJobWorks';
 // Component exports (new drawer-based UI)
 export { JobWorksDetailPanel } from './components/JobWorksDetailPanel';
 export { JobWorksFormPanel } from './components/JobWorksFormPanel';
-export { JobWorksFormPanelEnhanced } from './components/JobWorksFormPanelEnhanced';
 
 // Routes
 export { jobWorksRoutes } from './routes';

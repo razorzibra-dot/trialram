@@ -10,7 +10,6 @@ import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load components for code splitting
 const TicketsPage = lazy(() => import('./views/TicketsPage').then(m => ({ default: m.TicketsPage })));
-const TicketDetailPage = lazy(() => import('./views/TicketDetailPage').then(m => ({ default: m.TicketDetailPage })));
 
 // Route wrapper with error boundary and suspense
 const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -27,14 +26,6 @@ export const ticketsRoutes: RouteObject[] = [
     element: (
       <RouteWrapper>
         <TicketsPage />
-      </RouteWrapper>
-    ),
-  },
-  {
-    path: 'tickets/:id',
-    element: (
-      <RouteWrapper>
-        <TicketDetailPage />
       </RouteWrapper>
     ),
   },

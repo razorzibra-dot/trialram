@@ -42,7 +42,3 @@ export { ConfigOverrideForm } from './ConfigOverrideForm';
  */
 export { RateLimitStatusWidget } from './RateLimitStatusWidget';
 export { RateLimitWarning } from './RateLimitWarning';
-
-// Existing components
-export { RoleRequestDetailPanel } from './RoleRequestDetailPanel';
-export { ServiceDetailPanel } from './ServiceDetailPanel';

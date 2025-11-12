@@ -9,9 +9,6 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 
 // Lazy load components
 const CustomerListPage = React.lazy(() => import('./views/CustomerListPage'));
-const CustomerDetailPage = React.lazy(() => import('./views/CustomerDetailPage'));
-const CustomerCreatePage = React.lazy(() => import('./views/CustomerCreatePage'));
-const CustomerEditPage = React.lazy(() => import('./views/CustomerEditPage'));
 
 // Route wrapper with error boundary
 const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -31,30 +28,6 @@ export const customerRoutes: RouteObject[] = [
         element: (
           <RouteWrapper>
             <CustomerListPage />
-          </RouteWrapper>
-        ),
-      },
-      {
-        path: 'new',
-        element: (
-          <RouteWrapper>
-            <CustomerCreatePage />
-          </RouteWrapper>
-        ),
-      },
-      {
-        path: ':id',
-        element: (
-          <RouteWrapper>
-            <CustomerDetailPage />
-          </RouteWrapper>
-        ),
-      },
-      {
-        path: ':id/edit',
-        element: (
-          <RouteWrapper>
-            <CustomerEditPage />
           </RouteWrapper>
         ),
       },

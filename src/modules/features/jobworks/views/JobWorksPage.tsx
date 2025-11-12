@@ -10,7 +10,7 @@ import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined
 import { Briefcase, Clock, CheckCircle, DollarSign } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { JobWorksDetailPanel } from '../components/JobWorksDetailPanel';
-import { JobWorksFormPanelEnhanced } from '../components/JobWorksFormPanelEnhanced';
+import { JobWorksFormPanel } from '../components/JobWorksFormPanel';
 import { JobWork } from '../services/jobWorksService';
 import { useJobWorks, useDeleteJobWork, useJobWorkStats } from '../hooks/useJobWorks';
 import { useAuth } from '@/contexts/AuthContext';
@@ -364,8 +364,8 @@ const JobWorksPage: React.FC = () => {
         onEdit={() => setDrawerMode('edit')}
       />
 
-      {/* Form Panel (Create/Edit) - Enhanced Enterprise Version */}
-      <JobWorksFormPanelEnhanced
+      {/* Form Panel (Create/Edit) */}
+      <JobWorksFormPanel
         jobWork={selectedJobWork}
         mode={formMode}
         isOpen={showFormPanel}

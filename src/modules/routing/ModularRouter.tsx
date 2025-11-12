@@ -55,7 +55,6 @@ const TenantConfigurationPage = lazy(() => import('@/modules/features/configurat
 const ConfigurationTestPage = lazy(() => import('@/modules/features/configuration/views/ConfigurationTestPage'));
 const PDFTemplatesPage = lazy(() => import('@/modules/features/pdf-templates/views/PDFTemplatesPage'));
 const ProductSalesPage = lazy(() => import('@/modules/features/product-sales/views/ProductSalesPage'));
-const ContractDetailPage = lazy(() => import('@/modules/features/contracts/views/ContractDetailPage'));
 
 // Super Admin modular pages
 const SuperAdminDashboardPage = lazy(() => import('@/modules/features/super-admin/views/SuperAdminDashboardPage'));

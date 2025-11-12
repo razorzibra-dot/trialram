@@ -36,7 +36,7 @@ import {
   FileTextOutlined
 } from '@ant-design/icons';
 import { useService } from '@/modules/core/hooks/useService';
-import ServiceContractFormModal from '@/components/service-contracts/ServiceContractFormModal';
+import ServiceContractFormModal from '../components/ServiceContractFormModal';
 import {
   ServiceContractType,
   ServiceContractFilters,

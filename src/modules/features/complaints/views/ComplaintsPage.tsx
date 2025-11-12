@@ -36,7 +36,6 @@ import {
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { ComplaintsFormPanel } from '@/modules/features/complaints/components/ComplaintsFormPanel';
-import ComplaintDetailModal from '@/components/complaints/ComplaintDetailModal';
 import { toast } from 'sonner';
 
 export const ComplaintsPage: React.FC = () => {
@@ -51,7 +50,6 @@ export const ComplaintsPage: React.FC = () => {
   const [engineerFilter, setEngineerFilter] = useState<string>('all');
   const [showFormPanel, setShowFormPanel] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [engineers, setEngineers] = useState<Array<{ id: string; name: string; }>>([]);
 
@@ -473,14 +471,6 @@ export const ComplaintsPage: React.FC = () => {
         onClose={handleCloseFormPanel}
       />
 
-      {selectedComplaint && (
-        <ComplaintDetailModal
-          open={showDetailModal}
-          onOpenChange={setShowDetailModal}
-          complaint={selectedComplaint}
-          onSuccess={fetchComplaints}
-        />
-      )}
     </>
   );
 };

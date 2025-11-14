@@ -9,6 +9,7 @@ import { ProductSale, ProductSaleFilters, ProductSalesResponse } from '@/types/p
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useService } from '@/modules/core/hooks/useService';
 import type { IProductSalesService } from '../services/productSalesService';
+import { LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 /** Query keys for product sales */
 export const productSalesKeys = {
@@ -46,7 +47,6 @@ export const useProductSales = (
           pageSize
         );
 
-        // Update store with response data
         setSales(response.data);
         setPagination({
           currentPage: response.page,
@@ -64,10 +64,7 @@ export const useProductSales = (
         setLoading(false);
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime)
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -81,7 +78,7 @@ export const useProductSalesByCustomer = (
   customerId: string,
   filters: ProductSaleFilters = {}
 ) => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.filtered(filters), 'customer', customerId],
@@ -89,12 +86,9 @@ export const useProductSalesByCustomer = (
       if (!customerId) {
         throw new Error('Customer ID is required');
       }
-      // Service hook is already called at top level, safe to use here
       return service.getProductSalesByCustomer(customerId, filters);
     },
+    ...LISTS_QUERY_CONFIG,
     enabled: !!customerId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    retry: 2,
   });
 };

@@ -54,7 +54,7 @@ Created typed service interfaces for ALL modules:
 **Type Safety**: Eliminated `any` types in services
 **Verification**: TypeScript compilation passes with 0 errors
 
-### Phase 3: Hooks Layer (IN PROGRESS - 10%)
+### Phase 3: Hooks Layer (IN PROGRESS - 30%)
 
 #### Phase 3.1: Sales Hooks Standardization (COMPLETED ✓)
 File: `src/modules/features/sales/hooks/useSales.ts`
@@ -69,7 +69,7 @@ File: `src/modules/features/sales/hooks/useSales.ts`
 - ✅ Ensured proper cache invalidation in all mutations
 - ✅ All query keys properly structured
 
-**Hooks Updated**: 11 hooks
+**Hooks Updated**: 13 hooks
 - useDeals ✓
 - useDeal ✓
 - useSalesByCustomer ✓
@@ -83,6 +83,68 @@ File: `src/modules/features/sales/hooks/useSales.ts`
 - useSearchDeals ✓
 - useExportDeals ✓
 - useImportDeals ✓
+
+#### Phase 3.2: Customers Hooks Standardization (COMPLETED ✓)
+File: `src/modules/features/customers/hooks/useCustomers.ts`
+
+**Changes Made**:
+- ✅ Replaced `inject()` with `useService<ICustomerService>()`
+- ✅ Removed excessive console.log statements (kept essential error logging)
+- ✅ Replaced inline configs with `LISTS_QUERY_CONFIG`, `DETAIL_QUERY_CONFIG`, `STATS_QUERY_CONFIG`
+- ✅ Simplified error handling
+- ✅ All query hooks use proper typing
+- ✅ Proper cache invalidation in mutations
+
+**Hooks Updated**: 11 hooks
+- useCustomers ✓
+- useCustomer ✓
+- useCreateCustomer ✓
+- useUpdateCustomer ✓
+- useDeleteCustomer ✓
+- useBulkCustomerOperations ✓
+- useCustomerTags ✓
+- useCustomerStats ✓
+- useCustomerExport ✓
+- useCustomerImport ✓
+- useCustomerSearch ✓
+
+#### Phase 3.3: Product Sales Hooks Standardization (COMPLETED ✓)
+Files:
+- `src/modules/features/product-sales/hooks/useProductSales.ts`
+- `src/modules/features/product-sales/hooks/useProductSale.ts`
+- `src/modules/features/product-sales/hooks/useProductSalesAnalytics.ts`
+
+**Changes Made**:
+- ✅ Replaced `any` types with `IProductSalesService`
+- ✅ Replaced inline configs with `LISTS_QUERY_CONFIG`, `DETAIL_QUERY_CONFIG`, `STATS_QUERY_CONFIG`
+- ✅ Replaced direct factory imports with `useService` pattern
+- ✅ All hooks properly typed
+- ✅ Consistent error handling
+
+**Hooks Updated**: 12 hooks
+- useProductSales ✓
+- useProductSalesByCustomer ✓
+- useProductSale ✓
+- useProductSaleWithContract ✓
+- useProductSalesAnalytics ✓
+- useTopProductSales ✓
+- useTopCustomerSales ✓
+- useSalesRevenueTrend ✓
+- useExpiringWarranties ✓
+- useSalesSummaryStats ✓
+- useRenewalOpportunities ✓
+
+#### Remaining Modules (Phase 3.4 - 3.13):
+- [ ] Super Admin (6 hooks)
+- [ ] Contracts
+- [ ] Tickets
+- [ ] Masters (Companies, Products)
+- [ ] Dashboard
+- [ ] Configuration
+- [ ] Service Contracts
+- [ ] User Management
+- [ ] JobWorks
+- [ ] Complaints
 
 ## Next Steps
 1. Continue Phase 3: Standardize hooks in remaining 13 modules

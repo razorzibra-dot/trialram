@@ -7,15 +7,18 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
 import { useProductSalesStore } from '../store/productSalesStore';
-import { productSaleService as factoryProductSaleService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
+import type { IProductSalesService } from '../services/productSalesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { productSalesKeys } from './useProductSales';
+import { STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 /**
  * Hook for fetching product sales analytics data
  * @returns Query result with analytics data
  */
 export const useProductSalesAnalytics = () => {
+  const service = useService<IProductSalesService>('productSaleService');
   const { user } = useAuth();
   const tenantId = user?.tenant_id || 'default-tenant';
   const { setAnalytics, setError, clearError } = useProductSalesStore();
@@ -25,9 +28,8 @@ export const useProductSalesAnalytics = () => {
     queryFn: async () => {
       clearError();
       try {
-        const analytics = await factoryProductSaleService.getProductSalesAnalytics(tenantId);
+        const analytics = await service.getProductSalesAnalytics(tenantId);
 
-        // Transform and update store
         const analyticsState = {
           totalSales: analytics.totalSales ?? 0,
           totalRevenue: analytics.totalRevenue ?? 0,
@@ -53,7 +55,7 @@ export const useProductSalesAnalytics = () => {
           ),
           monthlyTrend: analytics.revenueByMonth ? Object.entries(analytics.revenueByMonth).map(([month, revenue]) => ({
             month,
-            sales: 0, // Calculated from topProducts if needed
+            sales: 0,
             revenue,
           })) || [] : [],
         };
@@ -67,10 +69,7 @@ export const useProductSalesAnalytics = () => {
         throw error;
       }
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes (was cacheTime)
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -80,16 +79,14 @@ export const useProductSalesAnalytics = () => {
  * @returns Query result with top products
  */
 export const useTopProductSales = (limit: number = 10) => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'top-products', limit],
     queryFn: async () => {
       return service.getTopProducts(limit);
     },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -99,16 +96,14 @@ export const useTopProductSales = (limit: number = 10) => {
  * @returns Query result with top customers
  */
 export const useTopCustomerSales = (limit: number = 10) => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'top-customers', limit],
     queryFn: async () => {
       return service.getTopCustomers(limit);
     },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -118,12 +113,11 @@ export const useTopCustomerSales = (limit: number = 10) => {
  * @returns Query result with trend data
  */
 export const useSalesRevenueTrend = (monthsBack: number = 12) => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'revenue-trend', monthsBack],
     queryFn: async () => {
-      // Calculate date range
       const endDate = new Date();
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
@@ -133,9 +127,7 @@ export const useSalesRevenueTrend = (monthsBack: number = 12) => {
         endDate.toISOString().split('T')[0]
       );
     },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -145,16 +137,14 @@ export const useSalesRevenueTrend = (monthsBack: number = 12) => {
  * @returns Query result with expiring warranties
  */
 export const useExpiringWarranties = (daysAhead: number = 30) => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'expiring-warranties', daysAhead],
     queryFn: async () => {
       return service.getExpiringWarranties(daysAhead);
     },
-    staleTime: 60 * 60 * 1000, // 1 hour (less frequent updates for this)
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -163,16 +153,14 @@ export const useExpiringWarranties = (daysAhead: number = 30) => {
  * @returns Query result with summary statistics
  */
 export const useSalesSummaryStats = () => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'summary-stats'],
     queryFn: async () => {
       return service.getSummaryStats();
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000,
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -181,15 +169,13 @@ export const useSalesSummaryStats = () => {
  * @returns Query result with renewal opportunities
  */
 export const useRenewalOpportunities = () => {
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: [...productSalesKeys.analytics(), 'renewal-opportunities'],
     queryFn: async () => {
       return service.getRenewalOpportunities();
     },
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 2 * 60 * 60 * 1000,
-    retry: 2,
+    ...STATS_QUERY_CONFIG,
   });
 };

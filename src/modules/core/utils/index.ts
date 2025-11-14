@@ -8,6 +8,9 @@ export * from '@/lib/utils';
 export * from '@/utils/accessibility';
 export * from '@/utils/sessionManager';
 
+// Error handling utilities
+export * from './errorHandler';
+
 // Additional utility functions
 export const sleep = (ms: number): Promise<void> => 
   new Promise(resolve => setTimeout(resolve, ms));

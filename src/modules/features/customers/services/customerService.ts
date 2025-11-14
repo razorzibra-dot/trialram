@@ -58,7 +58,35 @@ export interface CustomerFilters extends FilterOptions {
   };
 }
 
-export class CustomerService extends BaseService {
+export interface CustomerStats {
+  total: number;
+  active: number;
+  inactive: number;
+  prospects: number;
+  byIndustry: Record<string, number>;
+  bySize: Record<string, number>;
+  recentlyAdded: number;
+}
+
+export interface ICustomerService {
+  getCustomers(filters?: CustomerFilters): Promise<PaginatedResponse<Customer>>;
+  getCustomer(id: string): Promise<Customer | null>;
+  createCustomer(data: CreateCustomerData): Promise<Customer>;
+  updateCustomer(id: string, data: Partial<CreateCustomerData>): Promise<Customer>;
+  deleteCustomer(id: string): Promise<void>;
+  bulkDeleteCustomers(ids: string[]): Promise<void>;
+  bulkUpdateCustomers(ids: string[], updates: Partial<CreateCustomerData>): Promise<Customer[]>;
+  getTags(): Promise<CustomerTag[]>;
+  createTag(name: string, color: string): Promise<CustomerTag>;
+  getIndustries(): Promise<string[]>;
+  getSizes(): Promise<string[]>;
+  exportCustomers(format?: 'csv' | 'json'): Promise<string>;
+  importCustomers(csv: string): Promise<{ success: number; errors: string[] }>;
+  searchCustomers(query: string): Promise<Customer[]>;
+  getCustomerStats(): Promise<CustomerStats>;
+}
+
+export class CustomerService extends BaseService implements ICustomerService {
   /**
    * Get paginated customers with filters
    */
@@ -297,15 +325,7 @@ export class CustomerService extends BaseService {
   /**
    * Get customer statistics
    */
-  async getCustomerStats(): Promise<{
-    total: number;
-    active: number;
-    inactive: number;
-    prospects: number;
-    byIndustry: Record<string, number>;
-    bySize: Record<string, number>;
-    recentlyAdded: number;
-  }> {
+  async getCustomerStats(): Promise<CustomerStats> {
     try {
       console.log('[CustomerService] getCustomerStats() called');
       

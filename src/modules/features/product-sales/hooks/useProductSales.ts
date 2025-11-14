@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ProductSale, ProductSaleFilters, ProductSalesResponse } from '@/types/productSales';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useService } from '@/modules/core/hooks/useService';
+import type { IProductSalesService } from '../services/productSalesService';
 
 /** Query keys for product sales */
 export const productSalesKeys = {
@@ -31,7 +32,7 @@ export const useProductSales = (
   pageSize: number = 20
 ) => {
   const { setSales, setLoading, setPagination, setError, clearError } = useProductSalesStore();
-  const service = useService<any>('productSaleService');
+  const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
     queryKey: productSalesKeys.filtered({ ...filters, page, pageSize }),

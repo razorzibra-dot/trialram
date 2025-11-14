@@ -6,14 +6,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { Deal } from '@/types/crm';
-import { SalesService, SalesFilters, CreateDealData, DealStats } from '../services/salesService';
+import { SalesFilters, CreateDealData } from '../services/salesService';
 import { useSalesStore } from '../store/salesStore';
 import { salesService as factorySalesService } from '@/services/serviceFactory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/hooks/useNotification';
-
-// Module service instance
-const moduleSalesService = new SalesService();
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants';
 
 // Query Keys
 export const salesKeys = {
@@ -29,23 +27,16 @@ export const salesKeys = {
  * Hook for fetching deals with filters
  */
 export const useDeals = (filters: SalesFilters = {}) => {
-  console.log('[useDeals] 🚀 Hook called with filters:', filters);
-  
   const { currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
-  console.log('[useDeals] ✅ Factory SalesService obtained with tenantId:', tenantId);
-  
   const { setDeals, setLoading, setPagination } = useSalesStore();
 
   return useQuery({
     queryKey: [...salesKeys.deals(), filters, tenantId],
     queryFn: async () => {
-      console.log('[useDeals] 🔄 queryFn executing with tenantId:', tenantId);
       setLoading(true);
       try {
-        console.log('[useDeals] 📞 Calling factorySalesService.getDeals...');
         const response = await factorySalesService.getDeals(filters);
-        console.log('[useDeals] ✅ Got response:', { dataCount: response.data?.length, total: response.total });
         setDeals(response.data);
         setPagination({ 
           page: response.page, 
@@ -55,14 +46,13 @@ export const useDeals = (filters: SalesFilters = {}) => {
         });
         return response;
       } catch (error) {
-        console.error('[useDeals] ❌ Error:', error);
+        console.error('[useDeals] Error fetching deals:', error);
         throw error;
       } finally {
         setLoading(false);
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -70,8 +60,6 @@ export const useDeals = (filters: SalesFilters = {}) => {
  * Hook for fetching a single deal
  */
 export const useDeal = (id: string) => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { setSelectedDeal } = useSalesStore();
 
   return useQuery({
@@ -82,7 +70,7 @@ export const useDeal = (id: string) => {
       return deal;
     },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    ...DETAIL_QUERY_CONFIG,
   });
 };
 
@@ -100,8 +88,7 @@ export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {
       return response;
     },
     enabled: !!customerId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -109,19 +96,16 @@ export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {
  * Hook for fetching sales statistics
  */
 export const useSalesStats = () => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { setStats } = useSalesStore();
 
   return useQuery({
     queryKey: salesKeys.stats(),
     queryFn: async () => {
-      // Use module service which transforms data to expected format
-      const stats = await moduleSalesService.getSalesStats();
+      const stats = await factorySalesService.getSalesStats();
       setStats(stats);
       return stats;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -129,13 +113,10 @@ export const useSalesStats = () => {
  * Hook for fetching deal stages
  */
 export const useDealStages = () => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
-
   return useQuery({
     queryKey: salesKeys.stages(),
     queryFn: () => factorySalesService.getDealStages(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000, // 1 hour - rarely changes
   });
 };
 
@@ -144,8 +125,6 @@ export const useDealStages = () => {
  */
 export const useCreateDeal = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { addDeal, setCreating } = useSalesStore();
   const { success, error } = useNotification();
 
@@ -175,8 +154,6 @@ export const useCreateDeal = () => {
  */
 export const useUpdateDeal = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { updateDeal, setUpdating } = useSalesStore();
   const { success, error } = useNotification();
 
@@ -184,19 +161,15 @@ export const useUpdateDeal = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateDealData> }) => {
       setUpdating(true);
       try {
-        console.log('🎯 [useUpdateDeal] mutationFn starting:', { id, dataKeys: Object.keys(data || {}) });
-        const result = await factorySalesService.updateDeal(id, data);
-        console.log('✅ [useUpdateDeal] mutationFn completed:', { id, resultId: result.id });
-        return result;
+        return await factorySalesService.updateDeal(id, data);
       } catch (err) {
-        console.error('❌ [useUpdateDeal] mutationFn error:', err);
+        console.error('[useUpdateDeal] Error updating deal:', err);
         throw err;
       } finally {
         setUpdating(false);
       }
     },
     onSuccess: (updatedDeal) => {
-      console.log('✅ [useUpdateDeal] onSuccess triggered:', updatedDeal.id);
       updateDeal(updatedDeal.id, updatedDeal);
       queryClient.invalidateQueries({ queryKey: salesKeys.deal(updatedDeal.id) });
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
@@ -204,7 +177,7 @@ export const useUpdateDeal = () => {
       success('Deal updated successfully');
     },
     onError: (err) => {
-      console.error('❌ [useUpdateDeal] onError triggered:', err);
+      console.error('[useUpdateDeal] Error in mutation:', err);
       error(err instanceof Error ? err.message : 'Failed to update deal');
     },
   });
@@ -215,8 +188,6 @@ export const useUpdateDeal = () => {
  */
 export const useDeleteDeal = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { removeDeal, setDeleting } = useSalesStore();
   const { success, error } = useNotification();
 
@@ -247,8 +218,6 @@ export const useDeleteDeal = () => {
  */
 export const useUpdateDealStage = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { updateDeal } = useSalesStore();
   const { success, error } = useNotification();
 
@@ -273,8 +242,6 @@ export const useUpdateDealStage = () => {
  */
 export const useBulkDeals = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { clearSelection } = useSalesStore();
   const { success, error } = useNotification();
 
@@ -319,9 +286,6 @@ export const useBulkDeals = () => {
  * Hook for searching deals
  */
 export const useSearchDeals = () => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
-
   return useCallback(
     async (query: string) => {
       if (!query.trim()) return [];
@@ -335,8 +299,6 @@ export const useSearchDeals = () => {
  * Hook for exporting deals
  */
 export const useExportDeals = () => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
   const { success, error } = useNotification();
 
   return useMutation({
@@ -369,9 +331,7 @@ export const useExportDeals = () => {
  */
 export const useImportDeals = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
-  const { toast } = useToast();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: async (csv: string) => {
@@ -381,19 +341,13 @@ export const useImportDeals = () => {
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
       
-      toast({
-        title: 'Import Complete',
-        description: `${result.success} deals imported successfully${
-          result.errors.length > 0 ? `, ${result.errors.length} errors` : ''
-        }`,
-      });
+      const message = `${result.success} deals imported successfully${
+        result.errors.length > 0 ? `, ${result.errors.length} errors` : ''
+      }`;
+      success(message);
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to import deals',
-        variant: 'destructive',
-      });
+    onError: (err) => {
+      error(err instanceof Error ? err.message : 'Failed to import deals');
     },
   });
 };

@@ -22,7 +22,32 @@ export interface ProductStats {
   averagePrice: number;
 }
 
-export class ProductService extends BaseService {
+/**
+ * Product Service Interface
+ * All product operations must implement this interface
+ */
+export interface IProductService {
+  getProducts(filters?: ProductFilters): Promise<PaginatedResponse<Product>>;
+  getProduct(id: string): Promise<Product>;
+  createProduct(data: ProductFormData): Promise<Product>;
+  updateProduct(id: string, data: Partial<ProductFormData>): Promise<Product>;
+  deleteProduct(id: string): Promise<void>;
+  updateProductStatus(id: string, status: string): Promise<Product>;
+  updateProductStock(id: string, quantity: number): Promise<Product>;
+  bulkUpdateProducts(ids: string[], updates: Partial<ProductFormData>): Promise<Product[]>;
+  bulkDeleteProducts(ids: string[]): Promise<void>;
+  getProductStats(): Promise<ProductStats>;
+  searchProducts(query: string): Promise<Product[]>;
+  getProductStatuses(): Promise<string[]>;
+  getProductCategories(): Promise<string[]>;
+  getProductTypes(): Promise<string[]>;
+  getLowStockProducts(): Promise<Product[]>;
+  getOutOfStockProducts(): Promise<Product[]>;
+  exportProducts(format?: 'csv' | 'json'): Promise<string>;
+  importProducts(csv: string): Promise<{ success: number; errors: string[] }>;
+}
+
+export class ProductService extends BaseService implements IProductService {
   /**
    * Get products with filtering and pagination
    * @param {ProductFilters} filters - Filter options (search, category, status, price range)

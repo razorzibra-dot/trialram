@@ -19,7 +19,29 @@ export interface CompanyStats {
   recentlyAdded: number;
 }
 
-export class CompanyService extends BaseService {
+/**
+ * Company Service Interface
+ * All company operations must implement this interface
+ */
+export interface ICompanyService {
+  getCompanies(filters?: CompanyFilters): Promise<PaginatedResponse<Company>>;
+  getCompany(id: string): Promise<Company>;
+  createCompany(data: CompanyFormData): Promise<Company>;
+  updateCompany(id: string, data: Partial<CompanyFormData>): Promise<Company>;
+  deleteCompany(id: string): Promise<void>;
+  updateCompanyStatus(id: string, status: string): Promise<Company>;
+  bulkUpdateCompanies(ids: string[], updates: Partial<CompanyFormData>): Promise<Company[]>;
+  bulkDeleteCompanies(ids: string[]): Promise<void>;
+  getCompanyStats(): Promise<CompanyStats>;
+  searchCompanies(query: string): Promise<Company[]>;
+  getCompanyStatuses(): Promise<string[]>;
+  getCompanySizes(): Promise<string[]>;
+  getIndustries(): Promise<string[]>;
+  exportCompanies(format?: 'csv' | 'json'): Promise<string>;
+  importCompanies(csv: string): Promise<{ success: number; errors: string[] }>;
+}
+
+export class CompanyService extends BaseService implements ICompanyService {
   /**
    * Get companies with filtering and pagination
    */

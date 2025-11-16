@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Table, Button, Space, Input, Select, Row, Col, Tag, Empty, Spin, Popconfirm, Card } from 'antd';
+import type { SorterResult } from 'antd/es/table/interface';
 import { PlusOutlined, DeleteOutlined, EyeOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { Ticket } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
@@ -65,7 +66,7 @@ export const TicketsPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [priorityFilter, setPriorityFilter] = useState<string | undefined>(undefined);
-  const [sortedInfo, setSortedInfo] = useState<any>(null);
+  const [sortedInfo, setSortedInfo] = useState<SorterResult<Ticket> | SorterResult<Ticket>[]>(null);
 
   // Filtered data based on search and filters
   const filteredTickets = useMemo(() => {
@@ -178,7 +179,7 @@ export const TicketsPage: React.FC = () => {
         { text: 'Resolved', value: 'resolved' },
         { text: 'Closed', value: 'closed' },
       ],
-      onFilter: (value: any, record: Ticket) => record.status === value,
+      onFilter: (value: string | number | boolean, record: Ticket) => record.status === value,
     },
     {
       title: 'Priority',
@@ -197,7 +198,7 @@ export const TicketsPage: React.FC = () => {
         { text: 'High', value: 'high' },
         { text: 'Urgent', value: 'urgent' },
       ],
-      onFilter: (value: any, record: Ticket) => record.priority === value,
+      onFilter: (value: string | number | boolean, record: Ticket) => record.priority === value,
     },
     {
       title: 'Assigned To',
@@ -233,7 +234,7 @@ export const TicketsPage: React.FC = () => {
       key: 'actions',
       width: 120,
       fixed: 'right' as const,
-      render: (_: any, record: Ticket) => (
+      render: (_: unknown, record: Ticket) => (
         <Space size="small">
           <Button
             type="text"

@@ -89,7 +89,7 @@ class ProductSalesAuditService {
     try {
       // Extract changed fields only
       const changes: Record<string, unknown> = {};
-      const fields = [
+      const fields: (keyof ProductSale)[] = [
         'customer_id',
         'customer_name',
         'product_id',
@@ -102,8 +102,8 @@ class ProductSalesAuditService {
       ];
 
       fields.forEach(field => {
-        const oldValue = (oldSale as any)[field];
-        const newValue = (newSale as any)[field];
+        const oldValue = oldSale[field];
+        const newValue = newSale[field];
         if (oldValue !== newValue) {
           changes[field] = {
             from: oldValue,
@@ -122,10 +122,10 @@ class ProductSalesAuditService {
         newSale.id,
         {
           before: Object.fromEntries(
-            Object.keys(changes).map(key => [key, (oldSale as any)[key]])
+            Object.keys(changes).map(key => [key, oldSale[key as keyof ProductSale]])
           ),
           after: Object.fromEntries(
-            Object.keys(changes).map(key => [key, (newSale as any)[key]])
+            Object.keys(changes).map(key => [key, newSale[key as keyof ProductSale]])
           )
         },
         {

@@ -17,39 +17,39 @@ import {
 /**
  * Row mapper: converts snake_case from DB to camelCase
  */
-const mapMetricsRow = (row: any): AuditDashboardMetrics => ({
-  periodStart: row.period_start,
-  periodEnd: row.period_end,
-  totalImpersonationSessions: row.total_impersonation_sessions || 0,
-  activeImpersonationSessions: row.active_impersonation_sessions || 0,
-  unauthorizedAccessAttempts: row.unauthorized_access_attempts || 0,
-  totalAuditLogEntries: row.total_audit_log_entries || 0,
-  averageSessionDuration: row.average_session_duration || 0,
-  peakActivityHour: row.peak_activity_hour || 0,
+const mapMetricsRow = (row: Record<string, unknown>): AuditDashboardMetrics => ({
+  periodStart: row.period_start as string,
+  periodEnd: row.period_end as string,
+  totalImpersonationSessions: (row.total_impersonation_sessions as number) || 0,
+  activeImpersonationSessions: (row.active_impersonation_sessions as number) || 0,
+  unauthorizedAccessAttempts: (row.unauthorized_access_attempts as number) || 0,
+  totalAuditLogEntries: (row.total_audit_log_entries as number) || 0,
+  averageSessionDuration: (row.average_session_duration as number) || 0,
+  peakActivityHour: (row.peak_activity_hour as number) || 0,
 });
 
-const mapActionByTypeRow = (row: any): ActionByType => ({
-  type: row.action_type,
-  count: row.count || 0,
-  percentage: row.percentage || 0,
+const mapActionByTypeRow = (row: Record<string, unknown>): ActionByType => ({
+  type: row.action_type as string,
+  count: (row.count as number) || 0,
+  percentage: (row.percentage as number) || 0,
 });
 
-const mapActionByUserRow = (row: any): ActionByUser => ({
-  userId: row.user_id,
-  userName: row.user_name,
-  userEmail: row.user_email,
-  actionCount: row.action_count || 0,
-  sessionCount: row.session_count,
-  unauthorizedAttempts: row.unauthorized_attempts,
+const mapActionByUserRow = (row: Record<string, unknown>): ActionByUser => ({
+  userId: row.user_id as string,
+  userName: row.user_name as string,
+  userEmail: row.user_email as string,
+  actionCount: (row.action_count as number) || 0,
+  sessionCount: row.session_count as number,
+  unauthorizedAttempts: row.unauthorized_attempts as number,
 });
 
-const mapTimelineRow = (row: any): TimelineEvent => ({
-  timestamp: row.timestamp,
-  eventType: row.event_type,
-  description: row.description,
-  userId: row.user_id,
-  impersonatedUserId: row.impersonated_user_id,
-  severity: row.severity || 'low',
+const mapTimelineRow = (row: Record<string, unknown>): TimelineEvent => ({
+  timestamp: row.timestamp as string,
+  eventType: row.event_type as string,
+  description: row.description as string,
+  userId: row.user_id as string,
+  impersonatedUserId: row.impersonated_user_id as string,
+  severity: (row.severity as string) || 'low',
 });
 
 /**
@@ -233,17 +233,17 @@ class SupabaseAuditDashboardService {
           acc[userId].actionCount++;
           return acc;
         },
-        {} as any
+        {} as Record<string, { userId: string; actionCount: number; sessions: number; unauthorized: number; user: unknown }>
       );
 
       return Object.values(grouped)
         .slice(0, limit)
-        .map((item: any) => ({
+        .map((item: { userId: string; actionCount: number; sessions: number; unauthorized: number; user: unknown }) => ({
           userId: item.userId,
           userName: item.user
-            ? `${item.user.first_name || ''} ${item.user.last_name || ''}`.trim()
+            ? `${(item.user as { first_name?: string; last_name?: string }).first_name || ''} ${(item.user as { first_name?: string; last_name?: string }).last_name || ''}`.trim()
             : 'Unknown',
-          userEmail: item.user?.email || 'unknown@example.com',
+          userEmail: (item.user as { email?: string })?.email || 'unknown@example.com',
           actionCount: item.actionCount,
           sessionCount: item.sessions,
           unauthorizedAttempts: item.unauthorized,
@@ -291,7 +291,7 @@ class SupabaseAuditDashboardService {
 
       return data.map(row => ({
         timestamp: row.timestamp,
-        eventType: row.action as any,
+        eventType: row.action as string,
         description: row.description || `${row.action} performed`,
         userId: row.user_id,
         impersonatedUserId: row.impersonated_user_id,
@@ -351,18 +351,18 @@ class SupabaseAuditDashboardService {
           acc[userId].count++;
           return acc;
         },
-        {} as any
+        {} as Record<string, { userId: string; count: number; user: unknown }>
       );
 
-      return Object.values(grouped)
-        .sort((a: any, b: any) => b.count - a.count)
+      return (Object.values(grouped) as { userId: string; count: number; user: unknown }[])
+        .sort((a, b) => b.count - a.count)
         .slice(0, limit)
-        .map((item: any) => ({
+        .map((item) => ({
           userId: item.userId,
           userName: item.user
-            ? `${item.user.first_name || ''} ${item.user.last_name || ''}`.trim()
+            ? `${(item.user as { first_name?: string; last_name?: string }).first_name || ''} ${(item.user as { first_name?: string; last_name?: string }).last_name || ''}`.trim()
             : 'Unknown',
-          userEmail: item.user?.email || 'unknown@example.com',
+          userEmail: (item.user as { email?: string })?.email || 'unknown@example.com',
           actionCount: item.count,
           unauthorizedAttempts: item.count,
           sessionCount: 0,

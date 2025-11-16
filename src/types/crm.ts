@@ -112,6 +112,7 @@ export interface Ticket {
 
   // Customer Relationship
   customer_id?: string; // Optional to match backend nullable
+  customer_name?: string; // Added for display purposes
 
   // Status and Classification
   status: 'open' | 'in_progress' | 'pending' | 'resolved' | 'closed';
@@ -122,6 +123,7 @@ export interface Ticket {
 
   // Assignment and Reporting
   assigned_to?: string; // Optional to match backend
+  assigned_to_name?: string; // Added for display purposes
   reported_by?: string;
 
   // Dates and SLA

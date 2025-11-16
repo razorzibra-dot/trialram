@@ -36,23 +36,23 @@ import { AuditLog } from '../../../services/auditService';
  * Row mapper: converts snake_case from DB to camelCase for TypeScript
  * Ensures consistent field naming across layers
  */
-const mapAuditLogRow = (row: any): AuditLog => ({
-  id: row.id,
-  action: row.action,
-  resource: row.resource,
-  resourceId: row.resource_id,
-  userId: row.user_id,
+const mapAuditLogRow = (row: Record<string, unknown>): AuditLog => ({
+  id: row.id as string,
+  action: row.action as string,
+  resource: row.resource as string,
+  resourceId: row.resource_id as string,
+  userId: row.user_id as string,
   user: {
-    id: row.user_id,
-    name: row.user_name || 'Unknown',
-    email: row.user_email || 'unknown@example.com'
+    id: row.user_id as string,
+    name: (row.user_name as string) || 'Unknown',
+    email: (row.user_email as string) || 'unknown@example.com'
   },
-  changes: row.changes || undefined,
-  metadata: row.metadata || undefined,
-  ipAddress: row.ip_address || '0.0.0.0',
-  userAgent: row.user_agent || 'Unknown',
-  createdAt: row.created_at,
-  tenantId: row.tenant_id
+  changes: row.changes as { before?: unknown; after?: unknown } || undefined,
+  metadata: row.metadata as Record<string, unknown> || undefined,
+  ipAddress: (row.ip_address as string) || '0.0.0.0',
+  userAgent: (row.user_agent as string) || 'Unknown',
+  createdAt: row.created_at as string,
+  tenantId: row.tenant_id as string
 });
 
 /**
@@ -190,7 +190,7 @@ class SupabaseAuditService {
 
       const actionBreakdown = actionData
         ? Array.from(
-            actionData.reduce((acc: Map<string, number>, log: any) => {
+            actionData.reduce((acc: Map<string, number>, log: { action: string }) => {
               acc.set(log.action, (acc.get(log.action) || 0) + 1);
               return acc;
             }, new Map())
@@ -205,7 +205,7 @@ class SupabaseAuditService {
 
       const resourceBreakdown = resourceData
         ? Array.from(
-            resourceData.reduce((acc: Map<string, number>, log: any) => {
+            resourceData.reduce((acc: Map<string, number>, log: { resource: string }) => {
               acc.set(log.resource, (acc.get(log.resource) || 0) + 1);
               return acc;
             }, new Map())
@@ -220,7 +220,7 @@ class SupabaseAuditService {
 
       const userActivity = userData
         ? Array.from(
-            userData.reduce((acc: Map<string, any>, log: any) => {
+            userData.reduce((acc: Map<string, { count: number; name: string }>, log: { user_id: string; user_name: string }) => {
               const existing = acc.get(log.user_id) || { count: 0, name: log.user_name };
               acc.set(log.user_id, { ...existing, count: existing.count + 1 });
               return acc;

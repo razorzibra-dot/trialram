@@ -7,6 +7,7 @@
 import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
 import { authService } from '@/services/serviceFactory';
 import { ProductSale, ProductSaleStatus } from '@/types/productSales';
+import type { UINotificationPreferences as NotificationPreferences } from '@/types/notifications';
 
 export interface NotificationPayload {
   type: 'status_change' | 'approval_required' | 'shipment_ready' | 'delivery_confirmed' | 'invoice_generated' | 'payment_received' | 'sale_cancelled' | 'refund_processed';
@@ -15,7 +16,7 @@ export interface NotificationPayload {
   sale_id: string;
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   action_url?: string;
   action_label?: string;
 }
@@ -442,7 +443,7 @@ class ProductSalesNotificationService {
   /**
    * Update user notification preferences
    */
-  async updateUserNotificationPreferences(preferences: any): Promise<void> {
+  async updateUserNotificationPreferences(preferences: Partial<NotificationPreferences>): Promise<void> {
     try {
       await factoryNotificationService.updateNotificationPreferences(preferences);
     } catch (error) {
@@ -455,7 +456,7 @@ class ProductSalesNotificationService {
    * Private: Get enabled notification channels based on preferences
    */
   private getEnabledChannels(
-    preferences: any,
+    preferences: NotificationPreferences,
     notificationType: string
   ): ('sms' | 'email' | 'in_app')[] {
     const channels: ('sms' | 'email' | 'in_app')[] = [];

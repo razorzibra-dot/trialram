@@ -10,6 +10,7 @@
  */
 
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
 import { moduleRegistry } from '../ModuleRegistry';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { RootRedirect } from './RootRedirect';
@@ -74,7 +75,7 @@ const SuperAdminConfigurationPage = lazy(() => import('@/modules/features/super-
  * @param moduleName - The module name for access control
  * @returns Wrapped route with access guards
  */
-function wrapRouteWithModuleGuard(route: any, moduleName: string): any {
+function wrapRouteWithModuleGuard(route: RouteObject, moduleName: string): RouteObject {
   // Don't wrap if it's just a redirect or navigation route
   if (route.path === '' || route.index === true) {
     return route;
@@ -85,7 +86,7 @@ function wrapRouteWithModuleGuard(route: any, moduleName: string): any {
 
   // If the route has children, recursively wrap them too
   if (route.children && Array.isArray(route.children)) {
-    wrappedRoute.children = route.children.map((childRoute: any) => {
+    wrappedRoute.children = route.children.map((childRoute: RouteObject) => {
       // Preserve index routes and nested routes
       if (childRoute.index === true || (childRoute.path === '' && childRoute.element)) {
         return childRoute;

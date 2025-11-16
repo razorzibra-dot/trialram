@@ -22,32 +22,32 @@ import {
 /**
  * Row mapper: converts snake_case from DB to camelCase for TypeScript
  */
-const mapRetentionPolicyRow = (row: any): RetentionPolicy => ({
-  id: row.id,
-  name: row.name,
-  description: row.description,
-  retentionDays: row.retention_days,
-  archiveBeforeDelete: row.archive_before_delete,
-  archiveLocation: row.archive_location || undefined,
-  logTypes: row.log_types || undefined,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  tenantId: row.tenant_id
+const mapRetentionPolicyRow = (row: Record<string, unknown>): RetentionPolicy => ({
+  id: row.id as string,
+  name: row.name as string,
+  description: row.description as string,
+  retentionDays: row.retention_days as number,
+  archiveBeforeDelete: row.archive_before_delete as boolean,
+  archiveLocation: row.archive_location as string || undefined,
+  logTypes: row.log_types as string[] || undefined,
+  createdAt: row.created_at as string,
+  updatedAt: row.updated_at as string,
+  tenantId: row.tenant_id as string
 });
 
-const mapArchiveRow = (row: any): AuditLogArchive => ({
-  id: row.id,
-  archiveDate: row.archive_date,
-  logCount: row.log_count,
+const mapArchiveRow = (row: Record<string, unknown>): AuditLogArchive => ({
+  id: row.id as string,
+  archiveDate: row.archive_date as string,
+  logCount: row.log_count as number,
   dateRange: {
-    from: row.date_range_from,
-    to: row.date_range_to
+    from: row.date_range_from as string,
+    to: row.date_range_to as string
   },
-  storageLocation: row.storage_location,
-  sizeBytes: row.size_bytes,
-  checksum: row.checksum,
-  createdAt: row.created_at,
-  tenantId: row.tenant_id
+  storageLocation: row.storage_location as string,
+  sizeBytes: row.size_bytes as number,
+  checksum: row.checksum as string,
+  createdAt: row.created_at as string,
+  tenantId: row.tenant_id as string
 });
 
 /**
@@ -160,7 +160,7 @@ class SupabaseAuditRetentionService {
         throw new Error('Cannot modify the default retention policy');
       }
 
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
       if (updates.name) updateData.name = updates.name;
       if (updates.description) updateData.description = updates.description;
       if (updates.retentionDays) updateData.retention_days = updates.retentionDays;
@@ -406,7 +406,7 @@ class SupabaseAuditRetentionService {
 
       const { data: archiveData, count: archiveCount } = await archivesQuery;
 
-      const archivedLogsCount = (archiveData || []).reduce((sum: number, a: any) => sum + a.log_count, 0);
+      const archivedLogsCount = (archiveData || []).reduce((sum: number, a: { log_count: number }) => sum + a.log_count, 0);
 
       // Get last cleanup
       let cleanupQuery = supabase
@@ -536,7 +536,7 @@ class SupabaseAuditRetentionService {
 
       if (error) throw error;
 
-      return (data || []).map((row: any) => ({
+      return (data || []).map((row: Record<string, unknown>) => ({
         success: row.success,
         logsDeleted: row.logs_deleted,
         logsArchived: row.logs_archived,

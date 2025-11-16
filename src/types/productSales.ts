@@ -3,15 +3,20 @@
 export interface ProductSale {
   id: string;
   customer_id: string;
+  customer_name?: string; // Added for audit logging
   product_id: string;
+  product_name?: string; // Added for audit logging
   units: number;
   cost_per_unit: number;
   total_cost: number;
+  total_amount?: number; // Added for notifications
   delivery_date: string;
   warranty_expiry: string;
   status: 'new' | 'renewed' | 'expired';
   notes: string;
   attachments: FileAttachment[];
+  items?: unknown[]; // Added for notifications
+  tracking_number?: string; // Added for notifications
   service_contract_id?: string;
   tenant_id: string;
   created_at: string;

@@ -3,8 +3,8 @@
  * Support ticket management and tracking
  */
 
-// Service exports
-export * from './services/ticketService';
+// Service type exports only
+export type { TicketFilters, CreateTicketData, TicketStats } from './services/ticketService';
 
 // Hook exports
 export * from './hooks/useTickets';
@@ -29,11 +29,11 @@ export const ticketsModule = {
   
   // Initialize the module
   async initialize() {
-    const { registerService } = await import('@/modules/core/services/ServiceContainer');
-    const { TicketService } = await import('./services/ticketService');
+    const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
+    const { ticketService } = await import('@/services/serviceFactory');
     
-    // Register ticket service
-    registerService('ticketService', TicketService);
+    // Register ticket service from factory
+    registerServiceInstance('ticketService', ticketService);
     
     console.log('Tickets module initialized');
   },

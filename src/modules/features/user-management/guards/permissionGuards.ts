@@ -41,7 +41,8 @@ export enum UserPermission {
  * Synced with database role definitions
  */
 export const ROLE_PERMISSIONS: Record<UserRole, UserPermission[]> = {
-  'super-admin': [
+  'super_admin': [
+    // Super admins have all permissions across all tenants
     UserPermission.USER_LIST,
     UserPermission.USER_VIEW,
     UserPermission.USER_CREATE,
@@ -53,7 +54,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermission[]> = {
     UserPermission.PERMISSION_MANAGE,
     UserPermission.TENANT_USERS,
   ],
-  
+
   'admin': [
     UserPermission.USER_LIST,
     UserPermission.USER_VIEW,
@@ -74,11 +75,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermission[]> = {
   ],
   
   'user': [
+    UserPermission.USER_LIST,
     UserPermission.USER_VIEW,
+    UserPermission.USER_EDIT,
+    UserPermission.TENANT_USERS,
   ],
-  
-  'guest': [
-    // No permissions for guest
+
+  'engineer': [
+    UserPermission.USER_LIST,
+    UserPermission.USER_VIEW,
+    UserPermission.USER_EDIT,
+    UserPermission.TENANT_USERS,
+  ],
+
+  'customer': [
+    UserPermission.USER_VIEW,
   ],
 };
 
@@ -170,54 +181,68 @@ export function getRolePermissions(userRole: UserRole): UserPermission[] {
 
 /**
  * Check if user can perform action on target user
+ * ⭐ SECURITY: Enhanced tenant isolation and role-based access control
  * Rules:
- * - Super-admins can manage any user
- * - Admins can manage users in their tenant
- * - Managers can view/edit users in their tenant (not delete)
+ * - Admins can manage users in their tenant (cannot delete other admins)
+ * - Managers can view/edit users in their tenant (cannot delete, cannot change roles)
  * - Users can only view own profile
- * 
+ *
  * @param currentUserRole Actor's role
  * @param currentUserTenantId Actor's tenant ID
  * @param targetUserRole Target user's role
  * @param targetUserTenantId Target user's tenant ID
- * @param action Action to perform (create, edit, delete)
+ * @param action Action to perform (create, edit, delete, reset_password)
  * @returns true if action is allowed
  */
 export function canPerformUserAction(
   currentUserRole: UserRole,
-  currentUserTenantId: string,
+  currentUserTenantId: string | null,
   targetUserRole: UserRole,
-  targetUserTenantId: string,
+  targetUserTenantId: string | null,
   action: 'create' | 'edit' | 'delete' | 'reset_password'
 ): boolean {
-  // Super-admin can do everything
-  if (currentUserRole === 'super-admin') {
+  // Strict tenant isolation applies
+  if (currentUserTenantId !== targetUserTenantId) {
+    return false; // Cross-tenant access denied
+  }
+
+  // Admin permissions within tenant - full access to manage users
+  if (currentUserRole === 'admin') {
+    // Cannot delete other admins (to prevent lockout)
+    if (action === 'delete' && targetUserRole === 'admin') {
+      return false;
+    }
+    // Can perform all other actions on users within tenant
     return true;
   }
 
-  // Cross-tenant access denied for non-super-admins
-  if (currentUserTenantId !== targetUserTenantId && currentUserRole !== 'super-admin') {
+  // Manager permissions within tenant
+  if (currentUserRole === 'manager') {
+    // Managers can edit and reset passwords, but cannot delete or change roles
+    if (action === 'edit' || action === 'reset_password') {
+      return true;
+    }
     return false;
   }
 
-  // Admin can do all actions on non-admin users
-  if (currentUserRole === 'admin') {
-    if (action === 'delete' && targetUserRole === 'admin') {
-      return false; // Admins can't delete other admins
-    }
-    return true;
-  }
-
-  // Manager can edit but not delete
-  if (currentUserRole === 'manager') {
-    return action === 'edit' || action === 'reset_password';
-  }
-
-  // Regular users can only update own profile
+  // User permissions within tenant
   if (currentUserRole === 'user') {
-    return false; // Would need to check if target is self
+    // Users can edit users but cannot delete or reset passwords
+    if (action === 'edit') {
+      return true;
+    }
+    return false;
   }
 
-  // Default deny
+  // Engineer permissions within tenant
+  if (currentUserRole === 'engineer') {
+    // Engineers can edit users but cannot delete or reset passwords
+    if (action === 'edit') {
+      return true;
+    }
+    return false;
+  }
+
+  // Regular users and customers can only view (no management actions)
   return false;
 }

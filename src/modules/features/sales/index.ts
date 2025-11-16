@@ -13,9 +13,8 @@ export {
   useSalesLoading 
 } from './store/salesStore';
 
-// Service exports (avoiding duplicates with hooks)
-export type { CreateDealData } from './services/salesService';
-export { SalesService } from './services/salesService';
+// Service exports (types only)
+export type { ISalesService } from './services/salesService';
 
 // Hook exports (these are the main ones we want to expose)
 export * from './hooks/useSales';
@@ -38,23 +37,21 @@ export const salesModule = {
 
   // Initialize the module
   async initialize() {
-    console.log('[Sales Module] 🚀 Initializing...');
+    console.log('[Sales Module] Initializing...');
     try {
-      const { registerService, serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-      const { SalesService } = await import('./services/salesService');
+      const { registerServiceInstance, serviceContainer } = await import('@/modules/core/services/ServiceContainer');
+      const { salesService } = await import('@/services/serviceFactory');
 
-      console.log('[Sales Module] 📝 Registering SalesService...');
-      // Register sales service
-      registerService('salesService', SalesService);
+      console.log('[Sales Module] Registering SalesService...');
+      registerServiceInstance('salesService', salesService);
       
-      // Verify it was registered
       const registered = serviceContainer.has('salesService');
-      console.log('[Sales Module] ✅ SalesService registered:', registered);
+      console.log('[Sales Module] SalesService registered:', registered);
       console.log('[Sales Module] Registered services:', serviceContainer.getRegisteredServices());
 
-      console.log('[Sales Module] ✅ Sales module initialized successfully');
+      console.log('[Sales Module] Sales module initialized successfully');
     } catch (error) {
-      console.error('[Sales Module] ❌ Failed to initialize:', error);
+      console.error('[Sales Module] Failed to initialize:', error);
       throw error;
     }
   },
@@ -62,10 +59,7 @@ export const salesModule = {
   // Cleanup the module
   async cleanup() {
     const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-
-    // Remove sales service
     serviceContainer.remove('salesService');
-
     console.log('Sales module cleaned up');
   },
 };

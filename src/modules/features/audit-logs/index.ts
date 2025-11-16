@@ -5,7 +5,7 @@
 import { FeatureModule } from '@/modules/core/types';
 import { auditLogsRoutes } from './routes';
 import { getServiceContainer } from '@/modules/core/serviceContainer';
-import { auditService } from '@/services/auditService';
+import { auditService } from '@/services/serviceFactory';
 
 export const auditLogsModule: FeatureModule = {
   name: 'audit-logs',

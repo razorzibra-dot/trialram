@@ -12,6 +12,7 @@ import type { IProductSalesService } from '../services/productSalesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { productSalesKeys } from './useProductSales';
 import { STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import { handleError } from '@/modules/core/utils/errorHandler';
 
 /**
  * Hook for fetching product sales analytics data

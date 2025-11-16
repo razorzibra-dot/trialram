@@ -95,10 +95,6 @@ export async function registerFeatureModules(): Promise<void> {
     registerModule(notificationsModule);
     console.log('Notifications module registered');
 
-    // Complaints module
-    const { complaintsModule } = await import('./features/complaints');
-    registerModule(complaintsModule);
-    console.log('Complaints module registered');
 
     // Service Contracts module
     const { serviceContractsModule } = await import('./features/service-contracts');
@@ -110,10 +106,6 @@ export async function registerFeatureModules(): Promise<void> {
     registerModule(configurationModule);
     console.log('Configuration module registered');
 
-    // PDF Templates module
-    const { pdfTemplatesModule } = await import('./features/pdf-templates');
-    registerModule(pdfTemplatesModule);
-    console.log('PDF Templates module registered');
 
     // Audit Logs module
     const { auditLogsModule } = await import('./features/audit-logs');
@@ -124,6 +116,11 @@ export async function registerFeatureModules(): Promise<void> {
     const { productSalesModule } = await import('./features/product-sales');
     registerModule(productSalesModule);
     console.log('Product Sales module registered');
+
+    // Complaints module
+    const { complaintsModule } = await import('./features/complaints');
+    registerModule(complaintsModule);
+    console.log('Complaints module registered');
   } catch (error) {
     console.error('Error registering feature modules:', error);
   }

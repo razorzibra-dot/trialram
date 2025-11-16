@@ -161,7 +161,6 @@ const DashboardLayout = () => {
           { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'manage_users' },
           { name: 'Company Master', href: '/tenant/masters/companies', icon: Building, permission: 'manage_companies' },
           { name: 'Product Master', href: '/tenant/masters/products', icon: Package, permission: 'manage_products' },
-          { name: 'Audit Logs', href: '/tenant/logs', icon: Activity, permission: 'manage_users' },
         ].filter(item => hasPermission(item.permission))
       });
     }

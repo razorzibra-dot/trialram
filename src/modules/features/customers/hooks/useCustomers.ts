@@ -1,342 +1,266 @@
 /**
  * Customer Hooks
- * React hooks for customer operations
+ * Standardized React hooks for customer operations using React Query
  */
 
-import { useCallback } from 'react';
-import { useQuery, useMutation, useInvalidateQueries } from '@/modules/core/hooks/useQuery';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCustomerStore } from '../store/customerStore';
 import { CustomerFilters, CreateCustomerData, ICustomerService } from '../services/customerService';
 import { useService } from '@/modules/core/hooks/useService';
-import { useTenantContext } from '@/hooks/useTenantContext';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import { handleError } from '@/modules/core/utils/errorHandler';
+import type { Customer, CustomerTag } from '@/types/crm';
 
 /**
- * Hook for fetching customers with pagination and filtering
+ * Query key factory for consistent cache management
+ * Ensures all queries can be invalidated correctly
  */
-export function useCustomers(filters: CustomerFilters = {}) {
-  const customerService = useService<ICustomerService>('customerService');
-  const setCustomers = useCustomerStore((state) => state.setCustomers);
-  const setPagination = useCustomerStore((state) => state.setPagination);
-  const setError = useCustomerStore((state) => state.setError);
-  const customers = useCustomerStore((state) => state.customers);
-  const pagination = useCustomerStore((state) => state.pagination);
-  const isLoading = useCustomerStore((state) => state.isLoading);
-  const error = useCustomerStore((state) => state.error);
-  
-  const { isInitialized: isTenantInitialized } = useTenantContext();
+export const customerKeys = {
+  all: ['customers'] as const,
+  lists: () => [...customerKeys.all, 'list'] as const,
+  list: (filters: CustomerFilters) => [...customerKeys.lists(), filters] as const,
+  details: () => [...customerKeys.all, 'detail'] as const,
+  detail: (id: string) => [...customerKeys.details(), id] as const,
+  stats: () => [...customerKeys.all, 'stats'] as const,
+  tags: () => [...customerKeys.all, 'tags'] as const,
+} as const;
 
-  const queryKey = [
-    'customers',
-    filters.search,
-    filters.status,
-    filters.industry,
-    filters.size,
-    filters.assignedTo,
-    filters.tags?.join(','),
-    filters.dateRange?.start,
-    filters.dateRange?.end,
-    filters.page,
-    filters.pageSize,
-  ];
+/**
+ * Fetch customers with filters and pagination
+ * Uses store for local state management
+ *
+ * @param filters - Optional filters (search, status, etc.)
+ * @returns Query result with data, loading, error states
+ *
+ * @example
+ * const { data: customers, isLoading, error } = useCustomers({
+ *   status: 'active'
+ * });
+ */
+export const useCustomers = (filters: CustomerFilters = {}) => {
+  const service = useService<ICustomerService>('customerService');
+  const { setCustomers, setLoading, setError } = useCustomerStore();
 
-  const query = useQuery(
-    queryKey,
-    async () => {
+  return useQuery({
+    queryKey: customerKeys.list(filters),
+    queryFn: async () => {
       try {
-        return await customerService.getCustomers(filters);
-      } catch (err) {
-        console.error('[useCustomers] Error fetching customers:', err);
-        throw err;
-      }
-    },
-    {
-      ...LISTS_QUERY_CONFIG,
-      enabled: isTenantInitialized,
-      onSuccess: (data) => {
-        const customerArray = Array.isArray(data) ? data : (data?.data || []);
-        const pageNum = data?.page || 1;
-        const pageSize = data?.pageSize || 20;
-        const total = data?.total || (Array.isArray(data) ? data.length : 0);
-        
-        setCustomers(customerArray);
-        setPagination({
-          page: pageNum,
-          pageSize: pageSize,
-          total: total,
-        });
-        setError(null);
-      },
-      onError: (error) => {
-        const errorMsg = error instanceof Error ? error.message : 'Failed to fetch customers';
-        if (!errorMsg.includes('Tenant context not initialized')) {
-          setError(errorMsg);
-        }
-      },
-    }
-  );
-
-  return {
-    customers,
-    pagination,
-    isLoading: query.isLoading || isLoading,
-    error: query.error || error,
-    refetch: query.refetch,
-  };
-}
-
-/**
- * Hook for fetching a single customer
- */
-export function useCustomer(id: string) {
-  const customerService = useService<ICustomerService>('customerService');
-  const setSelectedCustomer = useCustomerStore((state) => state.setSelectedCustomer);
-  const { isInitialized: isTenantInitialized } = useTenantContext();
-
-  return useQuery(
-    ['customer', id],
-    () => customerService.getCustomer(id),
-    {
-      ...DETAIL_QUERY_CONFIG,
-      enabled: !!id && isTenantInitialized,
-      onSuccess: (customer) => {
-        setSelectedCustomer(customer);
-      },
-    }
-  );
-}
-
-/**
- * Hook for creating a customer
- */
-export function useCreateCustomer() {
-  const customerService = useService<ICustomerService>('customerService');
-  const addCustomer = useCustomerStore((state) => state.addCustomer);
-  const { invalidate } = useInvalidateQueries();
-
-  return useMutation(
-    (data: CreateCustomerData) => customerService.createCustomer(data),
-    {
-      onSuccess: (customer) => {
-        addCustomer(customer);
-        invalidate(['customers']);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customer created successfully',
-    }
-  );
-}
-
-/**
- * Hook for updating a customer
- */
-export function useUpdateCustomer() {
-  const customerService = useService<ICustomerService>('customerService');
-  const updateCustomer = useCustomerStore((state) => state.updateCustomer);
-  const { invalidate } = useInvalidateQueries();
-
-  return useMutation(
-    ({ id, data }: { id: string; data: Partial<CreateCustomerData> }) =>
-      customerService.updateCustomer(id, data),
-    {
-      onSuccess: (customer) => {
-        updateCustomer(customer.id, customer);
-        invalidate(['customers']);
-        invalidate(['customer', customer.id]);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customer updated successfully',
-    }
-  );
-}
-
-/**
- * Hook for deleting a customer
- */
-export function useDeleteCustomer() {
-  const customerService = useService<ICustomerService>('customerService');
-  const removeCustomer = useCustomerStore((state) => state.removeCustomer);
-  const { invalidate } = useInvalidateQueries();
-
-  return useMutation(
-    (id: string) => customerService.deleteCustomer(id),
-    {
-      onSuccess: (_, id) => {
-        removeCustomer(id);
-        invalidate(['customers']);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customer deleted successfully',
-    }
-  );
-}
-
-/**
- * Hook for bulk operations
- */
-export function useBulkCustomerOperations() {
-  const customerService = useService<ICustomerService>('customerService');
-  const bulkDeleteCustomers = useCustomerStore((state) => state.bulkDeleteCustomers);
-  const bulkUpdateCustomers = useCustomerStore((state) => state.bulkUpdateCustomers);
-  const clearSelection = useCustomerStore((state) => state.clearSelection);
-  const { invalidate } = useInvalidateQueries();
-
-  const bulkDelete = useMutation(
-    (ids: string[]) => customerService.bulkDeleteCustomers(ids),
-    {
-      onSuccess: (_, ids) => {
-        bulkDeleteCustomers(ids);
-        clearSelection();
-        invalidate(['customers']);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customers deleted successfully',
-    }
-  );
-
-  const bulkUpdate = useMutation(
-    ({ ids, updates }: { ids: string[]; updates: Partial<CreateCustomerData> }) =>
-      customerService.bulkUpdateCustomers(ids, updates),
-    {
-      onSuccess: (customers, { ids, updates }) => {
-        bulkUpdateCustomers(ids, updates);
-        clearSelection();
-        invalidate(['customers']);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customers updated successfully',
-    }
-  );
-
-  return {
-    bulkDelete,
-    bulkUpdate,
-  };
-}
-
-/**
- * Hook for customer tags
- */
-export function useCustomerTags() {
-  const customerService = useService<ICustomerService>('customerService');
-  const setTags = useCustomerStore((state) => state.setTags);
-  const addTag = useCustomerStore((state) => state.addTag);
-  const tags = useCustomerStore((state) => state.tags);
-
-  const tagsQuery = useQuery(
-    ['customer-tags'],
-    () => customerService.getTags(),
-    {
-      ...LISTS_QUERY_CONFIG,
-      onSuccess: setTags,
-    }
-  );
-
-  const createTag = useMutation(
-    ({ name, color }: { name: string; color: string }) =>
-      customerService.createTag(name, color),
-    {
-      onSuccess: (tag) => {
-        addTag(tag);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Tag created successfully',
-    }
-  );
-
-  return {
-    tags,
-    isLoading: tagsQuery.isLoading,
-    createTag,
-    refetch: tagsQuery.refetch,
-  };
-}
-
-/**
- * Hook for customer statistics
- */
-export function useCustomerStats() {
-  const customerService = useService<ICustomerService>('customerService');
-  const { isInitialized: isTenantInitialized } = useTenantContext();
-
-  return useQuery(
-    ['customer-stats'],
-    async () => {
-      try {
-        if (typeof customerService.getCustomerStats !== 'function') {
-          throw new Error('getCustomerStats is not available on customer service');
-        }
-        return await customerService.getCustomerStats();
+        setLoading(true);
+        const response = await service.getCustomers(filters);
+        setCustomers(response.data);
+        return response;
       } catch (error) {
-        console.error('[useCustomerStats] Error fetching stats:', error);
+        const message = handleError(error, 'useCustomers');
+        setError(message);
         throw error;
+      } finally {
+        setLoading(false);
       }
     },
-    {
-      ...STATS_QUERY_CONFIG,
-      enabled: isTenantInitialized,
-    }
-  );
-}
+    ...LISTS_QUERY_CONFIG,
+  });
+};
 
 /**
- * Hook for customer export
+ * Fetch single customer by ID
+ *
+ * @param id - Customer ID
+ * @returns Query result with customer data
+ *
+ * @example
+ * const { data: customer } = useCustomer(customerId);
  */
-export function useCustomerExport() {
-  const customerService = useService<ICustomerService>('customerService');
+export const useCustomer = (id: string) => {
+  const service = useService<ICustomerService>('customerService');
+  const { setSelectedCustomer } = useCustomerStore();
 
-  return useMutation(
-    (format: 'csv' | 'json' = 'csv') => customerService.exportCustomers(format),
-    {
-      onSuccess: (data, format) => {
-        const blob = new Blob([data], { 
-          type: format === 'csv' ? 'text/csv' : 'application/json' 
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `customers.${format}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customers exported successfully',
-    }
-  );
-}
+  return useQuery({
+    queryKey: customerKeys.detail(id),
+    queryFn: async () => {
+      const customer = await service.getCustomer(id);
+      setSelectedCustomer(customer);
+      return customer;
+    },
+    ...DETAIL_QUERY_CONFIG,
+    enabled: !!id,
+  });
+};
 
 /**
- * Hook for customer import
+ * Fetch customer statistics
+ *
+ * @returns Query result with stats
+ *
+ * @example
+ * const { data: stats } = useCustomerStats();
  */
-export function useCustomerImport() {
-  const customerService = useService<ICustomerService>('customerService');
-  const { invalidate } = useInvalidateQueries();
+export const useCustomerStats = () => {
+  const service = useService<ICustomerService>('customerService');
 
-  return useMutation(
-    (csv: string) => customerService.importCustomers(csv),
-    {
-      onSuccess: (result) => {
-        invalidate(['customers']);
-        if (result.errors.length > 0) {
-          console.warn('[useCustomerImport] Import completed with errors:', result.errors);
-        }
-      },
-      showSuccessNotification: true,
-      successMessage: 'Customers imported successfully',
-    }
-  );
-}
+  return useQuery({
+    queryKey: customerKeys.stats(),
+    queryFn: () => service.getCustomerStats(),
+    ...STATS_QUERY_CONFIG,
+  });
+};
 
 /**
- * Hook for customer search
+ * Create new customer mutation
+ *
+ * @returns Mutation object with mutate function
+ *
+ * @example
+ * const { mutate: createCustomer } = useCreateCustomer();
+ * createCustomer({ name: 'ACME Corp' });
  */
-export function useCustomerSearch() {
-  const customerService = useService<ICustomerService>('customerService');
+export const useCreateCustomer = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ICustomerService>('customerService');
+  const store = useCustomerStore();
 
-  return useCallback(
-    (query: string) => customerService.searchCustomers(query),
-    [customerService]
-  );
-}
+  return useMutation({
+    mutationFn: (data: CreateCustomerData) => service.createCustomer(data),
+    onSuccess: (newCustomer) => {
+      (store as any).addCustomer(newCustomer);
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+    },
+    onError: (error) => {
+      handleError(error, 'useCreateCustomer');
+    },
+  });
+};
+
+/**
+ * Update customer mutation
+ */
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ICustomerService>('customerService');
+  const store = useCustomerStore();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateCustomerData> }) =>
+      service.updateCustomer(id, data),
+    onSuccess: (updatedCustomer) => {
+      (store as any).updateCustomer(updatedCustomer.id, updatedCustomer);
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.detail(updatedCustomer.id) });
+    },
+    onError: (error) => {
+      handleError(error, 'useUpdateCustomer');
+    },
+  });
+};
+
+/**
+ * Delete customer mutation
+ */
+export const useDeleteCustomer = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ICustomerService>('customerService');
+  const store = useCustomerStore();
+
+  return useMutation({
+    mutationFn: (id: string) => service.deleteCustomer(id),
+    onSuccess: (_, id) => {
+      (store as any).removeCustomer(id);
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+    },
+    onError: (error) => {
+      handleError(error, 'useDeleteCustomer');
+    },
+  });
+};
+
+/**
+ * Export customers mutation
+ */
+export const useCustomerExport = () => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useMutation({
+    mutationFn: (format: 'csv' | 'json') => service.exportCustomers(format),
+    onError: (error) => {
+      handleError(error, 'useCustomerExport');
+    },
+  });
+};
+
+/**
+ * Import customers mutation
+ */
+export const useCustomerImport = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ICustomerService>('customerService');
+
+  return useMutation({
+    mutationFn: (data: string) => service.importCustomers(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+    },
+    onError: (error) => {
+      handleError(error, 'useCustomerImport');
+    },
+  });
+};
+
+/**
+ * Fetch customer tags
+ *
+ * @returns Query result with tags data
+ *
+ * @example
+ * const { data: tags } = useCustomerTags();
+ */
+export const useCustomerTags = () => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useQuery({
+    queryKey: customerKeys.tags(),
+    queryFn: () => service.getTags(),
+    ...STATS_QUERY_CONFIG,
+  });
+};
+
+/**
+ * Bulk customer operations mutation
+ */
+export const useBulkCustomerOperations = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ICustomerService>('customerService');
+  const store = useCustomerStore();
+
+  return useMutation({
+    mutationFn: async ({
+      operation,
+      ids,
+      updates
+    }: {
+      operation: 'delete' | 'update';
+      ids: string[];
+      updates?: Partial<CreateCustomerData>
+    }) => {
+      if (operation === 'delete') {
+        return service.bulkDeleteCustomers(ids);
+      } else if (operation === 'update' && updates) {
+        return service.bulkUpdateCustomers(ids, updates);
+      }
+      throw new Error('Invalid bulk operation');
+    },
+    onSuccess: (_, { operation, ids, updates }) => {
+      if (operation === 'delete') {
+        ids.forEach(id => (store as any).removeCustomer(id));
+      } else if (operation === 'update' && updates) {
+        // For updates, we need to refetch since we don't have the updated data
+        queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      }
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+    },
+    onError: (error) => {
+      handleError(error, 'useBulkCustomerOperations');
+    },
+  });
+};

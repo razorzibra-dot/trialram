@@ -8,7 +8,7 @@
  */
 
 import { ProductSale } from '@/types/productSales';
-import { auditService } from '@/services/auditService';
+import { auditService } from '@/services/serviceFactory';
 
 interface AuditLogParams {
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'STATUS_CHANGE' | 'EXPORT' | 'BULK_DELETE' | 'APPROVE' | 'REJECT';

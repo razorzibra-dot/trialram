@@ -84,19 +84,19 @@ const TEST_USERS: TestUser[] = [
 
   // Super Users
   {
-    email: 'superuser1@platform.admin',
+    email: 'superadmin@platform.com',
     password: 'password123',
     displayName: 'CRM Global',
     tenant: '',
   },
   {
-    email: 'superuser2@platform.admin',
+    email: 'superadmin2@platform.com',
     password: 'password123',
     displayName: 'CRM Global',
     tenant: '',
   },
   {
-    email: 'superuser.auditor@platform.admin',
+    email: 'superadmin3@platform.com',
     password: 'password123',
     displayName: 'CRM Global',
     tenant: '',

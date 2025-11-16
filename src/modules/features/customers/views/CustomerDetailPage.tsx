@@ -78,6 +78,24 @@ interface RelatedTicket {
   created_at: string;
 }
 
+// API DTOs for mapping
+interface SaleApiDTO {
+  id: string;
+  title?: string;
+  value?: number;
+  stage?: string;
+  created_at?: string;
+}
+
+interface TicketApiDTO {
+  id: string;
+  title?: string;
+  subject?: string;
+  priority?: string;
+  status?: string;
+  created_at?: string;
+}
+
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -92,8 +110,8 @@ const CustomerDetailPage: React.FC = () => {
   const { data: ticketsData, isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTicketsByCustomer(id!);
 
   // Transform sales data to match the RelatedSale interface
-  const relatedSales: RelatedSale[] = Array.isArray(salesData?.data) 
-    ? salesData.data.map((deal: any) => ({
+  const relatedSales: RelatedSale[] = Array.isArray(salesData?.data)
+    ? salesData.data.map((deal: SaleApiDTO) => ({
         id: deal.id,
         sale_number: deal.id?.substring(0, 8).toUpperCase() || 'SAL-UNKNOWN',
         product_name: deal.title || 'Untitled Deal',
@@ -105,7 +123,7 @@ const CustomerDetailPage: React.FC = () => {
 
   // Transform tickets data to match the RelatedTicket interface
   const relatedTickets: RelatedTicket[] = Array.isArray(ticketsData?.data)
-    ? ticketsData.data.map((ticket: any) => ({
+    ? ticketsData.data.map((ticket: TicketApiDTO) => ({
         id: ticket.id,
         ticket_number: ticket.id?.substring(0, 8).toUpperCase() || 'TKT-UNKNOWN',
         subject: ticket.title || ticket.subject || 'Untitled Ticket',
@@ -359,11 +377,13 @@ const CustomerDetailPage: React.FC = () => {
     );
   }
 
-  const breadcrumbs = [
-    { label: 'Home', path: '/tenant/dashboard' },
-    { label: 'Customers', path: '/tenant/customers' },
-    { label: customer.company_name },
-  ];
+  const breadcrumbs = {
+    items: [
+      { title: 'Dashboard', path: '/tenant/dashboard' },
+      { title: 'Customers', path: '/tenant/customers' },
+      { title: customer.company_name },
+    ]
+  };
 
   const headerActions = (
     <Space>
@@ -389,7 +409,7 @@ const CustomerDetailPage: React.FC = () => {
           onConfirm={handleDelete}
           okText="Yes, Delete"
           cancelText="Cancel"
-          okButtonProps={{ danger: true, loading: deleting }}
+          okButtonProps={{ danger: true, loading: isDeleting }}
         >
           <Button danger icon={<DeleteOutlined />}>
             Delete
@@ -720,7 +740,7 @@ const CustomerDetailPage: React.FC = () => {
       <PageHeader
         title={customer.company_name}
         description={`Customer ID: ${customer.id} • ${customer.contact_name}`}
-        breadcrumbs={breadcrumbs}
+        breadcrumb={breadcrumbs}
         extra={headerActions}
       />
       <div style={{ padding: 24 }}>

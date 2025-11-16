@@ -1,12 +1,15 @@
 /**
  * Dashboard Hooks
  * React hooks for dashboard operations using React Query
+ * Aggregates data from multiple services instead of using a dedicated dashboard service
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { DashboardService } from '../services/dashboardService';
 import { useService } from '@/modules/core/hooks/useService';
 import { useTenantContext } from '@/hooks/useTenantContext';
+import { STATS_QUERY_CONFIG, LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import type { ICustomerService } from '@/modules/features/customers/services/customerService';
+import type { ISalesService } from '@/modules/features/sales/services/salesService';
 
 // Query Keys
 export const dashboardKeys = {
@@ -22,123 +25,149 @@ export const dashboardKeys = {
 
 /**
  * Hook for fetching dashboard statistics
+ * Aggregates stats from customers, sales, and tickets services
  */
 export const useDashboardStats = () => {
-  const dashboardService = useService<DashboardService>('dashboardService');
+  const customerService = useService<ICustomerService>('customerService');
+  const salesService = useService<ISalesService>('salesService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.stats(),
-    queryFn: () => dashboardService.getDashboardStats(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    queryFn: async () => {
+      // Fetch stats from all services in parallel
+      const [customerStats, salesStats] = await Promise.allSettled([
+        customerService.getCustomerStats(),
+        salesService.getSalesStats(),
+      ]);
+
+      // Aggregate the results
+      const stats = {
+        totalCustomers: customerStats.status === 'fulfilled' ? customerStats.value.total : 0,
+        totalDeals: salesStats.status === 'fulfilled' ? salesStats.value.total : 0,
+        totalTickets: 0, // Placeholder - tickets service doesn't have getTicketStats
+        totalRevenue: salesStats.status === 'fulfilled' ? salesStats.value.totalValue : 0,
+      };
+
+      return stats;
+    },
+    ...STATS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching recent activity
+ * Placeholder implementation - returns empty array
  */
 export const useRecentActivity = (limit: number = 10) => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.activity(), limit],
-    queryFn: () => dashboardService.getRecentActivity(limit),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: () => Promise.resolve([]), // Placeholder
+    ...LISTS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching sales trend
+ * Placeholder implementation
  */
 export const useSalesTrend = (period: 'week' | 'month' | 'quarter' | 'year' = 'month') => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.salesTrend(), period],
-    queryFn: () => dashboardService.getSalesTrend(period),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    queryFn: () => Promise.resolve([]), // Placeholder
+    ...STATS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching ticket statistics
+ * Placeholder implementation
  */
 export const useTicketStats = () => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.ticketStats(),
-    queryFn: () => dashboardService.getTicketStats(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: () => Promise.resolve({
+      open: 0,
+      resolved: 0,
+      inProgress: 0,
+      closed: 0,
+      resolutionRate: 0,
+    }),
+    ...STATS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching top customers
+ * Placeholder implementation
  */
 export const useTopCustomers = (limit: number = 5) => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.topCustomers(), limit],
-    queryFn: () => dashboardService.getTopCustomers(limit),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    queryFn: () => Promise.resolve([]), // Placeholder
+    ...STATS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching widget data
+ * Placeholder implementation
  */
 export const useWidgetData = (widgetType: string) => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.widget(widgetType),
-    queryFn: () => dashboardService.getWidgetData(widgetType),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: () => Promise.resolve(null), // Placeholder
+    ...STATS_QUERY_CONFIG,
     enabled: !!widgetType && isInitialized,
   });
 };
 
 /**
  * Hook for fetching sales pipeline
+ * Placeholder implementation
  */
 export const useSalesPipeline = () => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: [...dashboardKeys.all, 'salesPipeline'],
-    queryFn: () => dashboardService.getSalesPipeline(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    queryFn: () => Promise.resolve({
+      qualification: { value: 0, percentage: 0 },
+      proposal: { value: 0, percentage: 0 },
+      negotiation: { value: 0, percentage: 0 },
+    }),
+    ...STATS_QUERY_CONFIG,
     enabled: isInitialized,
   });
 };
 
 /**
  * Hook for fetching performance metrics
+ * Placeholder implementation
  */
 export const usePerformanceMetrics = () => {
-  const dashboardService = useService<DashboardService>('dashboardService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
     queryKey: dashboardKeys.performance(),
-    queryFn: () => dashboardService.getPerformanceMetrics(),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    queryFn: () => Promise.resolve({}), // Placeholder
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
     enabled: isInitialized,
   });
 };

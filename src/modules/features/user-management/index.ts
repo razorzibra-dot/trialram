@@ -36,8 +36,8 @@ export const userManagementModule: FeatureModule = {
   },
 };
 
-// Export services
-export { userService } from './services/userService';
+// Export service types only
+export type { IUserService } from './services/userService';
 
 // Export hooks
 export * from './hooks';

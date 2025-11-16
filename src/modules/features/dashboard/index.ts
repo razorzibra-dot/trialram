@@ -27,12 +27,8 @@ export const dashboardModule = {
   
   // Initialize the module
   async initialize() {
-    const { registerService } = await import('@/modules/core/services/ServiceContainer');
-    const { DashboardService } = await import('./services/dashboardService');
-    
-    // Register dashboard service
-    registerService('dashboardService', DashboardService);
-    
+    // Dashboard module doesn't require service registration
+    // It aggregates data from other modules' services
     console.log('Dashboard module initialized');
   },
   

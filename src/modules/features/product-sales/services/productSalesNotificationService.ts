@@ -5,7 +5,7 @@
  */
 
 import { notificationService as factoryNotificationService } from '@/services/serviceFactory';
-import { authService } from '@/services/authService';
+import { authService } from '@/services/serviceFactory';
 import { ProductSale, ProductSaleStatus } from '@/types/productSales';
 
 export interface NotificationPayload {

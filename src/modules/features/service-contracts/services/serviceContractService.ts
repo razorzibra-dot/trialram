@@ -10,8 +10,7 @@
  * Version: 1.0.0
  */
 
-import { mockServiceContractService } from '@/services/serviceContractService';
-import { supabaseServiceContractService } from '@/services/supabase/serviceContractService';
+import { serviceContractService } from '@/services/serviceFactory';
 import {
   ServiceContractType,
   ServiceContractDocumentType,
@@ -28,12 +27,10 @@ import {
 import { PaginatedResponse } from '@/modules/core/types';
 
 /**
- * Determine which service to use based on API mode
+ * Get service contract service from factory
  */
-const apiMode = import.meta.env.VITE_API_MODE || 'mock';
-
 function getServiceContractService() {
-  return apiMode === 'supabase' ? supabaseServiceContractService : mockServiceContractService;
+  return serviceContractService;
 }
 
 /**

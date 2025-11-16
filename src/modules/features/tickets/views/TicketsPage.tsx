@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Table, Button, Space, Input, Select, Row, Col, Tag, Empty, Spin, Popconfirm } from 'antd';
+import { Table, Button, Space, Input, Select, Row, Col, Tag, Empty, Spin, Popconfirm, Card } from 'antd';
 import { PlusOutlined, DeleteOutlined, EyeOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { Ticket } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
@@ -333,24 +333,23 @@ export const TicketsPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Filters */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={8}>
+        {/* Search and Filters */}
+        <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
+          <Space.Compact style={{ width: '100%' }}>
             <Input
               placeholder="Search by title, customer, or ID..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
+              style={{ flex: 1 }}
             />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
             <Select
               placeholder="Filter by status"
               allowClear
               value={statusFilter}
               onChange={setStatusFilter}
-              style={{ width: '100%' }}
+              style={{ width: 150 }}
               options={[
                 { label: 'All Statuses', value: 'all' },
                 { label: 'Open', value: 'open' },
@@ -359,14 +358,12 @@ export const TicketsPage: React.FC = () => {
                 { label: 'Closed', value: 'closed' },
               ]}
             />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
             <Select
               placeholder="Filter by priority"
               allowClear
               value={priorityFilter}
               onChange={setPriorityFilter}
-              style={{ width: '100%' }}
+              style={{ width: 150 }}
               options={[
                 { label: 'All Priorities', value: 'all' },
                 { label: 'Low', value: 'low' },
@@ -375,35 +372,42 @@ export const TicketsPage: React.FC = () => {
                 { label: 'Urgent', value: 'urgent' },
               ]}
             />
-          </Col>
-        </Row>
+          </Space.Compact>
+        </Space>
 
-        {/* Table */}
-        <Spin spinning={ticketsLoading}>
-          <Table
-            columns={columns}
-            dataSource={filteredTickets}
-            rowKey="id"
-            pagination={{
-              pageSize: 20,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `Total ${total} tickets`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-            }}
-            scroll={{ x: 1200 }}
-            locale={{
-              emptyText: (
-                <Empty
-                  description="No tickets found"
-                  style={{ marginTop: 48 }}
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ),
-            }}
-            onChange={(_, __, sorter) => setSortedInfo(sorter)}
-          />
-        </Spin>
+        {/* Tickets Table */}
+        <Card
+          style={{
+            borderRadius: 8,
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          <Spin spinning={ticketsLoading}>
+            <Table
+              columns={columns}
+              dataSource={filteredTickets}
+              rowKey="id"
+              pagination={{
+                pageSize: 20,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `Total ${total} tickets`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+              }}
+              scroll={{ x: 1200 }}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="No tickets found"
+                    style={{ marginTop: 48, marginBottom: 48 }}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                ),
+              }}
+              onChange={(_, __, sorter) => setSortedInfo(sorter)}
+            />
+          </Spin>
+        </Card>
       </div>
 
       {/* Detail Drawer */}

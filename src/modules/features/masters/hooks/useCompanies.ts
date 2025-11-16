@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { CompanyService } from '../services/companyService';
 import { useService } from '@/modules/core/hooks/useService';
 import { Company, CompanyFormData, CompanyFilters } from '@/types/masters';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 // Query Keys
 export const companyKeys = {
@@ -31,7 +32,7 @@ export const useCompanies = (filters: CompanyFilters = {}) => {
   return useQuery({
     queryKey: companyKeys.list(filters),
     queryFn: () => companyService.getCompanies(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -44,8 +45,8 @@ export const useCompany = (id: string) => {
   return useQuery({
     queryKey: companyKeys.detail(id),
     queryFn: () => companyService.getCompany(id),
+    ...DETAIL_QUERY_CONFIG,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -58,7 +59,7 @@ export const useCompanyStats = () => {
   return useQuery({
     queryKey: companyKeys.stats(),
     queryFn: () => companyService.getCompanyStats(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -71,7 +72,7 @@ export const useCompanyStatuses = () => {
   return useQuery({
     queryKey: companyKeys.statuses(),
     queryFn: () => companyService.getCompanyStatuses(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 
@@ -84,7 +85,7 @@ export const useCompanySizes = () => {
   return useQuery({
     queryKey: companyKeys.sizes(),
     queryFn: () => companyService.getCompanySizes(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 
@@ -97,7 +98,7 @@ export const useIndustries = () => {
   return useQuery({
     queryKey: companyKeys.industries(),
     queryFn: () => companyService.getIndustries(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 

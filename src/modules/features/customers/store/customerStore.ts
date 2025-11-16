@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { Customer, CustomerTag } from '@/types/crm';
+import { IStoreState } from '@/modules/core/types/store.types';
 
 export interface CustomerFilters {
   search?: string;
@@ -23,59 +24,26 @@ export interface CustomerFilters {
   pageSize?: number;
 }
 
-export interface CustomerState {
-  // Data
-  customers: Customer[];
+/**
+ * Customer Store State Interface
+ * Extends standardized store state with customer-specific data
+ */
+export interface ICustomerStoreState extends IStoreState<Customer> {
+  // Customer-specific state
   selectedCustomer: Customer | null;
   tags: CustomerTag[];
-  
-  // UI State
-  isLoading: boolean;
-  error: string | null;
-  filters: CustomerFilters;
-  
-  // Pagination
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-  };
-  
-  // Selection
   selectedCustomerIds: string[];
-  
-  // Actions
-  setCustomers: (customers: Customer[]) => void;
-  addCustomer: (customer: Customer) => void;
-  updateCustomer: (id: string, updates: Partial<Customer>) => void;
-  removeCustomer: (id: string) => void;
+
+  // Customer-specific actions
   setSelectedCustomer: (customer: Customer | null) => void;
-  
-  // Tags
   setTags: (tags: CustomerTag[]) => void;
   addTag: (tag: CustomerTag) => void;
   removeTag: (tagId: string) => void;
-  
-  // UI Actions
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
   setFilters: (filters: Partial<CustomerFilters>) => void;
   clearFilters: () => void;
-  
-  // Pagination
-  setPagination: (pagination: Partial<CustomerState['pagination']>) => void;
-  
-  // Selection
   setSelectedCustomerIds: (ids: string[]) => void;
   toggleCustomerSelection: (id: string) => void;
   clearSelection: () => void;
-  
-  // Bulk Actions
-  bulkUpdateCustomers: (ids: string[], updates: Partial<Customer>) => void;
-  bulkDeleteCustomers: (ids: string[]) => void;
-  
-  // Reset
-  reset: () => void;
 }
 
 const initialState = {
@@ -96,7 +64,7 @@ const initialState = {
   selectedCustomerIds: [],
 };
 
-export const useCustomerStore = create<CustomerState>()(
+export const useCustomerStore = create<ICustomerStoreState>()(
   devtools(
     subscribeWithSelector(
       immer((set, get) => ({

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ProductService } from '../services/productService';
 import { useService } from '@/modules/core/hooks/useService';
 import { Product, ProductFormData, ProductFilters } from '@/types/masters';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 // Query Keys
 export const productKeys = {
@@ -33,99 +34,78 @@ export const useProducts = (filters: ProductFilters = {}) => {
   return useQuery({
     queryKey: productKeys.list(filters),
     queryFn: () => productService.getProducts(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
-/**
- * Hook for fetching a single product
- */
 export const useProduct = (id: string) => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.detail(id),
     queryFn: () => productService.getProduct(id),
+    ...DETAIL_QUERY_CONFIG,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
-/**
- * Hook for fetching product statistics
- */
 export const useProductStats = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.stats(),
     queryFn: () => productService.getProductStats(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    ...STATS_QUERY_CONFIG,
   });
 };
 
-/**
- * Hook for fetching product statuses
- */
 export const useProductStatuses = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.statuses(),
     queryFn: () => productService.getProductStatuses(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 
-/**
- * Hook for fetching product categories
- */
 export const useProductCategories = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.categories(),
     queryFn: () => productService.getProductCategories(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 
-/**
- * Hook for fetching product types
- */
 export const useProductTypes = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.types(),
     queryFn: () => productService.getProductTypes(),
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000,
   });
 };
 
-/**
- * Hook for fetching low stock products
- */
 export const useLowStockProducts = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.lowStock(),
     queryFn: () => productService.getLowStockProducts(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
-/**
- * Hook for fetching out of stock products
- */
 export const useOutOfStockProducts = () => {
   const productService = useService<ProductService>('productService');
 
   return useQuery({
     queryKey: productKeys.outOfStock(),
     queryFn: () => productService.getOutOfStockProducts(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ContractService } from '../services/contractService';
 import { useService } from '@/modules/core/hooks/useService';
 import { Contract, ContractFilters, ContractFormData } from '@/types/contracts';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 // Query Keys
 export const contractKeys = {
@@ -31,10 +32,9 @@ export const useContracts = (filters: ContractFilters = {}) => {
   const query = useQuery({
     queryKey: contractKeys.list(filters),
     queryFn: () => contractService.getContracts(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 
-  // Extract data from paginated response and flatten for component compatibility
   const data = query.data;
   const contracts = data?.data || [];
   const pagination = {
@@ -62,8 +62,8 @@ export const useContract = (id: string) => {
   return useQuery({
     queryKey: contractKeys.detail(id),
     queryFn: () => contractService.getContract(id),
+    ...DETAIL_QUERY_CONFIG,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -76,11 +76,10 @@ export const useContractsByCustomer = (customerId: string, filters: ContractFilt
   const query = useQuery({
     queryKey: [...contractKeys.byCustomer(customerId), filters],
     queryFn: () => contractService.getContractsByCustomer(customerId, filters),
+    ...LISTS_QUERY_CONFIG,
     enabled: !!customerId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Extract data from paginated response and flatten for component compatibility
   const data = query.data;
   const contracts = data?.data || [];
   const pagination = {
@@ -108,7 +107,7 @@ export const useContractStats = () => {
   return useQuery({
     queryKey: contractKeys.stats(),
     queryFn: () => contractService.getContractStats(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    ...STATS_QUERY_CONFIG,
   });
 };
 
@@ -121,7 +120,7 @@ export const useExpiringContracts = (days: number = 30) => {
   return useQuery({
     queryKey: contractKeys.expiring(days),
     queryFn: () => contractService.getExpiringContracts(days),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -134,7 +133,7 @@ export const useContractsDueForRenewal = (days: number = 30) => {
   return useQuery({
     queryKey: contractKeys.renewals(days),
     queryFn: () => contractService.getContractsDueForRenewal(days),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 

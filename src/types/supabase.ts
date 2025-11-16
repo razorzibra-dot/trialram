@@ -3,6 +3,56 @@
  * Centralized types for database row structures from Supabase
  */
 
+// User DB types
+export interface UserRow {
+  id: string;
+  email: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  role: 'super_admin' | 'admin' | 'manager' | 'agent' | 'engineer' | 'customer';
+  status: 'active' | 'inactive' | 'suspended';
+  tenant_id?: string | null;
+  is_super_admin?: boolean;
+  avatar_url?: string;
+  phone?: string;
+  mobile?: string;
+  company_name?: string;
+  department?: string;
+  position?: string;
+  created_at: string;
+  updated_at?: string;
+  last_login?: string;
+  created_by?: string;
+  deleted_at?: string;
+}
+
+// Super Admin Tenant Access DB types
+export interface SuperAdminTenantAccessRow {
+  id: string;
+  super_admin_id: string;
+  tenant_id: string;
+  access_level: 'full' | 'read_only' | 'admin';
+  granted_at: string;
+  expires_at?: string | null;
+  reason?: string;
+}
+
+// Audit Log DB types
+export interface AuditLogRow {
+  id: string;
+  tenant_id?: string | null;
+  user_id?: string | null;
+  action: string;
+  entity_type?: string;
+  entity_id?: string;
+  changes?: Record<string, unknown>;
+  description?: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
 // Alert and Compliance DB types
 export interface AlertRuleRow {
   id: string;

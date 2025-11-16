@@ -42,17 +42,6 @@ const rootDir = process.cwd();
 const authConfigPath = path.join(rootDir, 'auth-users-config.json');
 const seedSqlPath = path.join(rootDir, 'supabase', 'seed.sql');
 
-// Email to user role mapping (from test users in seed-auth-users.ts)
-const emailToRole: Record<string, string> = {
-  'admin@acme.com': 'admin',
-  'manager@acme.com': 'manager',
-  'engineer@acme.com': 'engineer',
-  'user@acme.com': 'agent',
-  'admin@techsolutions.com': 'admin',
-  'manager@techsolutions.com': 'manager',
-  'admin@globaltrading.com': 'admin',
-};
-
 async function syncAuthToSql(): Promise<void> {
   console.log('\n🔄 Syncing Auth Users to seed.sql');
   console.log('='.repeat(60));

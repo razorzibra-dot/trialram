@@ -1,24 +1,28 @@
 /**
- * useProductSales Hook
- * Fetches all product sales with optional filters
- * Uses React Query for caching and refetch capabilities
+ * Product Sales Hooks
+ * Standardized React hooks for product sales operations using React Query
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductSale, ProductSaleFilters, ProductSalesResponse } from '@/types/productSales';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useService } from '@/modules/core/hooks/useService';
 import type { IProductSalesService } from '../services/productSalesService';
-import { LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import { handleError } from '@/modules/core/utils/errorHandler';
 
-/** Query keys for product sales */
+/**
+ * Query key factory for consistent cache management
+ * Ensures all queries can be invalidated correctly
+ */
 export const productSalesKeys = {
   all: ['productSales'] as const,
-  list: () => [...productSalesKeys.all, 'list'] as const,
-  filtered: (filters: ProductSaleFilters) => [...productSalesKeys.list(), filters] as const,
-  detail: (id: string) => [...productSalesKeys.all, 'detail', id] as const,
+  lists: () => [...productSalesKeys.all, 'list'] as const,
+  list: (filters: ProductSaleFilters) => [...productSalesKeys.lists(), filters] as const,
+  details: () => [...productSalesKeys.all, 'detail'] as const,
+  detail: (id: string) => [...productSalesKeys.details(), id] as const,
   analytics: () => [...productSalesKeys.all, 'analytics'] as const,
-};
+} as const;
 
 /**
  * Hook for fetching product sales with filters and pagination
@@ -36,11 +40,11 @@ export const useProductSales = (
   const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
-    queryKey: productSalesKeys.filtered({ ...filters, page, pageSize }),
+    queryKey: productSalesKeys.list(filters),
     queryFn: async () => {
-      clearError();
-      setLoading(true);
       try {
+        clearError();
+        setLoading(true);
         const response: ProductSalesResponse = await service.getProductSales(
           filters,
           page,
@@ -50,15 +54,15 @@ export const useProductSales = (
         setSales(response.data);
         setPagination({
           currentPage: response.page,
-          pageSize: response.pageSize,
+          pageSize: response.limit,
           totalCount: response.total,
           totalPages: response.totalPages,
         });
 
         return response;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch product sales';
-        setError(errorMessage);
+        const message = handleError(error, 'useProductSales');
+        setError(message);
         throw error;
       } finally {
         setLoading(false);
@@ -81,12 +85,16 @@ export const useProductSalesByCustomer = (
   const service = useService<IProductSalesService>('productSaleService');
 
   return useQuery({
-    queryKey: [...productSalesKeys.filtered(filters), 'customer', customerId],
+    queryKey: [...productSalesKeys.list(filters), 'customer', customerId],
     queryFn: async () => {
       if (!customerId) {
         throw new Error('Customer ID is required');
       }
-      return service.getProductSalesByCustomer(customerId, filters);
+      return service.getProductSales(
+        { ...filters, customer_id: customerId },
+        1,
+        100 // Get more for customer view
+      );
     },
     ...LISTS_QUERY_CONFIG,
     enabled: !!customerId,

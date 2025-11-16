@@ -4,6 +4,7 @@ import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { PortalProvider } from "@/contexts/PortalContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ReferenceDataProvider } from "@/contexts/ReferenceDataContext";
 import ImpersonationBanner from "@/components/common/ImpersonationBanner";
 
 /**
@@ -25,16 +26,18 @@ const RootLayout = () => {
     <ThemeProvider>
       <PortalProvider>
         <AuthProvider>
-          <SuperAdminProvider>
-            <ImpersonationProvider>
-              <div className="min-h-screen flex flex-col">
-                <ImpersonationBanner />
-                <div className="flex-1">
-                  <Outlet />
+          <ReferenceDataProvider>
+            <SuperAdminProvider>
+              <ImpersonationProvider>
+                <div className="min-h-screen flex flex-col">
+                  <ImpersonationBanner />
+                  <div className="flex-1">
+                    <Outlet />
+                  </div>
                 </div>
-              </div>
-            </ImpersonationProvider>
-          </SuperAdminProvider>
+              </ImpersonationProvider>
+            </SuperAdminProvider>
+          </ReferenceDataProvider>
         </AuthProvider>
       </PortalProvider>
     </ThemeProvider>

@@ -10,7 +10,7 @@ import { AuditMetadataDTO, EntityStatus, PaginatedResponseDTO } from './commonDt
  * User Role Types
  * Matches database enum: user_role
  */
-export type UserRole = 'super_admin' | 'admin' | 'manager' | 'agent' | 'engineer' | 'customer';
+export type UserRole = 'super_admin' | 'admin' | 'manager' | 'user' | 'engineer' | 'customer';
 
 /**
  * User Status Types

@@ -26,7 +26,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { complianceReportService as factoryComplianceReportService } from '@/services/serviceFactory';
+import { auditComplianceReportService as factoryComplianceReportService } from '@/services/serviceFactory';
 import type { ComplianceReport, ComplianceReportType, ReportExportFormat, ReportGenerationOptions } from '@/types';
 
 /**

@@ -10,6 +10,7 @@ import { TicketService, TicketFilters, CreateTicketData } from '../services/tick
 import { useTicketStore } from '../store/ticketStore';
 import { useService } from '@/modules/core/hooks/useService';
 import { useNotification } from '@/hooks/useNotification';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 // Query Keys
 export const ticketKeys = {
@@ -43,8 +44,7 @@ export const useTickets = (filters: TicketFilters = {}) => {
         setLoading(false);
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    ...LISTS_QUERY_CONFIG,
   });
 };
 
@@ -62,8 +62,8 @@ export const useTicket = (id: string) => {
       setSelectedTicket(ticket);
       return ticket;
     },
+    ...DETAIL_QUERY_CONFIG,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -79,9 +79,8 @@ export const useTicketsByCustomer = (customerId: string, filters: TicketFilters 
       const response = await ticketService.getTicketsByCustomer(customerId, filters);
       return response;
     },
+    ...LISTS_QUERY_CONFIG,
     enabled: !!customerId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 
@@ -99,7 +98,7 @@ export const useTicketStats = () => {
       setStats(stats);
       return stats;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    ...STATS_QUERY_CONFIG,
   });
 };
 

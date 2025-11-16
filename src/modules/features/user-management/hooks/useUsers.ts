@@ -12,7 +12,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { userService } from '../services/userService';
+import { useService } from '@/modules/core/hooks/useService';
+import type { IUserService } from '../services/userService';
 import {
   UserDTO,
   UserStatsDTO,
@@ -21,6 +22,7 @@ import {
   UserFiltersDTO,
   UserActivityDTO,
 } from '@/types/dtos/userDtos';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 /**
  * Query keys for user data - centralized for consistency
@@ -44,6 +46,7 @@ const USER_QUERY_KEYS = {
  * ✅ Cache: Shared across application
  */
 export function useUsers(filters?: UserFiltersDTO) {
+  const userService = useService<IUserService>("userService");
   const { 
     data: users = [], 
     isLoading: loading, 
@@ -70,6 +73,7 @@ export function useUsers(filters?: UserFiltersDTO) {
  * ✅ Cache: Query-specific for individual user detail
  */
 export function useUser(id: string) {
+  const userService = useService<IUserService>("userService");
   const { 
     data: user, 
     isLoading: loading, 
@@ -94,6 +98,7 @@ export function useUser(id: string) {
  * ✅ Returns: stats, loading, error, refetch
  */
 export function useUserStats() {
+  const userService = useService<IUserService>("userService");
   const {
     data: stats,
     isLoading: loading,
@@ -120,6 +125,7 @@ export function useUserStats() {
  * ✅ Cache: Invalidates user list on success
  */
 export function useCreateUser() {
+  const userService = useService<IUserService>("userService");
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -151,6 +157,7 @@ export function useCreateUser() {
  * ✅ Cache: Invalidates user list and detail on success
  */
 export function useUpdateUser(userId: string) {
+  const userService = useService<IUserService>("userService");
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -182,6 +189,7 @@ export function useUpdateUser(userId: string) {
  * ✅ Cache: Invalidates user list and detail on success
  */
 export function useDeleteUser() {
+  const userService = useService<IUserService>("userService");
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -211,6 +219,7 @@ export function useDeleteUser() {
  * ✅ Returns: mutate function, isPending, error
  */
 export function useResetPassword() {
+  const userService = useService<IUserService>("userService");
   return useMutation({
     mutationFn: (userId: string) => userService.resetPassword(userId),
     onSuccess: () => {
@@ -227,6 +236,7 @@ export function useResetPassword() {
  * ✅ Returns: activities, loading, error
  */
 export function useUserActivity(userId: string) {
+  const userService = useService<IUserService>("userService");
   const {
     data: activities = [],
     isLoading: loading,
@@ -251,6 +261,7 @@ export function useUserActivity(userId: string) {
  * ✅ Returns: roles, loading, error
  */
 export function useUserRoles() {
+  const userService = useService<IUserService>("userService");
   const {
     data: roles = [],
     isLoading: loading,
@@ -274,6 +285,7 @@ export function useUserRoles() {
  * ✅ Returns: statuses, loading, error
  */
 export function useUserStatuses() {
+  const userService = useService<IUserService>("userService");
   const {
     data: statuses = [],
     isLoading: loading,
@@ -298,6 +310,7 @@ export function useUserStatuses() {
  * ✅ Cache: Tenants are rarely updated, cache for 1 hour
  */
 export function useTenants() {
+  const userService = useService<IUserService>("userService");
   const {
     data: tenants = [],
     isLoading: loading,

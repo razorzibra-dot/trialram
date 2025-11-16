@@ -9,11 +9,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { moduleRegistry, initializeModules } from './ModuleRegistry';
 import { createModularRouter } from './routing/ModularRouter';
 import { bootstrapApplication } from './bootstrap';
-import { ReferenceDataProvider } from '@/contexts/ReferenceDataContext';
-import type { RouteObject } from 'react-router-dom';
+import type { Router } from '@remix-run/router';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
 const ModularApp: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [router, setRouter] = useState<RouteObject[] | null>(null);
+  const [router, setRouter] = useState<Router | null>(null);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -109,12 +109,10 @@ const ModularApp: React.FC = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ReferenceDataProvider>
-          <div className="min-h-screen bg-gray-50">
-            <RouterProvider router={router} />
-          </div>
-          <ReactQueryDevtools initialIsOpen={false} />
-        </ReferenceDataProvider>
+        <div className="min-h-screen bg-gray-50">
+          <RouterProvider router={router} />
+        </div>
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -199,7 +199,6 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
       '/tenant/users': <UserOutlined />,
       '/tenant/configuration': <SettingOutlined />,
       '/tenant/notifications': <BellOutlined />,
-      '/tenant/logs': <FileTextOutlined />,
       '/super-admin': <SafetyOutlined />,
     };
 

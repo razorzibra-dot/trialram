@@ -5,13 +5,16 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { Deal } from '@/types/crm';
-import { SalesFilters, CreateDealData } from '../services/salesService';
+import { Deal, SalesFilters } from '@/types';
+import { CreateDealDTO } from '@/types/dtos';
+import { ISalesService } from '../services/salesService';
 import { useSalesStore } from '../store/salesStore';
-import { salesService as factorySalesService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/hooks/useNotification';
-import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
+import { handleError } from '@/modules/core/utils/errorHandler';
+import { salesService as factorySalesService } from '@/services/serviceFactory';
 
 // Query Keys
 export const salesKeys = {
@@ -125,14 +128,14 @@ export const useDealStages = () => {
  */
 export const useCreateDeal = () => {
   const queryClient = useQueryClient();
+  const service = useService<ISalesService>('salesService');
   const { addDeal, setCreating } = useSalesStore();
-  const { success, error } = useNotification();
 
   return useMutation({
-    mutationFn: async (data: CreateDealData) => {
+    mutationFn: async (data: CreateDealDTO) => {
       setCreating(true);
       try {
-        return await factorySalesService.createDeal(data);
+        return await service.createDeal(data);
       } finally {
         setCreating(false);
       }
@@ -141,10 +144,9 @@ export const useCreateDeal = () => {
       addDeal(newDeal);
       queryClient.invalidateQueries({ queryKey: salesKeys.deals() });
       queryClient.invalidateQueries({ queryKey: salesKeys.stats() });
-      success('Deal created successfully');
     },
-    onError: (err) => {
-      error(err instanceof Error ? err.message : 'Failed to create deal');
+    onError: (error) => {
+      handleError(error, 'useCreateDeal');
     },
   });
 };
@@ -158,7 +160,7 @@ export const useUpdateDeal = () => {
   const { success, error } = useNotification();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateDealData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateDealDTO> }) => {
       setUpdating(true);
       try {
         return await factorySalesService.updateDeal(id, data);
@@ -246,7 +248,7 @@ export const useBulkDeals = () => {
   const { success, error } = useNotification();
 
   const bulkUpdate = useMutation({
-    mutationFn: async ({ ids, updates }: { ids: string[]; updates: Partial<CreateDealData> }) => {
+    mutationFn: async ({ ids, updates }: { ids: string[]; updates: Partial<CreateDealDTO> }) => {
       return await factorySalesService.bulkUpdateDeals(ids, updates);
     },
     onSuccess: (updatedDeals) => {

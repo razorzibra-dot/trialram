@@ -31,7 +31,7 @@ export interface NavigationItemConfig extends NavigationPermission {
  */
 export const navigationConfig: NavigationItemConfig[] = [
   // ============================================
-  // TENANT ITEMS - Available to non-super-admin users only
+  // TENANT ITEMS - Available to tenant users only
   // ⚠️ CRITICAL: Super admins (role='super_admin') should NOT see these items
   // They have separate super-admin routes and should be isolated
   // ============================================
@@ -87,7 +87,7 @@ export const navigationConfig: NavigationItemConfig[] = [
     key: '/tenant/job-works',
     label: 'Job Works',
     permission: 'manage_job_works',
-    requiredRole: ['admin', 'manager', 'agent', 'engineer', 'customer'],
+    requiredRole: ['admin', 'manager', 'user', 'engineer', 'customer'],
   },
 
   // ============================================
@@ -166,72 +166,7 @@ export const navigationConfig: NavigationItemConfig[] = [
     permission: 'manage_settings',
     requiredRole: 'admin',
   },
-  {
-    key: '/tenant/logs',
-    label: 'System Logs',
-    permission: 'manage_settings',
-    requiredRole: 'admin',
-  },
 
-  // ============================================
-  // SUPER ADMIN SECTION - Super Admin only
-  // ============================================
-  {
-    key: 'superadmin-section',
-    label: 'Super Admin',
-    isSection: true,
-    requiredRole: 'super_admin',
-  },
-  {
-    key: '/super-admin',
-    label: 'Super Admin',
-    requiredRole: 'super_admin',
-    permission: 'super_admin',
-    children: [
-      {
-        key: '/super-admin/dashboard',
-        label: 'Dashboard',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-      {
-        key: '/super-admin/tenants',
-        label: 'Tenants',
-        requiredRole: 'super_admin',
-        permission: 'manage_tenants',
-      },
-      {
-        key: '/super-admin/users',
-        label: 'All Users',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-      {
-        key: '/super-admin/analytics',
-        label: 'Analytics',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-      {
-        key: '/super-admin/health',
-        label: 'System Health',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-      {
-        key: '/super-admin/configuration',
-        label: 'Configuration',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-      {
-        key: '/super-admin/role-requests',
-        label: 'Role Requests',
-        requiredRole: 'super_admin',
-        permission: 'super_admin',
-      },
-    ],
-  },
 ];
 
 /**
@@ -287,9 +222,8 @@ export const permissionCategories = {
  */
 export const roleHierarchy = {
   customer: 0,
-  agent: 1,
+  user: 1,
   engineer: 2,
   manager: 3,
   admin: 4,
-  super_admin: 5,
 };

@@ -34,7 +34,7 @@ import {
   useSalesPipeline
 } from '../hooks/useDashboard';
 
-export const DashboardPage: React.FC = () => {
+const DashboardPage: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(5);
   const { data: topCustomers, isLoading: customersLoading } = useTopCustomers(5);
@@ -309,3 +309,5 @@ export const DashboardPage: React.FC = () => {
     </>
   );
 };
+
+export default DashboardPage;

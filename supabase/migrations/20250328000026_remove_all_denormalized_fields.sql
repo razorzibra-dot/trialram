@@ -127,7 +127,45 @@ COMMENT ON TABLE job_works IS 'Job works (normalized - use job_works_with_detail
 COMMENT ON TABLE complaints IS 'Complaints (normalized - use complaints_with_details view for enriched data)';
 
 -- ============================================================================
--- 13. RECREATE VIEWS (now normalized without denormalized fields)
+-- 13. CREATE SUMMARY VIEWS FOR COMPUTED DATA
+-- ============================================================================
+
+-- Customer Summary View - replaces computed fields
+CREATE OR REPLACE VIEW customer_summary AS
+SELECT
+    c.id,
+    c.tenant_id,
+    c.company_name,
+    c.contact_name,
+    c.email,
+    c.customer_type,
+    c.status,
+
+    -- Computed sales metrics
+    COALESCE(SUM(s.value), 0) AS total_sales_amount,
+    COUNT(DISTINCT s.id) AS total_orders,
+    CASE
+        WHEN COUNT(s.id) > 0 THEN ROUND(AVG(s.value), 2)
+        ELSE 0
+    END AS average_order_value,
+    MAX(s.actual_close_date) AS last_purchase_date,
+
+    -- Activity counts
+    COUNT(DISTINCT CASE WHEN s.status = 'open' THEN s.id END) AS open_sales,
+    COUNT(DISTINCT CASE WHEN t.status NOT IN ('resolved', 'closed') THEN t.id END) AS open_tickets,
+    COUNT(DISTINCT CASE WHEN sc.status IN ('active', 'pending_approval') THEN sc.id END) AS active_service_contracts,
+
+    c.created_at,
+    c.updated_at
+FROM customers c
+LEFT JOIN sales s ON c.id = s.customer_id AND s.deleted_at IS NULL
+LEFT JOIN tickets t ON c.id = t.customer_id AND t.deleted_at IS NULL
+LEFT JOIN service_contracts sc ON c.id = sc.customer_id AND sc.deleted_at IS NULL
+WHERE c.deleted_at IS NULL
+GROUP BY c.id, c.tenant_id, c.company_name, c.contact_name, c.email, c.customer_type, c.status, c.created_at, c.updated_at;
+
+-- ============================================================================
+-- 14. RECREATE VIEWS (now normalized without denormalized fields)
 -- ============================================================================
 
 -- Sales with details view
@@ -169,19 +207,21 @@ LEFT JOIN customers c ON ps.customer_id = c.id
 LEFT JOIN products p ON ps.product_id = p.id
 LEFT JOIN product_categories pc ON p.category_id = pc.id;
 
--- Customers with stats view
+-- Customers with stats view - now uses customer_summary for computed data
 CREATE OR REPLACE VIEW customers_with_stats AS
 SELECT
-  c.id, c.company_name, c.contact_name, c.email, c.phone,
-  c.customer_type, c.status, c.assigned_to,
+  cs.id, cs.company_name, cs.contact_name, cs.email,
+  cs.customer_type, cs.status,
+  c.assigned_to,
   COALESCE(u.name, u.email) AS assigned_to_name,
-  c.total_sales_amount, c.total_orders, c.average_order_value,
-  c.last_purchase_date, c.last_contact_date,
-  (SELECT COUNT(*) FROM sales WHERE customer_id = c.id AND deleted_at IS NULL) AS open_sales,
-  (SELECT COUNT(*) FROM tickets WHERE customer_id = c.id AND status NOT IN ('resolved', 'closed') AND deleted_at IS NULL) AS open_tickets,
-  (SELECT COUNT(*) FROM contracts WHERE customer_id = c.id AND deleted_at IS NULL) AS total_contracts,
-  c.tenant_id, c.created_at, c.updated_at
-FROM customers c
+  cs.total_sales_amount, cs.total_orders, cs.average_order_value,
+  cs.last_purchase_date, c.last_contact_date,
+  cs.open_sales,
+  cs.open_tickets,
+  cs.active_service_contracts AS total_contracts,
+  cs.tenant_id, cs.created_at, cs.updated_at
+FROM customer_summary cs
+LEFT JOIN customers c ON cs.id = c.id
 LEFT JOIN users u ON c.assigned_to = u.id
 WHERE c.deleted_at IS NULL;
 

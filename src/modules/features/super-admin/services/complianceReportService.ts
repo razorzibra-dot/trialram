@@ -28,7 +28,7 @@
  * ```
  */
 
-import { complianceReportService as factoryComplianceReportService } from '@/services/serviceFactory';
+import { auditComplianceReportService as factoryComplianceReportService } from '@/services/serviceFactory';
 import type {
   ComplianceReport,
   ComplianceReportType,

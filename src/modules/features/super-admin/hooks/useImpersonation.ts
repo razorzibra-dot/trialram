@@ -13,7 +13,9 @@ import {
   ImpersonationStartInput,
   ImpersonationEndInput,
 } from '@/types/superUserModule';
-import { impersonationService as factoryImpersonationService } from '@/services/serviceFactory';
+import { useService } from '@/modules/core/hooks/useService';
+import type { IImpersonationService } from '@/services/api/supabase/impersonationService';
+import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
 /**
  * Query key factory for impersonation queries
@@ -37,14 +39,15 @@ const IMPERSONATION_QUERY_KEYS = {
  * const { data: logs, isLoading } = useImpersonationLogs();
  */
 export function useImpersonationLogs() {
+  const impersonationService = useService<IImpersonationService>('impersonationService');
+  
   return useQuery({
     queryKey: IMPERSONATION_QUERY_KEYS.logsList(),
     queryFn: async () => {
-      return factoryImpersonationService.getImpersonationLogs();
+      return impersonationService.getImpersonationLogs();
     },
-    staleTime: 3 * 60 * 1000, // 3 minutes (more frequent updates for active sessions)
-    retry: 2,
-    refetchOnMount: true,  // Always fetch fresh data when component mounts
+    ...LISTS_QUERY_CONFIG,
+    refetchOnMount: true,
   });
 }
 
@@ -59,15 +62,16 @@ export function useImpersonationLogs() {
  * const { data: logs } = useImpersonationLogsByUserId(userId);
  */
 export function useImpersonationLogsByUserId(superUserId?: string) {
+  const impersonationService = useService<IImpersonationService>('impersonationService');
+  
   return useQuery({
     queryKey: IMPERSONATION_QUERY_KEYS.logsByUser(superUserId || ''),
     queryFn: async () => {
-      if (!superUserId) return []; // Return empty if no user ID provided
-      return factoryImpersonationService.getImpersonationLogsByUserId(superUserId);
+      if (!superUserId) return [];
+      return impersonationService.getImpersonationLogsByUserId(superUserId);
     },
-    staleTime: 3 * 60 * 1000,
-    retry: 2,
-    refetchOnMount: true,  // Allow refetch when needed
+    ...LISTS_QUERY_CONFIG,
+    refetchOnMount: true,
   });
 }
 
@@ -81,14 +85,15 @@ export function useImpersonationLogsByUserId(superUserId?: string) {
  * const { data: log } = useImpersonationLogById(logId);
  */
 export function useImpersonationLogById(id: string) {
+  const impersonationService = useService<IImpersonationService>('impersonationService');
+  
   return useQuery({
     queryKey: IMPERSONATION_QUERY_KEYS.logsById(id),
     queryFn: async () => {
-      return factoryImpersonationService.getImpersonationLogById(id);
+      return impersonationService.getImpersonationLogById(id);
     },
+    ...DETAIL_QUERY_CONFIG,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
-    retry: 2,
   });
 }
 
@@ -101,13 +106,15 @@ export function useImpersonationLogById(id: string) {
  * const { data: activeSessions } = useActiveImpersonations();
  */
 export function useActiveImpersonations() {
+  const impersonationService = useService<IImpersonationService>('impersonationService');
+  
   return useQuery({
     queryKey: IMPERSONATION_QUERY_KEYS.active(),
     queryFn: async () => {
-      return factoryImpersonationService.getActiveImpersonations();
+      return impersonationService.getActiveImpersonations();
     },
-    staleTime: 1 * 60 * 1000, // 1 minute (frequent updates for real-time)
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    staleTime: 1 * 60 * 1000,
+    refetchInterval: 30 * 1000,
     retry: 2,
   });
 }
@@ -132,13 +139,13 @@ export function useActiveImpersonations() {
  */
 export function useStartImpersonation() {
   const queryClient = useQueryClient();
+  const impersonationService = useService<IImpersonationService>('impersonationService');
 
   return useMutation({
     mutationFn: async (input: ImpersonationStartInput) => {
-      return factoryImpersonationService.startImpersonation(input);
+      return impersonationService.startImpersonation(input);
     },
     onSuccess: (newLog) => {
-      // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: IMPERSONATION_QUERY_KEYS.logs(),
       });
@@ -146,7 +153,6 @@ export function useStartImpersonation() {
         queryKey: IMPERSONATION_QUERY_KEYS.active(),
       });
       
-      // Add new log to cache
       queryClient.setQueryData(IMPERSONATION_QUERY_KEYS.logsById(newLog.id), newLog);
     },
     retry: 1,
@@ -172,13 +178,13 @@ export function useStartImpersonation() {
  */
 export function useEndImpersonation() {
   const queryClient = useQueryClient();
+  const impersonationService = useService<IImpersonationService>('impersonationService');
 
   return useMutation({
     mutationFn: async (input: ImpersonationEndInput) => {
-      return factoryImpersonationService.endImpersonation(input);
+      return impersonationService.endImpersonation(input);
     },
     onSuccess: (updatedLog) => {
-      // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: IMPERSONATION_QUERY_KEYS.logs(),
       });
@@ -186,7 +192,6 @@ export function useEndImpersonation() {
         queryKey: IMPERSONATION_QUERY_KEYS.active(),
       });
       
-      // Update log cache
       queryClient.setQueryData(IMPERSONATION_QUERY_KEYS.logsById(updatedLog.id), updatedLog);
     },
     retry: 1,

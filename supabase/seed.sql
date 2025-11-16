@@ -6,6 +6,48 @@
 -- 0. RESET DATA - Clear all tables before seeding
 -- ============================================================================
 
+-- ============================================================================
+-- 0A. CREATE PERMISSIONS
+-- ============================================================================
+
+-- Ensure permissions table has all required permissions
+INSERT INTO permissions (id, name, description, resource, action) VALUES
+  ('00000000-0000-0000-0000-000000000001'::UUID, 'read', 'Read access', '*', 'read'),
+  ('00000000-0000-0000-0000-000000000101'::UUID, 'write', 'Write access', '*', 'write'),
+  ('00000000-0000-0000-0000-000000000102'::UUID, 'delete', 'Delete access', '*', 'delete'),
+  ('00000000-0000-0000-0000-000000000103'::UUID, 'manage_users', 'Manage users', 'users', 'manage'),
+  ('00000000-0000-0000-0000-000000000104'::UUID, 'manage_roles', 'Manage roles', 'roles', 'manage'),
+  ('00000000-0000-0000-0000-000000000105'::UUID, 'manage_customers', 'Manage customers', 'customers', 'manage'),
+  ('00000000-0000-0000-0000-000000000201'::UUID, 'manage_sales', 'Manage sales', 'sales', 'manage'),
+  ('00000000-0000-0000-0000-000000000202'::UUID, 'manage_contracts', 'Manage contracts', 'contracts', 'manage'),
+  ('00000000-0000-0000-0000-000000000203'::UUID, 'manage_service_contracts', 'Manage service contracts', 'service_contracts', 'manage'),
+  ('00000000-0000-0000-0000-000000000204'::UUID, 'manage_products', 'Manage products', 'products', 'manage'),
+  ('00000000-0000-0000-0000-000000000301'::UUID, 'manage_product_sales', 'Manage product sales', 'product_sales', 'manage'),
+  ('00000000-0000-0000-0000-000000000302'::UUID, 'manage_job_works', 'Manage job works', 'job_works', 'manage'),
+  ('00000000-0000-0000-0000-000000000303'::UUID, 'manage_tickets', 'Manage tickets', 'tickets', 'manage'),
+  ('00000000-0000-0000-0000-000000000304'::UUID, 'manage_complaints', 'Manage complaints', 'complaints', 'manage'),
+  ('00000000-0000-0000-0000-000000000401'::UUID, 'manage_dashboard', 'Access dashboard', 'dashboard', 'manage'),
+  ('00000000-0000-0000-0000-000000000402'::UUID, 'manage_settings', 'Manage settings', 'settings', 'manage'),
+  ('00000000-0000-0000-0000-000000000501'::UUID, 'manage_companies', 'Manage companies', 'companies', 'manage'),
+  ('00000000-0000-0000-0000-000000000502'::UUID, 'platform_admin', 'Platform administration', 'platform', 'admin'),
+  ('00000000-0000-0000-0000-000000000601'::UUID, 'super_admin', 'Full system administration', 'system', 'admin'),
+  ('00000000-0000-0000-0000-000000000602'::UUID, 'manage_tenants', 'Manage tenants', 'tenants', 'manage'),
+  ('00000000-0000-0000-0000-000000000701'::UUID, 'system_monitoring', 'System monitoring', 'system', 'monitor'),
+  ('00000000-0000-0000-0000-000000000403'::UUID, 'manage_reports', 'Access reports and analytics', 'reports', 'manage'),
+  ('00000000-0000-0000-0000-000000000404'::UUID, 'export_data', 'Export data and reports', 'data', 'export'),
+  ('00000000-0000-0000-0000-000000000702'::UUID, 'view_audit_logs', 'View audit logs', 'audit', 'read'),
+  ('00000000-0000-0000-0000-000000000801'::UUID, 'create_tickets', 'Create support tickets', 'tickets', 'create'),
+  ('00000000-0000-0000-0000-000000000802'::UUID, 'update_tickets', 'Update support tickets', 'tickets', 'update'),
+  ('00000000-0000-0000-0000-000000000901'::UUID, 'create_products', 'Create products', 'products', 'create'),
+  ('00000000-0000-0000-0000-000000000902'::UUID, 'update_products', 'Update products', 'products', 'update'),
+  ('00000000-0000-0000-0000-000000001001'::UUID, 'manage_inventory', 'Manage inventory', 'inventory', 'manage'),
+  ('00000000-0000-0000-0000-000000001002'::UUID, 'view_financials', 'View financial reports', 'finance', 'read'),
+  ('00000000-0000-0000-0000-000000001003'::UUID, 'manage_integrations', 'Manage third-party integrations', 'integrations', 'manage'),
+  ('00000000-0000-0000-0000-000000001004'::UUID, 'bulk_operations', 'Perform bulk operations', 'bulk', 'manage'),
+  ('00000000-0000-0000-0000-000000001005'::UUID, 'advanced_search', 'Advanced search capabilities', 'search', 'advanced'),
+  ('00000000-0000-0000-0000-000000001006'::UUID, 'api_access', 'API access', 'api', 'access')
+ON CONFLICT (name) DO NOTHING;
+
 -- Delete all data from tables (in reverse order of foreign keys)
 DELETE FROM super_user_impersonation_logs;
 DELETE FROM super_user_tenant_access;
@@ -53,39 +95,83 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert test users
--- IMPORTANT: is_super_admin must be explicitly set to false for regular users per constraint ck_super_admin_role_consistency
-INSERT INTO users (id, email, name, tenant_id, role, status, is_super_admin, created_at, last_login)
+INSERT INTO users (id, email, name, tenant_id, status, created_at, last_login)
 VALUES
-  -- Acme Corp Users (Tenant-scoped regular users)
-  ('5278ae57-db79-4120-b285-6a2082779b0c'::UUID, 'admin@acme.com', 'Admin Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'admin', 'active', FALSE, NOW(), NOW()),
-  ('92ec9125-1dae-44c4-abc8-a2ba741a6f3b'::UUID, 'manager@acme.com', 'Manager Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'manager', 'active', FALSE, NOW(), NOW()),
-  ('b1010925-d7ac-40ed-851a-f27d2dce6b9b'::UUID, 'engineer@acme.com', 'Engineer Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'engineer', 'active', FALSE, NOW(), NOW()),
-  ('74c70038-a4b0-4fc1-a0b7-ac9dbba6734a'::UUID, 'user@acme.com', 'User Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'agent', 'active', FALSE, NOW(), NOW()),
-  
-  -- Tech Solutions Users (Tenant-scoped regular users)
-  ('15372c20-b39b-4475-b579-7f5929c891e9'::UUID, 'admin@techsolutions.com', 'Admin Tech', '550e8400-e29b-41d4-a716-446655440002'::UUID, 'admin', 'active', FALSE, NOW(), NOW()),
-  ('ca9c1627-17b7-49b8-8b1b-7ba69308850f'::UUID, 'manager@techsolutions.com', 'Manager Tech', '550e8400-e29b-41d4-a716-446655440002'::UUID, 'manager', 'active', FALSE, NOW(), NOW()),
-  
-  -- Global Trading Users (Tenant-scoped regular users)
-  ('2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID, 'admin@globaltrading.com', 'Admin Global', '550e8400-e29b-41d4-a716-446655440003'::UUID, 'admin', 'active', FALSE, NOW(), NOW()),
-  
-  -- Platform Super Administrators (Tenant-independent, for global management)
-  -- IMPORTANT: Super admins must have role='super_admin', is_super_admin=true, and tenant_id=NULL per constraint
-  ('4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, 'superuser1@platform.admin', 'Super User 1', NULL::UUID, 'super_admin', 'active', TRUE, NOW(), NOW()),
-  ('b4c9831c-4be7-4f28-b4b5-37a9a230084d'::UUID, 'superuser2@platform.admin', 'Super User 2', NULL::UUID, 'super_admin', 'active', TRUE, NOW(), NOW()),
-  ('0cfdd140-593b-4750-9745-6a1e60a1e7bd'::UUID, 'superuser.auditor@platform.admin', 'Super User Auditor', NULL::UUID, 'super_admin', 'active', TRUE, NOW(), NOW())
+    -- Acme Corp Users (Tenant-scoped regular users)
+    ('19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID, 'admin@acme.com', 'Admin Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'active', NOW(), NOW()),
+    ('4fe005aa-a34f-4793-8476-a8c869d808ee'::UUID, 'manager@acme.com', 'Manager Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'active', NOW(), NOW()),
+    ('5eb55c02-66f9-469b-adb1-9e6534eb2afb'::UUID, 'engineer@acme.com', 'Engineer Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'active', NOW(), NOW()),
+    ('e650715c-a255-45db-9b7b-c7cc0bc9d135'::UUID, 'user@acme.com', 'User Acme', '550e8400-e29b-41d4-a716-446655440001'::UUID, 'active', NOW(), NOW()),
+
+    -- Tech Solutions Users (Tenant-scoped regular users)
+    ('1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID, 'admin@techsolutions.com', 'Admin Tech', '550e8400-e29b-41d4-a716-446655440002'::UUID, 'active', NOW(), NOW()),
+    ('e25537ec-f00e-42a6-b9de-d5a7519082fd'::UUID, 'manager@techsolutions.com', 'Manager Tech', '550e8400-e29b-41d4-a716-446655440002'::UUID, 'active', NOW(), NOW()),
+
+    -- Global Trading Users (Tenant-scoped regular users)
+    ('f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID, 'admin@globaltrading.com', 'Admin Global', '550e8400-e29b-41d4-a716-446655440003'::UUID, 'active', NOW(), NOW()),
+
+    -- Super User 1: Platform administrator with full access to all tenants
+    ('49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID, 'superadmin@platform.com', 'Platform Super Admin', NULL, 'active', NOW(), NOW()),
+    -- Super User 2: Limited super admin with access to specific tenants
+    ('0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID, 'superadmin2@platform.com', 'Limited Super Admin', NULL, 'active', NOW(), NOW()),
+    -- Super User 3: Read-only super admin
+    ('03cf37f2-28e8-4b20-aa6d-22efb0bb044d'::UUID, 'superadmin3@platform.com', 'Read-Only Super Admin', NULL, 'active', NOW(), NOW())
+
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 1B. VERIFY SUPER ADMINISTRATORS
+-- 1A. CREATE ROLES
+-- ============================================================================
+
+-- Insert default system roles for all existing tenants
+INSERT INTO roles (id, name, description, tenant_id, is_system_role, permissions, created_by)
+SELECT
+  CASE
+    WHEN role_data.name = 'Administrator' AND t.name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000001'::UUID
+    WHEN role_data.name = 'Manager' AND t.name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000002'::UUID
+    WHEN role_data.name = 'User' AND t.name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000003'::UUID
+    WHEN role_data.name = 'Engineer' AND t.name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000004'::UUID
+    WHEN role_data.name = 'Customer' AND t.name = 'Acme Corporation' THEN '10000000-0000-0000-0000-000000000009'::UUID
+    WHEN role_data.name = 'Administrator' AND t.name = 'Tech Solutions Inc' THEN '10000000-0000-0000-0000-000000000005'::UUID
+    WHEN role_data.name = 'Manager' AND t.name = 'Tech Solutions Inc' THEN '10000000-0000-0000-0000-000000000006'::UUID
+    WHEN role_data.name = 'Administrator' AND t.name = 'Global Trading Ltd' THEN '10000000-0000-0000-0000-000000000007'::UUID
+    ELSE gen_random_uuid()
+  END,
+  role_data.name,
+  role_data.description,
+  t.id as tenant_id,
+  true,
+  role_data.permissions,
+  NULL
+FROM tenants t
+CROSS JOIN (
+  VALUES
+    ('Administrator', 'Full administrative access', '["read", "write", "delete", "manage_users", "manage_roles", "manage_customers", "manage_sales", "manage_contracts", "manage_service_contracts", "manage_products", "manage_dashboard", "manage_settings"]'::jsonb),
+    ('Manager', 'Business operations manager', '["read", "write", "manage_customers", "manage_sales", "manage_contracts", "manage_service_contracts", "manage_products", "manage_dashboard"]'::jsonb),
+    ('User', 'Standard user', '["read", "write", "manage_customers", "manage_tickets"]'::jsonb),
+    ('Engineer', 'Technical engineer', '["read", "write", "manage_products", "manage_job_works", "manage_tickets"]'::jsonb),
+    ('Customer', 'External customer', '["read"]'::jsonb)
+) AS role_data(name, description, permissions)
+ON CONFLICT (name, tenant_id) DO NOTHING;
+
+-- Create super admin role
+INSERT INTO roles (id, name, description, tenant_id, is_system_role, permissions, created_by)
+VALUES
+  ('20000000-0000-0000-0000-000000000001'::UUID, 'super_admin', 'Super Administrator with full system access', NULL, true, '["super_admin", "platform_admin", "manage_tenants", "system_monitoring"]'::jsonb, NULL)
+ON CONFLICT (name, tenant_id) DO NOTHING;
+
+-- ============================================================================
+-- 1C. VERIFY SUPER ADMINISTRATORS
 -- ============================================================================
 -- Show all super administrators (tenant-independent users with global access)
 
 -- Verification: Show super administrators
-SELECT email, is_super_admin, tenant_id, role 
-FROM users 
-WHERE is_super_admin = true
-ORDER BY email;
+SELECT u.email, u.tenant_id, r.name as role
+FROM users u
+JOIN user_roles ur ON u.id = ur.user_id
+JOIN roles r ON ur.role_id = r.id
+WHERE r.name = 'super_admin'
+ORDER BY u.email;
 
 
 -- ============================================================================
@@ -182,32 +268,72 @@ INSERT INTO service_contracts (
   sla_terms, service_scope, created_at
 )
 VALUES
-  ('c50e8400-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 
-   'SVC-2025-001', 'Premium Support Contract', 'Comprehensive 24/7 support services',
-   'a50e8400-e29b-41d4-a716-446655440001'::UUID,
-   '950e8400-e29b-41d4-a716-446655440003'::UUID,
-   'support', 'active', 'high', 24000.00, 'USD', 'monthly',
-   (NOW() - INTERVAL '2 months')::DATE, (NOW() + INTERVAL '10 months')::DATE, TRUE, 12,
-   '24/7 support with 4-hour response time for critical issues',
-   'Includes email, phone, and chat support', NOW() - INTERVAL '2 months'),
-   
-  ('c50e8400-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'SVC-2025-002', 'Maintenance & Support', 'Scheduled maintenance and technical support',
-   'a50e8400-e29b-41d4-a716-446655440002'::UUID,
-   '950e8400-e29b-41d4-a716-446655440002'::UUID,
-   'maintenance', 'active', 'medium', 12000.00, 'USD', 'quarterly',
-   NOW()::DATE, (NOW() + INTERVAL '1 year')::DATE, TRUE, 12,
-   'Quarterly maintenance with 48-hour response time',
-   'Includes preventive maintenance and repairs', NOW()),
-   
-  ('c50e8400-e29b-41d4-a716-446655440003'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID,
-   'SVC-2025-003', 'Consulting Services', 'Strategic business consulting engagement',
-   'a50e8400-e29b-41d4-a716-446655440004'::UUID,
-   '950e8400-e29b-41d4-a716-446655440005'::UUID,
-   'consulting', 'expired', 'low', 18000.00, 'USD', 'one_time',
-   (NOW() - INTERVAL '6 months')::DATE, (NOW() + INTERVAL '6 months')::DATE, FALSE, NULL,
-   'On-demand consulting with dedicated account manager',
-   'Includes strategic analysis and recommendations', NOW() - INTERVAL '6 months')
+  (
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID,
+    '550e8400-e29b-41d4-a716-446655440001'::UUID,
+    'SVC-2025-001',
+    'Premium Support Contract',
+    'Comprehensive 24/7 support services',
+    'a50e8400-e29b-41d4-a716-446655440001'::UUID,
+    '950e8400-e29b-41d4-a716-446655440003'::UUID,
+    'support',
+    'active',
+    'high',
+    24000.00,
+    'USD',
+    'monthly',
+    (NOW() - INTERVAL '2 months')::DATE,
+    (NOW() + INTERVAL '10 months')::DATE,
+    TRUE,
+    12,
+    '24/7 support with 4-hour response time for critical issues',
+    'Includes email, phone, and chat support',
+    NOW() - INTERVAL '2 months'
+  ),
+  (
+    'c50e8400-e29b-41d4-a716-446655440002'::UUID,
+    '550e8400-e29b-41d4-a716-446655440001'::UUID,
+    'SVC-2025-002',
+    'Maintenance & Support',
+    'Scheduled maintenance and technical support',
+    'a50e8400-e29b-41d4-a716-446655440002'::UUID,
+    '950e8400-e29b-41d4-a716-446655440002'::UUID,
+    'maintenance',
+    'active',
+    'medium',
+    12000.00,
+    'USD',
+    'quarterly',
+    NOW()::DATE,
+    (NOW() + INTERVAL '1 year')::DATE,
+    TRUE,
+    12,
+    'Quarterly maintenance with 48-hour response time',
+    'Includes preventive maintenance and repairs',
+    NOW()
+  ),
+  (
+    'c50e8400-e29b-41d4-a716-446655440003'::UUID,
+    '550e8400-e29b-41d4-a716-446655440002'::UUID,
+    'SVC-2025-003',
+    'Consulting Services',
+    'Strategic business consulting engagement',
+    'a50e8400-e29b-41d4-a716-446655440004'::UUID,
+    '950e8400-e29b-41d4-a716-446655440005'::UUID,
+    'consulting',
+    'expired',
+    'low',
+    18000.00,
+    'USD',
+    'one_time',
+    (NOW() - INTERVAL '6 months')::DATE,
+    (NOW() + INTERVAL '6 months')::DATE,
+    FALSE,
+    NULL,
+    'On-demand consulting with dedicated account manager',
+    'Includes strategic analysis and recommendations',
+    NOW() - INTERVAL '6 months'
+  )
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -216,16 +342,15 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_contract_documents (
   id, tenant_id, service_contract_id, file_name, file_type, file_size,
-  file_path, document_type, uploaded_by_name, description, version_number, created_at
+  file_path, document_type, description, version_number, created_at
 )
 VALUES
   ('d60e8400-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'SLA-Premium-Support-v1.pdf', 'pdf', 245000,
-   '/contracts/SVC-2025-001/sla.pdf', 'sla_document', 'Admin Acme', 'Premium support SLA terms', 1, NOW()),
-  
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'SLA-Premium-Support-v1.pdf', 'pdf', 245000,
+    '/contracts/SVC-2025-001/sla.pdf', 'sla_document', 'Premium support SLA terms', 1, NOW()),
   ('d60e8400-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Service-Schedule-2025.xlsx', 'xlsx', 128000,
-   '/contracts/SVC-2025-001/schedule.xlsx', 'schedule', 'Admin Acme', 'Annual service schedule', 1, NOW())
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Service-Schedule-2025.xlsx', 'xlsx', 128000,
+    '/contracts/SVC-2025-001/schedule.xlsx', 'schedule', 'Annual service schedule', 1, NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -235,23 +360,21 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO service_delivery_milestones (
   id, tenant_id, service_contract_id, milestone_name, description,
   sequence_number, planned_date, deliverable_description,
-  status, completion_percentage, assigned_to_name, notes, created_at
+  status, completion_percentage, notes, created_at
 )
 VALUES
   ('e70e8400-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'System Setup', 'Initial system deployment and configuration',
-   1, NOW()::DATE, 'Production environment ready', 'completed', 100, 'Engineer Acme',
-   'Completed ahead of schedule', NOW() - INTERVAL '1 month'),
-   
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'System Setup', 'Initial system deployment and configuration',
+    1, NOW()::DATE, 'Production environment ready', 'completed', 100,
+    'Completed ahead of schedule', NOW() - INTERVAL '1 month'),
   ('e70e8400-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'User Training', 'Comprehensive user training program',
-   2, (NOW() + INTERVAL '30 days')::DATE, 'All users trained and certified',
-   'in_progress', 75, 'Manager Acme', 'Training sessions ongoing', NOW()),
-   
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'User Training', 'Comprehensive user training program',
+    2, (NOW() + INTERVAL '30 days')::DATE, 'All users trained and certified',
+    'in_progress', 75, 'Training sessions ongoing', NOW()),
   ('e70e8400-e29b-41d4-a716-446655440003'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Go-Live Support', 'Post-launch support and optimization',
-   3, (NOW() + INTERVAL '60 days')::DATE, 'System fully operational',
-   'pending', 0, 'Engineer Acme', 'Scheduled for next phase', NOW())
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Go-Live Support', 'Post-launch support and optimization',
+    3, (NOW() + INTERVAL '60 days')::DATE, 'System fully operational',
+    'pending', 0, 'Scheduled for next phase', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -260,21 +383,20 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_contract_issues (
   id, tenant_id, service_contract_id, issue_title, issue_description,
-  severity, category, status, assigned_to_name, reported_date,
+  severity, category, status, reported_date,
   impact_description, created_at
 )
 VALUES
   ('f80e8400-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Response time exceeded', 
-   'Support ticket response delayed by 2 hours', 'medium', 'sla_breach',
-   'resolved', 'Manager Acme', CURRENT_DATE - INTERVAL '5 days',
-   'Minor impact - resolved within 24 hours', NOW() - INTERVAL '5 days'),
-   
+    'c50e8400-e29b-41d4-a716-446655440001'::UUID, 'Response time exceeded',
+    'Support ticket response delayed by 2 hours', 'medium', 'sla_breach',
+    'resolved', CURRENT_DATE - INTERVAL '5 days',
+    'Minor impact - resolved within 24 hours', NOW() - INTERVAL '5 days'),
   ('f80e8400-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'c50e8400-e29b-41d4-a716-446655440002'::UUID, 'Resource availability',
-   'Need additional engineering resources for peak support', 'high', 'resource',
-   'open', 'Manager Acme', CURRENT_DATE,
-   'May impact service delivery during peak hours', NOW())
+    'c50e8400-e29b-41d4-a716-446655440002'::UUID, 'Resource availability',
+    'Need additional engineering resources for peak support', 'high', 'resource',
+    'open', CURRENT_DATE,
+    'May impact service delivery during peak hours', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -288,88 +410,7 @@ VALUES
   ('e50e8400-e29b-41d4-a716-446655440003'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'a50e8400-e29b-41d4-a716-446655440002'::UUID, 'JOB-2024-003', '950e8400-e29b-41d4-a716-446655440001'::UUID, 10.00, 'Small', 5000.00, 5000.00, 50000.00, 'completed'::job_work_status, 'low'::job_work_priority, (NOW() - INTERVAL '3 days')::DATE, NOW() - INTERVAL '4 days')
 ON CONFLICT (id) DO NOTHING;
 
--- ============================================================================
--- 9. RBAC - PERMISSIONS
--- ============================================================================
 
-INSERT INTO permissions (id, name, description, resource, action)
-VALUES
-  -- Dashboard & View permissions
-  ('00000000-0000-0000-0000-000000000001'::UUID, 'view_dashboard', 'View dashboard and analytics', 'dashboard', 'view'),
-  
-  -- Customer Management
-  ('00000000-0000-0000-0000-000000000101'::UUID, 'view_customers', 'View customer data', 'customers', 'view'),
-  ('00000000-0000-0000-0000-000000000102'::UUID, 'create_customers', 'Create new customers', 'customers', 'create'),
-  ('00000000-0000-0000-0000-000000000103'::UUID, 'edit_customers', 'Edit customer information', 'customers', 'edit'),
-  ('00000000-0000-0000-0000-000000000104'::UUID, 'delete_customers', 'Delete customers', 'customers', 'delete'),
-  ('00000000-0000-0000-0000-000000000105'::UUID, 'manage_customers', 'Full customer management', 'customers', 'manage'),
-  
-  -- Sales Management
-  ('00000000-0000-0000-0000-000000000201'::UUID, 'view_sales', 'View sales records', 'sales', 'view'),
-  ('00000000-0000-0000-0000-000000000202'::UUID, 'create_sales', 'Create sales records', 'sales', 'create'),
-  ('00000000-0000-0000-0000-000000000203'::UUID, 'edit_sales', 'Edit sales records', 'sales', 'edit'),
-  ('00000000-0000-0000-0000-000000000204'::UUID, 'manage_sales', 'Full sales management', 'sales', 'manage'),
-  
-  -- Tickets Management
-  ('00000000-0000-0000-0000-000000000301'::UUID, 'view_tickets', 'View support tickets', 'tickets', 'view'),
-  ('00000000-0000-0000-0000-000000000302'::UUID, 'create_tickets', 'Create support tickets', 'tickets', 'create'),
-  ('00000000-0000-0000-0000-000000000303'::UUID, 'edit_tickets', 'Edit support tickets', 'tickets', 'edit'),
-  ('00000000-0000-0000-0000-000000000304'::UUID, 'manage_tickets', 'Full ticket management', 'tickets', 'manage'),
-  
-  -- Contracts Management
-  ('00000000-0000-0000-0000-000000000401'::UUID, 'view_contracts', 'View contracts', 'contracts', 'view'),
-  ('00000000-0000-0000-0000-000000000402'::UUID, 'create_contracts', 'Create contracts', 'contracts', 'create'),
-  ('00000000-0000-0000-0000-000000000403'::UUID, 'edit_contracts', 'Edit contracts', 'contracts', 'edit'),
-  ('00000000-0000-0000-0000-000000000404'::UUID, 'manage_contracts', 'Full contract management', 'contracts', 'manage'),
-  
-  -- Service Contracts
-  ('00000000-0000-0000-0000-000000000501'::UUID, 'view_service_contracts', 'View service contracts', 'service_contracts', 'view'),
-  ('00000000-0000-0000-0000-000000000502'::UUID, 'manage_service_contracts', 'Manage service contracts', 'service_contracts', 'manage'),
-  
-  -- Product Management
-  ('00000000-0000-0000-0000-000000000601'::UUID, 'view_products', 'View products', 'products', 'view'),
-  ('00000000-0000-0000-0000-000000000602'::UUID, 'manage_products', 'Manage products and catalog', 'products', 'manage'),
-  
-  -- Product Sales
-  ('00000000-0000-0000-0000-000000000701'::UUID, 'view_product_sales', 'View product sales', 'product_sales', 'view'),
-  ('00000000-0000-0000-0000-000000000702'::UUID, 'manage_product_sales', 'Manage product sales', 'product_sales', 'manage'),
-  
-  -- Complaints Management
-  ('00000000-0000-0000-0000-000000000801'::UUID, 'view_complaints', 'View complaints', 'complaints', 'view'),
-  ('00000000-0000-0000-0000-000000000802'::UUID, 'manage_complaints', 'Manage complaints', 'complaints', 'manage'),
-  
-  -- Job Works
-  ('00000000-0000-0000-0000-000000000901'::UUID, 'view_job_works', 'View job works', 'job_works', 'view'),
-  ('00000000-0000-0000-0000-000000000902'::UUID, 'manage_job_works', 'Manage job works', 'job_works', 'manage'),
-  
-  -- Administrative
-  ('00000000-0000-0000-0000-000000001001'::UUID, 'manage_users', 'Manage user accounts', 'users', 'manage'),
-  ('00000000-0000-0000-0000-000000001002'::UUID, 'manage_roles', 'Manage roles and permissions', 'roles', 'manage'),
-  ('00000000-0000-0000-0000-000000001003'::UUID, 'view_reports', 'View reports and analytics', 'reports', 'view'),
-  ('00000000-0000-0000-0000-000000001004'::UUID, 'export_data', 'Export data', 'data', 'export'),
-  ('00000000-0000-0000-0000-000000001005'::UUID, 'manage_settings', 'Manage system settings', 'settings', 'manage'),
-  ('00000000-0000-0000-0000-000000001006'::UUID, 'manage_companies', 'Manage company information', 'companies', 'manage')
-ON CONFLICT (name) DO NOTHING;
-
--- ============================================================================
--- 10. RBAC - ROLES (Default roles for each tenant)
--- ============================================================================
-
--- Acme Corporation Roles
-INSERT INTO roles (id, name, description, tenant_id, is_system_role, created_by)
-VALUES
-  ('10000000-0000-0000-0000-000000000001'::UUID, 'Administrator', 'Full administrative access to tenant', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, 'Manager', 'Business operations manager', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, 'Agent', 'Customer service agent', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, 'Engineer', 'Technical engineer', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-
--- Tech Solutions Roles
-  ('10000000-0000-0000-0000-000000000005'::UUID, 'Administrator', 'Full administrative access to tenant', '550e8400-e29b-41d4-a716-446655440002'::UUID, true, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, 'Manager', 'Business operations manager', '550e8400-e29b-41d4-a716-446655440002'::UUID, true, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-
--- Global Trading Roles
-  ('10000000-0000-0000-0000-000000000007'::UUID, 'Administrator', 'Full administrative access to tenant', '550e8400-e29b-41d4-a716-446655440003'::UUID, true, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID)
-ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 11. RBAC - ROLE PERMISSIONS (Map permissions to roles)
@@ -378,176 +419,190 @@ ON CONFLICT (id) DO NOTHING;
 -- Admin Role Permissions (Acme Corporation)
 INSERT INTO role_permissions (role_id, permission_id, granted_by) -- Fixed: using actual user UUIDs
 VALUES
-  -- Admin has all permissions
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
+    -- Admin has all permissions
+    ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
 
 -- Manager Role Permissions (Acme Corporation)
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
 
 -- Agent Role Permissions (Acme Corporation)
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
 
 -- Engineer Role Permissions (Acme Corporation)
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
-  ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '5278ae57-db79-4120-b285-6a2082779b0c'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
 
 -- Tech Solutions - Admin Role Permissions
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
 
 -- Tech Solutions - Manager Role Permissions
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
-  ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '15372c20-b39b-4475-b579-7f5929c891e9'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
+   ('10000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '1f4e815d-e66d-4d35-a5c3-f808e6786b35'::UUID),
 
 -- Global Trading - Admin Role Permissions
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID),
-  ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, '2dfdab55-61d3-4987-93f2-64a3db93fde8'::UUID)
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000104'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000105'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000201'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000202'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000203'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000204'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000304'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000401'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000402'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000403'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000404'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000501'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000502'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000601'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000602'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000701'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000702'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000901'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000902'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001001'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001002'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001003'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001004'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001005'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+   ('10000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000001006'::UUID, 'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID),
+
+-- User Role Permissions (Acme Corporation)
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000101'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000102'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000103'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000301'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000302'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000303'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000801'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ('10000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000802'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+
+-- Customer Role Permissions (Acme Corporation) - Minimal permissions
+   ('10000000-0000-0000-0000-000000000009'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- ============================================================================
@@ -593,163 +648,24 @@ VALUES
   ('e60e8400-e29b-41d4-a716-446655440006'::UUID, 'a50e8400-e29b-41d4-a716-446655440005'::UUID, 'f60e8400-e29b-41d4-a716-446655440007'::UUID, NOW())
 ON CONFLICT (customer_id, tag_id) DO NOTHING;
 
--- ============================================================================
--- 14. ROLES - CREATE SYSTEM ROLES FOR EACH TENANT
--- ============================================================================
-
--- Acme Corporation (tenant: 550e8400-e29b-41d4-a716-446655440001)
-INSERT INTO roles (name, description, tenant_id, is_system_role, permissions, created_at, updated_at)
-VALUES
-  (
-    'Super Administrator',
-    'Full platform administration with all permissions',
-    '550e8400-e29b-41d4-a716-446655440001'::UUID,
-    TRUE,
-    '[
-      "manage_users", "view_users", "create_user", "edit_user", "delete_user", "reset_password",
-      "manage_roles", "view_roles", "create_role", "edit_role", "delete_role", "assign_role",
-      "manage_permissions", "view_audit_logs",
-      "view_reports", "create_customer", "edit_customer", "delete_customer", "view_customer",
-      "manage_contracts", "manage_tickets", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Administrator',
-    'Tenant administrator with full tenant permissions',
-    '550e8400-e29b-41d4-a716-446655440001'::UUID,
-    TRUE,
-    '[
-      "manage_users", "view_users", "create_user", "edit_user", "delete_user", "reset_password",
-      "manage_roles", "view_roles", "create_role", "edit_role", "delete_role", "assign_role",
-      "manage_permissions", "view_audit_logs",
-      "view_reports", "create_customer", "edit_customer", "delete_customer", "view_customer",
-      "manage_contracts", "manage_tickets", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Manager',
-    'Business operations manager with analytics access',
-    '550e8400-e29b-41d4-a716-446655440001'::UUID,
-    TRUE,
-    '[
-      "view_users", "view_reports", "create_customer", "edit_customer", "view_customer",
-      "manage_contracts", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Agent',
-    'Customer service agent with basic operations',
-    '550e8400-e29b-41d4-a716-446655440001'::UUID,
-    TRUE,
-    '[
-      "view_users", "view_customer", "create_customer", "edit_customer", "manage_tickets"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Engineer',
-    'Technical engineer with product and job work access',
-    '550e8400-e29b-41d4-a716-446655440001'::UUID,
-    TRUE,
-    '[
-      "view_users", "view_reports", "view_customer", "manage_products", "manage_job_works", "manage_product_sales", "manage_tickets"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  )
-ON CONFLICT (name, tenant_id) DO NOTHING;
-
--- Tech Solutions Inc (tenant: 550e8400-e29b-41d4-a716-446655440002)
-INSERT INTO roles (name, description, tenant_id, is_system_role, permissions, created_at, updated_at)
-VALUES
-  (
-    'Super Administrator',
-    'Full platform administration with all permissions',
-    '550e8400-e29b-41d4-a716-446655440002'::UUID,
-    TRUE,
-    '[
-      "manage_users", "view_users", "create_user", "edit_user", "delete_user", "reset_password",
-      "manage_roles", "view_roles", "create_role", "edit_role", "delete_role", "assign_role",
-      "manage_permissions", "view_audit_logs",
-      "view_reports", "create_customer", "edit_customer", "delete_customer", "view_customer",
-      "manage_contracts", "manage_tickets", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Administrator',
-    'Tenant administrator with full tenant permissions',
-    '550e8400-e29b-41d4-a716-446655440002'::UUID,
-    TRUE,
-    '[
-      "manage_users", "view_users", "create_user", "edit_user", "delete_user", "reset_password",
-      "manage_roles", "view_roles", "create_role", "edit_role", "delete_role", "assign_role",
-      "manage_permissions", "view_audit_logs",
-      "view_reports", "create_customer", "edit_customer", "delete_customer", "view_customer",
-      "manage_contracts", "manage_tickets", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Manager',
-    'Business operations manager with analytics access',
-    '550e8400-e29b-41d4-a716-446655440002'::UUID,
-    TRUE,
-    '[
-      "view_users", "view_reports", "create_customer", "edit_customer", "view_customer",
-      "manage_contracts", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  )
-ON CONFLICT (name, tenant_id) DO NOTHING;
-
--- Global Trading Ltd (tenant: 550e8400-e29b-41d4-a716-446655440003)
-INSERT INTO roles (name, description, tenant_id, is_system_role, permissions, created_at, updated_at)
-VALUES
-  (
-    'Super Administrator',
-    'Full platform administration with all permissions',
-    '550e8400-e29b-41d4-a716-446655440003'::UUID,
-    TRUE,
-    '[
-      "manage_users", "view_users", "create_user", "edit_user", "delete_user", "reset_password",
-      "manage_roles", "view_roles", "create_role", "edit_role", "delete_role", "assign_role",
-      "manage_permissions", "view_audit_logs",
-      "view_reports", "create_customer", "edit_customer", "delete_customer", "view_customer",
-      "manage_contracts", "manage_tickets", "manage_sales", "manage_products", "manage_job_works", "manage_product_sales"
-    ]'::JSONB,
-    NOW(),
-    NOW()
-  )
-ON CONFLICT (name, tenant_id) DO NOTHING;
 
 -- ============================================================================
 -- 15. USER ROLE ASSIGNMENTS - ASSIGN USERS TO ROLES
 -- ============================================================================
 
 -- Acme Corporation users
--- admin@acme.com (Super Administrator role)
+-- admin@acme.com (Administrator role)
 INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
-SELECT 
-  u.id,
-  r.id,
-  '550e8400-e29b-41d4-a716-446655440001'::UUID,
-  NOW()
+SELECT
+   u.id,
+   r.id,
+   '550e8400-e29b-41d4-a716-446655440001'::UUID,
+   NOW()
 FROM users u
 CROSS JOIN roles r
 WHERE u.email = 'admin@acme.com'
-  AND r.name = 'Super Administrator'
-  AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440001'::UUID
+   AND r.name = 'Administrator'
+   AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440001'::UUID
 ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
 -- manager@acme.com (Manager role)
@@ -780,18 +696,18 @@ WHERE u.email = 'engineer@acme.com'
   AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440001'::UUID
 ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
--- user@acme.com (Agent role)
+-- user@acme.com (User role)
 INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
-SELECT 
-  u.id,
-  r.id,
-  '550e8400-e29b-41d4-a716-446655440001'::UUID,
-  NOW()
+SELECT
+   u.id,
+   r.id,
+   '550e8400-e29b-41d4-a716-446655440001'::UUID,
+   NOW()
 FROM users u
 CROSS JOIN roles r
 WHERE u.email = 'user@acme.com'
-  AND r.name = 'Agent'
-  AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440001'::UUID
+   AND r.name = 'User'
+   AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440001'::UUID
 ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
 -- Tech Solutions users
@@ -824,189 +740,37 @@ WHERE u.email = 'manager@techsolutions.com'
 ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
 -- Global Trading users
--- admin@globaltrading.com (Super Administrator role)
+-- admin@globaltrading.com (Administrator role)
 INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
-SELECT 
-  u.id,
-  r.id,
-  '550e8400-e29b-41d4-a716-446655440003'::UUID,
-  NOW()
+SELECT
+   u.id,
+   r.id,
+   '550e8400-e29b-41d4-a716-446655440003'::UUID,
+   NOW()
 FROM users u
 CROSS JOIN roles r
 WHERE u.email = 'admin@globaltrading.com'
-  AND r.name = 'Super Administrator'
-  AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440003'::UUID
+   AND r.name = 'Administrator'
+   AND r.tenant_id = '550e8400-e29b-41d4-a716-446655440003'::UUID
 ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
--- ============================================================================
--- 16. SUPER USER MODULE - TENANT ACCESS ASSIGNMENTS
--- ============================================================================
--- Note: Super users are already created in section 1B. Now we assign tenant access.
+-- Super admin users (super_admin role assignments)
+INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
+SELECT
+   u.id,
+   r.id,
+   NULL,
+   NOW()
+FROM users u
+CROSS JOIN roles r
+WHERE u.email IN ('superadmin@platform.com', 'superadmin2@platform.com', 'superadmin3@platform.com')
+   AND r.name = 'super_admin'
+   AND r.tenant_id IS NULL
+ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 
--- Super User 1: Full Access to All Tenants
-INSERT INTO super_user_tenant_access (id, super_user_id, tenant_id, access_level, created_at, updated_at)
-VALUES
-  ('d7e8ef00-e29b-41d4-a716-446655440001'::UUID, '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'full'::access_level_enum, NOW(), NOW()),
-  ('d7e8ef00-e29b-41d4-a716-446655440002'::UUID, '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'full'::access_level_enum, NOW(), NOW()),
-  ('d7e8ef00-e29b-41d4-a716-446655440003'::UUID, '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'full'::access_level_enum, NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
 
--- Super User 2: Limited Access to First Two Tenants
-INSERT INTO super_user_tenant_access (id, super_user_id, tenant_id, access_level, created_at, updated_at)
-VALUES
-  ('d7e8ef00-e29b-41d4-a716-446655440004'::UUID, 'b4c9831c-4be7-4f28-b4b5-37a9a230084d'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'limited'::access_level_enum, NOW(), NOW()),
-  ('d7e8ef00-e29b-41d4-a716-446655440005'::UUID, 'b4c9831c-4be7-4f28-b4b5-37a9a230084d'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'limited'::access_level_enum, NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
 
--- Super User 3: Read-Only Access to All Tenants (Auditor)
-INSERT INTO super_user_tenant_access (id, super_user_id, tenant_id, access_level, created_at, updated_at)
-VALUES
-  ('d7e8ef00-e29b-41d4-a716-446655440006'::UUID, '0cfdd140-593b-4750-9745-6a1e60a1e7bd'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'read_only'::access_level_enum, NOW(), NOW()),
-  ('d7e8ef00-e29b-41d4-a716-446655440007'::UUID, '0cfdd140-593b-4750-9745-6a1e60a1e7bd'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'read_only'::access_level_enum, NOW(), NOW()),
-  ('d7e8ef00-e29b-41d4-a716-446655440008'::UUID, '0cfdd140-593b-4750-9745-6a1e60a1e7bd'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'read_only'::access_level_enum, NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
 
--- ============================================================================
--- 18. SUPER USER MODULE - IMPERSONATION LOGS (Historical Data)
--- ============================================================================
-
-INSERT INTO super_user_impersonation_logs (
-  id, super_user_id, impersonated_user_id, tenant_id, reason, login_at, logout_at, 
-  actions_taken, ip_address, user_agent, created_at, updated_at
-)
-VALUES
-  -- Completed impersonation sessions
-  ('e8f8ef00-e29b-41d4-a716-446655440001'::UUID, 
-   '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, 
-   '5278ae57-db79-4120-b285-6a2082779b0c'::UUID,
-   '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'Troubleshoot customer access issue',
-   NOW() - INTERVAL '7 days',
-   NOW() - INTERVAL '7 days' + INTERVAL '45 minutes',
-   '{"actions": ["view_customer_list", "review_customer_profile", "check_access_logs"]}'::JSONB,
-   '192.168.1.100',
-   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-   NOW() - INTERVAL '7 days',
-   NOW() - INTERVAL '7 days'
-  ),
-  
-  ('e8f8ef00-e29b-41d4-a716-446655440002'::UUID,
-   '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID,
-   '92ec9125-1dae-44c4-abc8-a2ba741a6f3b'::UUID,
-   '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'Review manager dashboard and reports',
-   NOW() - INTERVAL '5 days',
-   NOW() - INTERVAL '5 days' + INTERVAL '2 hours',
-   '{"actions": ["view_dashboard", "export_report", "review_metrics"]}'::JSONB,
-   '192.168.1.101',
-   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-   NOW() - INTERVAL '5 days',
-   NOW() - INTERVAL '5 days'
-  ),
-  
-  ('e8f8ef00-e29b-41d4-a716-446655440003'::UUID,
-   'b4c9831c-4be7-4f28-b4b5-37a9a230084d'::UUID,
-   '15372c20-b39b-4475-b579-7f5929c891e9'::UUID,
-   '550e8400-e29b-41d4-a716-446655440002'::UUID,
-   'Setup user account permissions',
-   NOW() - INTERVAL '3 days',
-   NOW() - INTERVAL '3 days' + INTERVAL '1 hour 30 minutes',
-   '{"actions": ["create_test_users", "assign_permissions", "verify_access"]}'::JSONB,
-   '192.168.1.102',
-   'Mozilla/5.0 (X11; Linux x86_64)',
-   NOW() - INTERVAL '3 days',
-   NOW() - INTERVAL '3 days'
-  ),
-  
-  -- Active impersonation session (ongoing)
-  ('e8f8ef00-e29b-41d4-a716-446655440004'::UUID,
-   '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID,
-   'b1010925-d7ac-40ed-851a-f27d2dce6b9b'::UUID,
-   '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'Monitor engineer activity for compliance',
-   NOW() - INTERVAL '2 hours',
-   NULL,  -- Still active
-   '{"actions": ["view_job_assignments", "check_performance_metrics"]}'::JSONB,
-   '192.168.1.103',
-   'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-   NOW() - INTERVAL '2 hours',
-   NOW() - INTERVAL '2 hours'
-  )
-ON CONFLICT (id) DO NOTHING;
-
--- ============================================================================
--- 19. SUPER USER MODULE - TENANT STATISTICS
--- ============================================================================
-
--- Acme Corporation Statistics
-INSERT INTO tenant_statistics (id, tenant_id, metric_type, metric_value, recorded_at, updated_at)
-VALUES
-  -- Active users
-  ('f9f8ef00-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'active_users'::metric_type_enum, 4, NOW(), NOW()),
-  -- Total contracts
-  ('f9f8ef00-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'total_contracts'::metric_type_enum, 2, NOW(), NOW()),
-  -- Total sales
-  ('f9f8ef00-e29b-41d4-a716-446655440003'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'total_sales'::metric_type_enum, 2, NOW(), NOW()),
-  -- Total transactions
-  ('f9f8ef00-e29b-41d4-a716-446655440004'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'total_transactions'::metric_type_enum, 15, NOW(), NOW()),
-  -- Disk usage (in GB)
-  ('f9f8ef00-e29b-41d4-a716-446655440005'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'disk_usage'::metric_type_enum, 5.25, NOW(), NOW()),
-  -- API calls daily
-  ('f9f8ef00-e29b-41d4-a716-446655440006'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 'api_calls_daily'::metric_type_enum, 342, NOW(), NOW()),
-
-  -- Tech Solutions Inc Statistics
-  -- Active users
-  ('f9f8ef00-e29b-41d4-a716-446655440007'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'active_users'::metric_type_enum, 2, NOW(), NOW()),
-  -- Total contracts
-  ('f9f8ef00-e29b-41d4-a716-446655440008'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'total_contracts'::metric_type_enum, 1, NOW(), NOW()),
-  -- Total sales
-  ('f9f8ef00-e29b-41d4-a716-446655440009'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'total_sales'::metric_type_enum, 1, NOW(), NOW()),
-  -- Total transactions
-  ('f9f8ef00-e29b-41d4-a716-446655440010'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'total_transactions'::metric_type_enum, 8, NOW(), NOW()),
-  -- Disk usage (in GB)
-  ('f9f8ef00-e29b-41d4-a716-446655440011'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'disk_usage'::metric_type_enum, 2.10, NOW(), NOW()),
-  -- API calls daily
-  ('f9f8ef00-e29b-41d4-a716-446655440012'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID, 'api_calls_daily'::metric_type_enum, 156, NOW(), NOW()),
-
-  -- Global Trading Ltd Statistics
-  -- Active users
-  ('f9f8ef00-e29b-41d4-a716-446655440013'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'active_users'::metric_type_enum, 1, NOW(), NOW()),
-  -- Total contracts
-  ('f9f8ef00-e29b-41d4-a716-446655440014'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'total_contracts'::metric_type_enum, 0, NOW(), NOW()),
-  -- Total sales
-  ('f9f8ef00-e29b-41d4-a716-446655440015'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'total_sales'::metric_type_enum, 0, NOW(), NOW()),
-  -- Total transactions
-  ('f9f8ef00-e29b-41d4-a716-446655440016'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'total_transactions'::metric_type_enum, 5, NOW(), NOW()),
-  -- Disk usage (in GB)
-  ('f9f8ef00-e29b-41d4-a716-446655440017'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'disk_usage'::metric_type_enum, 1.50, NOW(), NOW()),
-  -- API calls daily
-  ('f9f8ef00-e29b-41d4-a716-446655440018'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID, 'api_calls_daily'::metric_type_enum, 89, NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
-
--- ============================================================================
--- 20. SUPER USER MODULE - CONFIGURATION OVERRIDES
--- ============================================================================
-
-INSERT INTO tenant_config_overrides (id, tenant_id, config_key, config_value, override_reason, created_by, created_at, expires_at)
-VALUES
-  -- Acme Corporation Config Overrides
-  ('aaf8ef00-e29b-41d4-a716-446655440001'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID, 
-   'max_users', '100'::JSONB, 'Capacity expansion approved', '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, NOW(), NULL),
-  
-  ('aaf8ef00-e29b-41d4-a716-446655440002'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'api_rate_limit', '5000'::JSONB, 'High volume trading support', '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, NOW(), NULL),
-  
-  ('aaf8ef00-e29b-41d4-a716-446655440003'::UUID, '550e8400-e29b-41d4-a716-446655440001'::UUID,
-   'maintenance_mode', 'false'::JSONB, 'Emergency maintenance override', '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'),
-  
-  -- Tech Solutions Inc Config Overrides
-  ('aaf8ef00-e29b-41d4-a716-446655440004'::UUID, '550e8400-e29b-41d4-a716-446655440002'::UUID,
-   'feature_flags', '{"advanced_reporting": true, "custom_workflows": true}'::JSONB, 'Premium feature enablement', 'b4c9831c-4be7-4f28-b4b5-37a9a230084d'::UUID, NOW(), NULL),
-  
-  -- Global Trading Ltd Config Overrides
-  ('aaf8ef00-e29b-41d4-a716-446655440005'::UUID, '550e8400-e29b-41d4-a716-446655440003'::UUID,
-   'timezone', '"Asia/Singapore"'::JSONB, 'Regional customization', '4e0f4f70-73c7-45ac-a948-6ba225ca36d0'::UUID, NOW(), NULL)
-ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 21. DYNAMIC REFERENCE DATA - STATUS OPTIONS AND REFERENCE DATA
@@ -1018,12 +782,12 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'pending', 'Pending', '#FFA500', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'qualified', 'Qualified', '#4169E1', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'proposal_sent', 'Proposal Sent', '#9370DB', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'negotiation', 'Negotiation', '#20B2AA', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'won', 'Won', '#228B22', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'sales', 'lost', 'Lost', '#DC143C', 60, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+    ((SELECT id FROM tenants LIMIT 1), 'sales', 'pending', 'Pending', '#FFA500', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ((SELECT id FROM tenants LIMIT 1), 'sales', 'qualified', 'Qualified', '#4169E1', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ((SELECT id FROM tenants LIMIT 1), 'sales', 'proposal_sent', 'Proposal Sent', '#9370DB', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ((SELECT id FROM tenants LIMIT 1), 'sales', 'negotiation', 'Negotiation', '#20B2AA', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ((SELECT id FROM tenants LIMIT 1), 'sales', 'won', 'Won', '#228B22', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+   ((SELECT id FROM tenants LIMIT 1), 'sales', 'lost', 'Lost', '#DC143C', 60, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1032,12 +796,12 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'open', 'Open', '#FF6B6B', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'in_progress', 'In Progress', '#4ECDC4', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'waiting_customer', 'Waiting for Customer', '#FFA500', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'resolved', 'Resolved', '#95E1D3', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'closed', 'Closed', '#38ADA9', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'rejected', 'Rejected', '#DC143C', 60, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'open', 'Open', '#FF6B6B', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'in_progress', 'In Progress', '#4ECDC4', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'waiting_customer', 'Waiting for Customer', '#FFA500', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'resolved', 'Resolved', '#95E1D3', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'closed', 'Closed', '#38ADA9', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'tickets', 'rejected', 'Rejected', '#DC143C', 60, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1046,13 +810,13 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'draft', 'Draft', '#A9A9A9', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'sent_for_approval', 'Sent for Approval', '#FFA500', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'approved', 'Approved', '#228B22', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'signed', 'Signed', '#4169E1', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'active', 'Active', '#32CD32', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'expired', 'Expired', '#DC143C', 60, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'terminated', 'Terminated', '#8B0000', 70, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'draft', 'Draft', '#A9A9A9', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'sent_for_approval', 'Sent for Approval', '#FFA500', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'approved', 'Approved', '#228B22', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'signed', 'Signed', '#4169E1', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'active', 'Active', '#32CD32', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'expired', 'Expired', '#DC143C', 60, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'contracts', 'terminated', 'Terminated', '#8B0000', 70, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1061,11 +825,11 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'scheduled', 'Scheduled', '#4169E1', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'in_progress', 'In Progress', '#20B2AA', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'completed', 'Completed', '#228B22', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'pending_approval', 'Pending Approval', '#FFA500', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'cancelled', 'Cancelled', '#DC143C', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'scheduled', 'Scheduled', '#4169E1', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'in_progress', 'In Progress', '#20B2AA', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'completed', 'Completed', '#228B22', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'pending_approval', 'Pending Approval', '#FFA500', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'jobwork', 'cancelled', 'Cancelled', '#DC143C', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1074,11 +838,11 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'filed', 'Filed', '#FF6B6B', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'under_investigation', 'Under Investigation', '#FFA500', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'resolution_proposed', 'Resolution Proposed', '#9370DB', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'resolved', 'Resolved', '#228B22', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'closed', 'Closed', '#38ADA9', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'filed', 'Filed', '#FF6B6B', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'under_investigation', 'Under Investigation', '#FFA500', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'resolution_proposed', 'Resolution Proposed', '#9370DB', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'resolved', 'Resolved', '#228B22', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'complaints', 'closed', 'Closed', '#38ADA9', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1087,12 +851,12 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO status_options (tenant_id, module, status_key, display_label, color_code, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'draft', 'Draft', '#A9A9A9', 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'pending', 'Pending', '#FFA500', 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'active', 'Active', '#32CD32', 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'on_hold', 'On Hold', '#FFD700', 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'completed', 'Completed', '#228B22', 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'cancelled', 'Cancelled', '#DC143C', 60, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'draft', 'Draft', '#A9A9A9', 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'pending', 'Pending', '#FFA500', 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'active', 'Active', '#32CD32', 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'on_hold', 'On Hold', '#FFD700', 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'completed', 'Completed', '#228B22', 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'serviceContract', 'cancelled', 'Cancelled', '#DC143C', 60, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 -- ============================================================================
@@ -1101,10 +865,10 @@ ON CONFLICT (tenant_id, module, status_key) DO NOTHING;
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'priority', 'low', 'Low', '{"color":"#228B22","icon":"ArrowDown","weight":1}'::jsonb, 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'priority', 'medium', 'Medium', '{"color":"#FFA500","icon":"ArrowRight","weight":2}'::jsonb, 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'priority', 'high', 'High', '{"color":"#FF6B6B","icon":"ArrowUp","weight":3}'::jsonb, 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'priority', 'critical', 'Critical', '{"color":"#DC143C","icon":"AlertTriangle","weight":4}'::jsonb, 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'priority', 'low', 'Low', '{"color":"#228B22","icon":"ArrowDown","weight":1}'::jsonb, 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'priority', 'medium', 'Medium', '{"color":"#FFA500","icon":"ArrowRight","weight":2}'::jsonb, 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'priority', 'high', 'High', '{"color":"#FF6B6B","icon":"ArrowUp","weight":3}'::jsonb, 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'priority', 'critical', 'Critical', '{"color":"#DC143C","icon":"AlertTriangle","weight":4}'::jsonb, 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 -- ============================================================================
@@ -1113,10 +877,10 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'severity', 'minor', 'Minor', '{"color":"#A9A9A9","icon":"Bug","weight":1}'::jsonb, 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'severity', 'major', 'Major', '{"color":"#FFA500","icon":"AlertCircle","weight":2}'::jsonb, 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'severity', 'critical', 'Critical', '{"color":"#FF6B6B","icon":"AlertTriangle","weight":3}'::jsonb, 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'severity', 'blocker', 'Blocker', '{"color":"#DC143C","icon":"AlertOctagon","weight":4}'::jsonb, 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'severity', 'minor', 'Minor', '{"color":"#A9A9A9","icon":"Bug","weight":1}'::jsonb, 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'severity', 'major', 'Major', '{"color":"#FFA500","icon":"AlertCircle","weight":2}'::jsonb, 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'severity', 'critical', 'Critical', '{"color":"#FF6B6B","icon":"AlertTriangle","weight":3}'::jsonb, 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'severity', 'blocker', 'Blocker', '{"color":"#DC143C","icon":"AlertOctagon","weight":4}'::jsonb, 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 -- ============================================================================
@@ -1125,11 +889,11 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'department', 'sales', 'Sales', '{"icon":"TrendingUp","color":"#4169E1"}'::jsonb, 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'department', 'support', 'Support', '{"icon":"Headphones","color":"#20B2AA"}'::jsonb, 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'department', 'engineering', 'Engineering', '{"icon":"Wrench","color":"#9370DB"}'::jsonb, 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'department', 'operations', 'Operations', '{"icon":"Zap","color":"#FFD700"}'::jsonb, 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'department', 'billing', 'Billing', '{"icon":"DollarSign","color":"#228B22"}'::jsonb, 50, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'department', 'sales', 'Sales', '{"icon":"TrendingUp","color":"#4169E1"}'::jsonb, 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'department', 'support', 'Support', '{"icon":"Headphones","color":"#20B2AA"}'::jsonb, 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'department', 'engineering', 'Engineering', '{"icon":"Wrench","color":"#9370DB"}'::jsonb, 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'department', 'operations', 'Operations', '{"icon":"Zap","color":"#FFD700"}'::jsonb, 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'department', 'billing', 'Billing', '{"icon":"DollarSign","color":"#228B22"}'::jsonb, 50, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 -- ============================================================================
@@ -1137,7 +901,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'industry',
   industries.key,
@@ -1145,7 +909,7 @@ SELECT
   industries.metadata::jsonb,
   industries.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1167,10 +931,10 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'beginner', 'Beginner', '{"level":1,"color":"#A9A9A9"}'::jsonb, 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'intermediate', 'Intermediate', '{"level":2,"color":"#FFD700"}'::jsonb, 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'advanced', 'Advanced', '{"level":3,"color":"#4169E1"}'::jsonb, 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'expert', 'Expert', '{"level":4,"color":"#228B22"}'::jsonb, 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'beginner', 'Beginner', '{"level":1,"color":"#A9A9A9"}'::jsonb, 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'intermediate', 'Intermediate', '{"level":2,"color":"#FFD700"}'::jsonb, 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'advanced', 'Advanced', '{"level":3,"color":"#4169E1"}'::jsonb, 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'competency_level', 'expert', 'Expert', '{"level":4,"color":"#228B22"}'::jsonb, 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 -- ============================================================================
@@ -1178,7 +942,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, description, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'company_size',
   sizes.key,
@@ -1187,7 +951,7 @@ SELECT
   sizes.metadata::jsonb,
   sizes.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1205,10 +969,10 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
 VALUES
-  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'hardware', 'Hardware', '{"icon":"Monitor","color":"#4169E1"}'::jsonb, 10, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'software', 'Software', '{"icon":"Code","color":"#20B2AA"}'::jsonb, 20, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'service', 'Service', '{"icon":"Briefcase","color":"#9370DB"}'::jsonb, 30, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)),
-  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'subscription', 'Subscription', '{"icon":"RefreshCw","color":"#FFD700"}'::jsonb, 40, true, (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1))
+  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'hardware', 'Hardware', '{"icon":"Monitor","color":"#4169E1"}'::jsonb, 10, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'software', 'Software', '{"icon":"Code","color":"#20B2AA"}'::jsonb, 20, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'service', 'Service', '{"icon":"Briefcase","color":"#9370DB"}'::jsonb, 30, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID),
+  ((SELECT id FROM tenants LIMIT 1), 'product_type', 'subscription', 'Subscription', '{"icon":"RefreshCw","color":"#FFD700"}'::jsonb, 40, true, '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
 
 -- ============================================================================
@@ -1216,7 +980,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'ticket_status',
   statuses.key,
@@ -1224,7 +988,7 @@ SELECT
   statuses.metadata::jsonb,
   statuses.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1241,7 +1005,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'ticket_priority',
   priorities.key,
@@ -1249,7 +1013,7 @@ SELECT
   priorities.metadata::jsonb,
   priorities.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1265,7 +1029,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'ticket_category',
   categories.key,
@@ -1273,7 +1037,7 @@ SELECT
   categories.metadata::jsonb,
   categories.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1290,7 +1054,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'ticket_department',
   depts.key,
@@ -1298,7 +1062,7 @@ SELECT
   depts.metadata::jsonb,
   depts.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1314,7 +1078,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'ticket_tag',
   tags.key,
@@ -1322,7 +1086,7 @@ SELECT
   tags.metadata::jsonb,
   tags.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1339,7 +1103,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'contract_type',
   types.key,
@@ -1347,7 +1111,7 @@ SELECT
   types.metadata::jsonb,
   types.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1364,7 +1128,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'contract_status',
   statuses.key,
@@ -1372,7 +1136,7 @@ SELECT
   statuses.metadata::jsonb,
   statuses.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1389,7 +1153,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'contract_priority',
   priorities.key,
@@ -1397,7 +1161,7 @@ SELECT
   priorities.metadata::jsonb,
   priorities.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1413,7 +1177,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'company_status',
   statuses.key,
@@ -1421,7 +1185,7 @@ SELECT
   statuses.metadata::jsonb,
   statuses.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1437,7 +1201,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'product_status',
   statuses.key,
@@ -1445,7 +1209,7 @@ SELECT
   statuses.metadata::jsonb,
   statuses.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1461,7 +1225,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'product_unit',
   units.key,
@@ -1469,7 +1233,7 @@ SELECT
   units.metadata::jsonb,
   units.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1491,7 +1255,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'customer_status',
   statuses.key,
@@ -1499,7 +1263,7 @@ SELECT
   statuses.metadata::jsonb,
   statuses.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1515,7 +1279,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'customer_type',
   types.key,
@@ -1523,7 +1287,7 @@ SELECT
   types.metadata::jsonb,
   types.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1539,7 +1303,7 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
+SELECT
   t.id,
   'lead_source',
   sources.key,
@@ -1547,7 +1311,7 @@ SELECT
   sources.metadata::jsonb,
   sources.sort_order,
   true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+  '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
   VALUES
@@ -1564,20 +1328,409 @@ ON CONFLICT (tenant_id, category, key) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO reference_data (tenant_id, category, key, label, metadata, sort_order, is_active, created_by)
-SELECT 
-  t.id,
-  'lead_rating',
-  ratings.key,
-  ratings.label,
-  ratings.metadata::jsonb,
-  ratings.sort_order,
-  true,
-  (SELECT id FROM users WHERE role = 'super_admin' LIMIT 1)
+SELECT
+    t.id,
+    'lead_rating',
+    ratings.key,
+    ratings.label,
+    ratings.metadata::jsonb,
+    ratings.sort_order,
+    true,
+    '19a961a2-52ce-4ac9-a5fa-ea4ae9dc3a43'::UUID
 FROM tenants t
 CROSS JOIN (
-  VALUES
-    ('hot', 'Hot Lead', '{"icon":"Flame","emoji":"🔥","weight":3}', 30),
-    ('warm', 'Warm Lead', '{"icon":"Sun","emoji":"☀️","weight":2}', 20),
-    ('cold', 'Cold Lead', '{"icon":"Snowflake","emoji":"❄️","weight":1}', 10)
+    VALUES
+      ('hot', 'Hot Lead', '{"icon":"Flame","emoji":"🔥","weight":3}', 30),
+      ('warm', 'Warm Lead', '{"icon":"Sun","emoji":"☀️","weight":2}', 20),
+      ('cold', 'Cold Lead', '{"icon":"Snowflake","emoji":"❄️","weight":1}', 10)
 ) AS ratings(key, label, metadata, sort_order)
 ON CONFLICT (tenant_id, category, key) DO NOTHING;
+
+-- ============================================================================
+-- SUPER USER MODULE SEED DATA - REFACTORED FOR ROLE-BASED SUPER ADMIN
+-- Date: 2025-11-16
+-- Purpose: Seed data for super user module after removing is_super_admin column
+--          All super admin detection now uses role='super_admin' only
+-- ============================================================================
+
+-- ============================================================================
+-- 1. SUPER USER TENANT ACCESS
+-- ============================================================================
+-- Tracks which tenants each super user can manage
+-- This table defines the access relationships for super users
+
+INSERT INTO super_user_tenant_access (
+    id,
+    super_user_id,
+    tenant_id,
+    access_level,
+    created_at,
+    updated_at
+) VALUES
+    -- Super User 1 (superadmin@platform.com): Full platform access (manages all 3 tenants)
+    ('550e8400-e29b-41d4-a716-446655500001'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,  -- Acme Corporation
+     'full',
+     NOW(),
+     NOW()),
+
+    ('550e8400-e29b-41d4-a716-446655500002'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,  -- Tech Solutions Inc
+     'full',
+     NOW(),
+     NOW()),
+
+    ('550e8400-e29b-41d4-a716-446655500003'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,  -- Global Trading Ltd
+     'full',
+     NOW(),
+     NOW()),
+
+    -- Super User 2 (superadmin2@platform.com): Limited access (manages tech + global)
+    ('550e8400-e29b-41d4-a716-446655500004'::UUID,
+     '0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,  -- Tech Solutions Inc
+     'full',
+     NOW(),
+     NOW()),
+
+    ('550e8400-e29b-41d4-a716-446655500005'::UUID,
+     '0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,  -- Global Trading Ltd
+     'limited',
+     NOW(),
+     NOW()),
+
+    -- Super User 3 (superadmin3@platform.com): Read-only access to global trading
+    ('550e8400-e29b-41d4-a716-446655500006'::UUID,
+     '03cf37f2-28e8-4b20-aa6d-22efb0bb044d'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,  -- Global Trading Ltd
+     'full',
+     NOW(),
+     NOW())
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- 2. IMPERSONATION AUDIT LOGS
+-- ============================================================================
+-- Historical impersonation sessions for testing
+
+INSERT INTO super_user_impersonation_logs (
+    id,
+    super_user_id,
+    impersonated_user_id,
+    tenant_id,
+    reason,
+    login_at,
+    logout_at,
+    actions_taken,
+    ip_address,
+    user_agent,
+    created_at,
+    updated_at
+) VALUES
+    -- Session 1: Super User 1 impersonating manager@acme.com in Acme
+    ('650e8400-e29b-41d4-a716-446655600001'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     '4fe005aa-a34f-4793-8476-a8c869d808ee'::UUID,  -- manager@acme.com
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'Troubleshooting customer contract issue',
+     NOW() - INTERVAL '2 days',
+     NOW() - INTERVAL '2 days' + INTERVAL '30 minutes',
+     '[{"action": "view_contract", "count": 3}, {"action": "export_pdf", "timestamp": "2025-02-09T14:25:00Z"}]'::jsonb,
+     '192.168.1.100',
+     'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+     NOW() - INTERVAL '2 days',
+     NOW() - INTERVAL '2 days' + INTERVAL '30 minutes'),
+
+    -- Session 2: Super User 1 impersonating engineer@acme.com in Acme
+    ('650e8400-e29b-41d4-a716-446655600002'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     '5eb55c02-66f9-469b-adb1-9e6534eb2afb'::UUID,  -- engineer@acme.com
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'Testing new sales feature',
+     NOW() - INTERVAL '1 day',
+     NOW() - INTERVAL '1 day' + INTERVAL '45 minutes',
+     '[{"action": "create_deal", "count": 1}, {"action": "update_contact", "count": 5}]'::jsonb,
+     '192.168.1.101',
+     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+     NOW() - INTERVAL '1 day',
+     NOW() - INTERVAL '1 day' + INTERVAL '45 minutes'),
+
+    -- Session 3: Super User 2 impersonating manager@techsolutions.com - Active/ongoing session
+    ('650e8400-e29b-41d4-a716-446655600003'::UUID,
+     '0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID,
+     'e25537ec-f00e-42a6-b9de-d5a7519082fd'::UUID,  -- manager@techsolutions.com
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'Support ticket investigation',
+     NOW() - INTERVAL '1 hour',
+     NULL,
+     '[]'::jsonb,
+     '192.168.1.102',
+     'Mozilla/5.0 (X11; Linux x86_64)',
+     NOW() - INTERVAL '1 hour',
+     NOW() - INTERVAL '1 hour'),
+
+    -- Session 4: Super User 1 impersonating manager@techsolutions.com (historical session - completed)
+    ('650e8400-e29b-41d4-a716-446655600004'::UUID,
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     'e25537ec-f00e-42a6-b9de-d5a7519082fd'::UUID,  -- manager@techsolutions.com
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'Debug notification system',
+     NOW() - INTERVAL '5 days',
+     NOW() - INTERVAL '5 days' + INTERVAL '2 hours',
+     '[{"action": "check_logs", "count": 10}]'::jsonb,
+     '192.168.1.103',
+     'Chrome/120.0.0.0',
+     NOW() - INTERVAL '5 days',
+     NOW() - INTERVAL '5 days' + INTERVAL '2 hours'),
+
+    -- Session 5: Super User 3 impersonating admin@globaltrading.com (historical session)
+    ('650e8400-e29b-41d4-a716-446655600005'::UUID,
+     '03cf37f2-28e8-4b20-aa6d-22efb0bb044d'::UUID,
+     'f8d3ddb7-16e7-435b-b728-cfab060612d8'::UUID,  -- admin@globaltrading.com
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,
+     'Monthly audit check',
+     NOW() - INTERVAL '10 days',
+     NOW() - INTERVAL '10 days' + INTERVAL '1 hour',
+     '[{"action": "audit_review", "items": 50}]'::jsonb,
+     '192.168.1.104',
+     'Safari/537.36',
+     NOW() - INTERVAL '10 days',
+     NOW() - INTERVAL '10 days' + INTERVAL '1 hour')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- 3. TENANT STATISTICS
+-- ============================================================================
+-- Aggregate metrics for tenant analytics
+
+INSERT INTO tenant_statistics (
+    id,
+    tenant_id,
+    metric_type,
+    metric_value,
+    recorded_at,
+    updated_at
+) VALUES
+    -- Tenant 1 (Acme) Statistics
+    ('750e8400-e29b-41d4-a716-446655700001'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'active_users'::metric_type_enum,
+     120.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700002'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'total_contracts'::metric_type_enum,
+     85.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700003'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'total_sales'::metric_type_enum,
+     250.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700004'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'total_transactions'::metric_type_enum,
+     1250.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700005'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'disk_usage'::metric_type_enum,
+     5120.50,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700006'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'api_calls_daily'::metric_type_enum,
+     2500.00,
+     NOW(),
+     NOW()),
+
+    -- Tenant 2 (Tech Solutions) Statistics
+    ('750e8400-e29b-41d4-a716-446655700007'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'active_users'::metric_type_enum,
+     65.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700008'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'total_contracts'::metric_type_enum,
+     42.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700009'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'total_sales'::metric_type_enum,
+     120.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700010'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'disk_usage'::metric_type_enum,
+     2560.75,
+     NOW(),
+     NOW()),
+
+    -- Tenant 3 (Global Trading) Statistics
+    ('750e8400-e29b-41d4-a716-446655700011'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,
+     'active_users'::metric_type_enum,
+     15.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700012'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,
+     'total_contracts'::metric_type_enum,
+     8.00,
+     NOW(),
+     NOW()),
+
+    ('750e8400-e29b-41d4-a716-446655700013'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,
+     'total_sales'::metric_type_enum,
+     25.00,
+     NOW(),
+     NOW())
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- 4. TENANT CONFIG OVERRIDES
+-- ============================================================================
+-- Configuration overrides applied by super users
+
+INSERT INTO tenant_config_overrides (
+    id,
+    tenant_id,
+    config_key,
+    config_value,
+    override_reason,
+    created_by,
+    created_at,
+    expires_at,
+    updated_at
+) VALUES
+    -- Permanent override for Acme (no expiration)
+    ('850e8400-e29b-41d4-a716-446655800001'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'max_users',
+     '{"value": 200, "enabled": true}'::jsonb,
+     'Increased user limit for Q2 expansion',
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     NOW() - INTERVAL '30 days',
+     NULL,
+     NOW() - INTERVAL '30 days'),
+
+    -- Temporary override for Acme (expires in future)
+    ('850e8400-e29b-41d4-a716-446655800002'::UUID,
+     '550e8400-e29b-41d4-a716-446655440001'::UUID,
+     'feature_beta_sales_analytics',
+     '{"enabled": true, "beta_id": "beta_sa_v2"}'::jsonb,
+     'Testing new sales analytics feature',
+     '49463b03-56ed-4fef-b17c-f17a860f0a29'::UUID,
+     NOW(),
+     NOW() + INTERVAL '30 days',
+     NOW()),
+
+    -- Temporary override for Tech Solutions (expired)
+    ('850e8400-e29b-41d4-a716-446655800003'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'maintenance_mode',
+     '{"enabled": false, "message": ""}'::jsonb,
+     'Maintenance window completed',
+     '0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID,
+     NOW() - INTERVAL '5 days',
+     NOW() - INTERVAL '2 days',
+     NOW() - INTERVAL '2 days'),
+
+    -- Active temporary override for Tech Solutions
+    ('850e8400-e29b-41d4-a716-446655800004'::UUID,
+     '550e8400-e29b-41d4-a716-446655440002'::UUID,
+     'api_rate_limit',
+     '{"requests_per_minute": 2000, "requests_per_hour": 50000}'::jsonb,
+     'Increased API rate limit for integration partner',
+     '0a3c2155-da7b-4e2c-ab18-85b0a3f8e18e'::UUID,
+     NOW() - INTERVAL '10 days',
+     NOW() + INTERVAL '50 days',
+     NOW()),
+
+    -- Permanent permission change for Global Trading
+    ('850e8400-e29b-41d4-a716-446655800005'::UUID,
+     '550e8400-e29b-41d4-a716-446655440003'::UUID,
+     'allowed_modules',
+     '{"sales": true, "contracts": true, "customers": true, "jobworks": false, "products": false}'::jsonb,
+     'Limited module access per customer agreement',
+     '03cf37f2-28e8-4b20-aa6d-22efb0bb044d'::UUID,
+     NOW() - INTERVAL '60 days',
+     NULL,
+     NOW() - INTERVAL '60 days')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- VERIFICATION QUERIES
+-- ============================================================================
+
+-- Verify super users exist (should have role='super_admin', tenant_id=NULL)
+SELECT u.id, u.email, r.name as role, u.tenant_id
+FROM users u
+JOIN user_roles ur ON u.id = ur.user_id
+JOIN roles r ON ur.role_id = r.id
+WHERE r.name = 'super_admin'
+ORDER BY u.email;
+
+-- Verify tenant access relationships
+SELECT
+    sua.super_user_id,
+    u.email as super_user_email,
+    sua.tenant_id,
+    t.name as tenant_name,
+    sua.access_level
+FROM super_user_tenant_access sua
+JOIN users u ON sua.super_user_id = u.id
+LEFT JOIN tenants t ON sua.tenant_id = t.id
+ORDER BY u.email, t.name;
+
+-- Verify impersonation logs
+SELECT
+    sil.super_user_id,
+    u.email as super_user_email,
+    sil.impersonated_user_id,
+    iu.email as impersonated_email,
+    sil.reason,
+    sil.login_at,
+    sil.logout_at
+FROM super_user_impersonation_logs sil
+JOIN users u ON sil.super_user_id = u.id
+JOIN users iu ON sil.impersonated_user_id = iu.id
+ORDER BY sil.login_at DESC;
+
+-- ============================================================================
+-- SUMMARY
+-- ============================================================================
+-- This seed data creates:
+-- - 3 super users with different access levels
+-- - 6 tenant access relationships
+-- - 5 impersonation audit log entries
+-- - 13 tenant statistics records
+-- - 5 tenant configuration overrides
+--
+-- All super admin detection now uses role='super_admin' only
+-- No references to is_super_admin column in this seed data
+-- ============================================================================

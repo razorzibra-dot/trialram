@@ -14,7 +14,7 @@ export interface Notification {
   type: 'info' | 'warning' | 'error' | 'success';
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   is_read?: boolean;
   read?: boolean;
   read_at?: string;

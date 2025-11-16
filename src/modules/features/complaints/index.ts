@@ -1,39 +1,42 @@
 /**
- * Complaints Module - Module Container Pattern
- * Handles customer complaints management with standardized service management
+ * Complaints Module
+ * Customer complaint management and tracking
  */
-import { FeatureModule } from '@/modules/core/types';
-import { complaintsRoutes } from './routes';
-import { getServiceContainer } from '@/modules/core/serviceContainer';
-import { complaintService } from '@/services/complaintService';
 
-export const complaintsModule: FeatureModule = {
+// Type exports
+export type { Complaint, ComplaintComment, ComplaintFilters, ComplaintStats, ComplaintFormData, ComplaintUpdateData } from '@/types/complaints';
+
+// Routes
+export { complaintsRoutes } from './routes';
+import { complaintsRoutes } from './routes';
+
+// Module configuration
+export const complaintsModule = {
   name: 'complaints',
   path: '/complaints',
-  routes: complaintsRoutes,
   services: ['complaintService'],
-  components: {},
   dependencies: ['core', 'shared'],
+  routes: complaintsRoutes as Array<Record<string, unknown>>,
+  components: {},
+
+  // Initialize the module
   async initialize() {
-    try {
-      const container = getServiceContainer();
-      container.registerService('complaintService', complaintService);
-      console.log('[Complaints Module] Initialized with services: complaintService');
-    } catch (error) {
-      console.error('[Complaints Module] Initialization failed:', error);
-      throw error;
-    }
+    const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
+    const { complaintService } = await import('@/services/serviceFactory');
+
+    // Register complaint service from factory
+    registerServiceInstance('complaintService', complaintService);
+
+    console.log('Complaints module initialized');
   },
+
+  // Cleanup the module
   async cleanup() {
-    try {
-      const container = getServiceContainer();
-      container.unregisterService('complaintService');
-      console.log('[Complaints Module] Cleanup complete');
-    } catch (error) {
-      console.error('[Complaints Module] Cleanup failed:', error);
-    }
+    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
+
+    // Remove complaint service
+    serviceContainer.remove('complaintService');
+
+    console.log('Complaints module cleaned up');
   },
 };
-
-// Export views for direct imports if needed
-export { default as ComplaintsPage } from './views/ComplaintsPage';

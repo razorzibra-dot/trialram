@@ -32,17 +32,16 @@ import { Suspense, lazy } from 'react';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load modular pages
-const DashboardPage = lazy(() => import('@/modules/features/dashboard/views/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const DashboardPage = lazy(() => import('@/modules/features/dashboard/views/DashboardPage'));
 const SalesPage = lazy(() => import('@/modules/features/sales/views/SalesPage').then(m => ({ default: m.SalesPage })));
 const TicketsPage = lazy(() => import('@/modules/features/tickets/views/TicketsPage').then(m => ({ default: m.TicketsPage })));
-const JobWorksPage = lazy(() => import('@/modules/features/jobworks/views/JobWorksPage').then(m => ({ default: m.JobWorksPage })));
+const JobWorksPage = lazy(() => import('@/modules/features/jobworks/views/JobWorksPage'));
 const CustomersPage = lazy(() => import('@/modules/features/customers/views/CustomerListPage'));
 const CompaniesPage = lazy(() => import('@/modules/features/masters/views/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
 const ProductsPage = lazy(() => import('@/modules/features/masters/views/ProductsPage').then(m => ({ default: m.ProductsPage })));
-const ContractsPage = lazy(() => import('@/modules/features/contracts/views/ContractsPage').then(m => ({ default: m.ContractsPage })));
+const ContractsPage = lazy(() => import('@/modules/features/contracts/views/ContractsPage'));
 
 // Lazy load additional modular pages
-const ComplaintsPage = lazy(() => import('@/modules/features/complaints/views/ComplaintsPage'));
 const UsersPage = lazy(() => import('@/modules/features/user-management/views/UsersPage'));
 // ✅ CONSOLIDATED: UserManagementPage removed (legacy duplicate, consolidated into UsersPage)
 const RoleManagementPage = lazy(() => import('@/modules/features/user-management/views/RoleManagementPage'));
@@ -53,7 +52,6 @@ const ServiceContractDetailPage = lazy(() => import('@/modules/features/service-
 const NotificationsPage = lazy(() => import('@/modules/features/notifications/views/NotificationsPage'));
 const TenantConfigurationPage = lazy(() => import('@/modules/features/configuration/views/TenantConfigurationPage'));
 const ConfigurationTestPage = lazy(() => import('@/modules/features/configuration/views/ConfigurationTestPage'));
-const PDFTemplatesPage = lazy(() => import('@/modules/features/pdf-templates/views/PDFTemplatesPage'));
 const ProductSalesPage = lazy(() => import('@/modules/features/product-sales/views/ProductSalesPage'));
 
 // Super Admin modular pages
@@ -202,10 +200,6 @@ export function createModularRouter() {
           element: <Navigate to="/tenant/tickets" replace />,
         },
         {
-          path: "complaints",
-          element: <Navigate to="/tenant/complaints" replace />,
-        },
-        {
           path: "job-works",
           element: <Navigate to="/tenant/job-works" replace />,
         },
@@ -223,7 +217,7 @@ export function createModularRouter() {
         },
         {
           path: "logs",
-          element: <Navigate to="/tenant/logs" replace />,
+          element: <Navigate to="/super-admin/logs" replace />,
         },
         {
           path: "configuration",

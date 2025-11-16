@@ -22,7 +22,6 @@ import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 // Lazy load components
 const TenantConfigurationPage = lazy(() => import('./views/TenantConfigurationPage'));
 const ConfigurationTestPage = lazy(() => import('./views/ConfigurationTestPage'));
-const PDFTemplatesPage = lazy(() => import('../pdf-templates/views/PDFTemplatesPage'));
 
 /**
  * Route wrapper component with error boundary and loading spinner
@@ -54,14 +53,6 @@ export const configurationRoutes: RouteObject[] = [
         element: (
           <RouteWrapper>
             <TenantConfigurationPage />
-          </RouteWrapper>
-        ),
-      },
-      {
-        path: 'pdf-templates',
-        element: (
-          <RouteWrapper>
-            <PDFTemplatesPage />
           </RouteWrapper>
         ),
       },

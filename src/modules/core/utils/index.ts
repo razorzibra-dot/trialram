@@ -11,6 +11,9 @@ export * from '@/utils/sessionManager';
 // Error handling utilities
 export * from './errorHandler';
 
+// Service container utilities
+export * from './serviceContainer';
+
 // Additional utility functions
 export const sleep = (ms: number): Promise<void> => 
   new Promise(resolve => setTimeout(resolve, ms));

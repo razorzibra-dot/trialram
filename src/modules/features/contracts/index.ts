@@ -12,9 +12,8 @@ export {
 } from './store/contractStore';
 export type { ContractFilters, ContractState } from './store/contractStore';
 
-// Service exports
-export { ContractService } from './services/contractService';
-export type { ContractFormData } from './services/contractService';
+// Service exports (types only)
+// export type { ContractFormData } from './services/contractService'; // TODO: Add when service is implemented
 
 // Hook exports
 export { 
@@ -50,14 +49,13 @@ export const contractsModule = {
   
   // Initialize the module
   async initialize() {
-    const { registerService } = await import('@/modules/core/services/ServiceContainer');
-    const { ContractService } = await import('./services/contractService');
-    const { ServiceContractService } = await import('./services/serviceContractService');
-    
-    // Register services
-    registerService('contractService', ContractService);
-    registerService('serviceContractService', ServiceContractService);
-    
+    const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
+    const { contractService } = await import('@/services/serviceFactory');
+    const { serviceContractService } = await import('@/services/serviceFactory');
+
+    registerServiceInstance('contractService', contractService);
+    registerServiceInstance('serviceContractService', serviceContractService);
+
     console.log('Contracts module initialized');
   },
   
@@ -65,7 +63,6 @@ export const contractsModule = {
   async cleanup() {
     const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
     
-    // Remove services
     serviceContainer.remove('contractService');
     serviceContainer.remove('serviceContractService');
     

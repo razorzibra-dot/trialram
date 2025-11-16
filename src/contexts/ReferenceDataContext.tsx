@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 // ✅ PHASE 1.5: DYNAMIC DATA LOADING - Layer 6 (React Context)
 // Import from factory (Layer 5) - never import services directly
 import { referenceDataService } from '@/services/serviceFactory';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   StatusOption,
   ReferenceData,
@@ -94,6 +95,8 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
   children,
   cacheTTL = CACHE_TTL,
 }) => {
+  const { isAuthenticated, tenant } = useAuth();
+
   // Main cache state
   const [cache, setCache] = useState<CacheState>({
     statusOptions: [],
@@ -154,28 +157,45 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
   }, []);
 
   /**
-   * Initialize context on mount
-   */
-  useEffect(() => {
-    isMountedRef.current = true;
+    * Initialize context on mount - only load data when authenticated and tenant context is available
+    */
+   useEffect(() => {
+     isMountedRef.current = true;
 
-    // Load data on mount
-    fetchAllReferenceData();
+     // Only load data if user is authenticated and tenant context exists with valid tenantId
+     if (isAuthenticated && tenant?.tenantId !== undefined && tenant?.tenantId !== null && tenant?.tenantId !== 'undefined') {
+       // Load data on mount
+       fetchAllReferenceData();
 
-    // Setup auto-refresh timer (5 minutes)
-    refreshTimerRef.current = setInterval(() => {
-      if (isMountedRef.current) {
-        fetchAllReferenceData();
-      }
-    }, cacheTTL);
+       // Setup auto-refresh timer (5 minutes)
+       refreshTimerRef.current = setInterval(() => {
+         if (isMountedRef.current && isAuthenticated && tenant?.tenantId !== undefined && tenant?.tenantId !== null && tenant?.tenantId !== 'undefined') {
+           fetchAllReferenceData();
+         }
+       }, cacheTTL);
+     } else {
+       // Clear data when user becomes unauthenticated
+       setCache({
+         statusOptions: [],
+         referenceData: [],
+         categories: [],
+         suppliers: [],
+       });
+       setMetadata((prev) => ({
+         ...prev,
+         lastRefresh: 0,
+         isLoading: false,
+         error: null,
+       }));
+     }
 
-    return () => {
-      isMountedRef.current = false;
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-    };
-  }, [cacheTTL, fetchAllReferenceData]);
+     return () => {
+       isMountedRef.current = false;
+       if (refreshTimerRef.current) {
+         clearInterval(refreshTimerRef.current);
+       }
+     };
+   }, [cacheTTL, fetchAllReferenceData, isAuthenticated, tenant?.tenantId]);
 
   /**
    * Invalidate cache and force refresh
@@ -262,7 +282,7 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
 
   const getCategoryByKey = useCallback(
     (key: string): ProductCategory | undefined => {
-      return cache.categories.find((cat) => cat.key === key);
+      return cache.categories.find((cat) => cat.name === key);
     },
     [cache.categories]
   );

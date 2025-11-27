@@ -7,6 +7,18 @@ import { supabase } from '@/services/supabase/client';
 import { Permission, Role, UserRole, AuditLog, RoleTemplate, PermissionMatrix } from '@/types/rbac';
 import { User } from '@/types/auth';
 import { authService } from '../../serviceFactory';
+import {
+  isSuperAdmin,
+  isPlatformRole,
+  isPlatformPermission,
+  filterRolesByTenant,
+  filterPermissionsByTenant,
+  canAccessRole,
+  canModifyRole,
+  getRoleQueryFilters,
+  getPermissionQueryFilters,
+} from '@/utils/tenantIsolation';
+import { invalidateRoleCache } from '@/utils/roleMapping';
 
 class SupabaseRBACService {
   private permissionsTable = 'permissions';
@@ -17,8 +29,13 @@ class SupabaseRBACService {
 
   /**
    * Get all permissions
+   * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
+   * Platform-level permissions are filtered using database flags (category='system' or is_system_permission=true)
    */
   async getPermissions(): Promise<Permission[]> {
+    const currentUser = authService.getCurrentUser();
+
+    // Fetch all permissions first
     const { data, error } = await supabase
       .from(this.permissionsTable)
       .select('*')
@@ -26,36 +43,56 @@ class SupabaseRBACService {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching permissions:', error);
+      console.error('[RBAC] Error fetching permissions:', error);
       // Return default permissions as fallback
       return this.getDefaultPermissions();
     }
 
-    return data || [];
+    if (!data) {
+      return [];
+    }
+
+    // Use systematic tenant isolation utility to filter permissions
+    const { filterFn } = getPermissionQueryFilters(currentUser);
+    const filteredData = filterFn(data);
+
+    console.log('[RBAC] Permissions fetched:', filteredData.length, 'of', data.length, 'for user role:', currentUser?.role);
+    return filteredData;
   }
 
   /**
    * Get all roles, optionally filtered by tenant
+   * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
+   * Platform-level roles are filtered using database flags (is_system_role=true AND tenant_id IS NULL)
    */
   async getRoles(tenantId?: string): Promise<Role[]> {
     const currentUser = authService.getCurrentUser();
     if (!currentUser) return [];
+
+    const userTenantId = tenantId || currentUser.tenantId;
+    const userIsSuperAdmin = isSuperAdmin(currentUser);
 
     let query = supabase
       .from(this.rolesTable)
       .select('*')
       .order('name', { ascending: true });
 
-    // If user is super_admin, allow fetching any tenant's roles
-    // Otherwise, only return roles for their tenant
-    // Note: User object uses camelCase (tenantId), not snake_case (tenant_id)
-    const userTenantId = tenantId || currentUser.tenantId;
-    
-    if (currentUser.role !== 'super_admin' && userTenantId) {
-      console.log('[RBAC] Filtering roles by tenant_id:', userTenantId);
-      query = query.eq('tenant_id', userTenantId);
-    } else if (currentUser.role === 'super_admin') {
-      console.log('[RBAC] Super admin - fetching all roles');
+    // Get systematic query filters based on user's tenant isolation level
+    const { filterFn, excludePlatformRoles, additionalFilter } = getRoleQueryFilters(currentUser);
+
+    // Apply tenant filtering
+    if (!userIsSuperAdmin && userTenantId) {
+      console.log('[RBAC] Tenant admin - filtering roles by tenant_id and excluding platform roles:', userTenantId);
+      // Filter by tenant_id and exclude platform roles (is_system_role=true with no tenant)
+      query = query
+        .eq('tenant_id', userTenantId)
+        .or('is_system_role.eq.false,tenant_id.not.is.null');
+    } else if (userIsSuperAdmin) {
+      console.log('[RBAC] Super admin - fetching all roles including platform roles');
+      // No filtering - super admins can see everything
+    } else {
+      console.warn('[RBAC] User has no tenant_id and is not super_admin, returning empty roles');
+      return [];
     }
 
     const { data, error } = await query;
@@ -65,14 +102,48 @@ class SupabaseRBACService {
       return [];
     }
 
-    console.log('[RBAC] Roles fetched:', data?.length || 0);
-    return data || [];
+    if (!data) {
+      return [];
+    }
+
+    // Apply systematic filtering using utility functions
+    const filteredData = filterRolesByTenant(data, currentUser);
+
+    console.log('[RBAC] Roles fetched:', filteredData.length, 'of', data.length, 'for user role:', currentUser.role);
+    return filteredData;
   }
 
   /**
    * Create a new role
+   * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
+   * Tenant admins cannot create platform-level roles (is_system_role=true with no tenant_id)
    */
   async createRole(roleData: Omit<Role, 'id' | 'created_at' | 'updated_at'>): Promise<Role> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // ⚠️ SECURITY: Use systematic validation to prevent tenant admins from creating platform roles
+    if (!canModifyRole(roleData, currentUser)) {
+      throw new Error('Access denied: Cannot create platform-level roles. Only super admins can create platform-level roles.');
+    }
+
+    // ⚠️ SECURITY: Ensure tenant admins can only create roles for their tenant
+    const userIsSuperAdmin = isSuperAdmin(currentUser);
+    if (!userIsSuperAdmin && currentUser.tenantId) {
+      if (roleData.tenant_id && roleData.tenant_id !== currentUser.tenantId) {
+        throw new Error('Access denied: Cannot create roles for other tenants.');
+      }
+      // Force tenant_id to current user's tenant
+      roleData.tenant_id = currentUser.tenantId;
+      // Ensure it's not marked as system role if tenant admin is creating it
+      if (roleData.is_system_role === true && roleData.tenant_id) {
+        // Allow system roles within tenant (like Administrator, Manager), but not platform roles
+        // This is fine - system roles can exist within a tenant
+      }
+    }
+
     const newRole = {
       ...roleData,
       created_at: new Date().toISOString(),
@@ -93,13 +164,56 @@ class SupabaseRBACService {
     // Log the action
     await this.logAction('role_created', 'role', data.id, { role_name: data.name });
 
+    // Invalidate role cache so new role is immediately available
+    invalidateRoleCache();
+
     return data as Role;
   }
 
   /**
    * Update a role
+   * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
+   * Tenant admins cannot modify platform-level roles (is_system_role=true with no tenant_id)
    */
   async updateRole(roleId: string, updates: Partial<Role>): Promise<Role> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // First, get the existing role to check permissions
+    const { data: existingRole, error: fetchError } = await supabase
+      .from(this.rolesTable)
+      .select('name, tenant_id, is_system_role')
+      .eq('id', roleId)
+      .single();
+
+    if (fetchError || !existingRole) {
+      throw new Error('Role not found');
+    }
+
+    // ⚠️ SECURITY: Use systematic validation to check if user can access this role
+    if (!canAccessRole(existingRole as Role, currentUser)) {
+      throw new Error('Access denied: Cannot modify this role. Only super admins can modify platform-level roles.');
+    }
+
+    // ⚠️ SECURITY: Use systematic validation to prevent creating platform roles
+    const mergedRole = { ...existingRole, ...updates } as Partial<Role>;
+    if (!canModifyRole(mergedRole, currentUser)) {
+      throw new Error('Access denied: Cannot modify role to platform-level. Only super admins can create platform-level roles.');
+    }
+
+    // ⚠️ SECURITY: Prevent tenant admins from modifying roles from other tenants
+    const userIsSuperAdmin = isSuperAdmin(currentUser);
+    if (!userIsSuperAdmin && currentUser.tenantId && existingRole.tenant_id !== currentUser.tenantId) {
+      throw new Error('Access denied: Cannot modify roles from other tenants.');
+    }
+
+    // ⚠️ SECURITY: Prevent changing tenant_id to another tenant
+    if (!userIsSuperAdmin && updates.tenant_id && updates.tenant_id !== currentUser.tenantId) {
+      throw new Error('Access denied: Cannot assign role to another tenant.');
+    }
+
     const updateData = {
       ...updates,
       updated_at: new Date().toISOString(),
@@ -123,6 +237,9 @@ class SupabaseRBACService {
 
     // Log the action
     await this.logAction('role_updated', 'role', roleId, updates);
+
+    // Invalidate role cache so updated role is immediately available
+    invalidateRoleCache();
 
     return data as Role;
   }
@@ -158,6 +275,9 @@ class SupabaseRBACService {
 
     // Log the action
     await this.logAction('role_deleted', 'role', roleId, { role_name: role.name });
+
+    // Invalidate role cache so deleted role is immediately removed
+    invalidateRoleCache();
   }
 
   /**

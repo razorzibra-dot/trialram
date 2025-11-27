@@ -10,6 +10,7 @@ import { SaveOutlined, CloseOutlined, InfoCircleOutlined, MailOutlined, UserOutl
 import { UserDTO, CreateUserDTO, UpdateUserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
+import * as tenantIsolation from '@/utils/tenantIsolation';
 
 interface UserFormPanelProps {
   open: boolean;
@@ -169,7 +170,7 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
         <Select
           placeholder="Select a tenant"
           prefix={<TeamOutlined />}
-          disabled={mode === 'edit' && user?.role !== 'super_admin'}
+          disabled={mode === 'edit' && user ? !tenantIsolation.isSuperAdmin(user as any) : false}
         >
           {allTenants.map(tenant => (
             <Select.Option key={tenant.id} value={tenant.id}>

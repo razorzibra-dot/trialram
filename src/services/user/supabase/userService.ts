@@ -30,6 +30,13 @@
 import { supabase } from '@/services/supabase/client';
 import { authService } from '../../serviceFactory';
 import {
+  mapUserRoleToDatabaseRole,
+  getValidUserRoles,
+  isValidUserRole,
+  isPlatformRoleByName,
+} from '@/utils/roleMapping';
+import { isSuperAdmin } from '@/utils/tenantIsolation';
+import {
   UserDTO,
   UserStatsDTO,
   CreateUserDTO,
@@ -75,19 +82,15 @@ function mapUserRow(dbRow: any): UserDTO {
   const metadata = dbRow?.metadata || {};
 
   // Extract primary role from user_roles (take first one, or default to 'user')
+  // Uses dynamic database-driven role mapping (synchronous normalization for mapping)
   let role: UserRole = 'user';
   if (dbRow.user_roles && dbRow.user_roles.length > 0) {
     const primaryRole = dbRow.user_roles[0]?.role?.name;
     if (primaryRole) {
-      // Map role names to UserRole enum
-      const roleMap: Record<string, UserRole> = {
-        'Administrator': 'admin',
-        'Manager': 'manager',
-        'User': 'user',
-        'Engineer': 'engineer',
-        'Customer': 'customer'
-      };
-      role = roleMap[primaryRole] || 'user';
+      // Normalize role name directly (synchronous operation for mapping)
+      // Full validation happens when roles are fetched from database
+      const normalized = primaryRole.toLowerCase().trim();
+      role = (normalized as UserRole) || 'user';
     }
   }
 
@@ -165,7 +168,8 @@ class SupabaseUserService {
       .order('created_at', { ascending: false });
 
     // ⭐ SECURITY: Tenant isolation - non-super-admins can only see users in their tenant
-    if (!authService.hasPermission('super_admin')) {
+    // Uses systematic tenant isolation utility instead of hardcoded permission check
+    if (!isSuperAdmin(currentUser)) {
       if (currentTenantId) {
         query = query.eq('tenant_id', currentTenantId);
       } else {
@@ -236,7 +240,8 @@ class SupabaseUserService {
        .is('deleted_at', null);
 
      // ⭐ SECURITY: Tenant isolation - non-super-admins can only access users in their tenant
-     if (!authService.hasPermission('super_admin')) {
+     // Uses systematic tenant isolation utility instead of hardcoded permission check
+     if (!isSuperAdmin(currentUser)) {
        if (currentTenantId) {
          query = query.eq('tenant_id', currentTenantId);
        } else {
@@ -292,7 +297,8 @@ class SupabaseUserService {
      const currentTenantId = authService.getCurrentTenantId();
      let assignedTenantId: string | null = null;
 
-     if (authService.hasPermission('super_admin')) {
+     // Uses systematic tenant isolation utility instead of hardcoded permission check
+     if (isSuperAdmin(currentUser)) {
        // Super admins can assign users to any tenant or make them platform-wide
        // For now, super admins creating users will assign them to their current tenant context
        // TODO: Add tenant selection UI for super admins
@@ -341,9 +347,10 @@ class SupabaseUserService {
        throw new Error('Position cannot exceed 100 characters');
      }
 
-     // Validate role
-     const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
-     if (!validRoles.includes(data.role)) {
+     // Validate role using dynamic database-driven utility
+     const isValid = await isValidUserRole(data.role);
+     if (!isValid) {
+       const validRoles = await getValidUserRoles();
        throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
      }
 
@@ -397,24 +404,27 @@ class SupabaseUserService {
      }
 
      // Assign role via user_roles table
-     const roleNameMap: Record<UserRole, string> = {
-       'admin': 'Administrator',
-       'manager': 'Manager',
-       'user': 'User',
-       'engineer': 'Engineer',
-       'customer': 'Customer',
-       'super_admin': 'super_admin' // Special case
-     };
-
-     const dbRoleName = roleNameMap[data.role];
+     // Uses dynamic database-driven role mapping
+     const dbRoleName = await mapUserRoleToDatabaseRole(data.role);
      if (dbRoleName) {
-       // Get role ID
-       const { data: roleData } = await supabase
+       // Check if role is platform role to determine tenant_id
+       const isPlatform = await isPlatformRoleByName(data.role);
+       const roleTenantId = isPlatform ? null : assignedTenantId;
+       
+       // Get role ID with tenant_id filter
+       let roleQuery = supabase
          .from('roles')
          .select('id')
-         .eq('name', dbRoleName)
-         .eq('tenant_id', data.role === 'super_admin' ? null : assignedTenantId)
-         .single();
+         .eq('name', dbRoleName);
+       
+       // Apply tenant_id filter based on platform role check
+       if (roleTenantId === null) {
+         roleQuery = roleQuery.is('tenant_id', null);
+       } else {
+         roleQuery = roleQuery.eq('tenant_id', roleTenantId);
+       }
+       
+       const { data: roleData } = await roleQuery.single();
 
        if (roleData) {
          // Assign role
@@ -495,10 +505,11 @@ class SupabaseUserService {
       throw new Error('Position cannot exceed 100 characters');
     }
 
-    // Validate role if provided
+    // Validate role if provided using dynamic database-driven utility
     if (data.role) {
-      const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
-      if (!validRoles.includes(data.role)) {
+      const isValid = await isValidUserRole(data.role);
+      if (!isValid) {
+        const validRoles = await getValidUserRoles();
         throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
       }
     }
@@ -527,25 +538,28 @@ class SupabaseUserService {
     if (data.position !== undefined) updatePayload.position = data.position;
 
     // Handle role updates via user_roles table
+    // Uses dynamic database-driven role mapping
     if (data.role !== undefined) {
-      const roleNameMap: Record<UserRole, string> = {
-        'admin': 'Administrator',
-        'manager': 'Manager',
-        'user': 'User',
-        'engineer': 'Engineer',
-        'customer': 'Customer',
-        'super_admin': 'super_admin'
-      };
-
-      const dbRoleName = roleNameMap[data.role];
+      const dbRoleName = await mapUserRoleToDatabaseRole(data.role);
       if (dbRoleName) {
+        // Check if role is platform role to determine tenant_id
+        const isPlatform = await isPlatformRoleByName(data.role);
+        const roleTenantId = isPlatform ? null : targetUser.tenantId;
+        
         // Get new role ID
-        const { data: roleData } = await supabase
+        let roleQuery = supabase
           .from('roles')
           .select('id')
-          .eq('name', dbRoleName)
-          .eq('tenant_id', data.role === 'super_admin' ? null : targetUser.tenantId)
-          .single();
+          .eq('name', dbRoleName);
+        
+        // Apply tenant_id filter based on platform role check
+        if (roleTenantId === null) {
+          roleQuery = roleQuery.is('tenant_id', null);
+        } else {
+          roleQuery = roleQuery.eq('tenant_id', roleTenantId);
+        }
+        
+        const { data: roleData } = await roleQuery.single();
 
         if (roleData) {
           // Remove existing role assignments for this user
@@ -608,8 +622,9 @@ class SupabaseUserService {
     authService.assertTenantAccess(targetUser.tenantId);
 
     // ⭐ SECURITY: Prevent tenant admins from deleting other admins
+    // Uses systematic tenant isolation utility instead of hardcoded role check
     const currentUser = authService.getCurrentUser();
-    if (!authService.hasPermission('super_admin') && targetUser.role === 'admin') {
+    if (!isSuperAdmin(currentUser) && targetUser.role === 'admin') {
       throw new Error('Access denied: Cannot delete admin users');
     }
 
@@ -643,7 +658,8 @@ class SupabaseUserService {
        .is('deleted_at', null);
 
      // ⭐ SECURITY: Tenant isolation - non-super-admins can only reset passwords for users in their tenant
-     if (currentUser?.role !== 'super_admin') {
+     // Uses systematic tenant isolation utility instead of hardcoded role check
+     if (!isSuperAdmin(currentUser)) {
        if (currentTenantId) {
          query = query.eq('tenant_id', currentTenantId);
        } else {
@@ -709,7 +725,8 @@ class SupabaseUserService {
        .is('deleted_at', null);
 
      // ⭐ SECURITY: Tenant isolation - non-super-admins can only see stats for their tenant
-     if (!authService.hasPermission('super_admin')) {
+     // Uses systematic tenant isolation utility instead of hardcoded permission check
+     if (!isSuperAdmin(currentUser)) {
        if (currentTenantId) {
          query = query.eq('tenant_id', currentTenantId);
        } else {
@@ -777,8 +794,76 @@ class SupabaseUserService {
   /**
    * Get available roles
    */
+  /**
+   * Get available roles for the current user
+   * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
+   * Fetches roles from database and filters based on tenant isolation rules
+   * Maps database Role records to UserRole type strings
+   */
   async getRoles(): Promise<UserRole[]> {
-    return ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      return [];
+    }
+
+    try {
+      // Fetch roles from RBAC service (which applies tenant isolation)
+      // Use service factory to get the correct service instance (mock or supabase)
+      const { rbacService } = await import('../../serviceFactory');
+      const roles = await rbacService.getRoles();
+
+      // Map database Role records to UserRole type strings
+      // Uses systematic role mapping utility instead of hardcoded map
+      const { getValidUserRolesFromDatabaseRoles } = await import('@/utils/roleMapping');
+      const userRoles = getValidUserRolesFromDatabaseRoles(roles);
+
+      // Ensure we have at least the tenant-level roles if no roles were found
+      // This is a fallback for edge cases, but should not normally happen
+      if (userRoles.length === 0 && currentUser.tenantId) {
+        console.warn('[UserService] No roles found from database, attempting to fetch from role mapping utility');
+        try {
+          const validRoles = await getValidUserRoles();
+          // Filter out platform roles for tenant admins
+          const { isPlatformRoleByName } = await import('@/utils/roleMapping');
+          const filteredRoles: UserRole[] = [];
+          for (const role of validRoles) {
+            const isPlatform = await isPlatformRoleByName(role);
+            if (!isPlatform) {
+              filteredRoles.push(role);
+            }
+          }
+          return filteredRoles.length > 0 ? filteredRoles : ['user']; // Fallback to 'user' if all filtered
+        } catch (fallbackError) {
+          console.error('[UserService] Error in fallback role fetch:', fallbackError);
+          return ['user']; // Ultimate fallback
+        }
+      }
+
+      return userRoles;
+    } catch (error) {
+      console.error('[UserService] Error fetching roles from RBAC service:', error);
+      // Fallback: Return roles based on user's tenant isolation level
+      // Uses dynamic database-driven utilities
+      try {
+        const validRoles = await getValidUserRoles();
+        if (isSuperAdmin(currentUser)) {
+          return validRoles; // Super admins see all roles
+        }
+        // Filter out platform roles for tenant admins
+        const { isPlatformRoleByName } = await import('@/utils/roleMapping');
+        const filteredRoles: UserRole[] = [];
+        for (const role of validRoles) {
+          const isPlatform = await isPlatformRoleByName(role);
+          if (!isPlatform) {
+            filteredRoles.push(role);
+          }
+        }
+        return filteredRoles.length > 0 ? filteredRoles : ['user'];
+      } catch (fallbackError) {
+        console.error('[UserService] Error in fallback role fetch:', fallbackError);
+        return ['user']; // Ultimate fallback
+      }
+    }
   }
 
   /**
@@ -805,7 +890,8 @@ class SupabaseUserService {
        .is('deleted_at', null);
 
      // Apply tenant filter for non-super-admins
-     if (currentUser?.role !== 'super_admin') {
+     // Uses systematic tenant isolation utility instead of hardcoded role check
+     if (!isSuperAdmin(currentUser)) {
        if (currentTenantId) {
          userQuery = userQuery.eq('tenant_id', currentTenantId);
        } else {
@@ -884,7 +970,8 @@ class SupabaseUserService {
       .order('name', { ascending: true });
 
     // ⭐ SECURITY: Tenant isolation - non-super-admins can only see their own tenant
-    if (currentUser?.role !== 'super_admin') {
+    // Uses systematic tenant isolation utility instead of hardcoded role check
+    if (!isSuperAdmin(currentUser)) {
       if (currentTenantId) {
         query = query.eq('id', currentTenantId);
       } else {

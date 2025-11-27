@@ -45,11 +45,14 @@ export async function validateUserForSuperUserAssignment(
       };
     }
 
-    const validRoles: UserRole[] = ['super_user', 'super_admin'];
-    if (!validRoles.includes(user.role as UserRole)) {
+    // ⚠️ DATABASE-DRIVEN: Check if role is a platform role using database flags
+    // Instead of hardcoded role names, check if role is platform-level
+    const { isPlatformRoleByName } = await import('@/utils/roleMapping');
+    const isPlatformRole = await isPlatformRoleByName(user.role);
+    if (!isPlatformRole) {
       return {
         valid: false,
-        error: `User role must be 'super_user' or 'super_admin', but is '${user.role}'`,
+        error: `User role must be a platform-level role (super_admin), but is '${user.role}'`,
       };
     }
 
@@ -225,7 +228,9 @@ export const integrationChecks = {
         const user = await userService.getUser(superUserId);
         userExists = true;
         userActive = user.status === 'active';
-        userHasCorrectRole = ['super_user', 'super_admin'].includes(user.role as UserRole);
+        // ⚠️ DATABASE-DRIVEN: Check if role is platform role using database flags
+        const { isPlatformRoleByName } = await import('@/utils/roleMapping');
+        userHasCorrectRole = await isPlatformRoleByName(user.role);
       } catch (error) {
         // User doesn't exist
       }

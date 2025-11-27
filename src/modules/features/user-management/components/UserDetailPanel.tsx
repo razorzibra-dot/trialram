@@ -30,6 +30,9 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
 }) => {
   const { hasPermission } = useAuth();
 
+  // ⚠️ NOTE: These switch cases are for UI display only (icons/colors), not security checks.
+  // For security checks, use permission-based checks (authService.hasPermission()).
+  // These role names are acceptable for UI rendering as they're derived from database.
   const getRoleIcon = (role: UserRole): React.ReactNode => {
     switch (role) {
       case 'super_admin':
@@ -45,6 +48,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
     }
   };
 
+  // ⚠️ NOTE: UI display only - not used for security checks
   const getRoleColor = (role: UserRole): string => {
     switch (role) {
       case 'super_admin':

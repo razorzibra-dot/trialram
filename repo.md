@@ -366,6 +366,110 @@ if (isTenantModule(moduleName)) {
 - **Cross-tenant access:** Attempts are logged and blocked
 - **Tenant validation:** Security checks prevent tenant ID tampering
 
+**⚠️ CRITICAL: Role and Permission Isolation for Tenant Admins**
+
+**Tenant admins (Administrator role) must NOT see or access:**
+1. **Super Admin Role**: The `super_admin` role should never appear in role dropdowns or role management for tenant admins
+2. **Platform-Level Permissions**: Permissions with `category='system'` or `is_system_permission=true` should be hidden from tenant admins
+   - Examples: `super_admin`, `platform_admin`, `tenants:manage`, `system_monitoring`
+3. **Other Tenants' Roles**: Tenant admins can only see roles for their own tenant (`tenant_id` must match)
+
+**Implementation Requirements:**
+- ⚠️ **USE SYSTEMATIC UTILITIES**: All tenant isolation logic must use `src/utils/tenantIsolation.ts` utilities, NOT hardcoded checks
+- `userService.getRoles()` must fetch roles from `rbacService.getRoles()` (which applies systematic tenant isolation)
+- `rbacService.getRoles()` must use `filterRolesByTenant()` utility to filter roles
+- `rbacService.getPermissions()` must use `filterPermissionsByTenant()` utility to filter permissions
+- `rbacService.createRole()` and `updateRole()` must use `canModifyRole()` utility for validation
+- All role/permission access checks must use `isSuperAdmin()`, `canAccessRole()`, `canAccessPermission()` utilities
+
+**Correct Implementation (Fully Dynamic Database-Driven Approach):**
+```typescript
+// ✅ CORRECT: Use fully dynamic database-driven utilities
+import {
+  isSuperAdmin,
+  filterRolesByTenant,
+  filterPermissionsByTenant,
+  canModifyRole,
+  canAccessRole,
+} from '@/utils/tenantIsolation';
+import {
+  getValidUserRoles,
+  isValidUserRole,
+  mapUserRoleToDatabaseRole,
+  isPlatformRoleByName,
+} from '@/utils/roleMapping';
+
+// ✅ CORRECT: Get valid roles from database (fully dynamic)
+async getRoles(): Promise<UserRole[]> {
+  // Fetches roles from database - no hardcoded values
+  return await getValidUserRoles();
+}
+
+// ✅ CORRECT: Validate role using database check
+async validateRole(role: string): Promise<void> {
+  const isValid = await isValidUserRole(role);
+  if (!isValid) {
+    const validRoles = await getValidUserRoles();
+    throw new Error(`Invalid role. Allowed: ${validRoles.join(', ')}`);
+  }
+}
+
+// ✅ CORRECT: Map role using database lookup
+async assignRole(userRole: UserRole): Promise<void> {
+  // Looks up actual database role name - no hardcoded mapping
+  const dbRoleName = await mapUserRoleToDatabaseRole(userRole);
+  // Check if platform role using database flags
+  const isPlatform = await isPlatformRoleByName(userRole);
+  // ... rest of implementation
+}
+
+// ✅ CORRECT: Filter roles using database-driven utilities
+async getRoles(tenantId?: string): Promise<Role[]> {
+  const currentUser = authService.getCurrentUser();
+  if (!currentUser) return [];
+  
+  // Fetch all roles from database
+  const { data, error } = await supabase
+    .from('roles')
+    .select('*')
+    .order('name', { ascending: true });
+  
+  if (error) return [];
+  
+  // Use systematic utility to filter based on tenant isolation rules
+  return filterRolesByTenant(data || [], currentUser);
+}
+```
+
+**❌ WRONG: Hardcoded values (DO NOT USE)**
+```typescript
+// ❌ WRONG: Hardcoded role array
+const roles = ['admin', 'manager', 'user']; // Should fetch from database
+
+// ❌ WRONG: Hardcoded role mapping
+const roleMap = { 'admin': 'Administrator' }; // Should lookup from database
+
+// ❌ WRONG: Hardcoded role name check
+if (role.name === 'super_admin') return false; // Should use database flags
+
+// ❌ WRONG: Hardcoded permission name check
+if (['super_admin', 'platform_admin'].includes(perm.name)) return false; // Should use database flags
+```
+
+**Future-Proof Design:**
+- ✅ All roles are fetched from database - adding new roles requires NO code changes
+- ✅ All role mappings are derived from database - no hardcoded mappings
+- ✅ Platform role detection uses database flags (`is_system_role`, `tenant_id`) - not hardcoded names
+- ✅ Permission validation uses database flags (`category`, `is_system_permission`) - not hardcoded names
+- ✅ Role cache (5 min TTL) ensures performance while staying dynamic
+- ✅ Cache invalidation on role create/update/delete ensures consistency
+
+**Why This Matters:**
+- Prevents tenant admins from accidentally creating super admin users
+- Maintains clear separation between platform-level and tenant-level operations
+- Ensures tenant admins can only manage their own tenant's resources
+- Prevents privilege escalation attacks
+
 ### 2.7 Permission Validation Flow
 
 1. **Check synchronous permission cache** (for performance)

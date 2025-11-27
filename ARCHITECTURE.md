@@ -789,6 +789,174 @@ if (ROLE_PERMISSIONS[user.role]?.includes('users:update')) return true;
 - Consistent permission checking across all modules
 - No code changes needed for permission updates
 
+### 12.8 Fully Dynamic Role System - Future-Proof Design
+
+**⚠️ CRITICAL: All Role Operations Are Database-Driven - No Hardcoded Values**
+
+The system implements a **fully dynamic, database-driven role system** where all roles, role mappings, and validations are fetched from the database. This ensures that adding new roles or changing role configurations requires **zero code changes**.
+
+#### 12.8.1 Dynamic Role Mapping System
+
+**Location**: `src/utils/roleMapping.ts`
+
+**Key Features:**
+- **No Hardcoded Role Arrays**: All roles fetched from database via `rbacService.getRoles()`
+- **Dynamic Role Mappings**: Role name mappings derived from database, not hardcoded maps
+- **Role Cache**: 5-minute TTL cache for performance (invalidated on role changes)
+- **Platform Role Detection**: Uses database flags (`is_system_role`, `tenant_id`) instead of hardcoded name checks
+
+**Core Functions:**
+```typescript
+// Fetch all valid roles from database (fully dynamic)
+async getValidUserRoles(): Promise<UserRole[]>
+
+// Validate role exists in database
+async isValidUserRole(role: string): Promise<boolean>
+
+// Map UserRole enum to actual database role name
+async mapUserRoleToDatabaseRole(userRole: UserRole): Promise<string>
+
+// Check if role is platform role using database flags
+async isPlatformRoleByName(roleName: string): Promise<boolean>
+
+// Find role record in database
+async findRoleByName(roleName: string): Promise<Role | null>
+```
+
+#### 12.8.2 Tenant Isolation Using Database Flags
+
+**Location**: `src/utils/tenantIsolation.ts`
+
+**Platform Role Detection:**
+- **Database Flags**: `is_system_role = true AND tenant_id IS NULL`
+- **No Hardcoded Names**: Does not check for `'super_admin'` string
+- **Dynamic Filtering**: `filterRolesByTenant()` uses database flags
+
+**Platform Permission Detection:**
+- **Database Flags**: `category = 'system' OR is_system_permission = true`
+- **No Hardcoded Names**: Does not check for specific permission names
+- **Dynamic Filtering**: `filterPermissionsByTenant()` uses database flags
+
+#### 12.8.3 Role Cache Management
+
+**Cache Strategy:**
+- **TTL**: 5 minutes (configurable)
+- **Invalidation**: Automatic on role create/update/delete operations
+- **Performance**: Prevents excessive database queries
+- **Consistency**: Cache invalidation ensures new roles are immediately available
+
+**Cache Invalidation Points:**
+- `rbacService.createRole()` - Invalidates cache after role creation
+- `rbacService.updateRole()` - Invalidates cache after role update
+- `rbacService.deleteRole()` - Invalidates cache after role deletion
+
+#### 12.8.4 Future-Proof Design Benefits
+
+**Adding New Roles:**
+1. Insert role into `roles` table in database
+2. Assign permissions via `role_permissions` table
+3. **No code changes required** - system automatically recognizes new role
+
+**Changing Role Names:**
+1. Update role name in `roles` table
+2. **No code changes required** - mappings are derived from database
+
+**Adding New Permissions:**
+1. Insert permission into `permissions` table
+2. Assign to roles via `role_permissions` table
+3. **No code changes required** - system automatically recognizes new permission
+
+**Example - Adding a New Role:**
+```sql
+-- Step 1: Insert new role into database
+INSERT INTO roles (name, description, tenant_id, is_system_role)
+VALUES ('Project Manager', 'Manages projects and teams', 'tenant-uuid', true);
+
+-- Step 2: Assign permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r
+CROSS JOIN permissions p
+WHERE r.name = 'Project Manager'
+  AND p.name IN ('projects:read', 'projects:create', 'projects:update');
+
+-- Done! No code changes needed - system automatically recognizes new role
+```
+
+#### 12.8.5 Implementation Examples
+
+**✅ CORRECT: Dynamic Database-Driven Approach**
+```typescript
+// Fetch roles from database
+const validRoles = await getValidUserRoles();
+
+// Validate role using database check
+const isValid = await isValidUserRole(roleName);
+if (!isValid) {
+  throw new Error('Invalid role');
+}
+
+// Map to database role name
+const dbRoleName = await mapUserRoleToDatabaseRole(userRole);
+
+// Check platform role using database flags
+const isPlatform = await isPlatformRoleByName(roleName);
+```
+
+**❌ WRONG: Hardcoded Values (DO NOT USE)**
+```typescript
+// ❌ WRONG: Hardcoded role array
+const roles = ['admin', 'manager', 'user'];
+
+// ❌ WRONG: Hardcoded role mapping
+const roleMap = { 'admin': 'Administrator' };
+
+// ❌ WRONG: Hardcoded role name check
+if (role.name === 'super_admin') return false;
+
+// ❌ WRONG: Hardcoded permission check
+if (['super_admin', 'platform_admin'].includes(perm.name)) return false;
+```
+
+#### 12.8.6 System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              Dynamic Role System Architecture               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Application Code                                           │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  roleMapping.ts (Dynamic Utilities)                 │   │
+│  │  • getValidUserRoles() → Fetches from DB            │   │
+│  │  • isValidUserRole() → Validates in DB             │   │
+│  │  • mapUserRoleToDatabaseRole() → Looks up in DB    │   │
+│  │  • Role Cache (5 min TTL)                          │   │
+│  └──────────────────┬──────────────────────────────────┘   │
+│                     │                                        │
+│                     ▼                                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  rbacService.getRoles()                              │   │
+│  │  • Fetches from roles table                         │   │
+│  │  • Applies tenant isolation                        │   │
+│  │  • Filters platform roles using DB flags           │   │
+│  └──────────────────┬──────────────────────────────────┘   │
+│                     │                                        │
+│                     ▼                                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Database (PostgreSQL)                              │   │
+│  │  • roles table (source of truth)                   │   │
+│  │  • permissions table                                │   │
+│  │  • role_permissions table                           │   │
+│  │  • user_roles table                                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ✅ No hardcoded values                                     │
+│  ✅ Fully dynamic and future-proof                          │
+│  ✅ Zero code changes for new roles/permissions             │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### 12.7 RBAC Troubleshooting Guide
 
 #### 12.7.1 Common Issues

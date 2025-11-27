@@ -159,11 +159,17 @@ export const usePermission = () => {
 
   /**
    * Get user's current role hierarchy level
+   * ⚠️ NOTE: Role hierarchy levels are business rules for UI/hierarchy comparison.
+   * For security checks, use permission-based checks instead of role hierarchy.
+   * TODO: Consider storing role hierarchy in database for full dynamic support.
    * @returns number representing role level (higher = more permissions)
    */
   const getRoleLevel = useCallback((): number => {
     if (!auth.isAuthenticated || !auth.user) return 0;
 
+    // ⚠️ NOTE: This is a business rule map for hierarchy comparison.
+    // For security checks, use authService.hasPermission() instead.
+    // In the future, this could be fetched from database if roles table has a hierarchy_level column.
     const roleLevels: Record<string, number> = {
       super_admin: 6,
       admin: 5,
@@ -179,6 +185,8 @@ export const usePermission = () => {
 
   /**
    * Check if user can manage another user (role hierarchy)
+   * ⚠️ NOTE: This uses role hierarchy for comparison, but for security checks,
+   * use permission-based checks (e.g., authService.hasPermission('users:manage')).
    * @param targetUserRole - Role of the user to be managed
    * @returns boolean indicating if current user can manage target user
    */
@@ -186,7 +194,12 @@ export const usePermission = () => {
     if (!auth.isAuthenticated) return false;
     if (auth.isSuperAdmin()) return true;
 
+    // ⚠️ NOTE: For security checks, prefer permission-based approach:
+    // return authService.hasPermission('users:manage');
+    // This hierarchy check is for UI/hierarchy comparison only.
+
     const currentLevel = getRoleLevel();
+    // ⚠️ NOTE: This map should ideally come from database if roles table has hierarchy_level column
     const targetLevel = {
       super_admin: 6,
       admin: 5,

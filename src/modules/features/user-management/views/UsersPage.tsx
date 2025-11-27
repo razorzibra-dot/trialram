@@ -228,7 +228,9 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  // Get role icon
+  // ⚠️ NOTE: These switch cases are for UI display only (icons/colors), not security checks.
+  // For security checks, use permission-based checks (authService.hasPermission()).
+  // These role names are acceptable for UI rendering as they're derived from database.
   const getRoleIcon = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin':
@@ -242,7 +244,7 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  // Get role color
+  // ⚠️ NOTE: UI display only - not used for security checks
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin':
@@ -431,6 +433,8 @@ export const UsersPage: React.FC = () => {
   // Calculate stats
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.status === 'active').length;
+  // Count admin users - using role string for stats (acceptable for display purposes)
+  // Note: For security checks, use permission-based checks instead
   const adminUsers = users.filter(u => u.role === 'admin').length;
   const suspendedUsers = users.filter(u => u.status === 'suspended').length;
 

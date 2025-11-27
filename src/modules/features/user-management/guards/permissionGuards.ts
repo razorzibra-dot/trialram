@@ -11,6 +11,7 @@
 
 import { UserRole } from '@/types/dtos/userDtos';
 import { authService } from '@/services/serviceFactory';
+import { isSuperAdmin } from '@/utils/tenantIsolation';
 
 /**
  * User Management Permissions
@@ -210,15 +211,16 @@ export function getRolePermissions(userRole: UserRole): UserPermission[] {
 
 /**
  * Check if user can perform action on target user
- * ⭐ SECURITY: Enhanced tenant isolation and role-based access control
+ * ⚠️ DATABASE-DRIVEN: Uses permission checks instead of hardcoded role checks
  * Rules:
- * - Admins can manage users in their tenant (cannot delete other admins)
- * - Managers can view/edit users in their tenant (cannot delete, cannot change roles)
- * - Users can only view own profile
+ * - Users with 'users:manage' permission can manage users in their tenant (cannot delete other admins)
+ * - Users with 'users:update' permission can edit users in their tenant
+ * - Users with 'users:read' permission can view users in their tenant
+ * - Tenant isolation is enforced (same tenant required)
  *
- * @param currentUserRole Actor's role
+ * @param currentUserRole Actor's role (for logging/fallback only)
  * @param currentUserTenantId Actor's tenant ID
- * @param targetUserRole Target user's role
+ * @param targetUserRole Target user's role (for admin deletion check)
  * @param targetUserTenantId Target user's tenant ID
  * @param action Action to perform (create, edit, delete, reset_password)
  * @returns true if action is allowed
@@ -235,42 +237,51 @@ export function canPerformUserAction(
     return false; // Cross-tenant access denied
   }
 
-  // Admin permissions within tenant - full access to manage users
-  if (currentUserRole === 'admin') {
+  // ⚠️ DATABASE-DRIVEN: Use permission checks instead of hardcoded role checks
+  const currentUser = authService.getCurrentUser();
+  if (!currentUser) {
+    return false;
+  }
+
+  // Check for manage permission (grants all user management actions)
+  const hasManagePermission = authService.hasPermission('users:manage');
+  if (hasManagePermission) {
     // Cannot delete other admins (to prevent lockout)
-    if (action === 'delete' && targetUserRole === 'admin') {
+    // Check if target user is admin - use isSuperAdmin utility for consistency
+    // Note: For role-based check, we check if target role is 'admin' (tenant admin)
+    // Super admins are identified by isSuperAdmin flag, not role string
+    const isTargetAdmin = targetUserRole === 'admin';
+    if (action === 'delete' && isTargetAdmin) {
       return false;
     }
     // Can perform all other actions on users within tenant
     return true;
   }
 
-  // Manager permissions within tenant
-  if (currentUserRole === 'manager') {
-    // Managers can edit and reset passwords, but cannot delete or change roles
-    if (action === 'edit' || action === 'reset_password') {
-      return true;
-    }
-    return false;
+  // Check for specific action permissions
+  if (action === 'create' && authService.hasPermission('users:create')) {
+    return true;
   }
 
-  // User permissions within tenant
-  if (currentUserRole === 'user') {
-    // Users can edit users but cannot delete or reset passwords
-    if (action === 'edit') {
-      return true;
-    }
-    return false;
+  if (action === 'edit' && authService.hasPermission('users:update')) {
+    return true;
   }
 
-  // Engineer permissions within tenant
-  if (currentUserRole === 'engineer') {
-    // Engineers can edit users but cannot delete or reset passwords
-    if (action === 'edit') {
-      return true;
+  if (action === 'delete' && authService.hasPermission('users:delete')) {
+    // Cannot delete other admins even with delete permission
+    const isTargetAdmin = targetUserRole === 'admin';
+    if (isTargetAdmin) {
+      return false;
     }
-    return false;
+    return true;
   }
+
+  if (action === 'reset_password' && authService.hasPermission('users:update')) {
+    return true;
+  }
+
+  // No matching permission found
+  return false;
 
   // Regular users and customers can only view (no management actions)
   return false;

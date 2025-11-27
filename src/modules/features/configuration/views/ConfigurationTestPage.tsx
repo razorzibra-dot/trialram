@@ -3,6 +3,8 @@
  * Test and validate system configurations with drawer-based results, consistent UI
  */
 import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { isSuperAdmin } from '@/utils/tenantIsolation';
 import {
   Card,
   Row,
@@ -29,7 +31,6 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '@/components/common';
-import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
 import { ConfigTestResultPanel } from '../components/ConfigTestResultPanel';
 import type {
@@ -193,7 +194,10 @@ const ConfigurationTestPage: React.FC = () => {
     },
   ];
 
-  if (!hasPermission('super_admin')) {
+  // Uses systematic tenant isolation utility instead of hardcoded permission check
+  const auth = useAuth();
+  const currentUser = auth?.user;
+  if (!isSuperAdmin(currentUser)) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

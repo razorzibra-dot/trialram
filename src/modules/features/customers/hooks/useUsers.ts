@@ -29,16 +29,19 @@ export interface UseUsersOptions {
 async function fetchUsers(options?: UseUsersOptions): Promise<User[]> {
   try {
     const response = await userService.getUsers();
-    
-    if (response.error) {
-      throw new Error(response.error);
-    }
 
-    let users = response.data || [];
+    // Support both array responses (Supabase/mock services) and legacy { data } wrappers
+    const usersArray = Array.isArray(response)
+      ? response
+      : Array.isArray((response as any)?.data)
+        ? (response as any).data
+        : [];
+
+    let users = usersArray as User[];
 
     // Filter by status if provided
     if (options?.status) {
-      users = users.filter(u => u.status === options.status);
+      users = users.filter((u) => u.status === options.status);
     }
 
     // Apply limit if provided

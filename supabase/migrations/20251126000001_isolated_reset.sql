@@ -705,6 +705,14 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('user_management:read', 'Access user and role management interface', 'navigation', 'users', 'read', false),
 
 -- Module management permissions
+-- ⚠️ CRITICAL: Granular user management permissions required for permission hooks
+-- These permissions (users:read, users:create, users:update, users:delete, users:manage)
+-- are checked by authService.hasPermission() and must be assigned to roles that need
+-- user management access. See Repo.md section 2.9 for permission hook requirements.
+('users:read', 'Read user information', 'module', 'users', 'read', false),
+('users:create', 'Create new users', 'module', 'users', 'create', false),
+('users:update', 'Update user information', 'module', 'users', 'update', false),
+('users:delete', 'Delete users', 'module', 'users', 'delete', false),
 ('users:manage', 'Manage users', 'module', 'users', 'manage', false),
 ('roles:manage', 'Manage roles', 'module', 'roles', 'manage', false),
 ('customers:manage', 'Manage customers', 'module', 'customers', 'manage', false),
@@ -760,18 +768,24 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r
 CROSS JOIN permissions p
 WHERE 
-    -- Administrator role gets all permissions
+    -- Administrator role gets all permissions including full user management
+    -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
+    -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
     (r.name = 'Administrator' AND p.name IN (
         'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:manage', 'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
+        'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
+        'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
         'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
         'complaints:manage', 'companies:manage', 'reports:manage', 'settings:manage',
         'export_data', 'view_audit_logs'
     ))
     OR 
-    -- Manager role gets most permissions except user management
+    -- Manager role gets most permissions including full user management
+    -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
+    -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
     (r.name = 'Manager' AND p.name IN (
-        'read', 'write', 'dashboard:view', 'masters:read',
+        'read', 'write', 'dashboard:view', 'masters:read', 'user_management:read',
+        'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
         'customers:manage', 'sales:manage', 'contracts:manage',
         'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
         'complaints:manage', 'companies:manage', 'reports:manage',

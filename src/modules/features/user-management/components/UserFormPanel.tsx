@@ -9,6 +9,7 @@ import { Drawer, Form, Input, Select, Button, Space, Row, Col, message, Tooltip,
 import { SaveOutlined, CloseOutlined, InfoCircleOutlined, MailOutlined, UserOutlined, PhoneOutlined, TeamOutlined, BankOutlined, IdcardOutlined, LockOutlined, CrownOutlined } from '@ant-design/icons';
 import { UserDTO, CreateUserDTO, UpdateUserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserFormPanelProps {
   open: boolean;
@@ -34,14 +35,44 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
   allStatuses
 }) => {
   const [form] = Form.useForm<CreateUserDTO | UpdateUserDTO>();
-  const { canCreateUsers, canEditUsers } = usePermissions();
+  const { canCreateUsers, canEditUsers, isLoading } = usePermissions();
+  const auth = useAuth();
+  const currentUser = auth?.user;
+  const permissionsLoaded = !!(currentUser?.permissions && currentUser.permissions.length > 0);
+
+  // Debug logging
+  useEffect(() => {
+    if (open) {
+      console.log('[UserFormPanel] Form opened in mode:', mode);
+      console.log('[UserFormPanel] Permission values:', {
+        canCreateUsers,
+        canEditUsers,
+        isLoading,
+        permissionsLoaded,
+        userPermissions: currentUser?.permissions
+      });
+    }
+  }, [open, mode, canCreateUsers, canEditUsers, isLoading, permissionsLoaded, currentUser?.permissions]);
 
   // Check if user has permission for this operation
+  // Wait for permissions to load before checking
   const hasPermission = useMemo(() => {
-    if (mode === 'create') return canCreateUsers;
-    if (mode === 'edit') return canEditUsers;
-    return false;
-  }, [mode, canCreateUsers, canEditUsers]);
+    console.log('[UserFormPanel] Computing hasPermission for mode:', mode, {
+      canCreateUsers,
+      canEditUsers,
+      permissionsLoaded,
+      isLoading
+    });
+    
+    // If permissions haven't loaded yet, don't show permission denied
+    if (!permissionsLoaded && isLoading) {
+      console.log('[UserFormPanel] Permissions still loading, allowing access temporarily');
+      return true; // Optimistically allow until permissions are loaded
+    }
+    const result = mode === 'create' ? canCreateUsers : (mode === 'edit' ? canEditUsers : false);
+    console.log('[UserFormPanel] Final hasPermission result:', result);
+    return result;
+  }, [mode, canCreateUsers, canEditUsers, permissionsLoaded, isLoading]);
 
   // Initialize form with user data when editing
   useEffect(() => {

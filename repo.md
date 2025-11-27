@@ -374,6 +374,143 @@ if (isTenantModule(moduleName)) {
 4. **Enforce role hierarchy restrictions** (role-based access)
 5. **Log access attempts** for audit trail
 
+### 2.8 Permission Checking Rules - CRITICAL
+
+**⚠️ NEVER HARDCODE ROLE-BASED PERMISSIONS IN APPLICATION CODE**
+
+**Rules:**
+1. **Always use dynamic permissions from database**: Permissions are stored in `permissions` table, assigned to roles via `role_permissions`, and loaded into `user.permissions` array at login/session restore.
+2. **Use `authService.hasPermission(permission)` for all checks**: This method checks `user.permissions` array dynamically loaded from database.
+3. **NO hardcoded role checks**: Never check `if (user.role === 'admin')` or `if (user.role === 'super_admin')` to grant permissions. Only use role checks for UI display or logging purposes.
+4. **NO hardcoded permission maps**: Never create static maps like `ROLE_PERMISSIONS: Record<UserRole, Permission[]>` in application code. These should only exist in database seed data.
+5. **Fallback permissions are temporary**: Fallback permission systems should only be used when database is unavailable, and should log warnings when used.
+6. **Permission format**: Use `{resource}:{action}` format (e.g., `users:update`, `users:manage`, `customers:read`).
+7. **Super admin handling**: Super admins should have all permissions in database, not hardcoded bypasses. If super admin needs special handling, it should be via database permission `super_admin` or `platform_admin`, not code-level checks.
+
+**Correct Implementation:**
+```typescript
+// ✅ CORRECT: Use dynamic permissions from database
+const canEdit = authService.hasPermission('users:update') || 
+                authService.hasPermission('users:manage');
+
+// ❌ WRONG: Hardcoded role check
+if (user.role === 'admin') return true;
+
+// ❌ WRONG: Hardcoded permission map
+const ROLE_PERMISSIONS = { 'admin': ['users:update', ...] };
+```
+
+**Database-Driven Permission Flow:**
+1. User logs in → `authService.login()` fetches user from database
+2. User's role is resolved → `user_roles` table links to `roles` table
+3. Role permissions are fetched → `role_permissions` table links to `permissions` table
+4. Permissions are attached to user → `user.permissions = ['users:manage', 'customers:read', ...]`
+5. Permission checks use `user.permissions` → `authService.hasPermission()` checks this array
+
+**Why This Matters:**
+- Permissions can be changed in database without code changes
+- Administrators can customize role permissions per tenant
+- No code deployment needed for permission updates
+- Consistent permission checking across all modules
+- Single source of truth (database) for all permissions
+
+### 2.9 Permission Hook Property Name Consistency - CRITICAL
+
+**⚠️ ISSUE: Permission Checks Failing Despite Correct Permissions**
+
+**Problem:**
+Permission checks appear to fail even when:
+- Permissions are correctly loaded from database (`user.permissions` array is populated)
+- Permission guard functions return `canEdit: true`
+- `authService.hasPermission()` correctly returns `true`
+
+**Root Cause:**
+Component code uses different property names than what the permission hook returns, causing `undefined` values and failed permission checks.
+
+**Example of the Issue:**
+```typescript
+// ❌ PROBLEM: Component expects canEditUsers but hook returns canEdit
+const { canEditUsers } = usePermissions(); // canEditUsers is undefined!
+// Result: hasPermission = false even though canEdit = true
+
+// ✅ SOLUTION: Hook must provide both property names
+const { canEdit, canEditUsers } = usePermissions(); // Both available
+```
+
+**Resolution:**
+Permission hooks must provide backward compatibility aliases for all permission properties:
+
+```typescript
+// ✅ CORRECT: Provide both standard and module-specific property names
+export function usePermissions(): UsePermissionsReturn {
+  const permissionGuard = getPermissionGuard(userRole);
+  
+  return {
+    ...permissionGuard, // Includes: canCreate, canEdit, canDelete, etc.
+    // Backward compatibility aliases
+    canCreateUsers: permissionGuard.canCreate,
+    canEditUsers: permissionGuard.canEdit,
+    canDeleteUsers: permissionGuard.canDelete,
+    canResetPasswords: permissionGuard.canResetPassword,
+  };
+}
+```
+
+**Best Practices to Avoid This Issue:**
+
+1. **Standardize Property Names**: Use consistent naming across all modules:
+   - Standard: `canCreate`, `canEdit`, `canDelete`, `canViewList`
+   - Module aliases: `canCreateUsers`, `canEditUsers`, `canDeleteUsers` (for user management)
+
+2. **Always Provide Aliases**: When creating permission hooks, provide both:
+   - Standard property names (`canEdit`)
+   - Module-specific aliases (`canEditUsers`, `canEditCustomers`, etc.)
+
+3. **Reactive to Permission Changes**: Permission hooks must recompute when permissions are loaded:
+   ```typescript
+   const userPermissions = currentUser?.permissions || [];
+   const permissionGuard = useMemo(() => {
+     return getPermissionGuard(userRole);
+   }, [userRole, userPermissions]); // ⚠️ Include userPermissions in dependencies
+   ```
+
+4. **Wait for Permissions to Load**: Components should handle loading state:
+   ```typescript
+   const { canEditUsers, isLoading } = usePermissions();
+   const permissionsLoaded = !!(currentUser?.permissions?.length > 0);
+   
+   // Don't show "Permission Denied" until permissions are loaded
+   const hasPermission = useMemo(() => {
+     if (!permissionsLoaded && isLoading) {
+       return true; // Optimistically allow until permissions load
+     }
+     return canEditUsers;
+   }, [canEditUsers, permissionsLoaded, isLoading]);
+   ```
+
+5. **Debug Logging**: Add comprehensive logging to permission hooks:
+   ```typescript
+   console.log('[usePermissions] Returning permission result:', {
+     canEdit: res.canEdit,
+     canEditUsers: res.canEditUsers,
+     userPermissions: currentUser?.permissions
+   });
+   ```
+
+**Checklist for New Modules:**
+- [ ] Permission hook provides both standard and module-specific property names
+- [ ] Hook dependencies include `userPermissions` to react to permission loading
+- [ ] Components handle loading state before showing "Permission Denied"
+- [ ] Debug logging added to permission hooks for troubleshooting
+- [ ] Property names are consistent with existing modules
+
+**Common Mistakes to Avoid:**
+- ❌ Using `canEditUsers` when hook only returns `canEdit`
+- ❌ Not including `userPermissions` in `useMemo` dependencies
+- ❌ Showing "Permission Denied" before permissions are loaded
+- ❌ Hardcoding permission checks instead of using hooks
+- ❌ Not providing backward compatibility aliases
+
 ---
 
 ## 3. Service Layer Architecture

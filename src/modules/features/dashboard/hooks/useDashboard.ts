@@ -43,15 +43,25 @@ export const useDashboardStats = () => {
         ticketService.getTicketStats ? ticketService.getTicketStats() : Promise.resolve({ total: 0 }),
       ]);
 
-      // Aggregate the results
-      const stats = {
-        totalCustomers: customerStats.status === 'fulfilled' ? customerStats.value.total : 0,
-        totalDeals: salesStats.status === 'fulfilled' ? salesStats.value.total : 0,
-        totalTickets: ticketStats.status === 'fulfilled' ? ticketStats.value.total : 0,
-        totalRevenue: salesStats.status === 'fulfilled' ? salesStats.value.totalValue : 0,
-      };
+      const resolvedCustomerStats =
+        customerStats.status === 'fulfilled' ? customerStats.value : null;
+      const resolvedSalesStats =
+        salesStats.status === 'fulfilled' ? salesStats.value : null;
+      const resolvedTicketStats =
+        ticketStats.status === 'fulfilled' ? ticketStats.value : null;
 
-      return stats;
+      return {
+        totalCustomers:
+          resolvedCustomerStats?.totalCustomers ??
+          resolvedCustomerStats?.total ??
+          0,
+        totalDeals:
+          resolvedSalesStats?.totalDeals ??
+          resolvedSalesStats?.total ??
+          0,
+        totalTickets: resolvedTicketStats?.total ?? 0,
+        totalRevenue: resolvedSalesStats?.totalValue ?? 0,
+      };
     },
     ...STATS_QUERY_CONFIG,
     enabled: isInitialized,

@@ -6,10 +6,11 @@
  * Database Role → TypeScript Enum → Guard Function → UI Component
  * 
  * ⭐ CENTRALIZED: Now uses the unified RBAC service for all permission validation
+ * ⭐ DATABASE-DRIVEN: Uses dynamic permissions from database, NOT hardcoded role maps
  */
 
 import { UserRole } from '@/types/dtos/userDtos';
-import { rbacService as factoryRbacService } from '@/services/serviceFactory';
+import { authService } from '@/services/serviceFactory';
 
 /**
  * User Management Permissions
@@ -45,72 +46,24 @@ export enum UserPermission {
 }
 
 /**
- * Role-Based Permissions Map
- * Defines which permissions are granted to each role
- * Synced with database role definitions
+ * ⚠️ DEPRECATED: ROLE_PERMISSIONS map removed - use database-driven permissions instead
+ * Permissions are now loaded from database via user.permissions array
+ * This map is kept only for reference/documentation purposes
+ * 
+ * @deprecated Use authService.hasPermission() instead
  */
-export const ROLE_PERMISSIONS: Record<UserRole, UserPermission[]> = {
-  'super_admin': [
-    // Super admins have all permissions across all tenants
-    UserPermission.USER_LIST,
-    UserPermission.USER_VIEW,
-    UserPermission.USER_CREATE,
-    UserPermission.USER_EDIT,
-    UserPermission.USER_DELETE,
-    UserPermission.USER_RESET_PASSWORD,
-    UserPermission.USER_MANAGE_ROLES,
-    UserPermission.ROLE_MANAGE,
-    UserPermission.PERMISSION_MANAGE,
-    UserPermission.TENANT_USERS,
-  ],
-
-  'admin': [
-    UserPermission.USER_LIST,
-    UserPermission.USER_VIEW,
-    UserPermission.USER_CREATE,
-    UserPermission.USER_EDIT,
-    UserPermission.USER_DELETE,
-    UserPermission.USER_RESET_PASSWORD,
-    UserPermission.USER_MANAGE_ROLES,
-    UserPermission.ROLE_MANAGE,
-    UserPermission.TENANT_USERS,
-  ],
-  
-  'manager': [
-    UserPermission.USER_LIST,
-    UserPermission.USER_VIEW,
-    UserPermission.USER_EDIT,
-    UserPermission.TENANT_USERS,
-  ],
-  
-  'user': [
-    UserPermission.USER_LIST,
-    UserPermission.USER_VIEW,
-    UserPermission.USER_EDIT,
-    UserPermission.TENANT_USERS,
-  ],
-
-  'engineer': [
-    UserPermission.USER_LIST,
-    UserPermission.USER_VIEW,
-    UserPermission.USER_EDIT,
-    UserPermission.TENANT_USERS,
-  ],
-
-  'customer': [
-    UserPermission.USER_VIEW,
-  ],
-};
 
 /**
  * Check if user has specific permission
- * @param userRole Current user's role
+ * ⭐ DATABASE-DRIVEN: Uses dynamic permissions from database, not hardcoded role maps
+ * @param userRole Current user's role (for logging/fallback only)
  * @param permission Permission to check
  * @returns true if user has permission
  */
 export function hasPermission(userRole: UserRole, permission: UserPermission): boolean {
-  const permissions = ROLE_PERMISSIONS[userRole] || [];
-  return permissions.includes(permission);
+  // Use dynamic permissions from database via authService
+  // This checks user.permissions array loaded from database at login
+  return authService.hasPermission(permission);
 }
 
 /**
@@ -148,19 +101,55 @@ export interface PermissionGuardResult {
 }
 
 /**
- * Get permission guard result for current user role
- * @param userRole Current user's role
+ * Get permission guard result for current user
+ * ⭐ DATABASE-DRIVEN: Uses dynamic permissions from database, not hardcoded role maps
+ * @param userRole Current user's role (for logging/fallback only)
  * @returns Object with boolean flags for each permission
  */
 export function getPermissionGuard(userRole: UserRole): PermissionGuardResult {
+  console.log('[getPermissionGuard] ⚡ Function called with role:', userRole);
+  
+  // Use dynamic permissions from database via authService
+  // Checks user.permissions array loaded from database at login
+  const user = authService.getCurrentUser();
+  const userPerms = user?.permissions || [];
+  
+  console.log('[getPermissionGuard] User:', { id: user?.id, email: user?.email, role: user?.role });
+  console.log('[getPermissionGuard] User permissions array:', userPerms);
+  console.log('[getPermissionGuard] UserPermission.USER_EDIT enum value:', UserPermission.USER_EDIT);
+  
+  // Test each permission check individually
+  const check1 = authService.hasPermission(UserPermission.USER_EDIT);
+  const check2 = authService.hasPermission('users:update');
+  const check3 = authService.hasPermission('users:manage');
+  
+  console.log('[getPermissionGuard] Individual permission checks:', {
+    'UserPermission.USER_EDIT (users:update)': check1,
+    'users:update (string)': check2,
+    'users:manage (string)': check3
+  });
+  
+  const canEditCheck = check1 || check2 || check3;
+  
+  console.log('[getPermissionGuard] ✅ Final canEdit result:', canEditCheck);
+  
   return {
-    hasPermission: getRolePermissions(userRole).length > 0,
-    canCreate: hasPermission(userRole, UserPermission.USER_CREATE),
-    canEdit: hasPermission(userRole, UserPermission.USER_EDIT),
-    canDelete: hasPermission(userRole, UserPermission.USER_DELETE),
-    canManageRoles: hasPermission(userRole, UserPermission.USER_MANAGE_ROLES),
-    canResetPassword: hasPermission(userRole, UserPermission.USER_RESET_PASSWORD),
-    canViewList: hasPermission(userRole, UserPermission.USER_LIST),
+    hasPermission: authService.hasPermission(UserPermission.USER_LIST) || 
+                   authService.hasPermission('users:manage'),
+    canCreate: authService.hasPermission(UserPermission.USER_CREATE) || 
+               authService.hasPermission('users:manage'),
+    canEdit: canEditCheck,
+    canDelete: authService.hasPermission(UserPermission.USER_DELETE) || 
+               authService.hasPermission('users:manage'),
+    canManageRoles: authService.hasPermission(UserPermission.USER_MANAGE_ROLES) || 
+                    authService.hasPermission('roles:update') || 
+                    authService.hasPermission('roles:manage'),
+    canResetPassword: authService.hasPermission(UserPermission.USER_RESET_PASSWORD) || 
+                     authService.hasPermission('users:update') || 
+                     authService.hasPermission('users:manage'),
+    canViewList: authService.hasPermission(UserPermission.USER_LIST) || 
+                 authService.hasPermission('users:read') || 
+                 authService.hasPermission('users:manage'),
   };
 }
 
@@ -180,12 +169,43 @@ export function assertPermission(userRole: UserRole, permission: UserPermission)
 }
 
 /**
- * Get all permissions for a role
- * @param userRole User's role
- * @returns Array of permissions
+ * Get all permissions for current user
+ * ⭐ DATABASE-DRIVEN: Returns permissions from database, not hardcoded role maps
+ * @param userRole User's role (for logging/fallback only)
+ * @returns Array of permissions from database
  */
 export function getRolePermissions(userRole: UserRole): UserPermission[] {
-  return ROLE_PERMISSIONS[userRole] || [];
+  // Get permissions from current user object (loaded from database at login)
+  const user = authService.getCurrentUser();
+  if (!user || !user.permissions) {
+    return [];
+  }
+  
+  // Filter to only user management related permissions
+  const userPerms = user.permissions.filter(p => 
+    p.startsWith('users:') || 
+    p.startsWith('roles:') || 
+    p === 'user_management:read'
+  );
+  
+  // Map database permission names to UserPermission enum values
+  const permissionMap: Record<string, UserPermission> = {
+    'users:read': UserPermission.USER_LIST,
+    'users:create': UserPermission.USER_CREATE,
+    'users:update': UserPermission.USER_EDIT,
+    'users:delete': UserPermission.USER_DELETE,
+    'users:manage': UserPermission.USER_EDIT, // manage includes all user operations
+    'roles:update': UserPermission.USER_MANAGE_ROLES,
+    'roles:manage': UserPermission.USER_MANAGE_ROLES,
+    'user_management:read': UserPermission.USER_LIST,
+  };
+  
+  const mappedPerms = userPerms
+    .map(p => permissionMap[p])
+    .filter((p): p is UserPermission => p !== undefined);
+  
+  // Deduplicate
+  return Array.from(new Set(mappedPerms));
 }
 
 /**

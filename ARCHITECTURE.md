@@ -748,6 +748,47 @@ LEFT JOIN tenants t ON ur.tenant_id = t.id;
 3. **Permission Matrix Test**: Each role has correct permissions
 4. **Migration Integrity Test**: Permission format changes don't break functionality
 
+### 12.7 Permission Checking Rules - CRITICAL
+
+**⚠️ NEVER HARDCODE ROLE-BASED PERMISSIONS IN APPLICATION CODE**
+
+**Architectural Rules:**
+1. **Database-Driven Permissions**: All permissions must be stored in `permissions` table, assigned via `role_permissions`, and loaded into `user.permissions` array.
+2. **Dynamic Permission Checks**: Always use `authService.hasPermission(permission)` which checks `user.permissions` array loaded from database.
+3. **NO Hardcoded Role Checks**: Never use `if (user.role === 'admin')` to grant permissions. Role checks should only be for UI display or logging.
+4. **NO Static Permission Maps**: Never create `ROLE_PERMISSIONS: Record<UserRole, Permission[]>` in application code. These belong only in database seed data.
+5. **Fallback Permissions**: Fallback systems should only be used when database is unavailable, with warnings logged.
+6. **Permission Format**: Use `{resource}:{action}` format (e.g., `users:update`, `users:manage`, `customers:read`).
+
+**Correct vs Incorrect Patterns:**
+
+```typescript
+// ✅ CORRECT: Use dynamic permissions from database
+const canEdit = authService.hasPermission('users:update') || 
+                authService.hasPermission('users:manage');
+
+// ❌ WRONG: Hardcoded role check
+if (user.role === 'admin') return true;
+
+// ❌ WRONG: Hardcoded permission map
+const ROLE_PERMISSIONS = { 'admin': ['users:update', ...] };
+if (ROLE_PERMISSIONS[user.role]?.includes('users:update')) return true;
+```
+
+**Permission Loading Flow:**
+1. User logs in → `authService.login()` fetches user from `users` table
+2. Role resolution → `user_roles` → `roles` table to get role name
+3. Permission fetching → `role_permissions` → `permissions` table
+4. Permissions attached → `user.permissions = ['users:manage', 'customers:read', ...]`
+5. Permission checks → `authService.hasPermission()` checks `user.permissions` array
+
+**Why This Architecture:**
+- Permissions can be changed in database without code deployment
+- Administrators can customize role permissions per tenant
+- Single source of truth (database) for all permissions
+- Consistent permission checking across all modules
+- No code changes needed for permission updates
+
 ### 12.7 RBAC Troubleshooting Guide
 
 #### 12.7.1 Common Issues

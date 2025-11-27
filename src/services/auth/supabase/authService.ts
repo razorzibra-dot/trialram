@@ -105,6 +105,7 @@ class SupabaseAuthService {
             try {
               const roleId = userRole.id;
               if (roleId) {
+                console.log('[SUPABASE_AUTH] Fetching permissions for role:', roleId, userRole.name);
                 const { data: rolePerms, error: rpErr } = await supabase
                   .from('role_permissions')
                   .select('permission_id')
@@ -113,26 +114,38 @@ class SupabaseAuthService {
                 if (!rpErr && Array.isArray(rolePerms)) {
                   // Get permission names/IDs
                   const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
+                  console.log('[SUPABASE_AUTH] Found % permission IDs for role', permIds.length);
                   
                   // Fetch permission details if we need names
                   if (permIds.length > 0) {
-                    const { data: perms } = await supabase
+                    const { data: perms, error: permErr } = await supabase
                       .from('permissions')
                       .select('id, name')
                       .in('id', permIds);
                     
-                    if (perms) {
+                    if (!permErr && perms) {
                       const permNames = perms.map((p: any) => p.name).filter(Boolean);
                       (appUser as any).permissions = permNames;
-                      console.log('[SUPABASE_AUTH] Fetched role permissions:', permNames);
+                      console.log('[SUPABASE_AUTH] ✅ Fetched % role permissions:', permNames.length, permNames);
+                    } else {
+                      console.error('[SUPABASE_AUTH] ❌ Error fetching permission names:', permErr);
+                      (appUser as any).permissions = [];
                     }
+                  } else {
+                    console.warn('[SUPABASE_AUTH] ⚠️ No permission IDs found for role', roleId);
+                    (appUser as any).permissions = [];
                   }
                 } else {
-                  console.warn('[SUPABASE_AUTH] Could not fetch role_permissions for role', roleId, rpErr?.message);
+                  console.error('[SUPABASE_AUTH] ❌ Could not fetch role_permissions for role', roleId, rpErr?.message);
+                  (appUser as any).permissions = [];
                 }
+              } else {
+                console.warn('[SUPABASE_AUTH] ⚠️ No role ID found, cannot fetch permissions');
+                (appUser as any).permissions = [];
               }
             } catch (e) {
-              console.warn('[SUPABASE_AUTH] Error fetching role permissions', e);
+              console.error('[SUPABASE_AUTH] ❌ Error fetching role permissions:', e);
+              (appUser as any).permissions = [];
             }
           }
         } catch (e) {
@@ -432,20 +445,27 @@ class SupabaseAuthService {
       return true;
     }
 
+    const normalize = (perm?: string) => (perm || '').replace(/-/g, '_');
+
     // Use dynamically-loaded permissions attached to user (derived from DB role_permissions)
     const userPermissions = (user.permissions && Array.isArray(user.permissions)) ? user.permissions : [];
-    console.log(`[hasPermission] Checking permission "${permission}" for user role "${user.role}". User permissions:`, userPermissions);
+    const normalizedUserPermissions = userPermissions.map((perm) => normalize(perm));
+    const normalizedPermission = normalize(permission);
 
-    // Direct match
-    if (userPermissions.includes(permission)) {
+    console.log(`[hasPermission] Checking permission "${permission}" (normalized: "${normalizedPermission}") for user role "${user.role}". User permissions:`, userPermissions);
+
+    const hasNormalizedPermission = (perm: string) => normalizedUserPermissions.includes(normalize(perm));
+
+    // Direct match (supports hyphen/underscore variants)
+    if (hasNormalizedPermission(permission)) {
       console.log(`[hasPermission] Direct match found for "${permission}"`);
       return true;
     }
 
     // Handle resource/action combinations and synonyms
-    if (permission.includes(':')) {
-      const [resource, action] = permission.split(':');
-      const hasResourceManage = userPermissions.some(
+    if (normalizedPermission.includes(':')) {
+      const [resource, action] = normalizedPermission.split(':');
+      const hasResourceManage = normalizedUserPermissions.some(
         p => p === `${resource}:manage` || p === `${resource}:admin`
       );
       if (hasResourceManage) {
@@ -453,34 +473,34 @@ class SupabaseAuthService {
         return true;
       }
 
-      if (action === 'read' && userPermissions.includes(`${resource}:view`)) {
+      if (action === 'read' && hasNormalizedPermission(`${resource}:view`)) {
         console.log(`[hasPermission] Granting via ':view' synonym for resource "${resource}"`);
         return true;
       }
-      if (action === 'view' && userPermissions.includes(`${resource}:read`)) {
+      if (action === 'view' && hasNormalizedPermission(`${resource}:read`)) {
         console.log(`[hasPermission] Granting via ':read' synonym for resource "${resource}"`);
         return true;
       }
     }
 
     // Support legacy/manage_* checks: 'manage_users' -> any permission that starts with 'users:'
-    if (permission.startsWith('manage_')) {
-      const resource = permission.replace(/^manage_/, '');
-      if (userPermissions.some((p) => p.startsWith(`${resource}:`))) {
+    if (normalizedPermission.startsWith('manage_')) {
+      const resource = normalizedPermission.replace(/^manage_/, '');
+      if (normalizedUserPermissions.some((p) => p.startsWith(`${resource}:`))) {
         console.log(`[hasPermission] Granting via manage_* fallback for resource "${resource}"`);
         return true;
       }
     }
 
     // Support short-form checks like 'read', 'write', 'delete' by checking resource-scoped permissions
-    if (permission === 'read') {
-      if (userPermissions.some((p) => p.endsWith(':read') || p.endsWith(':view') || p === 'read')) return true;
+    if (normalizedPermission === 'read') {
+      if (normalizedUserPermissions.some((p) => p.endsWith(':read') || p.endsWith(':view') || p === 'read')) return true;
     }
-    if (permission === 'write') {
-      if (userPermissions.some((p) => p.endsWith(':create') || p.endsWith(':update') || p === 'write')) return true;
+    if (normalizedPermission === 'write') {
+      if (normalizedUserPermissions.some((p) => p.endsWith(':create') || p.endsWith(':update') || p === 'write')) return true;
     }
-    if (permission === 'delete') {
-      if (userPermissions.some((p) => p.endsWith(':delete') || p === 'delete')) return true;
+    if (normalizedPermission === 'delete') {
+      if (normalizedUserPermissions.some((p) => p.endsWith(':delete') || p === 'delete')) return true;
     }
 
     console.warn(`[hasPermission] No matching permission found for "${permission}". User role: "${user.role}", User permissions: ${JSON.stringify(userPermissions)}`);

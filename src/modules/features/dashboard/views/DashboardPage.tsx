@@ -78,7 +78,6 @@ const DashboardPage: React.FC = () => {
               value={stats?.totalCustomers || 0}
               description="Active customers"
               icon={Users}
-              trend={{ value: 12.5, isPositive: true }}
               color="primary"
               loading={statsLoading}
             />
@@ -89,7 +88,6 @@ const DashboardPage: React.FC = () => {
               value={stats?.totalDeals || 0}
               description="Deals in pipeline"
               icon={Target}
-              trend={{ value: 8.2, isPositive: true }}
               color="success"
               loading={statsLoading}
             />
@@ -100,7 +98,6 @@ const DashboardPage: React.FC = () => {
               value={stats?.totalTickets || 0}
               description="Support requests"
               icon={Activity}
-              trend={{ value: 3.1, isPositive: false }}
               color="warning"
               loading={statsLoading}
             />
@@ -111,7 +108,6 @@ const DashboardPage: React.FC = () => {
               value={formatCurrency(stats?.totalRevenue || 0)}
               description="This month"
               icon={DollarSign}
-              trend={{ value: 15.3, isPositive: true }}
               color="success"
               loading={statsLoading}
             />

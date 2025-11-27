@@ -12,7 +12,8 @@ import { Users, Mail, Phone } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { CustomerDetailPanel } from '../components/CustomerDetailPanel';
 import { CustomerFormPanel } from '../components/CustomerFormPanel';
-import { Customer, CustomerFilters } from '@/types/crm';
+import { Customer } from '@/types/crm';
+import { CustomerFilters, CustomerStats } from '../services/customerService';
 import { useCustomers, useDeleteCustomer, useCustomerStats, useCustomerExport, useCustomerImport } from '../hooks/useCustomers';
 import { useIndustries } from '../hooks/useIndustries';
 import { useCompanySizes } from '../hooks/useCompanySizes';
@@ -52,7 +53,25 @@ const CustomerListPage: React.FC = () => {
   const [importResults, setImportResults] = useState<any>(null);
 
   // Queries
-  const { customers, pagination, isLoading: customersLoading, refetch } = useCustomers(filters as CustomerFilters);
+  const {
+    data: customerResponse,
+    isLoading: customersLoading,
+    refetch
+  } = useCustomers(filters as CustomerFilters);
+  const customers = customerResponse?.data || [];
+  const pagination = customerResponse
+    ? {
+        page: customerResponse.page,
+        pageSize: customerResponse.pageSize,
+        total: customerResponse.total,
+        totalPages: customerResponse.totalPages,
+      }
+    : {
+        page: filters.page ?? 1,
+        pageSize: filters.pageSize ?? 20,
+        total: 0,
+        totalPages: 0,
+      };
   const deleteCustomer = useDeleteCustomer();
   const exportCustomers = useCustomerExport();
   const importCustomers = useCustomerImport();
@@ -64,15 +83,17 @@ const CustomerListPage: React.FC = () => {
   const { data: users = [] } = useActiveUsers();
 
   // Real stats from service
-  const stats = statsData || {
+  const defaultStats: CustomerStats = {
     totalCustomers: 0,
     activeCustomers: 0,
-    prospectCustomers: 0,
     inactiveCustomers: 0,
+    prospectCustomers: 0,
     byIndustry: {},
     bySize: {},
-    byStatus: {}
+    byStatus: {},
+    recentlyAdded: 0,
   };
+  const stats: CustomerStats = statsData ?? defaultStats;
 
   const handleRefresh = () => {
     refetch();
@@ -238,7 +259,7 @@ const CustomerListPage: React.FC = () => {
           
           if (result.errors && result.errors.length > 0) {
             message.warning(
-              `Import completed: ${result.successCount} imported, ${result.errors.length} failed`
+              `Import completed: ${result.success} imported, ${result.errors.length} failed`
             );
           } else {
             message.success('Customers imported successfully');
@@ -289,7 +310,7 @@ const CustomerListPage: React.FC = () => {
 
   const handleAssignedFilterChange = (value: string) => {
     setAssignedFilter(value);
-    setFilters({ ...filters, assigned_to: value || undefined, page: 1 });
+    setFilters({ ...filters, assignedTo: value || undefined, page: 1 });
   };
 
   const handleClearFilters = () => {
@@ -570,8 +591,8 @@ const CustomerListPage: React.FC = () => {
                 size="large"
               >
                 {industries.map(industry => (
-                  <Option key={industry.id || industry.value} value={industry.value || industry.label}>
-                    {industry.label || industry.value}
+                  <Option key={industry.id} value={industry.key}>
+                    {industry.name}
                   </Option>
                 ))}
               </Select>
@@ -585,8 +606,8 @@ const CustomerListPage: React.FC = () => {
                 size="large"
               >
                 {companySizes.map(size => (
-                  <Option key={size.id || size.value} value={size.value || size.label}>
-                    {size.label || size.value}
+                  <Option key={size.id} value={size.key}>
+                    {size.name}
                   </Option>
                 ))}
               </Select>
@@ -750,7 +771,7 @@ const CustomerListPage: React.FC = () => {
                 <Button
                   key="submit"
                   type="primary"
-                  loading={importCustomers.isLoading}
+                  loading={importCustomers.isPending}
                   onClick={handleImportConfirm}
                 >
                   Confirm Import

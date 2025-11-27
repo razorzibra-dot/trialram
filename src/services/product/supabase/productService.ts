@@ -4,14 +4,7 @@
  * Extends BaseSupabaseService for common database operations
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-const getSupabaseClient = () => supabaseClient;
+import { supabase, getSupabaseClient } from '@/services/supabase/client';
 
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
 
@@ -34,23 +27,31 @@ class BaseSupabaseService {
 }
 
 export interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  category_id?: string;
-  sku: string;
-  price: number;
-  cost?: number;
-  currency: string;
-  stock_quantity: number;
-  reorder_level?: number;
-  status: 'active' | 'inactive' | 'discontinued';
-  image_url?: string;
-  specifications?: Record<string, any>;
-  tags?: string[];
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
+   id: string;
+   name: string;
+   description?: string;
+   category_id?: string;
+   sku: string;
+   price: number;
+   cost?: number;
+   currency: string;
+   // Advanced pricing
+   pricing_tiers?: any[];
+   discount_rules?: any[];
+   stock_quantity: number;
+   reorder_level?: number;
+   status: 'active' | 'inactive' | 'discontinued';
+   image_url?: string;
+   specifications?: Record<string, any>;
+   tags?: string[];
+   tenant_id: string;
+   created_at: string;
+   updated_at: string;
+
+   // Product hierarchy fields
+   parent_id?: string;
+   is_variant?: boolean;
+   variant_group_id?: string;
 }
 
 export interface ProductFilters {
@@ -163,6 +164,9 @@ export class SupabaseProductService extends BaseSupabaseService {
             price: data.price || 0,
             cost_price: (data as any).cost_price || data.cost,
             currency: data.currency || 'USD',
+            // Advanced pricing
+            pricing_tiers: data.pricing_tiers,
+            discount_rules: data.discount_rules,
             stock_quantity: data.stock_quantity || 0,
             unit: (data as any).unit,
             reorder_level: data.reorder_level,
@@ -180,6 +184,10 @@ export class SupabaseProductService extends BaseSupabaseService {
             tenant_id: data.tenant_id || tenant.tenantId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            // Product hierarchy fields
+            parent_id: data.parent_id,
+            is_variant: data.is_variant,
+            variant_group_id: data.variant_group_id,
           },
         ])
         .select(
@@ -238,6 +246,10 @@ export class SupabaseProductService extends BaseSupabaseService {
           tags: updates.tags,
           tenant_id: updates.tenant_id || tenant.tenantId,
           updated_at: new Date().toISOString(),
+          // Product hierarchy fields
+          parent_id: updates.parent_id,
+          is_variant: updates.is_variant,
+          variant_group_id: updates.variant_group_id,
         })
         .eq('id', id)
         .select(
@@ -416,8 +428,195 @@ export class SupabaseProductService extends BaseSupabaseService {
   }
 
   /**
-   * Subscribe to product changes
+   * Get product children (products that have this product as parent)
    */
+  async getProductChildren(parentId: string): Promise<Product[]> {
+    try {
+      this.log('Fetching product children', { parentId });
+
+      const tenant = await this.ensureTenantContext();
+
+      const { data, error } = await getSupabaseClient()
+        .from('products')
+        .select(
+          `*,
+          category:product_categories(*)`
+        )
+        .eq('parent_id', parentId)
+        .eq('tenant_id', tenant.tenantId)
+        .is('deleted_at', null)
+        .order('name');
+
+      if (error) throw error;
+
+      this.log('Product children fetched', { count: data?.length });
+      return data?.map((p) => this.mapProductResponse(p)) || [];
+    } catch (error) {
+      this.logError('Error fetching product children', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get product parent (product that this product belongs to)
+   */
+  async getProductParent(childId: string): Promise<Product | null> {
+    try {
+      this.log('Fetching product parent', { childId });
+
+      const tenant = await this.ensureTenantContext();
+
+      // First get the child product to find its parent_id
+      const { data: child, error: childError } = await getSupabaseClient()
+        .from('products')
+        .select('parent_id')
+        .eq('id', childId)
+        .eq('tenant_id', tenant.tenantId)
+        .single();
+
+      if (childError) throw childError;
+      if (!child?.parent_id) return null;
+
+      // Now get the parent product
+      const { data: parent, error: parentError } = await getSupabaseClient()
+        .from('products')
+        .select(
+          `*,
+          category:product_categories(*)`
+        )
+        .eq('id', child.parent_id)
+        .eq('tenant_id', tenant.tenantId)
+        .is('deleted_at', null)
+        .single();
+
+      if (parentError && parentError.code !== 'PGRST116') throw parentError;
+
+      return parent ? this.mapProductResponse(parent) : null;
+    } catch (error) {
+      this.logError('Error fetching product parent', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get complete product hierarchy information
+   */
+  async getProductHierarchy(productId: string): Promise<{
+    product: Product;
+    parent?: Product;
+    children: Product[];
+    siblings: Product[];
+  }> {
+    try {
+      this.log('Fetching product hierarchy', { productId });
+
+      const tenant = await this.ensureTenantContext();
+
+      // Get the product itself
+      const product = await this.getProduct(productId);
+      if (!product) throw new Error('Product not found');
+
+      // Get parent, children, and siblings in parallel
+      const [parent, children] = await Promise.all([
+        product.parent_id ? this.getProductParent(productId) : Promise.resolve(null),
+        this.getProductChildren(productId)
+      ]);
+
+      // Get siblings (other children of the same parent, excluding this product)
+      let siblings: Product[] = [];
+      if (product.parent_id) {
+        const allSiblings = await this.getProductChildren(product.parent_id);
+        siblings = allSiblings.filter(s => s.id !== productId);
+      }
+
+      return {
+        product,
+        parent: parent || undefined,
+        children,
+        siblings
+      };
+    } catch (error) {
+      this.logError('Error fetching product hierarchy', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get product variants (products in the same variant group)
+   */
+  async getProductVariants(baseProductId: string): Promise<Product[]> {
+    try {
+      this.log('Fetching product variants', { baseProductId });
+
+      const tenant = await this.ensureTenantContext();
+
+      // First get the base product to find its variant_group_id
+      const { data: baseProduct, error: baseError } = await getSupabaseClient()
+        .from('products')
+        .select('variant_group_id')
+        .eq('id', baseProductId)
+        .eq('tenant_id', tenant.tenantId)
+        .single();
+
+      if (baseError) throw baseError;
+      if (!baseProduct?.variant_group_id) return [];
+
+      // Get all variants in the same group (including the base product if it's a variant)
+      const { data, error } = await getSupabaseClient()
+        .from('products')
+        .select(
+          `*,
+          category:product_categories(*)`
+        )
+        .eq('variant_group_id', baseProduct.variant_group_id)
+        .eq('is_variant', true)
+        .eq('tenant_id', tenant.tenantId)
+        .is('deleted_at', null)
+        .order('name');
+
+      if (error) throw error;
+
+      this.log('Product variants fetched', { count: data?.length });
+      return data?.map((p) => this.mapProductResponse(p)) || [];
+    } catch (error) {
+      this.logError('Error fetching product variants', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get root products (products with no parent)
+   */
+  async getRootProducts(): Promise<Product[]> {
+    try {
+      this.log('Fetching root products');
+
+      const tenant = await this.ensureTenantContext();
+
+      const { data, error } = await getSupabaseClient()
+        .from('products')
+        .select(
+          `*,
+          category:product_categories(*)`
+        )
+        .or('parent_id.is.null,parent_id.eq.""')
+        .eq('tenant_id', tenant.tenantId)
+        .is('deleted_at', null)
+        .order('name');
+
+      if (error) throw error;
+
+      this.log('Root products fetched', { count: data?.length });
+      return data?.map((p) => this.mapProductResponse(p)) || [];
+    } catch (error) {
+      this.logError('Error fetching root products', error);
+      throw error;
+    }
+  }
+
+  /**
+    * Subscribe to product changes
+    */
   subscribeToProducts(
     tenantId: string,
     callback: (payload: any) => void
@@ -435,11 +634,11 @@ export class SupabaseProductService extends BaseSupabaseService {
   private async ensureTenantContext() {
     const tenant = multiTenantService.getCurrentTenant();
     if (!tenant?.tenantId) {
-      this.logError('No tenant context available');
+      this.logError('No tenant context available', new Error('Unauthorized'));
       throw new Error('Unauthorized');
     }
 
-    await supabaseClient.auth.updateUser({
+    await getSupabaseClient().auth.updateUser({
       data: {
         tenant_id: tenant.tenantId,
         role: tenant.role,
@@ -472,6 +671,10 @@ export class SupabaseProductService extends BaseSupabaseService {
       tenant_id: dbProduct.tenant_id,
       created_at: dbProduct.created_at,
       updated_at: dbProduct.updated_at,
+      // Product hierarchy fields
+      parent_id: dbProduct.parent_id,
+      is_variant: dbProduct.is_variant,
+      variant_group_id: dbProduct.variant_group_id,
     };
   }
 }

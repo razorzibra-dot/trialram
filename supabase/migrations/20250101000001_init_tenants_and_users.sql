@@ -3,8 +3,9 @@
 -- Migration: 001 - Tenants and Users
 -- ============================================================================
 
--- Enable UUID extension
+-- Enable required PostgreSQL extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================================
 -- 1. ENUMS - Shared Type Definitions
@@ -32,7 +33,7 @@ CREATE TYPE user_status AS ENUM (
 -- ============================================================================
 
 CREATE TABLE tenants (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL UNIQUE,
   domain VARCHAR(255) UNIQUE,
   status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
@@ -53,7 +54,7 @@ CREATE INDEX idx_tenants_domain ON tenants(domain);
 -- ============================================================================
 
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   first_name VARCHAR(100),
@@ -95,7 +96,7 @@ CREATE INDEX idx_users_created_at ON users(created_at);
 -- ============================================================================
 
 CREATE TABLE roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
   description TEXT,
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -117,7 +118,7 @@ CREATE INDEX idx_roles_is_system_role ON roles(is_system_role);
 -- ============================================================================
 
 CREATE TABLE user_roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -137,7 +138,7 @@ CREATE INDEX idx_user_roles_tenant_id ON user_roles(tenant_id);
 -- ============================================================================
 
 CREATE TABLE permissions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL UNIQUE,
   description TEXT,
   resource VARCHAR(100),
@@ -151,7 +152,7 @@ CREATE TABLE permissions (
 -- ============================================================================
 
 CREATE TABLE role_permissions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
   permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
   
@@ -169,7 +170,7 @@ CREATE INDEX idx_role_permissions_permission_id ON role_permissions(permission_i
 -- ============================================================================
 
 CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   

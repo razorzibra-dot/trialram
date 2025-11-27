@@ -5,49 +5,95 @@ import { authService } from '../serviceFactory';
 class RBACService {
   private baseUrl = '/api/rbac';
 
-  // Mock permissions data
+  // Mock permissions data - ALL using {resource}:{action} format
   private mockPermissions: Permission[] = [
     // Core permissions
     { id: 'read', name: 'Read', description: 'View and read data', category: 'core', resource: '*', action: 'read' },
     { id: 'write', name: 'Write', description: 'Create and edit data', category: 'core', resource: '*', action: 'write' },
     { id: 'delete', name: 'Delete', description: 'Delete data', category: 'core', resource: '*', action: 'delete' },
     
-    // Module permissions
-    { id: 'manage_customers', name: 'Manage Customers', description: 'Manage customer data and relationships', category: 'module', resource: 'customers', action: 'manage' },
-    { id: 'manage_sales', name: 'Manage Sales', description: 'Manage sales processes and deals', category: 'module', resource: 'sales', action: 'manage' },
-    { id: 'manage_tickets', name: 'Manage Tickets', description: 'Manage support tickets and issues', category: 'module', resource: 'tickets', action: 'manage' },
-    { id: 'manage_complaints', name: 'Manage Complaints', description: 'Handle customer complaints', category: 'module', resource: 'complaints', action: 'manage' },
-    { id: 'manage_contracts', name: 'Manage Contracts', description: 'Manage service contracts and agreements', category: 'module', resource: 'contracts', action: 'manage' },
-    { id: 'manage_service_contracts', name: 'Manage Service Contracts', description: 'Manage service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'manage' },
-    { id: 'manage_products', name: 'Manage Products', description: 'Manage product catalog and inventory', category: 'module', resource: 'products', action: 'manage' },
-    { id: 'manage_product_sales', name: 'Manage Product Sales', description: 'Manage product sales and transactions', category: 'module', resource: 'product_sales', action: 'manage' },
-    { id: 'manage_job_works', name: 'Manage Job Works', description: 'Manage job work orders and tasks', category: 'module', resource: 'job_works', action: 'manage' },
-    { id: 'manage_dashboard', name: 'Manage Dashboard', description: 'Access tenant dashboard and analytics', category: 'module', resource: 'dashboard', action: 'manage' },
-    { id: 'manage_masters', name: 'Manage Masters', description: 'Access master data and configuration', category: 'module', resource: 'masters', action: 'manage' },
-    { id: 'manage_user_management', name: 'Manage User Management', description: 'Access user and role management interface', category: 'module', resource: 'user_management', action: 'manage' },
+    // Module permissions - ALL using {resource}:{action} format
+    { id: 'customers:read', name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
+    { id: 'customers:create', name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
+    { id: 'customers:update', name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
+    { id: 'customers:delete', name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
     
-    // Administrative permissions
-    { id: 'manage_users', name: 'Manage Users', description: 'Manage user accounts and access', category: 'administrative', resource: 'users', action: 'manage' },
-    { id: 'manage_roles', name: 'Manage Roles', description: 'Manage roles and permissions', category: 'administrative', resource: 'roles', action: 'manage' },
-    { id: 'view_analytics', name: 'View Analytics', description: 'Access analytics and reports', category: 'administrative', resource: 'analytics', action: 'view' },
-    { id: 'manage_settings', name: 'Manage Settings', description: 'Configure system settings', category: 'administrative', resource: 'settings', action: 'manage' },
-    { id: 'manage_companies', name: 'Manage Companies', description: 'Manage company information', category: 'administrative', resource: 'companies', action: 'manage' },
+    { id: 'sales:read', name: 'View Sales', description: 'View sales processes and deals', category: 'module', resource: 'sales', action: 'read' },
+    { id: 'sales:create', name: 'Create Sales', description: 'Create new sales records', category: 'module', resource: 'sales', action: 'create' },
+    { id: 'sales:update', name: 'Update Sales', description: 'Edit sales information', category: 'module', resource: 'sales', action: 'update' },
+    { id: 'sales:delete', name: 'Delete Sales', description: 'Remove sales records', category: 'module', resource: 'sales', action: 'delete' },
     
-    // System permissions
-    { id: 'platform_admin', name: 'Platform Admin', description: 'Platform administration access', category: 'system', resource: 'platform', action: 'admin' },
-    { id: 'super_admin', name: 'Super Admin', description: 'Full system administration', category: 'system', resource: 'system', action: 'admin' },
-    { id: 'manage_tenants', name: 'Manage Tenants', description: 'Manage tenant accounts', category: 'system', resource: 'tenants', action: 'manage' },
-    { id: 'system_monitoring', name: 'System Monitoring', description: 'Monitor system health and performance', category: 'system', resource: 'system', action: 'monitor' }
+    { id: 'tickets:read', name: 'View Tickets', description: 'View support tickets and issues', category: 'module', resource: 'tickets', action: 'read' },
+    { id: 'tickets:create', name: 'Create Tickets', description: 'Create new support tickets', category: 'module', resource: 'tickets', action: 'create' },
+    { id: 'tickets:update', name: 'Update Tickets', description: 'Edit ticket information', category: 'module', resource: 'tickets', action: 'update' },
+    { id: 'tickets:delete', name: 'Delete Tickets', description: 'Remove ticket records', category: 'module', resource: 'tickets', action: 'delete' },
+    
+    { id: 'complaints:read', name: 'View Complaints', description: 'View customer complaints', category: 'module', resource: 'complaints', action: 'read' },
+    { id: 'complaints:create', name: 'Create Complaints', description: 'Create complaint records', category: 'module', resource: 'complaints', action: 'create' },
+    { id: 'complaints:update', name: 'Update Complaints', description: 'Edit complaint information', category: 'module', resource: 'complaints', action: 'update' },
+    { id: 'complaints:delete', name: 'Delete Complaints', description: 'Remove complaint records', category: 'module', resource: 'complaints', action: 'delete' },
+    
+    { id: 'contracts:read', name: 'View Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'contracts', action: 'read' },
+    { id: 'contracts:create', name: 'Create Contracts', description: 'Create new contracts', category: 'module', resource: 'contracts', action: 'create' },
+    { id: 'contracts:update', name: 'Update Contracts', description: 'Edit contract information', category: 'module', resource: 'contracts', action: 'update' },
+    { id: 'contracts:delete', name: 'Delete Contracts', description: 'Remove contract records', category: 'module', resource: 'contracts', action: 'delete' },
+    
+    { id: 'products:read', name: 'View Products', description: 'View product catalog and inventory', category: 'module', resource: 'products', action: 'read' },
+    { id: 'products:create', name: 'Create Products', description: 'Create new product records', category: 'module', resource: 'products', action: 'create' },
+    { id: 'products:update', name: 'Update Products', description: 'Edit product information', category: 'module', resource: 'products', action: 'update' },
+    { id: 'products:delete', name: 'Delete Products', description: 'Remove product records', category: 'module', resource: 'products', action: 'delete' },
+
+    { id: 'product_sales:read', name: 'View Product Sales', description: 'View product sales transactions', category: 'module', resource: 'product_sales', action: 'read' },
+    { id: 'product_sales:create', name: 'Create Product Sales', description: 'Create new product sales records', category: 'module', resource: 'product_sales', action: 'create' },
+    { id: 'product_sales:update', name: 'Update Product Sales', description: 'Edit product sales information', category: 'module', resource: 'product_sales', action: 'update' },
+    { id: 'product_sales:delete', name: 'Delete Product Sales', description: 'Remove product sales records', category: 'module', resource: 'product_sales', action: 'delete' },
+    
+    { id: 'jobworks:read', name: 'View Job Works', description: 'View job work orders and tasks', category: 'module', resource: 'jobworks', action: 'read' },
+    { id: 'jobworks:create', name: 'Create Job Works', description: 'Create new job work orders', category: 'module', resource: 'jobworks', action: 'create' },
+    { id: 'jobworks:update', name: 'Update Job Works', description: 'Edit job work information', category: 'module', resource: 'jobworks', action: 'update' },
+    { id: 'jobworks:delete', name: 'Delete Job Works', description: 'Remove job work records', category: 'module', resource: 'jobworks', action: 'delete' },
+
+    { id: 'service_contracts:read', name: 'View Service Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'read' },
+    { id: 'service_contracts:create', name: 'Create Service Contracts', description: 'Create new service contracts', category: 'module', resource: 'service_contracts', action: 'create' },
+    { id: 'service_contracts:update', name: 'Update Service Contracts', description: 'Edit service contract information', category: 'module', resource: 'service_contracts', action: 'update' },
+    { id: 'service_contracts:delete', name: 'Delete Service Contracts', description: 'Remove service contract records', category: 'module', resource: 'service_contracts', action: 'delete' },
+
+    { id: 'dashboard:view', name: 'View Dashboard', description: 'Access tenant dashboard and analytics', category: 'module', resource: 'dashboard', action: 'view' },
+    { id: 'masters:read', name: 'View Masters', description: 'Access master data and configuration', category: 'module', resource: 'masters', action: 'read' },
+    { id: 'user_management:read', name: 'View User Management', description: 'Access user and role management interface', category: 'module', resource: 'user_management', action: 'read' },
+    
+    // Administrative permissions - ALL using {resource}:{action} format
+    { id: 'users:read', name: 'View Users', description: 'View user accounts and access', category: 'administrative', resource: 'users', action: 'read' },
+    { id: 'users:create', name: 'Create Users', description: 'Create new user accounts', category: 'administrative', resource: 'users', action: 'create' },
+    { id: 'users:update', name: 'Update Users', description: 'Edit user accounts', category: 'administrative', resource: 'users', action: 'update' },
+    { id: 'users:delete', name: 'Delete Users', description: 'Remove user accounts', category: 'administrative', resource: 'users', action: 'delete' },
+    
+    { id: 'roles:read', name: 'View Roles', description: 'View roles and permissions', category: 'administrative', resource: 'roles', action: 'read' },
+    { id: 'roles:create', name: 'Create Roles', description: 'Create new roles', category: 'administrative', resource: 'roles', action: 'create' },
+    { id: 'roles:update', name: 'Update Roles', description: 'Edit roles and permissions', category: 'administrative', resource: 'roles', action: 'update' },
+    { id: 'roles:delete', name: 'Delete Roles', description: 'Remove roles', category: 'administrative', resource: 'roles', action: 'delete' },
+    
+    { id: 'analytics:view', name: 'View Analytics', description: 'Access analytics and reports', category: 'administrative', resource: 'analytics', action: 'view' },
+    { id: 'settings:read', name: 'View Settings', description: 'Configure system settings', category: 'administrative', resource: 'settings', action: 'read' },
+    { id: 'settings:update', name: 'Update Settings', description: 'Update system settings', category: 'administrative', resource: 'settings', action: 'update' },
+    { id: 'companies:read', name: 'View Companies', description: 'View company information', category: 'administrative', resource: 'companies', action: 'read' },
+    { id: 'companies:update', name: 'Update Companies', description: 'Edit company information', category: 'administrative', resource: 'companies', action: 'update' },
+    
+    // System permissions - ALL using {resource}:{action} format
+    { id: 'platform:admin', name: 'Platform Admin', description: 'Platform administration access', category: 'system', resource: 'platform', action: 'admin' },
+    { id: 'system:admin', name: 'Super Admin', description: 'Full system administration', category: 'system', resource: 'system', action: 'admin' },
+    { id: 'tenants:manage', name: 'Manage Tenants', description: 'Manage tenant accounts', category: 'system', resource: 'tenants', action: 'manage' },
+    { id: 'system:monitor', name: 'System Monitoring', description: 'Monitor system health and performance', category: 'system', resource: 'system', action: 'monitor' }
   ];
 
-  // Mock roles data
+  // Mock roles data - ALL permissions updated to {resource}:{action} format
   private mockRoles: Role[] = [
     {
       id: 'admin_role',
       name: 'Administrator',
       description: 'Tenant administrator with full tenant permissions',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_dashboard', 'manage_masters', 'manage_user_management', 'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'],
+      permissions: ['read', 'write', 'delete', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete', 'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete', 'products:read', 'products:create', 'products:update', 'products:delete', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete', 'dashboard:view', 'masters:read', 'user_management:read', 'users:read', 'users:create', 'users:update', 'users:delete', 'roles:read', 'roles:create', 'roles:update', 'roles:delete', 'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -57,7 +103,7 @@ class RBACService {
       name: 'Manager',
       description: 'Business operations manager with analytics access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'],
+      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'sales:read', 'sales:create', 'sales:update', 'tickets:read', 'tickets:create', 'tickets:update', 'complaints:read', 'complaints:create', 'complaints:update', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -67,7 +113,7 @@ class RBACService {
       name: 'User',
       description: 'Standard user with basic operations',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'manage_customers', 'manage_tickets', 'manage_complaints'],
+      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'tickets:read', 'tickets:create', 'tickets:update', 'complaints:read', 'complaints:create'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -77,7 +123,7 @@ class RBACService {
       name: 'Engineer',
       description: 'Technical engineer with product and job work access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'],
+      permissions: ['read', 'write', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'tickets:read', 'tickets:create', 'tickets:update'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -94,13 +140,13 @@ class RBACService {
     }
   ];
 
-  // Mock role templates
+  // Mock role templates - ALL permissions updated to {resource}:{action} format
   private mockRoleTemplates: RoleTemplate[] = [
     {
       id: 'business_admin',
       name: 'Business Administrator',
       description: 'Complete business operations management',
-      permissions: ['read', 'write', 'delete', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics', 'manage_companies'],
+      permissions: ['read', 'write', 'delete', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view', 'companies:read', 'companies:update'],
       is_default: true,
       category: 'business'
     },
@@ -108,7 +154,7 @@ class RBACService {
       id: 'sales_manager',
       name: 'Sales Manager',
       description: 'Sales operations and customer management',
-      permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'],
+      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view'],
       is_default: true,
       category: 'business'
     },
@@ -116,7 +162,7 @@ class RBACService {
       id: 'support_agent',
       name: 'Support Agent',
       description: 'Customer support and ticket management',
-      permissions: ['read', 'write', 'manage_customers', 'manage_tickets', 'manage_complaints'],
+      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete', 'complaints:read', 'complaints:create', 'complaints:update'],
       is_default: true,
       category: 'business'
     },
@@ -124,7 +170,7 @@ class RBACService {
       id: 'technical_lead',
       name: 'Technical Lead',
       description: 'Technical operations and product management',
-      permissions: ['read', 'write', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'],
+      permissions: ['read', 'write', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'tickets:read', 'tickets:create', 'tickets:update'],
       is_default: true,
       category: 'technical'
     },
@@ -132,7 +178,7 @@ class RBACService {
       id: 'system_admin',
       name: 'System Administrator',
       description: 'System administration and user management',
-      permissions: ['read', 'write', 'delete', 'manage_users', 'manage_roles', 'manage_settings'],
+      permissions: ['read', 'write', 'delete', 'users:read', 'users:create', 'users:update', 'users:delete', 'roles:read', 'roles:create', 'roles:update', 'roles:delete', 'settings:read', 'settings:update'],
       is_default: true,
       category: 'administrative'
     }
@@ -147,10 +193,10 @@ class RBACService {
       resource: 'user',
       resource_id: 'agent_techcorp_1',
       details: { old_role: 'customer', new_role: 'agent', assigned_by: 'admin_techcorp_1' },
-      ip_address: '192.168.1.100',
+      ip_address: this.getClientIp(),
       user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       tenant_id: 'techcorp',
-      timestamp: new Date(Date.now() - 86400000).toISOString()
+      created_at: new Date(Date.now() - 86400000).toISOString()
     },
     {
       id: 'audit_2',
@@ -158,11 +204,11 @@ class RBACService {
       action: 'permission_granted',
       resource: 'role',
       resource_id: 'custom_role_1',
-      details: { permission: 'view_analytics', granted_by: 'admin_techcorp_1' },
-      ip_address: '192.168.1.101',
+      details: { permission: 'analytics:view', granted_by: 'admin_techcorp_1' },
+      ip_address: this.getClientIp(),
       user_agent: 'Mozilla/5.0 (macOS; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       tenant_id: 'techcorp',
-      timestamp: new Date(Date.now() - 172800000).toISOString()
+      created_at: new Date(Date.now() - 172800000).toISOString()
     }
   ];
 
@@ -306,14 +352,14 @@ class RBACService {
         logs = logs.filter(log => log.tenant_id === filters.tenant_id);
       }
       if (filters.start_date) {
-        logs = logs.filter(log => log.timestamp >= filters.start_date!);
+        logs = logs.filter(log => log.created_at >= filters.start_date!);
       }
       if (filters.end_date) {
-        logs = logs.filter(log => log.timestamp <= filters.end_date!);
+        logs = logs.filter(log => log.created_at <= filters.end_date!);
       }
     }
 
-    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   async logAction(action: string, resource: string, resourceId?: string, details?: Record<string, unknown>): Promise<void> {
@@ -327,10 +373,10 @@ class RBACService {
       resource,
       resource_id: resourceId,
       details: details || {},
-      ip_address: '192.168.1.1', // In real implementation, get from request
+      ip_address: this.getClientIp(),
       user_agent: navigator.userAgent,
       tenant_id: currentUser.tenant_id,
-      timestamp: new Date().toISOString()
+      created_at: new Date().toISOString()
     };
 
     this.mockAuditLogs.unshift(auditLog);
@@ -404,7 +450,7 @@ class RBACService {
       
       // Map action to required permission
       // Actions follow pattern: "resource:operation" or "resource_subresource:operation"
-      // e.g., "product_sales:create" -> "manage_product_sales"
+      // e.g., "product_sales:create" -> "products:create"
       const permissionRequired = this.mapActionToPermission(action);
       
       if (!permissionRequired) {
@@ -439,44 +485,107 @@ class RBACService {
 
   /**
    * Map action string to required permission
-   * Converts action format like "product_sales:create" to "manage_product_sales"
+   * Converts action format like "product_sales:create" to "products:create"
+   * Updated to use {resource}:{action} format instead of manage_resource
    */
   private mapActionToPermission(action: string): string | null {
     // Action format: "resource(:or_subresource):operation"
-    // e.g., "product_sales:create" -> "manage_product_sales"
+    // e.g., "product_sales:create" -> "products:create"
     const parts = action.split(':');
     if (parts.length < 2) return null;
     
     const resource = parts[0];
     const operation = parts[1];
     
-    // For most operations, we need the "manage_resource" permission
-    // Special cases can be added here as needed
-    switch (operation) {
-      case 'create':
-      case 'edit':
-      case 'delete':
-      case 'change_status':
-      case 'approve':
-      case 'reject':
-      case 'bulk_delete':
-      case 'bulk_update_status':
-      case 'create_with_contract':
-      case 'edit_fields':
-      case 'export':
-      case 'view_audit':
-      case 'bulk_export':
-        // All these operations require the "manage_resource" permission
-        return `manage_${resource}`;
-      
-      case 'view':
-      case 'view_details':
-        // View operations can work with either "read" or "manage_resource"
-        return `manage_${resource}`;
-      
-      default:
-        return `manage_${resource}`;
+    // Handle compound resources (e.g., "product_sales" -> "products")
+    const resourceMap: Record<string, string> = {
+      'product_sales': 'products',
+      'service_contracts': 'service_contracts',
+      'jobworks': 'jobworks',
+      'user_management': 'users'
+    };
+
+    const mappedResource = resourceMap[resource] || resource;
+
+    // Return {resource}:{action} format
+    return `${mappedResource}:${operation}`;
+  }
+
+  /**
+   * Unified permission validation interface
+   * Single source of truth for all permission checks in the application
+   */
+  async validatePermission(
+    permission: string, 
+    context?: Record<string, any>
+  ): Promise<boolean> {
+    const result = await this.validateRolePermissions(permission, context);
+    return Boolean(result);
+  }
+
+  /**
+   * Validate multiple permissions
+   * @param permissions Array of permissions to check
+   * @param context Optional context
+   * @returns Object with individual results and overall validation
+   */
+  async validatePermissions(
+    permissions: string[], 
+    context?: Record<string, any>
+  ): Promise<{ [permission: string]: boolean; allValid: boolean; anyValid: boolean }> {
+    const results: { [permission: string]: boolean } = {};
+    let allValid = true;
+    let anyValid = false;
+
+    for (const permission of permissions) {
+      const hasPermission = await this.validatePermission(permission, context);
+      results[permission] = hasPermission;
+      if (!hasPermission) allValid = false;
+      if (hasPermission) anyValid = true;
     }
+
+    return {
+      ...results,
+      allValid,
+      anyValid
+    };
+  }
+
+  /**
+   * Check if user has permission (wrapper for backward compatibility)
+   */
+  hasPermission(permission: string): boolean {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) return false;
+
+    // Super admin has all permissions
+    if (currentUser.role === 'super_admin') return true;
+
+    // Use authService's hasPermission for direct compatibility
+    return authService.hasPermission(permission);
+  }
+
+  /**
+   * Check if user has any of the specified permissions
+   */
+  hasAnyPermission(permissions: string[]): boolean {
+    return permissions.some(permission => this.hasPermission(permission));
+  }
+
+  /**
+   * Check if user has all of the specified permissions
+   */
+  hasAllPermissions(permissions: string[]): boolean {
+    return permissions.every(permission => this.hasPermission(permission));
+  }
+
+  /**
+   * Helper method to get client IP (returns placeholder in browser)
+   */
+  private getClientIp(): string {
+    // In a browser environment, we can't get the real IP
+    // The server should capture this from the request
+    return 'browser-client';
   }
 }
 

@@ -96,6 +96,7 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
   cacheTTL = CACHE_TTL,
 }) => {
   const { isAuthenticated, tenant } = useAuth();
+  const tenantId = tenant?.tenantId;
 
   // Main cache state
   const [cache, setCache] = useState<CacheState>({
@@ -120,13 +121,13 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
    * Fetch all reference data from service (Layer 5: Factory routes to correct backend)
    */
   const fetchAllReferenceData = useCallback(async () => {
-    if (!isMountedRef.current) return;
+    if (!isMountedRef.current || !tenantId) return;
 
     setMetadata((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       // Call getAllReferenceData which returns all 4 data types
-      const data = await referenceDataService.getAllReferenceData();
+      const data = await referenceDataService.getAllReferenceData(tenantId);
 
       if (isMountedRef.current) {
         setCache({
@@ -154,7 +155,7 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
         }));
       }
     }
-  }, []);
+  }, [tenantId]);
 
   /**
     * Initialize context on mount - only load data when authenticated and tenant context is available
@@ -163,13 +164,13 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
      isMountedRef.current = true;
 
      // Only load data if user is authenticated and tenant context exists with valid tenantId
-     if (isAuthenticated && tenant?.tenantId !== undefined && tenant?.tenantId !== null && tenant?.tenantId !== 'undefined') {
+    if (isAuthenticated && tenantId !== undefined && tenantId !== null && tenantId !== 'undefined') {
        // Load data on mount
        fetchAllReferenceData();
 
        // Setup auto-refresh timer (5 minutes)
        refreshTimerRef.current = setInterval(() => {
-         if (isMountedRef.current && isAuthenticated && tenant?.tenantId !== undefined && tenant?.tenantId !== null && tenant?.tenantId !== 'undefined') {
+        if (isMountedRef.current && isAuthenticated && tenantId !== undefined && tenantId !== null && tenantId !== 'undefined') {
            fetchAllReferenceData();
          }
        }, cacheTTL);
@@ -195,7 +196,7 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
          clearInterval(refreshTimerRef.current);
        }
      };
-   }, [cacheTTL, fetchAllReferenceData, isAuthenticated, tenant?.tenantId]);
+  }, [cacheTTL, fetchAllReferenceData, isAuthenticated, tenantId]);
 
   /**
    * Invalidate cache and force refresh
@@ -218,47 +219,51 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
    */
   const refreshStatusOptions = useCallback(async () => {
     try {
-      const statusOptions = await referenceDataService.getStatusOptions();
+      if (!tenantId) return;
+      const statusOptions = await referenceDataService.getStatusOptions(undefined, tenantId);
       if (isMountedRef.current) {
         setCache((prev) => ({ ...prev, statusOptions }));
       }
     } catch (error) {
       console.error('[ReferenceDataContext] Error refreshing status options:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   const refreshCategories = useCallback(async () => {
     try {
-      const categories = await referenceDataService.getCategories();
+      if (!tenantId) return;
+      const categories = await referenceDataService.getCategories(tenantId);
       if (isMountedRef.current) {
         setCache((prev) => ({ ...prev, categories }));
       }
     } catch (error) {
       console.error('[ReferenceDataContext] Error refreshing categories:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   const refreshSuppliers = useCallback(async () => {
     try {
-      const suppliers = await referenceDataService.getSuppliers();
+      if (!tenantId) return;
+      const suppliers = await referenceDataService.getSuppliers(tenantId);
       if (isMountedRef.current) {
         setCache((prev) => ({ ...prev, suppliers }));
       }
     } catch (error) {
       console.error('[ReferenceDataContext] Error refreshing suppliers:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   const refreshReferenceData = useCallback(async () => {
     try {
-      const referenceData = await referenceDataService.getReferenceData();
+      if (!tenantId) return;
+      const referenceData = await referenceDataService.getReferenceData(undefined, tenantId);
       if (isMountedRef.current) {
         setCache((prev) => ({ ...prev, referenceData }));
       }
     } catch (error) {
       console.error('[ReferenceDataContext] Error refreshing reference data:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   /**
    * QUERY METHODS - Read-only operations

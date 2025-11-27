@@ -25,8 +25,9 @@ export const productSalesModule: FeatureModule = {
   async initialize() {
     console.log('[Product Sales] 🚀 Initializing...');
     try {
-      const { registerServiceInstance } = await import('../../core/services/ServiceContainer');
-      const { productSaleService, productService, customerService } = await import('../../../services/serviceFactory');
+      const { registerServiceInstance, serviceContainer } = await import('../../core/services/ServiceContainer');
+      const { productSaleService, productService } = await import('../../../services/serviceFactory');
+      const { CustomerService } = await import('../customers/services/customerService');
       
       // Register product sales service (as instance, not constructor)
       registerServiceInstance('productSaleService', productSaleService);
@@ -36,10 +37,12 @@ export const productSalesModule: FeatureModule = {
       registerServiceInstance('productService', productService);
       console.log('[Product Sales] ✅ productService registered');
       
-      // Customer service already registered by customers module
-      // but we'll ensure it's available if needed
-      registerServiceInstance('customerService', customerService);
-      console.log('[Product Sales] ✅ customerService registered');
+      if (!serviceContainer.has('customerService')) {
+        registerServiceInstance('customerService', new CustomerService());
+        console.log('[Product Sales] ✅ customerService registered (fallback)');
+      } else {
+        console.log('[Product Sales] ℹ️ customerService already registered, skipping');
+      }
       
       console.log('[Product Sales] ✅ Module initialized successfully');
     } catch (error) {
@@ -54,7 +57,6 @@ export const productSalesModule: FeatureModule = {
     
     serviceContainer.remove('productSaleService');
     serviceContainer.remove('productService');
-    serviceContainer.remove('customerService');
     
     console.log('[Product Sales] ✅ Module cleaned up');
   },

@@ -21,10 +21,12 @@ export interface JobWork {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   customer_id: string;
+  customer_name?: string;
   assigned_to?: string;
+  assigned_to_name?: string;
   start_date?: string;
   due_date?: string;
   completion_date?: string;
@@ -33,6 +35,23 @@ export interface JobWork {
   cost?: number;
   created_at?: string;
   updated_at?: string;
+  // Additional fields for form
+  job_ref_id?: string;
+  product_id?: string;
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
+  pieces?: number;
+  base_price?: number;
+  manual_price?: number;
+  started_at?: string;
+  completed_at?: string;
+  estimated_completion?: string;
+  delivery_address?: string;
+  delivery_instructions?: string;
+  compliance_requirements?: string[];
+  quality_check_passed?: boolean;
+  quality_notes?: string;
+  comments?: string;
+  internal_notes?: string;
 }
 
 export interface JobWorksFilters {
@@ -52,7 +71,7 @@ export interface JobWorksFilters {
 export interface CreateJobWorkData {
   title: string;
   description?: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status?: 'pending' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   customer_id: string;
   assigned_to?: string;
@@ -60,6 +79,23 @@ export interface CreateJobWorkData {
   due_date?: string;
   estimated_hours?: number;
   cost?: number;
+  // Additional fields for form
+  job_ref_id?: string;
+  product_id?: string;
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
+  pieces?: number;
+  base_price?: number;
+  manual_price?: number;
+  started_at?: string;
+  completed_at?: string;
+  estimated_completion?: string;
+  delivery_address?: string;
+  delivery_instructions?: string;
+  compliance_requirements?: string[];
+  quality_check_passed?: boolean;
+  quality_notes?: string;
+  comments?: string;
+  internal_notes?: string;
 }
 
 export class JobWorksService extends BaseService {
@@ -156,17 +192,17 @@ export class JobWorksService extends BaseService {
   }
 
   /**
-   * Update job work status
-   */
-  async updateJobWorkStatus(id: string, status: string): Promise<JobWork> {
-    try {
-      const typedStatus = status as 'pending' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';
-      return await this.updateJobWork(id, { status: typedStatus });
-    } catch (error) {
-      this.handleError(`Failed to update job work status for ${id}`, error);
-      throw error;
-    }
-  }
+    * Update job work status
+    */
+   async updateJobWorkStatus(id: string, status: string): Promise<JobWork> {
+     try {
+       const typedStatus = status as JobWork['status'];
+       return await this.updateJobWork(id, { status: typedStatus });
+     } catch (error) {
+       this.handleError(`Failed to update job work status for ${id}`, error);
+       throw error;
+     }
+   }
 
   /**
    * Get job work statistics

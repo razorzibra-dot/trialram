@@ -3,6 +3,10 @@
 -- Migration: 009 - Add missing RBAC tables and columns
 -- ============================================================================
 
+-- Enable required PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- ============================================================================
 -- 1. ADD MISSING COLUMNS TO PERMISSIONS TABLE
 -- ============================================================================

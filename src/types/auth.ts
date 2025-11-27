@@ -70,6 +70,11 @@ export interface User {
    * @optional
    */
   impersonationLogId?: string;
+  /**
+   * Permissions assigned to the user (derived from role_permissions)
+   * This should be dynamically loaded from the DB at login/restore
+   */
+  permissions?: string[];
 }
 
 export interface LoginCredentials {

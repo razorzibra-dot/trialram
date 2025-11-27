@@ -59,12 +59,13 @@ export interface CustomerFilters extends FilterOptions {
 }
 
 export interface CustomerStats {
-  total: number;
-  active: number;
-  inactive: number;
-  prospects: number;
+  totalCustomers: number;
+  activeCustomers: number;
+  inactiveCustomers: number;
+  prospectCustomers: number;
   byIndustry: Record<string, number>;
   bySize: Record<string, number>;
+  byStatus: Record<string, number>;
   recentlyAdded: number;
 }
 
@@ -84,6 +85,78 @@ export interface ICustomerService {
   importCustomers(csv: string): Promise<{ success: number; errors: string[] }>;
   searchCustomers(query: string): Promise<Customer[]>;
   getCustomerStats(): Promise<CustomerStats>;
+  // Advanced analytics methods
+  getCustomerAnalytics(filters?: {
+    dateRange?: { start: string; end: string };
+    segment?: string;
+    industry?: string;
+  }): Promise<{
+    totalRevenue: number;
+    averageOrderValue: number;
+    customerLifetimeValue: number;
+    churnRate: number;
+    retentionRate: number;
+    acquisitionRate: number;
+    customerSatisfaction: number;
+    npsScore: number;
+    topCustomers: Array<{ id: string; name: string; value: number }>;
+    revenueByMonth: Record<string, number>;
+    customerGrowth: Record<string, number>;
+  }>;
+  getCustomerSegmentationAnalytics(): Promise<{
+    segments: Array<{
+      name: string;
+      customerCount: number;
+      averageValue: number;
+      churnRisk: number;
+      engagementScore: number;
+    }>;
+    segmentTrends: Record<string, Record<string, number>>;
+    segmentPerformance: Record<string, {
+      revenue: number;
+      growth: number;
+      satisfaction: number;
+    }>;
+  }>;
+  getCustomerLifecycleAnalytics(): Promise<{
+    lifecycleStages: Array<{
+      stage: string;
+      customerCount: number;
+      averageDays: number;
+      conversionRate: number;
+      dropOffRate: number;
+    }>;
+    lifecycleTrends: Record<string, Record<string, number>>;
+    stageTransitions: Record<string, Record<string, number>>;
+  }>;
+  getCustomerBehaviorAnalytics(): Promise<{
+    engagementMetrics: {
+      averageInteractionsPerCustomer: number;
+      mostActiveTime: string;
+      preferredChannels: Record<string, number>;
+      responseTimes: {
+        average: number;
+        median: number;
+        p95: number;
+      };
+    };
+    purchasePatterns: {
+      averageOrderFrequency: number;
+      commonProductCategories: Record<string, number>;
+      seasonalTrends: Record<string, number>;
+      basketAnalysis: Array<{
+        product: string;
+        frequentlyBoughtWith: string[];
+        confidence: number;
+      }>;
+    };
+    churnIndicators: Array<{
+      customerId: string;
+      riskScore: number;
+      indicators: string[];
+      predictedChurnDate?: string;
+    }>;
+  }>;
 }
 
 export class CustomerService extends BaseService implements ICustomerService {
@@ -337,13 +410,14 @@ export class CustomerService extends BaseService implements ICustomerService {
         
         // Map factory stats to wrapper format
         return {
-          total: (factoryStats as any).totalCustomers || 0,
-          active: (factoryStats as any).activeCustomers || 0,
-          inactive: (factoryStats as any).inactiveCustomers || 0,
-          prospects: (factoryStats as any).prospectCustomers || 0,
+          totalCustomers: (factoryStats as any).totalCustomers || (factoryStats as any).total || 0,
+          activeCustomers: (factoryStats as any).activeCustomers || (factoryStats as any).active || 0,
+          inactiveCustomers: (factoryStats as any).inactiveCustomers || (factoryStats as any).inactive || 0,
+          prospectCustomers: (factoryStats as any).prospectCustomers || (factoryStats as any).prospects || 0,
           byIndustry: (factoryStats as any).byIndustry || {},
           bySize: (factoryStats as any).bySize || {},
-          recentlyAdded: 0, // Factory doesn't calculate this, would need additional logic
+          byStatus: (factoryStats as any).byStatus || {},
+          recentlyAdded: (factoryStats as any).recentlyAdded || 0,
         };
       }
       
@@ -367,13 +441,14 @@ export class CustomerService extends BaseService implements ICustomerService {
           customerArray = [];
         }
         
-        const stats = {
-          total: customerArray.length,
-          active: customerArray.filter(c => (c as any).status === 'active').length,
-          inactive: customerArray.filter(c => (c as any).status === 'inactive').length,
-          prospects: customerArray.filter(c => (c as any).status === 'prospect').length,
+        const stats: CustomerStats = {
+          totalCustomers: customerArray.length,
+          activeCustomers: customerArray.filter(c => (c as any).status === 'active').length,
+          inactiveCustomers: customerArray.filter(c => (c as any).status === 'inactive').length,
+          prospectCustomers: customerArray.filter(c => (c as any).status === 'prospect').length,
           byIndustry: {} as Record<string, number>,
           bySize: {} as Record<string, number>,
+          byStatus: {} as Record<string, number>,
           recentlyAdded: 0,
         };
 
@@ -387,6 +462,12 @@ export class CustomerService extends BaseService implements ICustomerService {
         customerArray.forEach(customer => {
           const size = (customer as any).size || 'Unknown';
           stats.bySize[size] = (stats.bySize[size] || 0) + 1;
+        });
+
+        // Calculate status distribution
+        customerArray.forEach(customer => {
+          const status = (customer as any).status || 'Unknown';
+          stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
         });
 
         // Calculate recently added (last 30 days)
@@ -406,21 +487,137 @@ export class CustomerService extends BaseService implements ICustomerService {
         if (errorMsg.includes('Tenant context not initialized') || errorMsg.includes('Unauthorized')) {
           console.log('[CustomerService] 📋 Returning empty stats due to auth/tenant context');
           // Return empty stats instead of throwing
-          return {
-            total: 0,
-            active: 0,
-            inactive: 0,
-            prospects: 0,
-            byIndustry: {},
-            bySize: {},
-            recentlyAdded: 0,
-          };
+        return {
+          totalCustomers: 0,
+          activeCustomers: 0,
+          inactiveCustomers: 0,
+          prospectCustomers: 0,
+          byIndustry: {},
+          bySize: {},
+          byStatus: {},
+          recentlyAdded: 0,
+        };
         }
         throw error;
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('[CustomerService] ❌ CRITICAL Error fetching customer stats:', errorMsg, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get advanced customer analytics
+   */
+  async getCustomerAnalytics(filters?: {
+    dateRange?: { start: string; end: string };
+    segment?: string;
+    industry?: string;
+  }): Promise<{
+    totalRevenue: number;
+    averageOrderValue: number;
+    customerLifetimeValue: number;
+    churnRate: number;
+    retentionRate: number;
+    acquisitionRate: number;
+    customerSatisfaction: number;
+    npsScore: number;
+    topCustomers: Array<{ id: string; name: string; value: number }>;
+    revenueByMonth: Record<string, number>;
+    customerGrowth: Record<string, number>;
+  }> {
+    try {
+      return await factoryCustomerService.getCustomerAnalytics(filters);
+    } catch (error) {
+      console.error('Error fetching customer analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get customer segmentation analytics
+   */
+  async getCustomerSegmentationAnalytics(): Promise<{
+    segments: Array<{
+      name: string;
+      customerCount: number;
+      averageValue: number;
+      churnRisk: number;
+      engagementScore: number;
+    }>;
+    segmentTrends: Record<string, Record<string, number>>;
+    segmentPerformance: Record<string, {
+      revenue: number;
+      growth: number;
+      satisfaction: number;
+    }>;
+  }> {
+    try {
+      return await factoryCustomerService.getCustomerSegmentationAnalytics();
+    } catch (error) {
+      console.error('Error fetching customer segmentation analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get customer lifecycle analytics
+   */
+  async getCustomerLifecycleAnalytics(): Promise<{
+    lifecycleStages: Array<{
+      stage: string;
+      customerCount: number;
+      averageDays: number;
+      conversionRate: number;
+      dropOffRate: number;
+    }>;
+    lifecycleTrends: Record<string, Record<string, number>>;
+    stageTransitions: Record<string, Record<string, number>>;
+  }> {
+    try {
+      return await factoryCustomerService.getCustomerLifecycleAnalytics();
+    } catch (error) {
+      console.error('Error fetching customer lifecycle analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get customer behavior analytics
+   */
+  async getCustomerBehaviorAnalytics(): Promise<{
+    engagementMetrics: {
+      averageInteractionsPerCustomer: number;
+      mostActiveTime: string;
+      preferredChannels: Record<string, number>;
+      responseTimes: {
+        average: number;
+        median: number;
+        p95: number;
+      };
+    };
+    purchasePatterns: {
+      averageOrderFrequency: number;
+      commonProductCategories: Record<string, number>;
+      seasonalTrends: Record<string, number>;
+      basketAnalysis: Array<{
+        product: string;
+        frequentlyBoughtWith: string[];
+        confidence: number;
+      }>;
+    };
+    churnIndicators: Array<{
+      customerId: string;
+      riskScore: number;
+      indicators: string[];
+      predictedChurnDate?: string;
+    }>;
+  }> {
+    try {
+      return await factoryCustomerService.getCustomerBehaviorAnalytics();
+    } catch (error) {
+      console.error('Error fetching customer behavior analytics:', error);
       throw error;
     }
   }

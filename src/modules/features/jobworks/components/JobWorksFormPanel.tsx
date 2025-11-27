@@ -67,7 +67,7 @@ import {
   FileOutlined,
   CalendarOutlined,
 } from '@ant-design/icons';
-import { JobWork } from '@/types/jobWork';
+import { JobWork } from '../services/jobWorksService';
 import dayjs from 'dayjs';
 
 interface JobWorksFormPanelProps {
@@ -415,7 +415,7 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
                     placeholder="Enter pieces"
                     min={1}
                     value={pieces}
-                    onChange={setPieces}
+                    onChange={(value) => setPieces(value || 1)}
                   />
                 </Form.Item>
               </Col>
@@ -490,7 +490,7 @@ export const JobWorksFormPanel: React.FC<JobWorksFormPanelProps> = ({
                 min={0}
                 step={10}
                 value={basePrice}
-                onChange={setBasePrice}
+                onChange={(value) => setBasePrice(value || 0)}
                 formatter={(value) => `$${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={(value) => parseInt(value?.replace(/\$\s?|(,*)/g, '') || '0')}
               />

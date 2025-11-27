@@ -3,9 +3,9 @@
  * Fetches customer status options from reference_data table
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface CustomerStatus {
   id: string;
@@ -23,21 +23,23 @@ function mapReferenceDataToCustomerStatus(data: ReferenceData): CustomerStatus {
   };
 }
 
-async function fetchCustomerStatus(): Promise<CustomerStatus[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('customer_status');
-    return referenceData.map(mapReferenceDataToCustomerStatus);
-  } catch (error) {
-    console.error('Error fetching customer status:', error);
-    throw error;
-  }
-}
-
 export function useCustomerStatus() {
-  return useQuery({
-    queryKey: ['customer_status'],
-    queryFn: fetchCustomerStatus,
-    staleTime: 10 * 60 * 1000,
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const customerStatus = useMemo(() => {
+    return getRefDataByCategory('customer_status').map(mapReferenceDataToCustomerStatus);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: customerStatus,
+    customerStatus,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

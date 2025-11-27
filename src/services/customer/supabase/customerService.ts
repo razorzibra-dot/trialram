@@ -1,10 +1,5 @@
 import { Customer, CustomerTag } from '@/types/crm';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase, getSupabaseClient } from '@/services/supabase/client';
 
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
 
@@ -22,6 +17,7 @@ class SupabaseCustomerService {
     industry?: string;
     size?: string;
     assigned_to?: string;
+    assignedTo?: string;
     search?: string;
     tags?: string[];
   }): Promise<Customer[]> {
@@ -31,13 +27,23 @@ class SupabaseCustomerService {
 
       console.log('[SupabaseCustomerService] getCustomers called with tenantId:', tenantId, 'filters:', filters);
 
-      let query = supabaseClient
+      let query = getSupabaseClient()
         .from('customers')
         .select(`
           *,
-          customer_tag_mapping (
+          company:companies!customers_company_id_fkey (
+            id,
+            name,
+            industry,
+            size,
+            website,
+            city,
+            country,
+            plan
+          ),
+          customer_tag_mapping:customer_tag_mapping!customer_tag_mapping_customer_id_fkey (
             tag_id,
-            customer_tags (
+            customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
               id,
               name,
               color
@@ -64,8 +70,9 @@ class SupabaseCustomerService {
       }
 
       // Apply assigned_to filter (role-based for agents)
-      if (filters?.assigned_to) {
-        query = query.eq('assigned_to', filters.assigned_to);
+      const assignedFilter = filters?.assigned_to || filters?.assignedTo;
+      if (assignedFilter) {
+        query = query.eq('assigned_to', assignedFilter);
       }
 
       // Apply search filter
@@ -115,13 +122,23 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       const { data, error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .select(`
             *,
-            customer_tag_mapping (
+            company:companies!customers_company_id_fkey (
+              id,
+              name,
+              industry,
+              size,
+              website,
+              city,
+              country,
+              plan
+            ),
+            customer_tag_mapping:customer_tag_mapping!customer_tag_mapping_customer_id_fkey (
               tag_id,
-              customer_tags (
+              customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
                 id,
                 name,
                 color
@@ -144,6 +161,147 @@ class SupabaseCustomerService {
   }
 
   /**
+   * Validate customer data according to business rules
+   */
+  private validateCustomerData(customerData: Omit<Customer, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>, tenantId: string): void {
+    const errors: string[] = [];
+
+    // Required field validations
+    if (!customerData.company_name?.trim()) {
+      errors.push('Company name is required');
+    } else if (customerData.company_name.length > 255) {
+      errors.push('Company name must be less than 255 characters');
+    }
+
+    if (!customerData.contact_name?.trim()) {
+      errors.push('Contact name is required');
+    } else if (customerData.contact_name.length > 255) {
+      errors.push('Contact name must be less than 255 characters');
+    }
+
+    // Email validation
+    if (!customerData.email?.trim()) {
+      errors.push('Email is required');
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerData.email)) {
+        errors.push('Invalid email format');
+      } else if (customerData.email.length > 255) {
+        errors.push('Email must be less than 255 characters');
+      }
+    }
+
+    // Phone validation
+    if (customerData.phone && customerData.phone.length > 50) {
+      errors.push('Phone number must be less than 50 characters');
+    }
+
+    if (customerData.mobile && customerData.mobile.length > 50) {
+      errors.push('Mobile number must be less than 50 characters');
+    }
+
+    // Website URL validation
+    if (customerData.website) {
+      try {
+        new URL(customerData.website);
+        if (customerData.website.length > 500) {
+          errors.push('Website URL must be less than 500 characters');
+        }
+      } catch {
+        errors.push('Invalid website URL format');
+      }
+    }
+
+    // Address validation
+    if (customerData.address && customerData.address.length > 500) {
+      errors.push('Address must be less than 500 characters');
+    }
+
+    if (customerData.city && customerData.city.length > 100) {
+      errors.push('City must be less than 100 characters');
+    }
+
+    if (customerData.country && customerData.country.length > 100) {
+      errors.push('Country must be less than 100 characters');
+    }
+
+    // Industry validation
+    if (customerData.industry && customerData.industry.length > 100) {
+      errors.push('Industry must be less than 100 characters');
+    }
+
+    // Size enum validation
+    if (customerData.size && !['startup', 'small', 'medium', 'enterprise'].includes(customerData.size)) {
+      errors.push('Size must be one of: startup, small, medium, enterprise');
+    }
+
+    // Status enum validation
+    if (customerData.status && !['active', 'inactive', 'prospect'].includes(customerData.status)) {
+      errors.push('Status must be one of: active, inactive, prospect');
+    }
+
+    // Customer type enum validation
+    if (customerData.customer_type && !['business', 'individual'].includes(customerData.customer_type)) {
+      errors.push('Customer type must be one of: business, individual');
+    }
+
+    // Credit limit validation
+    if (customerData.credit_limit !== undefined) {
+      if (typeof customerData.credit_limit !== 'number' || customerData.credit_limit < 0) {
+        errors.push('Credit limit must be a positive number');
+      } else if (customerData.credit_limit > 999999999.99) {
+        errors.push('Credit limit cannot exceed 999,999,999.99');
+      }
+    }
+
+    // Payment terms validation
+    if (customerData.payment_terms && customerData.payment_terms.length > 100) {
+      errors.push('Payment terms must be less than 100 characters');
+    }
+
+    // Tax ID validation
+    if (customerData.tax_id && customerData.tax_id.length > 50) {
+      errors.push('Tax ID must be less than 50 characters');
+    }
+
+    // Notes validation
+    if (customerData.notes && customerData.notes.length > 2000) {
+      errors.push('Notes must be less than 2000 characters');
+    }
+
+    // Source validation
+    if (customerData.source && customerData.source.length > 100) {
+      errors.push('Source must be less than 100 characters');
+    }
+
+    // Rating validation
+    if (customerData.rating && customerData.rating.length > 50) {
+      errors.push('Rating must be less than 50 characters');
+    }
+
+    // Tags validation
+    if (customerData.tags && customerData.tags.length > 10) {
+      errors.push('Cannot assign more than 10 tags to a customer');
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`Validation failed: ${errors.join(', ')}`);
+    }
+  }
+
+  private extractNameParts(contactName?: string): { firstName: string; lastName: string } {
+    const fallback = 'Customer';
+    const trimmed = (contactName || '').trim();
+    if (!trimmed) {
+      return { firstName: fallback, lastName: fallback };
+    }
+    const parts = trimmed.split(/\s+/);
+    const firstName = parts.shift() || fallback;
+    const lastName = parts.length > 0 ? parts.join(' ') : firstName;
+    return { firstName, lastName };
+  }
+
+  /**
    * Create new customer
    */
   async createCustomer(
@@ -153,26 +311,56 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
       const userId = multiTenantService.getCurrentUserId();
 
+      // Validate customer data
+      this.validateCustomerData(customerData, tenantId);
+
+      // Check email uniqueness within tenant
+      const { data: existingCustomer, error: checkError } = await getSupabaseClient()
+        .from('customers')
+        .select('id')
+        .eq('email', customerData.email)
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (existingCustomer && !checkError) {
+        throw new Error('Email address already exists for this tenant');
+      }
+
+      const now = new Date().toISOString();
+
+      const { firstName, lastName } = this.extractNameParts(customerData.contact_name);
+
       const insertData = {
         company_name: customerData.company_name,
         contact_name: customerData.contact_name,
+        first_name: firstName,
+        last_name: lastName,
         email: customerData.email,
         phone: customerData.phone,
+        mobile: customerData.mobile,
         address: customerData.address,
         city: customerData.city,
         country: customerData.country,
+        website: customerData.website,
         industry: customerData.industry,
         size: customerData.size,
         status: customerData.status,
+        customer_type: customerData.customer_type,
+        credit_limit: customerData.credit_limit,
+        payment_terms: customerData.payment_terms,
+        tax_id: customerData.tax_id,
+        source: customerData.source,
+        rating: customerData.rating,
         notes: customerData.notes,
         assigned_to: customerData.assigned_to || userId,
+        created_by: userId,
         tenant_id: tenantId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: now,
+        updated_at: now
       };
 
       const { data, error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .insert([insertData])
           .select(`
@@ -207,27 +395,58 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       // Validate ownership
-      const { data: existing, error: fetchError } = await supabaseClient
+      const { data: existing, error: fetchError } = await getSupabaseClient()
         .from('customers')
-        .select('id')
+        .select('*')
         .eq('id', id)
         .eq('tenant_id', tenantId)
         .single();
 
       if (fetchError || !existing) throw new Error('Customer not found');
 
-      const updateData = {
+      // Validate updates if they contain customer data fields
+      const existingCustomer = this.mapToCustomer(existing);
+      const updatedData = { ...existingCustomer, ...updates };
+
+      // Only validate if email or other key fields are being updated
+      if (updates.email || updates.company_name || updates.contact_name ||
+          updates.phone || updates.website || updates.size || updates.status ||
+          updates.customer_type || updates.credit_limit) {
+        this.validateCustomerData(updatedData, tenantId);
+
+        // Check email uniqueness if email is being updated
+        if (updates.email && updates.email !== existingCustomer.email) {
+          const { data: emailCheck, error: emailError } = await getSupabaseClient()
+            .from('customers')
+            .select('id')
+            .eq('email', updates.email)
+            .eq('tenant_id', tenantId)
+            .neq('id', id)
+            .maybeSingle();
+
+          if (emailCheck && !emailError) {
+            throw new Error('Email address already exists for this tenant');
+          }
+        }
+      }
+
+      const { firstName, lastName } = this.extractNameParts(updatedData.contact_name);
+
+      const updateData: Record<string, any> = {
         ...updates,
+        contact_name: updatedData.contact_name,
+        first_name: firstName,
+        last_name: lastName,
         updated_at: new Date().toISOString()
       };
 
       // Remove fields that shouldn't be updated
-      delete (updateData as any).id;
-      delete (updateData as any).tenant_id;
-      delete (updateData as any).created_at;
+      delete updateData.id;
+      delete updateData.tenant_id;
+      delete updateData.created_at;
 
       const { data, error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .update(updateData)
           .eq('id', id)
@@ -264,7 +483,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       const { error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .delete()
           .eq('id', id)
@@ -286,7 +505,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       const { error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .delete()
           .eq('tenant_id', tenantId)
@@ -313,12 +532,12 @@ class SupabaseCustomerService {
       };
 
       // Remove fields that shouldn't be updated
-      delete (updateData as any).id;
-      delete (updateData as any).tenant_id;
-      delete (updateData as any).created_at;
+      delete updateData.id;
+      delete updateData.tenant_id;
+      delete updateData.created_at;
 
       const { error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customers')
           .update(updateData)
           .eq('tenant_id', tenantId)
@@ -340,7 +559,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       const { data, error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customer_tags')
           .select('*')
           .eq('tenant_id', tenantId)
@@ -367,7 +586,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       const { data, error } = await retryQuery(async () =>
-        supabaseClient
+        getSupabaseClient()
           .from('customer_tags')
           .insert([
             {
@@ -403,7 +622,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       // Verify customer exists and belongs to tenant
-      const { data: customer, error: customerError } = await supabaseClient
+      const { data: customer, error: customerError } = await getSupabaseClient()
         .from('customers')
         .select('id')
         .eq('id', customerId)
@@ -413,7 +632,7 @@ class SupabaseCustomerService {
       if (customerError || !customer) throw new Error('Customer not found');
 
       // Insert tag mapping
-      const { error } = await supabaseClient
+      const { error } = await getSupabaseClient()
         .from('customer_tag_mapping')
         .insert([{ customer_id: customerId, tag_id: tagId }]);
 
@@ -432,7 +651,7 @@ class SupabaseCustomerService {
    */
   async removeTagFromCustomer(customerId: string, tagId: string): Promise<void> {
     try {
-      const { error } = await supabaseClient
+      const { error } = await getSupabaseClient()
         .from('customer_tag_mapping')
         .delete()
         .eq('customer_id', customerId)
@@ -453,7 +672,7 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       // Verify customer exists and belongs to tenant
-      const { data: customer, error: customerError } = await supabaseClient
+      const { data: customer, error: customerError } = await getSupabaseClient()
         .from('customers')
         .select('id')
         .eq('id', customerId)
@@ -463,7 +682,7 @@ class SupabaseCustomerService {
       if (customerError || !customer) throw new Error('Customer not found');
 
       // Delete existing tag mappings
-      const { error: deleteError } = await supabaseClient
+      const { error: deleteError } = await getSupabaseClient()
         .from('customer_tag_mapping')
         .delete()
         .eq('customer_id', customerId);
@@ -477,7 +696,7 @@ class SupabaseCustomerService {
           tag_id: tagId
         }));
 
-        const { error: insertError } = await supabaseClient
+        const { error: insertError } = await getSupabaseClient()
           .from('customer_tag_mapping')
           .insert(mappings);
 
@@ -579,7 +798,7 @@ class SupabaseCustomerService {
             updated_at: new Date().toISOString()
           };
 
-          const { error } = await supabase
+          const { error } = await getSupabaseClient()
             .from('customers')
             .insert([customerData]);
 
@@ -636,16 +855,16 @@ class SupabaseCustomerService {
       const tenantId = multiTenantService.getCurrentTenantId();
 
       // Fetch all customers for the tenant
-      const { data, error } = await retryQuery(async () =>
-        supabaseClient
+      const { data: customerRows, error: customerError } = await retryQuery(async () =>
+        getSupabaseClient()
           .from('customers')
           .select('id, status, industry, size')
           .eq('tenant_id', tenantId)
       );
 
-      if (error) throw handleSupabaseError(error);
+      if (customerError) throw handleSupabaseError(customerError);
 
-      const customers = data || [];
+      const customers = customerRows || [];
 
       // Calculate statistics
       const byStatus: Record<string, number> = {};
@@ -653,9 +872,13 @@ class SupabaseCustomerService {
       const bySize: Record<string, number> = {};
 
       customers.forEach(customer => {
-        byStatus[customer.status] = (byStatus[customer.status] || 0) + 1;
-        byIndustry[customer.industry] = (byIndustry[customer.industry] || 0) + 1;
-        bySize[customer.size] = (bySize[customer.size] || 0) + 1;
+        const statusKey = customer.status || 'unknown';
+        const industryKey = customer.industry || 'unknown';
+        const sizeKey = (customer.size as string | undefined) || 'unknown';
+
+        byStatus[statusKey] = (byStatus[statusKey] || 0) + 1;
+        byIndustry[industryKey] = (byIndustry[industryKey] || 0) + 1;
+        bySize[sizeKey] = (bySize[sizeKey] || 0) + 1;
       });
 
       return {
@@ -688,24 +911,56 @@ class SupabaseCustomerService {
         color: tag.color
       }));
 
+    const company = row.company || row.companies || null;
+    const contactName =
+      row.contact_name ||
+      [row.first_name, row.last_name].filter(Boolean).join(' ').trim() ||
+      row.email ||
+      'Unknown contact';
+
+    const companyName =
+      row.company_name ||
+      company?.name ||
+      contactName;
+
+    const industry = row.industry || company?.industry || 'General';
+    const size = row.size || company?.size || 'small';
+
     return {
       id: row.id,
-      company_name: row.company_name,
-      contact_name: row.contact_name,
+      company_name: companyName,
+      contact_name: contactName,
       email: row.email,
       phone: row.phone,
+      mobile: row.mobile,
+      website: row.website || company?.website,
       address: row.address,
-      city: row.city,
-      country: row.country,
-      industry: row.industry,
-      size: row.size,
-      status: row.status,
+      city: row.city || company?.city,
+      country: row.country || company?.country,
+      industry,
+      size,
+      status: (row.status || 'active') as Customer['status'],
+      customer_type: (row.customer_type || 'business') as Customer['customer_type'],
+      credit_limit: row.credit_limit,
+      payment_terms: row.payment_terms,
+      tax_id: row.tax_id,
+      annual_revenue: row.annual_revenue,
+      total_sales_amount: row.total_sales_amount,
+      total_orders: row.total_orders,
+      average_order_value: row.average_order_value,
+      last_purchase_date: row.last_purchase_date,
       tags,
       notes: row.notes,
+      assigned_to: row.assigned_to,
+      source: row.source,
+      rating: row.rating,
+      last_contact_date: row.last_contact_date,
+      next_follow_up_date: row.next_follow_up_date,
       tenant_id: row.tenant_id,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      assigned_to: row.assigned_to
+      created_by: row.created_by,
+      deleted_at: row.deleted_at
     };
   }
 }

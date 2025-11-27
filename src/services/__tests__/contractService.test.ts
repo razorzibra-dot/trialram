@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { contractService } from '@/services/contractService';
+import { contractService } from '@/services/serviceFactory';
 
 describe('Contract Service - Normalized Data', () => {
   beforeEach(() => {

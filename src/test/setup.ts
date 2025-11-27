@@ -1,16 +1,10 @@
 import '@testing-library/jest-dom';
-import { expect, afterEach, vi, beforeAll, afterAll } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { expect, vi, beforeAll, afterAll } from 'vitest';
 
 // Setup environment variables for testing
 process.env.VITE_API_MODE = 'mock';
 process.env.VITE_SUPABASE_URL = 'http://localhost:54321';
 process.env.VITE_SUPABASE_ANON_KEY = 'test-key';
-
-// Cleanup after each test
-afterEach(() => {
-  cleanup();
-});
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -44,7 +38,8 @@ beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render')
+      (args[0].includes('Warning: ReactDOM.render') ||
+       args[0].includes('Warning: ReactDOM.createRoot'))
     ) {
       return;
     }

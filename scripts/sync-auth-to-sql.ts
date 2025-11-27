@@ -46,11 +46,45 @@ async function syncAuthToSql(): Promise<void> {
   console.log('\n🔄 Syncing Auth Users to seed.sql');
   console.log('='.repeat(60));
 
-  // Check if auth config exists
+  // ============================================================================
+  // PRE-FLIGHT VALIDATION CHECKS
+  // ============================================================================
+  
+  // Check 1: Verify auth config file exists
   if (!fs.existsSync(authConfigPath)) {
-    console.error(
-      '❌ Error: auth-users-config.json not found. Run seed:auth first.'
-    );
+    console.error('❌ Error: auth-users-config.json not found.');
+    console.error('   💡 Run seed-auth-users.ts first to create auth users');
+    console.error('   💡 Command: npx tsx scripts/seed-auth-users.ts');
+    process.exit(1);
+  }
+  
+  console.log('✅ Auth config file found');
+
+  // Check 2: Verify seed.sql file exists
+  if (!fs.existsSync(seedSqlPath)) {
+    console.error('❌ Error: supabase/seed.sql not found.');
+    console.error('   💡 Check that you are in the project root directory');
+    process.exit(1);
+  }
+  
+  console.log('✅ seed.sql file found');
+
+  // Check 3: Validate auth config JSON
+  try {
+    const authConfigContent = fs.readFileSync(authConfigPath, 'utf-8');
+    const authConfig: AuthConfig = JSON.parse(authConfigContent);
+    
+    if (!authConfig.users || authConfig.users.length === 0) {
+      console.error('❌ Error: No users found in auth-users-config.json');
+      console.error('   💡 Run seed-auth-users.ts to create users first');
+      process.exit(1);
+    }
+    
+    console.log(`✅ Auth config validation: OK (${authConfig.users.length} users)`);
+  } catch (error) {
+    console.error('❌ Error: Failed to parse auth-users-config.json');
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.error('   💡 Delete auth-users-config.json and run seed-auth-users.ts again');
     process.exit(1);
   }
 
@@ -147,6 +181,11 @@ async function syncAuthToSql(): Promise<void> {
         console.log(`   ✅ Replaced ${replacementCount} occurrences of ${mapping.oldId}`);
       }
     });
+
+    // Create backup of seed.sql before modification
+    const backupPath = `${seedSqlPath}.backup.${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    fs.writeFileSync(backupPath, seedSqlContent, 'utf-8');
+    console.log(`💾 Created backup: ${path.basename(backupPath)}`);
 
     // Write updated seed.sql
     fs.writeFileSync(seedSqlPath, seedSqlContent, 'utf-8');

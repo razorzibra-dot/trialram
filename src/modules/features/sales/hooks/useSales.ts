@@ -24,14 +24,15 @@ export const salesKeys = {
   dealsByCustomer: (customerId: string) => [...salesKeys.all, 'deals-by-customer', customerId] as const,
   stats: () => [...salesKeys.all, 'stats'] as const,
   stages: () => [...salesKeys.all, 'stages'] as const,
+  pipeline: () => [...salesKeys.all, 'pipeline'] as const,
 };
 
 /**
  * Hook for fetching deals with filters
  */
 export const useDeals = (filters: SalesFilters = {}) => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
+  const { user } = useAuth();
+  const tenantId = user?.tenantId;
   const { setDeals, setLoading, setPagination } = useSalesStore();
 
   return useQuery({
@@ -81,8 +82,8 @@ export const useDeal = (id: string) => {
  * Hook for fetching deals by customer ID
  */
 export const useSalesByCustomer = (customerId: string, filters: SalesFilters = {}) => {
-  const { currentUser } = useAuth();
-  const tenantId = currentUser?.tenant_id;
+  const { user } = useAuth();
+  const tenantId = user?.tenantId;
 
   return useQuery({
     queryKey: [...salesKeys.dealsByCustomer(customerId), filters, tenantId],
@@ -120,6 +121,17 @@ export const useDealStages = () => {
     queryKey: salesKeys.stages(),
     queryFn: () => factorySalesService.getDealStages(),
     staleTime: 60 * 60 * 1000, // 1 hour - rarely changes
+  });
+};
+
+/**
+ * Hook for fetching sales pipeline analytics
+ */
+export const useSalesPipeline = () => {
+  return useQuery({
+    queryKey: salesKeys.pipeline(),
+    queryFn: () => factorySalesService.getPipelineStats(),
+    ...STATS_QUERY_CONFIG,
   });
 };
 

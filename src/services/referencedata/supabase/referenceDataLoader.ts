@@ -12,12 +12,7 @@
  * 5. Row mappers: centralized for consistency
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '@/services/supabase/client';
 import {
   StatusOption,
   ReferenceData,
@@ -89,6 +84,8 @@ function mapProductCategoryRow(row: any): ProductCategory {
 }
 
 function mapSupplierRow(row: any): Supplier {
+  const status = row.status ?? (row.is_active ? 'active' : 'inactive');
+
   return {
     id: row.id,
     tenantId: row.tenant_id,
@@ -102,7 +99,7 @@ function mapSupplierRow(row: any): Supplier {
     contactPhone: row.contact_phone,
     industry: row.industry,
     country: row.country,
-    isActive: row.is_active,
+    isActive: status === 'active' && !row.deleted_at,
     sortOrder: row.sort_order,
     notes: row.notes,
     taxId: row.tax_id,
@@ -311,7 +308,7 @@ export const supabaseReferenceDataLoader = {
           deleted_at
         `)
         .eq('tenant_id', tenantId)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .is('deleted_at', null)
         .order('sort_order', { ascending: true });
 
@@ -443,7 +440,7 @@ export const supabaseReferenceDataLoader = {
           contact_phone: data.contactPhone || null,
           industry: data.industry || null,
           country: data.country || null,
-          is_active: data.isActive ?? true,
+          status: (data.isActive ?? true) ? 'active' : 'inactive',
           sort_order: data.sortOrder ?? 0,
           notes: data.notes || null,
           tax_id: data.taxId || null,
@@ -551,26 +548,31 @@ export const supabaseReferenceDataLoader = {
     data: UpdateSupplierDTO
   ): Promise<Supplier> {
     try {
+      const updatePayload: Record<string, any> = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        website: data.website,
+        contact_person: data.contactPerson,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone,
+        industry: data.industry,
+        country: data.country,
+        sort_order: data.sortOrder,
+        notes: data.notes,
+        tax_id: data.taxId,
+        credit_limit: data.creditLimit,
+        payment_terms: data.paymentTerms,
+      };
+
+      if (data.isActive !== undefined) {
+        updatePayload.status = data.isActive ? 'active' : 'inactive';
+      }
+
       const { data: result, error } = await supabase
         .from('suppliers')
-        .update({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          website: data.website,
-          contact_person: data.contactPerson,
-          contact_email: data.contactEmail,
-          contact_phone: data.contactPhone,
-          industry: data.industry,
-          country: data.country,
-          is_active: data.isActive,
-          sort_order: data.sortOrder,
-          notes: data.notes,
-          tax_id: data.taxId,
-          credit_limit: data.creditLimit,
-          payment_terms: data.paymentTerms,
-        })
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
@@ -637,7 +639,10 @@ export const supabaseReferenceDataLoader = {
     try {
       const { error } = await supabase
         .from('suppliers')
-        .update({ deleted_at: new Date().toISOString() })
+        .update({
+          status: 'inactive',
+          deleted_at: new Date().toISOString(),
+        })
         .eq('id', id);
 
       if (error) throw error;

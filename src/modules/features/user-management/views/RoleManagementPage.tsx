@@ -133,11 +133,11 @@ export const RoleManagementPage: React.FC = () => {
   // Handle edit role
   const handleEdit = (role: Role) => {
     setEditingRole(role);
-    setSelectedPermissions(role.permissions);
+    setSelectedPermissions(role.permissions ?? []);
     form.setFieldsValue({
       name: role.name,
       description: role.description,
-      permissions: role.permissions
+      permissions: role.permissions ?? []
     });
     setIsModalVisible(true);
   };
@@ -157,11 +157,11 @@ export const RoleManagementPage: React.FC = () => {
   // Handle duplicate role
   const handleDuplicate = (role: Role) => {
     setEditingRole(null);
-    setSelectedPermissions(role.permissions);
+    setSelectedPermissions(role.permissions ?? []);
     form.setFieldsValue({
       name: `${role.name} (Copy)`,
       description: role.description,
-      permissions: role.permissions
+      permissions: role.permissions ?? []
     });
     setIsModalVisible(true);
   };
@@ -207,7 +207,7 @@ export const RoleManagementPage: React.FC = () => {
       await rbacService.createRole({
         name: values.roleName,
         description: template.description,
-        permissions: template.permissions
+        permissions: template.permissions ?? []
       });
       message.success('Role created from template successfully');
       setIsTemplateModalVisible(false);
@@ -328,9 +328,9 @@ export const RoleManagementPage: React.FC = () => {
       dataIndex: 'permissions',
       key: 'permissions',
       width: 120,
-      render: (permissions: string[]) => (
+      render: (permissions?: string[]) => (
         <Badge
-          count={permissions.length}
+          count={(permissions ?? []).length}
           style={{ backgroundColor: '#1890ff' }}
           showZero
         />
@@ -705,7 +705,7 @@ export const RoleManagementPage: React.FC = () => {
                       {template.description}
                     </div>
                     <div style={{ color: '#9EAAB7', fontSize: 12 }}>
-                      {template.permissions.length} permissions • {template.category}
+                      {template.permissions?.length ?? 0} permissions • {template.category}
                     </div>
                   </Space>
                 </Card>
@@ -787,7 +787,7 @@ export const RoleManagementPage: React.FC = () => {
 
             <Card title="Permissions" size="small">
               <Space wrap>
-                {selectedRole.permissions.map(permId => {
+                {(selectedRole.permissions ?? []).map(permId => {
                   const perm = permissions.find(p => p.id === permId);
                   return perm ? (
                     <Tag key={permId} color="blue" icon={<CheckCircleOutlined />}>

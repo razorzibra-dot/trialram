@@ -22,15 +22,8 @@
  * ```
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-const getSupabaseClient = () => supabaseClient;
-import { AuditLog } from '../../../services/auditService';
+import { supabase, getSupabaseClient } from '@/services/supabase/client';
+import { AuditLog } from '@/types/audit';
 
 /**
  * Row mapper: converts snake_case from DB to camelCase for TypeScript
@@ -47,7 +40,10 @@ const mapAuditLogRow = (row: Record<string, unknown>): AuditLog => ({
     name: (row.user_name as string) || 'Unknown',
     email: (row.user_email as string) || 'unknown@example.com'
   },
-  changes: row.changes as { before?: unknown; after?: unknown } || undefined,
+  changes: row.changes ? {
+    before: (row.changes as any)?.before || {},
+    after: (row.changes as any)?.after || {}
+  } : undefined,
   metadata: row.metadata as Record<string, unknown> || undefined,
   ipAddress: (row.ip_address as string) || '0.0.0.0',
   userAgent: (row.user_agent as string) || 'Unknown',

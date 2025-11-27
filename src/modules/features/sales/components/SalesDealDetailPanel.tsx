@@ -7,15 +7,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, Button, Space, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message, Row, Col, Statistic } from 'antd';
-import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined, CalendarOutlined, DollarOutlined, RadarChartOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Drawer, Button, Space, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message, Row, Col, Statistic, Divider, Descriptions, Modal } from 'antd';
+import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined, CalendarOutlined, DollarOutlined, RadarChartOutlined, CheckCircleOutlined, CreditCardOutlined, BarChartOutlined, PlusOutlined } from '@ant-design/icons';
 import { Deal, Customer } from '@/types/crm';
 import { useNavigate } from 'react-router-dom';
 import { useService } from '@/modules/core/hooks/useService';
 import { CustomerService } from '@/modules/features/customers/services/customerService';
-import { SalesService } from '../services/salesService';
+import { ISalesService } from '../services/salesService';
 import { ConvertToContractModal } from './ConvertToContractModal';
 import { CreateProductSalesModal } from './CreateProductSalesModal';
+import { useProcessPayment, useUpdatePaymentStatus, useRecognizeRevenue, useCreateRevenueSchedule, useRevenueSchedule } from '../hooks';
 
 interface SalesDealDetailPanelProps {
   visible: boolean;
@@ -97,7 +98,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
   const [loadingContracts, setLoadingContracts] = useState(false);
 
   const customerService = useService<CustomerService>('customerService');
-  const salesService = useService<SalesService>('salesService');
+  const salesService = useService<ISalesService>('salesService');
 
   // Load customer details
   useEffect(() => {
@@ -151,7 +152,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
     return null;
   }
 
-  const stageInfo = stageConfig[deal.stage] || { emoji: '📌', label: deal.stage, color: 'default' };
+  const stageInfo = stageConfig[deal.status] || { emoji: '📌', label: deal.status, color: 'default' };
   const statusInfo = statusConfig[deal.status] || { emoji: '❓', label: deal.status, color: 'default', bgColor: '#f5f5f5' };
   const daysUntilClose = getDaysUntilClose(deal.expected_close_date);
 
@@ -212,7 +213,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
         footer={
           <Space style={{ float: 'right', width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={onClose}>Close</Button>
-            {deal?.stage === 'closed_won' && deal?.items && deal?.items.length > 0 && (
+            {deal?.status === 'won' && deal?.items && deal?.items.length > 0 && (
               <Button
                 type="default"
                 icon={<ShoppingOutlined />}
@@ -221,7 +222,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
                 Create Product Sales
               </Button>
             )}
-            {deal?.stage === 'closed_won' && (
+            {deal?.status === 'won' && (
               <Button
                 type="default"
                 icon={<FileTextOutlined />}
@@ -264,7 +265,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
                   Win Probability
                 </div>
                 <Statistic
-                  value={deal.probability || 50}
+                  value={50}
                   suffix="%"
                   valueStyle={{ color: '#0ea5e9', fontSize: 18, fontWeight: 600 }}
                 />
@@ -290,7 +291,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
               Pipeline Progress
             </div>
             <Progress
-              percent={getStageProgress(deal.stage)}
+              percent={getStageProgress(deal.status)}
               status="active"
               format={() => `${stageInfo.emoji} ${stageInfo.label}`}
               strokeColor="#0ea5e9"
@@ -365,7 +366,7 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
                 Actual Close Date
               </div>
               <div style={{ color: '#1f2937', fontSize: 13 }}>
-                {formatDate(deal.actual_close_date)}
+                {formatDate(deal.close_date)}
               </div>
             </Col>
           </Row>
@@ -584,6 +585,129 @@ export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
             </div>
           </Card>
         )}
+
+        {/* 💳 Payment Information */}
+        <Card style={infoCardStyle}>
+          <div style={cardHeaderStyle}>
+            <CreditCardOutlined style={iconStyle} />
+            Payment Information
+          </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Payment Status
+                </div>
+                <Tag color={
+                  deal.payment_status === 'paid' ? 'green' :
+                  deal.payment_status === 'partial' ? 'orange' :
+                  deal.payment_status === 'overdue' ? 'red' : 'default'
+                }>
+                  {deal.payment_status || 'pending'}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Paid Amount
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13, fontWeight: 500 }}>
+                  {formatCurrency(deal.paid_amount || 0)}
+                </div>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Outstanding Amount
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13, fontWeight: 500 }}>
+                  {formatCurrency(deal.outstanding_amount || 0)}
+                </div>
+              </div>
+            </Col>
+            <Col xs={24} sm={12}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Payment Terms
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13 }}>
+                  {deal.payment_terms || '—'}
+                </div>
+              </div>
+            </Col>
+            <Col xs={24} sm={12}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Payment Due Date
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13 }}>
+                  {formatDate(deal.payment_due_date)}
+                </div>
+              </div>
+            </Col>
+          </Row>
+          <Button
+            type="dashed"
+            icon={<PlusOutlined />}
+            style={{ marginTop: 12 }}
+            block
+          >
+            Process Payment
+          </Button>
+        </Card>
+
+        {/* 📊 Revenue Recognition */}
+        <Card style={infoCardStyle}>
+          <div style={cardHeaderStyle}>
+            <BarChartOutlined style={iconStyle} />
+            Revenue Recognition
+          </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Recognition Status
+                </div>
+                <Tag color={
+                  deal.revenue_recognition_status === 'completed' ? 'green' :
+                  deal.revenue_recognition_status === 'in_progress' ? 'blue' : 'default'
+                }>
+                  {deal.revenue_recognition_status || 'not_started'}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Recognized Amount
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13, fontWeight: 500 }}>
+                  {formatCurrency(deal.revenue_recognized || 0)}
+                </div>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>
+                  Recognition Method
+                </div>
+                <div style={{ color: '#1f2937', fontSize: 13 }}>
+                  {deal.revenue_recognition_method || 'immediate'}
+                </div>
+              </div>
+            </Col>
+          </Row>
+          <Button
+            type="dashed"
+            icon={<PlusOutlined />}
+            style={{ marginTop: 12 }}
+            block
+          >
+            Recognize Revenue
+          </Button>
+        </Card>
 
         {/* 🔗 Linked Contracts */}
         {linkedContracts.length > 0 && (

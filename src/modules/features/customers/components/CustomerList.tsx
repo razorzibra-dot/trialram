@@ -5,7 +5,7 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { DataTable, Column } from '@/modules/shared/components/DataTable';
-import { useCustomers, useDeleteCustomer, useBulkCustomerOperations } from '../hooks/useCustomers';
+import { useCustomers, useDeleteCustomer, useBulkCustomerOperations, useCustomerExport } from '../hooks/useCustomers';
 import { useCustomerStore } from '../store/customerStore';
 import { Customer } from '@/types/crm';
 import { Badge } from '@/components/ui/badge';
@@ -34,9 +34,17 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   // Memoize filters to prevent unnecessary re-renders
   const stableFilters = useMemo(() => filters, [filters]);
 
-  const { customers, pagination, isLoading, refetch } = useCustomers(stableFilters);
+  const { data, isLoading, refetch } = useCustomers(stableFilters);
+  const customers = data?.data || [];
+  const pagination = data ? {
+    page: data.page,
+    pageSize: data.pageSize,
+    total: data.total,
+    totalPages: data.totalPages,
+  } : { page: 1, pageSize: 20, total: 0, totalPages: 0 };
   const deleteCustomer = useDeleteCustomer();
-  const { bulkDelete } = useBulkCustomerOperations();
+  const bulkDelete = useBulkCustomerOperations();
+  const exportCustomers = useCustomerExport();
 
   // Define table columns
   const columns: Column<Customer>[] = useMemo(() => [
@@ -46,7 +54,6 @@ export const CustomerList: React.FC<CustomerListProps> = ({
       render: (_, customer) => (
         <div className="flex items-center space-x-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={customer.avatar} />
             <AvatarFallback>
               {customer.company_name.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -182,11 +189,38 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     if (selectedCustomerIds.length === 0) return;
 
     if (confirm(`Are you sure you want to delete ${selectedCustomerIds.length} customers?`)) {
-      await bulkDelete.mutateAsync(selectedCustomerIds);
+      await bulkDelete.mutateAsync({
+        operation: 'delete',
+        ids: selectedCustomerIds
+      });
       setSelectedCustomerIds([]); // Clear selection after bulk delete
       refetch(); // Refetch data after deletion
     }
   }, [selectedCustomerIds, bulkDelete, refetch, setSelectedCustomerIds]);
+
+  // Handle export
+  const handleExport = useCallback(async (format: 'csv' | 'json' = 'csv') => {
+    try {
+      const result = await exportCustomers.mutateAsync(format);
+      if (result) {
+        // Create and download file
+        const blob = new Blob([result], {
+          type: format === 'csv' ? 'text/csv' : 'application/json'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `customers.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  }, [exportCustomers]);
 
   // Row actions
   const getRowActions = useCallback((customer: Customer) => [
@@ -228,7 +262,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
               variant="outline"
               size="sm"
               onClick={handleBulkDelete}
-              disabled={bulkDelete.isLoading}
+              disabled={bulkDelete.isPending}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Selected
@@ -239,8 +273,8 @@ export const CustomerList: React.FC<CustomerListProps> = ({
 
       {/* Data Table */}
       <DataTable
-        columns={columns}
-        data={customers}
+        columns={columns as any}
+        data={customers as any}
         loading={isLoading}
         pagination={{
           current: pagination.page,
@@ -250,20 +284,17 @@ export const CustomerList: React.FC<CustomerListProps> = ({
         }}
         selection={{
           selectedRowKeys: selectedCustomerIds,
-          onChange: handleSelectionChange,
+          onChange: handleSelectionChange as any,
         }}
         search={{
-          value: stableFilters.search || '',
+          value: (stableFilters.search as string) || '',
           placeholder: 'Search customers...',
           onChange: handleSearch,
         }}
         actions={{
           onCreate: onCreateCustomer,
-          onExport: () => {
-            // Handle export
-            console.log('Export customers');
-          },
-          rowActions: getRowActions,
+          onExport: () => handleExport('csv'),
+          rowActions: getRowActions as any,
         }}
         rowKey="id"
         className="bg-white"

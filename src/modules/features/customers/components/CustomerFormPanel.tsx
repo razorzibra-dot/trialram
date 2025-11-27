@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { Customer } from '@/types/crm';
 import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
+import type { CreateCustomerData } from '../services/customerService';
 import { useIndustries } from '../hooks/useIndustries';
 import { useCompanySizes } from '../hooks/useCompanySizes';
 import { useActiveUsers } from '../hooks/useUsers';
@@ -104,7 +105,10 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
 
   useEffect(() => {
     if (visible && customer) {
-      form.setFieldsValue(customer);
+      form.setFieldsValue({
+        ...customer,
+        assignedTo: customer.assigned_to || undefined,
+      });
     } else if (visible) {
       form.resetFields();
     }
@@ -113,16 +117,28 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      const payload: Record<string, any> = { ...values };
+      if (Object.prototype.hasOwnProperty.call(payload, 'assignedTo')) {
+        if (payload.assignedTo) {
+          payload.assigned_to = payload.assignedTo;
+        } else {
+          payload.assigned_to = undefined;
+        }
+        delete payload.assignedTo;
+      }
+      if (!payload.status) {
+        payload.status = customer?.status || 'active';
+      }
       setLoading(true);
 
       if (isEditMode && customer) {
         await updateCustomer.mutateAsync({
           id: customer.id,
-          ...values,
+          data: payload,
         });
         message.success('Customer updated successfully');
       } else {
-        await createCustomer.mutateAsync(values);
+        await createCustomer.mutateAsync(payload as CreateCustomerData);
         message.success('Customer created successfully');
       }
 
@@ -334,7 +350,7 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                   allowClear
                 >
                   {industries.map((industry) => (
-                    <Select.Option key={industry.id} value={industry.name}>
+                    <Select.Option key={industry.id} value={industry.key}>
                       🏭 {industry.name}
                     </Select.Option>
                   ))}
@@ -355,7 +371,7 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                   allowClear
                 >
                   {companySizes.map((size) => (
-                    <Select.Option key={size.id} value={size.name}>
+                    <Select.Option key={size.id} value={size.key}>
                       📊 {size.name}
                     </Select.Option>
                   ))}

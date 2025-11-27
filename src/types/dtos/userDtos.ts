@@ -105,6 +105,66 @@ export interface UserDTO {
 
   /** Soft delete timestamp */
   deletedAt?: string;
+
+  /** MFA secret key */
+  mfaSecret?: string;
+
+  /** MFA backup recovery codes */
+  mfaBackupCodes?: unknown[];
+
+  /** MFA method */
+  mfaMethod?: 'none' | 'totp' | 'sms' | 'email';
+
+  /** Current session token */
+  sessionToken?: string;
+
+  /** Session expiration timestamp */
+  sessionExpiresAt?: string;
+
+  /** Maximum concurrent sessions allowed */
+  concurrentSessionsLimit?: number;
+
+  /** Number of consecutive failed login attempts */
+  failedLoginAttempts?: number;
+
+  /** Account lockout expiration timestamp */
+  lockedUntil?: string;
+
+  /** Timestamp of last failed login attempt */
+  lastFailedLogin?: string;
+
+  /** Timestamp of last password change */
+  passwordChangedAt?: string;
+
+  /** Timestamp of last password reset request */
+  lastPasswordReset?: string;
+
+  /** Security questions for account recovery */
+  securityQuestions?: unknown[];
+
+  /** Password strength score (0-100) */
+  passwordStrengthScore?: number;
+
+  /** Password expiration timestamp */
+  passwordExpiresAt?: string;
+
+  /** Flag to force password change on next login */
+  requirePasswordChange?: boolean;
+
+  /** Account lockout status */
+  accountLocked?: boolean;
+
+  /** Reason for account lockout */
+  lockReason?: string;
+
+  /** Count of suspicious activities detected */
+  suspiciousActivityCount?: number;
+
+  /** Timestamp of last suspicious activity */
+  lastSuspiciousActivity?: string;
+
+  /** Whether security alerts are enabled for this user */
+  securityAlertsEnabled?: boolean;
 }
 
 /**

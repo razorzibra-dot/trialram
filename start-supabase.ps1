@@ -79,6 +79,17 @@ if ($supabaseInstalled) {
             Write-Host ""
             Write-Host "✓ Supabase started!" -ForegroundColor Green
             Write-Host ""
+            # Ensure Kong DNS resolver is configured so the API gateway resolves
+            # upstream service addresses after container restarts. This calls the
+            # idempotent helper script added at `scripts/ensure_kong_dns.ps1`.
+            $ensureScript = Join-Path $scriptDir 'scripts\ensure_kong_dns.ps1'
+            if (Test-Path $ensureScript) {
+                Write-Host "Ensuring Kong DNS resolver config via $ensureScript..." -ForegroundColor Cyan
+                pwsh -NoProfile -ExecutionPolicy Bypass -File $ensureScript
+            } else {
+                Write-Host "Warning: $ensureScript not found; skipping Kong DNS ensure step." -ForegroundColor Yellow
+            }
+
             Write-Host "Now starting development server..." -ForegroundColor Cyan
             Write-Host ""
             npm run dev

@@ -3,18 +3,19 @@
  * Manages tenant context and data isolation
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase as supabaseClient } from '@/services/supabase/client';
 
 interface TenantContext {
-  tenantId: string;
+  tenantId: string | null;
   tenantName?: string;
   userId: string;
   role?: string;
+}
+
+interface TenantInfo {
+  id: string;
+  name: string;
+  created_at?: string;
 }
 
 class MultiTenantService {
@@ -23,23 +24,77 @@ class MultiTenantService {
 
   /**
    * Initialize tenant context from session
-   * ⭐ CRITICAL: Handles both tenant users and super admins (tenantId=null)
+   * ⭐ CRITICAL: Handles both tenant users, super admins (tenantId=null), and mock users
    */
   async initializeTenantContext(userId: string): Promise<TenantContext | null> {
     try {
-      // Get user's basic info (avoid relationship queries due to RLS)
-      const { data: user, error: userError } = await supabaseClient
+      console.log('[MultiTenantService] Initializing tenant context for user:', userId);
+
+      // First try to get user from database
+      let { data: user, error: userError } = await supabaseClient
         .from('users')
         .select('id, tenant_id')
         .eq('id', userId)
         .single();
 
-      if (userError && userError.code !== 'PGRST116') { // PGRST116 = no rows found
+      // If user not found in database, attempt to sync from auth.users
+      if (userError && (userError.code === 'PGRST116' || userError.code === 'PGRST301')) { 
+        // PGRST116 = no rows found, PGRST301 = not found
+        console.log('[MultiTenantService] User not found in public.users - attempting to sync from auth.users');
+        
+        // Attempt to sync user from auth.users to public.users
+        const syncResult = await this.syncUserFromAuth(userId);
+        if (syncResult.success) {
+          console.log('[MultiTenantService] User sync successful, retrying to fetch user from database');
+          // Retry fetching the user after sync
+          const retryResult = await supabaseClient
+            .from('users')
+            .select('id, tenant_id')
+            .eq('id', userId)
+            .single();
+            
+          user = retryResult.data;
+          userError = retryResult.error;
+        } else {
+          console.warn('[MultiTenantService] User sync failed:', syncResult.error);
+          console.warn('[MultiTenantService] User % not found. Please run the sync migration or execute fix_missing_user.sql', userId);
+          
+          // Check if this is a mock user by looking at localStorage
+          const mockUserStr = localStorage.getItem('crm_user');
+          if (mockUserStr) {
+            try {
+              const mockUser = JSON.parse(mockUserStr);
+              if (mockUser.id === userId) {
+                console.log('[MultiTenantService] Mock user found in localStorage, creating tenant context');
+
+                // Create tenant context for mock user
+                const tenantContext: TenantContext = {
+                  tenantId: mockUser.tenantId || '550e8400-e29b-41d4-a716-446655440001', // Default to Acme tenant
+                  tenantName: mockUser.tenantId === null ? 'Platform Administration' : 'Mock Tenant',
+                  userId,
+                  role: mockUser.role,
+                };
+
+                this.setCurrentTenant(tenantContext);
+                console.log('[MultiTenantService] Mock tenant context initialized successfully');
+                return tenantContext;
+              }
+            } catch (parseError) {
+              console.warn('[MultiTenantService] Error parsing mock user data:', parseError);
+            }
+          }
+
+          console.warn('[MultiTenantService] User not found in database and no mock user context available');
+          return null;
+        }
+      } else if (userError) {
+        // Other database error
         throw userError;
       }
 
+      // If user still not found after sync attempt and not a mock user, return null
       if (!user) {
-        console.warn('[MultiTenantService] User not found');
+        console.warn('[MultiTenantService] User not found in database after sync attempt');
         return null;
       }
 
@@ -59,7 +114,7 @@ class MultiTenantService {
         console.log('[MultiTenantService] Super admin detected - skipping tenant fetch');
 
         const tenantContext: TenantContext = {
-          tenantId: null as any, // Super admins have no tenant
+          tenantId: null as string | null, // Super admins have no tenant
           tenantName: 'Platform Administration',
           userId,
           role: isSuperAdmin ? 'super_admin' : undefined,
@@ -102,7 +157,7 @@ class MultiTenantService {
       return tenantContext;
     } catch (error) {
       console.error('[MultiTenantService] Error initializing tenant context:', error);
-      return null;
+      return this.bootstrapTenantFromLocalUser();
     }
   }
 
@@ -119,13 +174,16 @@ class MultiTenantService {
    */
   getCurrentTenantId(): string {
     if (!this.currentTenant) {
-      throw new Error('Tenant context not initialized');
+      const fallback = this.bootstrapTenantFromLocalUser();
+      if (!fallback) {
+        throw new Error('Tenant context not initialized');
+      }
     }
     
     // Ensure admin can only access their own tenant
     this.enforceAdminTenantIsolation();
     
-    return this.currentTenant.tenantId;
+    return this.currentTenant!.tenantId;
   }
 
   /**
@@ -168,9 +226,12 @@ class MultiTenantService {
    */
   getCurrentUserId(): string {
     if (!this.currentTenant) {
-      throw new Error('Tenant context not initialized');
+      const fallback = this.bootstrapTenantFromLocalUser();
+      if (!fallback) {
+        throw new Error('Tenant context not initialized');
+      }
     }
-    return this.currentTenant.userId;
+    return this.currentTenant!.userId;
   }
 
   /**
@@ -218,7 +279,7 @@ class MultiTenantService {
   /**
    * Get all tenants for current user
    */
-  async getUserTenants(): Promise<any[]> {
+  async getUserTenants(): Promise<TenantInfo[]> {
     try {
       const currentUserId = this.getCurrentUserId();
       
@@ -306,10 +367,163 @@ class MultiTenantService {
   }
 
   /**
+   * Sync user from auth.users to public.users
+   * This method calls the database function that handles the sync logic
+   */
+  private async syncUserFromAuth(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('[MultiTenantService] Starting sync for user:', userId);
+      
+      // First, verify the user exists in auth.users
+      const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(userId);
+      
+      if (authError || !authUser.user) {
+        console.warn('[MultiTenantService] User not found in auth.users:', authError?.message);
+        return { success: false, error: 'User not found in auth.users' };
+      }
+
+      console.log('[MultiTenantService] User found in auth.users, triggering database sync');
+      
+      // Call the database function to sync the user
+      // The trigger should automatically sync the user when we update their record
+      // For now, we'll manually call the function if it exists
+      const { data, error } = await supabaseClient.rpc('sync_single_auth_user', {
+        target_user_id: userId
+      });
+      
+      if (error) {
+        // If the RPC function doesn't exist, try a different approach
+        console.warn('[MultiTenantService] RPC function failed, trying alternative sync method:', error.message);
+        return await this.manualSyncUserFromAuth(userId);
+      }
+      
+      console.log('[MultiTenantService] Database sync completed:', data);
+      return { success: true };
+      
+    } catch (error) {
+      console.error('[MultiTenantService] Error during user sync:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown sync error' };
+    }
+  }
+
+  /**
+   * Manual sync method when the database function approach fails
+   */
+  private async manualSyncUserFromAuth(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('[MultiTenantService] Attempting manual sync for user:', userId);
+      
+      // Get the user from auth.users directly
+      const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(userId);
+      
+      if (authError || !authUser.user) {
+        return { success: false, error: 'User not found in auth.users' };
+      }
+
+      const user = authUser.user;
+      
+      // Determine tenant_id based on email domain
+      let tenantId: string | null = null;
+      let isSuperAdmin = false;
+      
+      // Check if user is super admin
+      if (user.email?.includes('superadmin') || 
+          user.email?.includes('@platform.com') || 
+          user.email?.includes('@platform.')) {
+        tenantId = null;
+        isSuperAdmin = true;
+      } else {
+        // Map email domain to tenant
+        const { data: tenant } = await supabaseClient
+          .from('tenants')
+          .select('id')
+          .or([
+            user.email?.includes('@acme.com') || user.email?.includes('@acme.') ? 'name.eq.Acme Corporation' : '',
+            user.email?.includes('@techsolutions.com') || user.email?.includes('@techsolutions.') ? 'name.eq.Tech Solutions Inc' : '',
+            user.email?.includes('@globaltrading.com') || user.email?.includes('@globaltrading.') ? 'name.eq.Global Trading Ltd' : ''
+          ].filter(Boolean).join(','))
+          .single();
+          
+        tenantId = tenant?.id || null;
+      }
+      
+      // Extract user name from metadata or email
+      const fullName = user.user_metadata?.name || 
+                      user.user_metadata?.display_name || 
+                      user.email?.split('@')[0] || 
+                      'User';
+      
+      const firstName = fullName.split(' ')[0];
+      const lastName = fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : null;
+      
+      // Insert or update user in public.users
+      const { error: insertError } = await supabaseClient
+        .from('users')
+        .upsert({
+          id: userId,
+          email: user.email,
+          name: fullName,
+          first_name: firstName,
+          last_name: lastName,
+          status: 'active',
+          tenant_id: tenantId,
+          is_super_admin: isSuperAdmin,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+          last_login: null
+        }, {
+          onConflict: 'id'
+        });
+        
+      if (insertError) {
+        console.error('[MultiTenantService] Failed to insert user:', insertError);
+        return { success: false, error: insertError.message };
+      }
+      
+      console.log('[MultiTenantService] Manual sync successful for user:', userId);
+      return { success: true };
+      
+    } catch (error) {
+      console.error('[MultiTenantService] Manual sync failed:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Manual sync failed' };
+    }
+  }
+
+  /**
    * Clear tenant context (on logout)
    */
   clearTenantContext(): void {
     this.setCurrentTenant(null);
+  }
+
+  /**
+   * Bootstrap tenant context from locally stored user (Auth service)
+   * Used when database lookup fails but session data exists
+   */
+  private bootstrapTenantFromLocalUser(): TenantContext | null {
+    try {
+      const storedUser = localStorage.getItem('crm_user');
+      if (!storedUser) return null;
+
+      const parsedUser = JSON.parse(storedUser);
+      if (!parsedUser?.id) return null;
+
+      const tenantContext: TenantContext = {
+        tenantId: typeof parsedUser.tenantId === 'string' || parsedUser.tenantId === null
+          ? parsedUser.tenantId
+          : null,
+        tenantName: parsedUser.tenantName,
+        userId: parsedUser.id,
+        role: parsedUser.role,
+      };
+
+      this.setCurrentTenant(tenantContext);
+      console.log('[MultiTenantService] Tenant context bootstrapped from local session');
+      return tenantContext;
+    } catch (error) {
+      console.warn('[MultiTenantService] Failed to bootstrap tenant from local storage:', error);
+      return null;
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import { authService as mockAuthService } from './auth/authService';
 import { mockServiceContractService } from './servicecontract/serviceContractService';
 import { productSaleService as mockProductSaleService } from './productsale/productSaleService';
 import { salesService as mockSalesService } from './sales/salesService';
+import { leadsService as mockLeadsService } from './sales/leadsService';
 import { customerService as mockCustomerService } from './customer/customerService';
 import { jobWorkService as mockJobWorkService } from './jobwork/jobWorkService';
 import { productService as mockProductService } from './product/productService';
@@ -31,11 +32,14 @@ import { mockRateLimitService } from './ratelimit/rateLimitService';
 import { mockReferenceDataService } from './referencedata/referenceDataService';
 import { mockReferenceDataLoader } from './referencedata/referenceDataLoader';
 import { sessionConfigService as mockSessionConfigService } from './sessionConfigService';
+import { complaintService as mockComplaintService } from './complaints/complaintService';
+import { productCategoryService as mockProductCategoryService } from './productcategory/productCategoryService';
 
 // Import all supabase services
 import { supabaseServiceContractService } from './servicecontract/supabase/serviceContractService';
 import { supabaseProductSaleService } from './productsale/supabase/productSaleService';
 import { supabaseSalesService } from './sales/supabase/salesService';
+import { supabaseLeadsService } from './sales/supabase/leadsService';
 import { supabaseCustomerService } from './customer/supabase/customerService';
 import { supabaseJobWorkService } from './jobwork/supabase/jobWorkService';
 import { supabaseProductService } from './product/supabase/productService';
@@ -56,6 +60,21 @@ import { supabaseRateLimitService } from './ratelimit/supabase/rateLimitService'
 import { supabaseReferenceDataService } from './referencedata/supabase/referenceDataService';
 import { supabaseReferenceDataLoader } from './referencedata/supabase/referenceDataLoader';
 import { supabaseAuthService } from './auth/supabase/authService';
+import { supabaseSuperAdminService } from './superadmin/supabase/superAdminService';
+import { supabaseComplaintService } from './complaints/supabase/complaintService';
+import { supabaseProductCategoryService } from './productcategory/supabase/productCategoryService';
+import { ticketCommentService as mockTicketCommentService } from './ticketCommentService';
+import { ticketCommentService as supabaseTicketCommentService } from './supabase/ticketCommentService';
+import { ticketAttachmentService as mockTicketAttachmentService } from './ticketAttachmentService';
+import { ticketAttachmentService as supabaseTicketAttachmentService } from './supabase/ticketAttachmentService';
+import { mockDealsService } from './deals/mock/dealsService';
+import { supabaseDealsService } from './deals/supabase/dealsService';
+import { mockSalesActivityService } from './sales-activities/mock/salesActivityService';
+import { supabaseSalesActivityService } from './sales-activities/supabase/salesActivityService';
+import { opportunityService as mockOpportunityService } from './opportunities/opportunityService';
+import { supabaseOpportunityService } from './opportunities/supabase/opportunityService';
+import { purchaseOrderService as mockPurchaseOrderService } from './purchaseorder/purchaseOrderService';
+import { supabasePurchaseOrderService } from './purchaseorder/supabase/purchaseOrderService';
 
 // Service Registry Entry Interface
 interface ServiceRegistryEntry {
@@ -143,6 +162,11 @@ class ServiceFactory {
         supabase: supabaseSalesService,
         description: 'Sales & deal management'
       },
+      leads: {
+        mock: mockLeadsService,
+        supabase: supabaseLeadsService,
+        description: 'Lead management and prospect tracking'
+      },
       customer: {
         mock: mockCustomerService,
         supabase: supabaseCustomerService,
@@ -203,7 +227,7 @@ class ServiceFactory {
       },
       superadmin: {
         mock: mockSuperAdminService,
-        supabase: mockSuperAdminService, // TODO: Implement supabase version
+        supabase: supabaseSuperAdminService,
         description: 'Super admin dashboard'
       },
       contract: {
@@ -254,6 +278,41 @@ class ServiceFactory {
       sessionconfig: {
         special: () => mockSessionConfigService,
         description: 'Session configuration'
+      },
+      complaint: {
+        mock: mockComplaintService,
+        supabase: supabaseComplaintService,
+        description: 'Customer complaints management'
+      },
+      productcategory: {
+        mock: mockProductCategoryService,
+        supabase: supabaseProductCategoryService,
+        description: 'Product category management'
+      },
+      ticketcomment: {
+        mock: mockTicketCommentService,
+        supabase: supabaseTicketCommentService,
+        description: 'Ticket comment management'
+      },
+      deals: {
+        mock: mockDealsService,
+        supabase: supabaseDealsService,
+        description: 'Sales deals and closed opportunities management'
+      },
+      salesactivities: {
+        mock: mockSalesActivityService,
+        supabase: supabaseSalesActivityService,
+        description: 'Sales activity tracking and follow-up management'
+      },
+      opportunities: {
+        mock: mockOpportunityService,
+        supabase: supabaseOpportunityService,
+        description: 'Sales opportunities and pipeline management'
+      },
+      purchaseorder: {
+        mock: mockPurchaseOrderService,
+        supabase: supabasePurchaseOrderService,
+        description: 'Purchase orders for inventory restocking'
       }
     };
   }
@@ -344,6 +403,7 @@ export const serviceContractService = createServiceProxy('servicecontract');
 export const contractService = createServiceProxy('contract');
 export const productSaleService = createServiceProxy('productsale');
 export const salesService = createServiceProxy('sales');
+export const leadsService = createServiceProxy('leads');
 export const customerService = createServiceProxy('customer');
 export const jobWorkService = createServiceProxy('jobwork');
 export const productService = createServiceProxy('product');
@@ -365,6 +425,13 @@ export const rateLimitService = createServiceProxy('ratelimit');
 export const referenceDataService = createServiceProxy('referencedata');
 export const referenceDataLoader = createServiceProxy('referencedataloader');
 export const sessionConfigService = createServiceProxy('sessionconfig');
+export const complaintService = createServiceProxy('complaint');
+export const productCategoryService = createServiceProxy('productcategory');
+export const ticketCommentService = createServiceProxy('ticketcomment');
+export const dealsService = createServiceProxy('deals');
+export const salesActivityService = createServiceProxy('salesactivities');
+export const opportunityService = createServiceProxy('opportunities');
+export const purchaseOrderService = createServiceProxy('purchaseorder');
 
 // Backward compatibility aliases
 export const auditDashboardService = auditService;

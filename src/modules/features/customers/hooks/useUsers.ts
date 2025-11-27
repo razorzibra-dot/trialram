@@ -59,12 +59,12 @@ async function fetchUsers(options?: UseUsersOptions): Promise<User[]> {
  * @returns {Object} Query object with data, isLoading, error
  */
 export function useUsers(options?: UseUsersOptions) {
-  const { tenant } = useTenantContext();
+  const { tenantId } = useTenantContext();
 
   return useQuery({
-    queryKey: ['users', options?.status, options?.limit],
+    queryKey: ['users', tenantId, options?.status, options?.limit],
     queryFn: () => fetchUsers(options),
-    enabled: !!tenant?.id,
+    enabled: !!tenantId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 3,
   });

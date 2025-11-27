@@ -4,6 +4,8 @@
  * 
  * Layer Sync: Type-safe permission checks matching database roles and permissions
  * Database Role → TypeScript Enum → Guard Function → UI Component
+ * 
+ * ⭐ CENTRALIZED: Now uses the unified RBAC service for all permission validation
  */
 
 import { UserRole } from '@/types/dtos/userDtos';
@@ -12,27 +14,34 @@ import { rbacService as factoryRbacService } from '@/services/serviceFactory';
 /**
  * User Management Permissions
  * Maps to database permission definitions in rbacService
+ * Updated to use {resource}:{action} format
  */
 export enum UserPermission {
   // List and View Permissions
-  USER_LIST = 'user:list',
-  USER_VIEW = 'user:view',
+  USER_LIST = 'users:read',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- View uses same scope as list
+  USER_VIEW = 'users:read',
   
   // Create and Edit Permissions
-  USER_CREATE = 'user:create',
-  USER_EDIT = 'user:edit',
+  USER_CREATE = 'users:create',
+  USER_EDIT = 'users:update',
   
   // Admin Permissions
-  USER_DELETE = 'user:delete',
-  USER_RESET_PASSWORD = 'user:reset_password',
-  USER_MANAGE_ROLES = 'user:manage_roles',
+  USER_DELETE = 'users:delete',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Reset password leverages update scope
+  USER_RESET_PASSWORD = 'users:update',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Role management maps to roles:update
+  USER_MANAGE_ROLES = 'roles:update',
   
   // System Permissions
-  ROLE_MANAGE = 'role:manage',
-  PERMISSION_MANAGE = 'permission:manage',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Same scope as USER_MANAGE_ROLES
+  ROLE_MANAGE = 'roles:update',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Same scope as ROLE_MANAGE
+  PERMISSION_MANAGE = 'roles:update',
   
   // Tenant Admin
-  TENANT_USERS = 'tenant:users',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Tenant view uses read scope
+  TENANT_USERS = 'users:read',
 }
 
 /**

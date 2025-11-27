@@ -32,10 +32,10 @@ class SessionManager {
   private isIdleWarningShown: boolean = false;
   
   private config: SessionConfig = {
-    sessionTimeout: 3600, // 1 hour
-    idleTimeout: 1800,    // 30 minutes
-    idleWarningTime: 300, // 5 minutes before idle expiry
-    checkInterval: 10000  // Check every 10 seconds
+    sessionTimeout: 7200, // 2 hours (increased from 1 hour)
+    idleTimeout: 3600,    // 1 hour (increased from 30 minutes)
+    idleWarningTime: 600, // 10 minutes before idle expiry (increased from 5)
+    checkInterval: 30000  // Check every 30 seconds (reduced frequency)
   };
 
   /**

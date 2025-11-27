@@ -4,16 +4,17 @@
  * Unified grid control with side drawer panels for CRUD operations
  */
 
-import React, { useState } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Typography } from 'antd';
+import React, { useState, useMemo } from 'react';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Typography, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { TrendingUp, DollarSign, Target, BarChart3 } from 'lucide-react';
 import { Deal } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
+import { ViewModeSelector, KanbanBoard } from '@/components/ui/view-modes';
 import { SalesDealDetailPanel } from '../components/SalesDealDetailPanel';
 import { SalesDealFormPanel } from '../components/SalesDealFormPanel';
-import { useSalesStats, useDeals, useDeleteDeal } from '../hooks/useSales';
+import { useSalesStats, useDeals, useDeleteDeal, useUpdateDealStage } from '../hooks/useSales';
 import { useSalesStore } from '../store/salesStore';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,6 +27,7 @@ export const SalesPage: React.FC = () => {
   const { filters, setFilters } = useSalesStore();
   const [searchText, setSearchText] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
+  const [currentView, setCurrentView] = useState<'table' | 'kanban'>('table');
 
   // Drawer states
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -35,6 +37,7 @@ export const SalesPage: React.FC = () => {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useSalesStats();
   const { data: dealsData, isLoading: dealsLoading, refetch: refetchDeals } = useDeals(filters);
   const deleteDeal = useDeleteDeal();
+  const updateDealStage = useUpdateDealStage();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -86,6 +89,113 @@ export const SalesPage: React.FC = () => {
     setStageFilter(value);
     const stageValue: string | undefined = value === 'all' ? undefined : value;
     setFilters({ ...filters, stage: stageValue, page: 1 });
+  };
+
+  const handleViewChange = (view: 'table' | 'kanban') => {
+    setCurrentView(view);
+  };
+
+  // Kanban board data
+  const kanbanColumns = useMemo(() => {
+    const deals = dealsData?.data || [];
+    const columns = [
+      {
+        id: 'lead',
+        title: 'Lead',
+        color: '#fbbf24', // yellow
+        items: deals.filter(deal => deal.stage === 'lead').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'medium', // Default priority
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+      {
+        id: 'qualified',
+        title: 'Qualified',
+        color: '#3b82f6', // blue
+        items: deals.filter(deal => deal.stage === 'qualified').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'medium',
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+      {
+        id: 'proposal',
+        title: 'Proposal',
+        color: '#8b5cf6', // purple
+        items: deals.filter(deal => deal.stage === 'proposal').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'high',
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+      {
+        id: 'negotiation',
+        title: 'Negotiation',
+        color: '#f59e0b', // amber
+        items: deals.filter(deal => deal.stage === 'negotiation').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'high',
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+      {
+        id: 'closed_won',
+        title: 'Closed Won',
+        color: '#10b981', // green
+        items: deals.filter(deal => deal.stage === 'closed_won').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'low',
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+      {
+        id: 'closed_lost',
+        title: 'Closed Lost',
+        color: '#ef4444', // red
+        items: deals.filter(deal => deal.stage === 'closed_lost').map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          status: deal.status,
+          priority: 'low',
+          assignee: deal.assigned_to_name || 'Unassigned',
+          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
+        })),
+      },
+    ];
+
+    return columns;
+  }, [dealsData]);
+
+  const handleKanbanItemMove = async (itemId: string, fromColumn: string, toColumn: string) => {
+    try {
+      // Update the deal stage
+      await updateDealStage.mutateAsync({
+        id: itemId,
+        stage: toColumn
+      });
+      message.success('Deal stage updated successfully');
+      refetchDeals();
+      refetchStats();
+    } catch (error) {
+      message.error('Failed to update deal stage');
+      console.error('Kanban move error:', error);
+    }
   };
 
   const getStageColor = (stage: string) => {
@@ -213,6 +323,10 @@ export const SalesPage: React.FC = () => {
         }}
         extra={
           <>
+            <ViewModeSelector
+              currentView={currentView}
+              onViewChange={handleViewChange}
+            />
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
@@ -297,62 +411,79 @@ export const SalesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Deals Table */}
-        <Card
-          style={{
-            borderRadius: 8,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          {/* Search and Filters */}
-          <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-            <Space.Compact style={{ width: '100%' }}>
-              <Search
-                placeholder="Search deals by name, customer, or owner..."
-                allowClear
-                enterButton={<SearchOutlined />}
-                size="large"
-                onSearch={handleSearch}
-                style={{ flex: 1 }}
-              />
-              <Select
-                value={stageFilter}
-                onChange={handleStageFilterChange}
-                style={{ width: 150 }}
-                size="large"
-              >
-                <Option value="all">All Stages</Option>
-                <Option value="lead">Lead</Option>
-                <Option value="qualified">Qualified</Option>
-                <Option value="proposal">Proposal</Option>
-                <Option value="negotiation">Negotiation</Option>
-                <Option value="closed_won">Closed Won</Option>
-                <Option value="closed_lost">Closed Lost</Option>
-              </Select>
-            </Space.Compact>
-          </Space>
+        {/* Conditional View Rendering */}
+        {currentView === 'table' ? (
+          /* Deals Table */
+          <Card
+            style={{
+              borderRadius: 8,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            {/* Search and Filters */}
+            <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
+              <Space.Compact style={{ width: '100%' }}>
+                <Search
+                  placeholder="Search deals by name, customer, or owner..."
+                  allowClear
+                  enterButton={<SearchOutlined />}
+                  size="large"
+                  onSearch={handleSearch}
+                  style={{ flex: 1 }}
+                />
+                <Select
+                  value={stageFilter}
+                  onChange={handleStageFilterChange}
+                  style={{ width: 150 }}
+                  size="large"
+                >
+                  <Option value="all">All Stages</Option>
+                  <Option value="lead">Lead</Option>
+                  <Option value="qualified">Qualified</Option>
+                  <Option value="proposal">Proposal</Option>
+                  <Option value="negotiation">Negotiation</Option>
+                  <Option value="closed_won">Closed Won</Option>
+                  <Option value="closed_lost">Closed Lost</Option>
+                </Select>
+              </Space.Compact>
+            </Space>
 
-          {/* Table */}
-          <Table
-            columns={columns}
-            dataSource={dealsData?.data || []}
-            loading={dealsLoading}
-            pagination={{
-              current: filters.page || 1,
-              pageSize: filters.pageSize || 20,
-              total: dealsData?.total || 0,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              onChange: (page, pageSize) => {
-                setFilters({ ...filters, page, pageSize });
-              },
-            }}
-            rowKey="id"
-            locale={{
-              emptyText: <Empty description="No deals found" style={{ marginTop: 48, marginBottom: 48 }} />,
-            }}
-          />
-        </Card>
+            {/* Table */}
+            <Table
+              columns={columns}
+              dataSource={dealsData?.data || []}
+              loading={dealsLoading}
+              pagination={{
+                current: filters.page || 1,
+                pageSize: filters.pageSize || 20,
+                total: dealsData?.total || 0,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                onChange: (page, pageSize) => {
+                  setFilters({ ...filters, page, pageSize });
+                },
+              }}
+              rowKey="id"
+              locale={{
+                emptyText: <Empty description="No deals found" style={{ marginTop: 48, marginBottom: 48 }} />,
+              }}
+            />
+          </Card>
+        ) : (
+          /* Kanban Board */
+          <div style={{ marginTop: 24 }}>
+            {dealsLoading ? (
+              <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                <Spin size="large" tip="Loading pipeline..." />
+              </div>
+            ) : (
+              <KanbanBoard
+                columns={kanbanColumns}
+                onItemMove={handleKanbanItemMove}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Detail Panel (View) */}

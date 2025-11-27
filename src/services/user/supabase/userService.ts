@@ -27,13 +27,8 @@
  * ✅ Validation rules match mock service exactly
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { supabaseAuthService } from '@/services/auth/supabase/authService';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '@/services/supabase/client';
+import { authService } from '../../serviceFactory';
 import {
   UserDTO,
   UserStatsDTO,
@@ -45,12 +40,40 @@ import {
   UserStatus,
 } from '@/types/dtos/userDtos';
 
+const USER_SELECT_COLUMNS = `
+  id,
+  email,
+  name,
+  first_name,
+  last_name,
+  avatar_url,
+  phone,
+  department,
+  position,
+  status,
+  tenant_id,
+  is_super_admin,
+  preferences,
+  metadata,
+  last_login,
+  created_at,
+  updated_at,
+  deleted_at,
+  user_roles:user_roles!user_roles_user_id_fkey (
+    role:roles!user_roles_role_id_fkey (
+      name
+    )
+  )
+`;
+
 /**
  * Centralized row mapper for database to DTO transformation
  * CRITICAL: Keep synchronized with database schema and UserDTO interface
  * Now extracts role from user_roles relationship
  */
 function mapUserRow(dbRow: any): UserDTO {
+  const metadata = dbRow?.metadata || {};
+
   // Extract primary role from user_roles (take first one, or default to 'user')
   let role: UserRole = 'user';
   if (dbRow.user_roles && dbRow.user_roles.length > 0) {
@@ -79,8 +102,8 @@ function mapUserRow(dbRow: any): UserDTO {
     tenantId: dbRow.tenant_id,
     avatarUrl: dbRow.avatar_url,
     phone: dbRow.phone,
-    mobile: dbRow.mobile,
-    companyName: dbRow.company_name,
+    mobile: metadata.mobile,
+    companyName: metadata.companyName,
     department: dbRow.department,
     position: dbRow.position,
     createdAt: dbRow.created_at,
@@ -88,6 +111,32 @@ function mapUserRow(dbRow: any): UserDTO {
     lastLogin: dbRow.last_login,
     createdBy: dbRow.created_by,
     deletedAt: dbRow.deleted_at,
+    // MFA fields
+    mfaSecret: dbRow.mfa_secret,
+    mfaBackupCodes: dbRow.mfa_backup_codes,
+    mfaMethod: dbRow.mfa_method,
+    // Session management
+    sessionToken: dbRow.session_token,
+    sessionExpiresAt: dbRow.session_expires_at,
+    concurrentSessionsLimit: dbRow.concurrent_sessions_limit,
+    // Security audit fields
+    failedLoginAttempts: dbRow.failed_login_attempts,
+    lockedUntil: dbRow.locked_until,
+    lastFailedLogin: dbRow.last_failed_login,
+    passwordChangedAt: dbRow.password_changed_at,
+    lastPasswordReset: dbRow.last_password_reset,
+    securityQuestions: dbRow.security_questions,
+    // Password policy
+    passwordStrengthScore: dbRow.password_strength_score,
+    passwordExpiresAt: dbRow.password_expires_at,
+    requirePasswordChange: dbRow.require_password_change,
+    // Account lockout
+    accountLocked: dbRow.account_locked,
+    lockReason: dbRow.lock_reason,
+    // Security monitoring
+    suspiciousActivityCount: dbRow.suspicious_activity_count,
+    lastSuspiciousActivity: dbRow.last_suspicious_activity,
+    securityAlertsEnabled: dbRow.security_alerts_enabled,
   };
 }
 
@@ -106,39 +155,17 @@ class SupabaseUserService {
    */
   async getUsers(filters?: UserFiltersDTO): Promise<UserDTO[]> {
     // ⭐ SECURITY: Apply tenant isolation
-    const currentUser = supabaseAuthService.getCurrentUser();
-    const currentTenantId = supabaseAuthService.getCurrentTenantId();
+    const currentUser = authService.getCurrentUser();
+    const currentTenantId = authService.getCurrentTenantId();
 
     let query = supabase
       .from(this.table)
-      .select(`
-        id,
-        email,
-        name,
-        first_name,
-        last_name,
-        status,
-        tenant_id,
-        avatar_url,
-        phone,
-        mobile,
-        company_name,
-        department,
-        position,
-        created_at,
-        updated_at,
-        last_login,
-        created_by,
-        deleted_at,
-        user_roles(
-          role:roles(name)
-        )
-      `)
+      .select(USER_SELECT_COLUMNS)
       .is('deleted_at', null) // Soft delete filter
       .order('created_at', { ascending: false });
 
     // ⭐ SECURITY: Tenant isolation - non-super-admins can only see users in their tenant
-    if (!supabaseAuthService.hasPermission('super_admin')) {
+    if (!authService.hasPermission('super_admin')) {
       if (currentTenantId) {
         query = query.eq('tenant_id', currentTenantId);
       } else {
@@ -150,13 +177,13 @@ class SupabaseUserService {
     // Super admins can see all users (no tenant filter)
 
     // Apply filters
+    let roleFilterSet: Set<UserRole> | null = null;
     if (filters) {
       if (filters.status && filters.status.length > 0) {
         query = query.in('status', filters.status);
       }
       if (filters.role && filters.role.length > 0) {
-        // Filter by role using user_roles relationship
-        query = query.in('user_roles.role.name', filters.role);
+        roleFilterSet = new Set(filters.role);
       }
       if (filters.department && filters.department.length > 0) {
         query = query.in('department', filters.department);
@@ -164,7 +191,7 @@ class SupabaseUserService {
       if (filters.search) {
         const search = filters.search.toLowerCase();
         query = query.or(
-          `name.ilike.%${search}%,email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%,company_name.ilike.%${search}%`
+          `name.ilike.%${search}%,email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
         );
       }
       if (filters.createdAfter) {
@@ -182,7 +209,13 @@ class SupabaseUserService {
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
-    return (data || []).map(mapUserRow);
+    let users = (data || []).map(mapUserRow);
+
+    if (roleFilterSet && roleFilterSet.size > 0) {
+      users = users.filter((user) => roleFilterSet?.has(user.role));
+    }
+
+    return users;
   }
 
   /**
@@ -193,39 +226,17 @@ class SupabaseUserService {
     */
    async getUser(id: string): Promise<UserDTO> {
      // ⭐ SECURITY: First, validate tenant access by getting the target user
-     const currentUser = supabaseAuthService.getCurrentUser();
-     const currentTenantId = supabaseAuthService.getCurrentTenantId();
+     const currentUser = authService.getCurrentUser();
+     const currentTenantId = authService.getCurrentTenantId();
 
-     let query = supabase
-       .from(this.table)
-       .select(`
-         id,
-         email,
-         name,
-         first_name,
-         last_name,
-         status,
-         tenant_id,
-         avatar_url,
-         phone,
-         mobile,
-         company_name,
-         department,
-         position,
-         created_at,
-         updated_at,
-         last_login,
-         created_by,
-         deleted_at,
-         user_roles(
-           role:roles(name)
-         )
-       `)
+    let query = supabase
+      .from(this.table)
+      .select(USER_SELECT_COLUMNS)
        .eq('id', id)
        .is('deleted_at', null);
 
      // ⭐ SECURITY: Tenant isolation - non-super-admins can only access users in their tenant
-     if (!supabaseAuthService.hasPermission('super_admin')) {
+     if (!authService.hasPermission('super_admin')) {
        if (currentTenantId) {
          query = query.eq('tenant_id', currentTenantId);
        } else {
@@ -277,11 +288,11 @@ class SupabaseUserService {
      }
 
      // ⭐ SECURITY: Determine tenant assignment based on current user's permissions
-     const currentUser = supabaseAuthService.getCurrentUser();
-     const currentTenantId = supabaseAuthService.getCurrentTenantId();
+     const currentUser = authService.getCurrentUser();
+     const currentTenantId = authService.getCurrentTenantId();
      let assignedTenantId: string | null = null;
 
-     if (supabaseAuthService.hasPermission('super_admin')) {
+     if (authService.hasPermission('super_admin')) {
        // Super admins can assign users to any tenant or make them platform-wide
        // For now, super admins creating users will assign them to their current tenant context
        // TODO: Add tenant selection UI for super admins
@@ -296,7 +307,7 @@ class SupabaseUserService {
 
      // Validate tenant access if assigning to a specific tenant
      if (assignedTenantId) {
-       supabaseAuthService.assertTenantAccess(assignedTenantId);
+       authService.assertTenantAccess(assignedTenantId);
      }
 
      // Validate email format
@@ -360,27 +371,25 @@ class SupabaseUserService {
 
      // Insert new user (without role column)
      const now = new Date().toISOString();
-     const { data: createdUser, error: insertError } = await supabase
-       .from(this.table)
-       .insert({
-         email: data.email,
-         name: data.name,
-         first_name: data.firstName,
-         last_name: data.lastName,
-         status: data.status,
-         tenant_id: assignedTenantId,
-         avatar_url: data.avatarUrl,
-         phone: data.phone,
-         mobile: data.mobile,
-         company_name: data.companyName,
-         department: data.department,
-         position: data.position,
-         created_at: now,
-         updated_at: now,
-         last_login: now,
-       })
-       .select()
-       .single();
+    const { data: createdUser, error: insertError } = await supabase
+      .from(this.table)
+      .insert({
+        email: data.email,
+        name: data.name,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        status: data.status,
+        tenant_id: assignedTenantId,
+        avatar_url: data.avatarUrl,
+        phone: data.phone,
+        department: data.department,
+        position: data.position,
+        created_at: now,
+        updated_at: now,
+        last_login: now,
+      })
+      .select(USER_SELECT_COLUMNS)
+      .single();
 
      if (insertError) {
        console.error('[UserService] Error creating user:', insertError);
@@ -439,10 +448,10 @@ class SupabaseUserService {
     }
 
     // ⭐ SECURITY: Validate tenant access
-    supabaseAuthService.assertTenantAccess(targetUser.tenantId);
+    authService.assertTenantAccess(targetUser.tenantId);
 
     // ⭐ SECURITY: Prevent tenant admins from changing tenant assignments
-    const currentUser = supabaseAuthService.getCurrentUser();
+    const currentUser = authService.getCurrentUser();
     // If email is being updated, check uniqueness and format
     if (data.email) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -479,12 +488,6 @@ class SupabaseUserService {
     if (data.phone && data.phone.length > 50) {
       throw new Error('Phone cannot exceed 50 characters');
     }
-    if (data.mobile && data.mobile.length > 50) {
-      throw new Error('Mobile cannot exceed 50 characters');
-    }
-    if (data.companyName && data.companyName.length > 255) {
-      throw new Error('Company name cannot exceed 255 characters');
-    }
     if (data.department && data.department.length > 100) {
       throw new Error('Department cannot exceed 100 characters');
     }
@@ -520,8 +523,6 @@ class SupabaseUserService {
     if (data.status !== undefined) updatePayload.status = data.status;
     if (data.avatarUrl !== undefined) updatePayload.avatar_url = data.avatarUrl;
     if (data.phone !== undefined) updatePayload.phone = data.phone;
-    if (data.mobile !== undefined) updatePayload.mobile = data.mobile;
-    if (data.companyName !== undefined) updatePayload.company_name = data.companyName;
     if (data.department !== undefined) updatePayload.department = data.department;
     if (data.position !== undefined) updatePayload.position = data.position;
 
@@ -604,11 +605,11 @@ class SupabaseUserService {
     }
 
     // ⭐ SECURITY: Validate tenant access
-    supabaseAuthService.assertTenantAccess(targetUser.tenantId);
+    authService.assertTenantAccess(targetUser.tenantId);
 
     // ⭐ SECURITY: Prevent tenant admins from deleting other admins
-    const currentUser = supabaseAuthService.getCurrentUser();
-    if (!supabaseAuthService.hasPermission('super_admin') && targetUser.role === 'admin') {
+    const currentUser = authService.getCurrentUser();
+    if (!authService.hasPermission('super_admin') && targetUser.role === 'admin') {
       throw new Error('Access denied: Cannot delete admin users');
     }
 
@@ -632,8 +633,8 @@ class SupabaseUserService {
     */
    async resetPassword(id: string): Promise<void> {
      // ⭐ SECURITY: First, validate tenant access by getting the target user
-     const currentUser = supabaseAuthService.getCurrentUser();
-     const currentTenantId = supabaseAuthService.getCurrentTenantId();
+     const currentUser = authService.getCurrentUser();
+     const currentTenantId = authService.getCurrentTenantId();
 
      let query = supabase
        .from(this.table)
@@ -689,8 +690,8 @@ class SupabaseUserService {
     */
    async getUserStats(): Promise<UserStatsDTO> {
      // ⭐ SECURITY: Apply tenant isolation
-     const currentUser = supabaseAuthService.getCurrentUser();
-     const currentTenantId = supabaseAuthService.getCurrentTenantId();
+     const currentUser = authService.getCurrentUser();
+     const currentTenantId = authService.getCurrentTenantId();
 
      let query = supabase
        .from(this.table)
@@ -699,14 +700,16 @@ class SupabaseUserService {
          status,
          created_at,
          tenant_id,
-         user_roles(
-           role:roles(name)
-         )
+        user_roles:user_roles!user_roles_user_id_fkey (
+          role:roles!user_roles_role_id_fkey (
+            name
+          )
+        )
        `)
        .is('deleted_at', null);
 
      // ⭐ SECURITY: Tenant isolation - non-super-admins can only see stats for their tenant
-     if (!supabaseAuthService.hasPermission('super_admin')) {
+     if (!authService.hasPermission('super_admin')) {
        if (currentTenantId) {
          query = query.eq('tenant_id', currentTenantId);
        } else {
@@ -791,8 +794,8 @@ class SupabaseUserService {
     */
    async getUserActivity(userId: string): Promise<UserActivityDTO[]> {
      // ⭐ SECURITY: First, validate tenant access by checking if we can access the target user
-     const currentUser = supabaseAuthService.getCurrentUser();
-     const currentTenantId = supabaseAuthService.getCurrentTenantId();
+     const currentUser = authService.getCurrentUser();
+     const currentTenantId = authService.getCurrentTenantId();
 
      // Check if current user can access the target user's data
      let userQuery = supabase
@@ -871,8 +874,8 @@ class SupabaseUserService {
    * ⭐ SECURITY: Tenant admins only see their own tenant, super admins see all tenants
    */
   async getTenants(): Promise<any[]> {
-    const currentUser = supabaseAuthService.getCurrentUser();
-    const currentTenantId = supabaseAuthService.getCurrentTenantId();
+    const currentUser = authService.getCurrentUser();
+    const currentTenantId = authService.getCurrentTenantId();
 
     let query = supabase
       .from('tenants')

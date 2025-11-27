@@ -60,10 +60,10 @@ export async function registerFeatureModules(): Promise<void> {
     registerModule(ticketsModule);
     console.log('Tickets module registered');
 
-    // JobWorks module
-    const { jobWorksModule } = await import('./features/jobworks');
+    // Job Works module
+    const { jobWorksModule } = await import('./features/job-works');
     registerModule(jobWorksModule);
-    console.log('JobWorks module registered');
+    console.log('Job Works module registered');
 
     // Dashboard module
     const { dashboardModule } = await import('./features/dashboard');
@@ -121,6 +121,11 @@ export async function registerFeatureModules(): Promise<void> {
     const { complaintsModule } = await import('./features/complaints');
     registerModule(complaintsModule);
     console.log('Complaints module registered');
+
+    // Products module
+    const { productModule } = await import('./features/products');
+    registerModule(productModule);
+    console.log('Products module registered');
   } catch (error) {
     console.error('Error registering feature modules:', error);
   }

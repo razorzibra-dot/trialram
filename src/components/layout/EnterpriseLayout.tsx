@@ -57,88 +57,9 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, hasRole, hasPermission } = useAuth();
+  const { user, logout, hasRole, hasPermission, getUserPermissions } = useAuth();
 
-  /**
-   * Get user permissions based on role
-   * Maps role to their permissions for navigation purposes
-   * This determines which menu items are visible
-   * 
-   * Note: In production, this should fetch from the actual permission system
-   */
-  const getUserPermissions = (role: string): string[] => {
-    // Map roles to their permissions for navigation purposes
-    // This determines which menu items are visible
-    const rolePermissionMap: Record<string, string[]> = {
-      super_admin: [
-        'read',
-        'write',
-        'delete',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_users',
-        'manage_roles',
-        'view_analytics',
-        'manage_settings',
-        'manage_companies',
-        'platform_admin',
-        'super_admin',
-        'manage_tenants',
-        'system_monitoring',
-      ],
-      admin: [
-        'read',
-        'write',
-        'delete',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_users',
-        'manage_roles',
-        'view_analytics',
-        'manage_settings',
-        'manage_companies',
-      ],
-      manager: [
-        'read',
-        'write',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'view_analytics',
-      ],
-      engineer: [
-        'read',
-        'write',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_tickets',
-      ],
-      agent: ['read', 'write', 'manage_customers', 'manage_tickets', 'manage_complaints'],
-      customer: ['read'],
-    };
-
-    return rolePermissionMap[role] || ['read'];
-  };
+  // Permissions are dynamic and provided by the auth service (DB-driven).
 
   /**
    * Get permission-filtered navigation items
@@ -150,8 +71,8 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const filteredNavItems = useMemo(() => {
     if (!user) return [];
 
-    // Get user permissions from role mapping
-    const userPermissions = getUserPermissions(user.role);
+    // Get user permissions from auth context (DB-driven)
+    const userPermissions = getUserPermissions();
 
     const filterContext = createNavigationFilterContext(user.role, userPermissions);
     return filterNavigationItems(navigationConfig, filterContext);
@@ -163,7 +84,7 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const breadcrumbItems = useMemo(() => {
     if (!user) return [];
 
-    const userPermissions = getUserPermissions(user.role);
+    const userPermissions = getUserPermissions();
     const filterContext = createNavigationFilterContext(user.role, userPermissions);
 
     const breadcrumbs = [

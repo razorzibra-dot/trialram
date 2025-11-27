@@ -3,9 +3,9 @@
  * Fetches customer type options from reference_data table
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface CustomerType {
   id: string;
@@ -23,21 +23,23 @@ function mapReferenceDataToCustomerType(data: ReferenceData): CustomerType {
   };
 }
 
-async function fetchCustomerTypes(): Promise<CustomerType[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('customer_type');
-    return referenceData.map(mapReferenceDataToCustomerType);
-  } catch (error) {
-    console.error('Error fetching customer types:', error);
-    throw error;
-  }
-}
-
 export function useCustomerTypes() {
-  return useQuery({
-    queryKey: ['customer_types'],
-    queryFn: fetchCustomerTypes,
-    staleTime: 10 * 60 * 1000,
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const customerTypes = useMemo(() => {
+    return getRefDataByCategory('customer_type').map(mapReferenceDataToCustomerType);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: customerTypes,
+    customerTypes,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

@@ -603,6 +603,7 @@ const MOCK_CATEGORIES: ProductCategory[] = [
     tenantId: MOCK_TENANT_ID,
     name: 'Electronics',
     description: 'Electronic products and components',
+    parentId: undefined, // Root category
     isActive: true,
     sortOrder: 1,
     createdAt: NOW,
@@ -613,6 +614,7 @@ const MOCK_CATEGORIES: ProductCategory[] = [
     tenantId: MOCK_TENANT_ID,
     name: 'Software',
     description: 'Software solutions and licenses',
+    parentId: undefined, // Root category
     isActive: true,
     sortOrder: 2,
     createdAt: NOW,
@@ -623,8 +625,31 @@ const MOCK_CATEGORIES: ProductCategory[] = [
     tenantId: MOCK_TENANT_ID,
     name: 'Services',
     description: 'Professional services',
+    parentId: undefined, // Root category
     isActive: true,
     sortOrder: 3,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+  {
+    id: 'cat-4',
+    tenantId: MOCK_TENANT_ID,
+    name: 'Hardware Components',
+    description: 'Physical hardware components',
+    parentId: 'cat-1', // Child of Electronics
+    isActive: true,
+    sortOrder: 1,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+  {
+    id: 'cat-5',
+    tenantId: MOCK_TENANT_ID,
+    name: 'Software Licenses',
+    description: 'Software licensing and subscriptions',
+    parentId: 'cat-2', // Child of Software
+    isActive: true,
+    sortOrder: 1,
     createdAt: NOW,
     updatedAt: NOW,
   },

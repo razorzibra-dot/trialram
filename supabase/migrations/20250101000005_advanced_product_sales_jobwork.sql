@@ -3,6 +3,10 @@
 -- Migration: 005 - Product Sales & Service Contracts & Job Work
 -- ============================================================================
 
+-- Enable required PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- ============================================================================
 -- 1. ENUMS - Product Sales & Service Types
 -- ============================================================================

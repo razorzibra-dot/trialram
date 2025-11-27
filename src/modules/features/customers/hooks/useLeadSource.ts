@@ -3,9 +3,9 @@
  * Fetches lead source options from reference_data table
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface LeadSource {
   id: string;
@@ -23,21 +23,23 @@ function mapReferenceDataToLeadSource(data: ReferenceData): LeadSource {
   };
 }
 
-async function fetchLeadSources(): Promise<LeadSource[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('lead_source');
-    return referenceData.map(mapReferenceDataToLeadSource);
-  } catch (error) {
-    console.error('Error fetching lead sources:', error);
-    throw error;
-  }
-}
-
 export function useLeadSource() {
-  return useQuery({
-    queryKey: ['lead_sources'],
-    queryFn: fetchLeadSources,
-    staleTime: 10 * 60 * 1000,
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const leadSources = useMemo(() => {
+    return getRefDataByCategory('lead_source').map(mapReferenceDataToLeadSource);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: leadSources,
+    leadSources,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

@@ -6,12 +6,7 @@
  * Part of 8-layer sync pattern
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '@/services/supabase/client';
 import {
   StatusOption,
   ReferenceData,
@@ -74,74 +69,54 @@ const mapProductCategory = (row: any): ProductCategory => ({
   createdBy: row.created_by,
 });
 
-const mapSupplier = (row: any): Supplier => ({
-  id: row.id,
-  tenantId: row.tenant_id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  address: row.address,
-  website: row.website,
-  contactPerson: row.contact_person,
-  contactEmail: row.contact_email,
-  contactPhone: row.contact_phone,
-  industry: row.industry,
-  country: row.country,
-  isActive: row.is_active,
-  sortOrder: row.sort_order,
-  notes: row.notes,
-  taxId: row.tax_id,
-  creditLimit: row.credit_limit,
-  paymentTerms: row.payment_terms,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  createdBy: row.created_by,
-  deletedAt: row.deleted_at,
-});
+const mapSupplier = (row: any): Supplier => {
+  const status = row.status ?? (row.is_active ? 'active' : 'inactive');
+
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    address: row.address,
+    website: row.website,
+    contactPerson: row.contact_person,
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    industry: row.industry,
+    country: row.country,
+    isActive: status === 'active' && !row.deleted_at,
+    sortOrder: row.sort_order,
+    notes: row.notes,
+    taxId: row.tax_id,
+    creditLimit: row.credit_limit,
+    paymentTerms: row.payment_terms,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    createdBy: row.created_by,
+    deletedAt: row.deleted_at,
+  };
+};
 
 // ============================================================================
 // 2. SUPABASE SERVICE IMPLEMENTATION
 // ============================================================================
 
 class SupabaseReferenceDataService {
+  private async resolveTenantId(explicitTenantId?: string): Promise<string | undefined> {
+    if (explicitTenantId) {
+      return explicitTenantId;
+    }
+
+    const { data } = await supabase.auth.getUser();
+    return data.user?.user_metadata?.tenant_id;
+  }
+
   /**
    * Load all reference data at once
    */
   async loadAllReferenceData(tenantId: string): Promise<AllReferenceData> {
-    try {
-      const [statusRes, refDataRes, categoriesRes, suppliersRes] = await Promise.all([
-        supabase
-          .from('status_options')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true),
-        supabase
-          .from('reference_data')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true),
-        supabase
-          .from('product_categories')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true),
-        supabase
-          .from('suppliers')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true),
-      ]);
-
-      return {
-        statusOptions: statusRes.data?.map(mapStatusOption) || [],
-        referenceData: refDataRes.data?.map(mapReferenceData) || [],
-        categories: categoriesRes.data?.map(mapProductCategory) || [],
-        suppliers: suppliersRes.data?.map(mapSupplier) || [],
-      };
-    } catch (error) {
-      console.error('Error loading all reference data:', error);
-      throw new Error(`Failed to load reference data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return this.getAllReferenceData(tenantId);
   }
 
   /**
@@ -154,6 +129,10 @@ class SupabaseReferenceDataService {
         .from('status_options')
         .select('*')
         .eq('is_active', true);
+
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
 
       if (module) {
         query = query.eq('module', module);
@@ -181,6 +160,10 @@ class SupabaseReferenceDataService {
         .select('*')
         .eq('is_active', true);
 
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+
       if (category) {
         query = query.eq('category', category);
       }
@@ -202,11 +185,17 @@ class SupabaseReferenceDataService {
    */
   async getCategories(tenantId?: string): Promise<ProductCategory[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('product_categories')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
+
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data?.map(mapProductCategory) || [];
@@ -222,11 +211,18 @@ class SupabaseReferenceDataService {
    */
   async getSuppliers(tenantId?: string): Promise<Supplier[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('suppliers')
         .select('*')
-        .eq('is_active', true)
+        .eq('status', 'active')
+        .is('deleted_at', null)
         .order('sort_order', { ascending: true });
+
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data?.map(mapSupplier) || [];
@@ -336,7 +332,7 @@ class SupabaseReferenceDataService {
           contact_phone: dto.contactPhone,
           industry: dto.industry,
           country: dto.country,
-          is_active: dto.isActive ?? true,
+          status: (dto.isActive ?? true) ? 'active' : 'inactive',
           sort_order: dto.sortOrder ?? 0,
           notes: dto.notes,
           tax_id: dto.taxId,
@@ -436,26 +432,31 @@ class SupabaseReferenceDataService {
    */
   async updateSupplier(id: string, dto: UpdateSupplierDTO): Promise<Supplier> {
     try {
+      const updatePayload: Record<string, any> = {
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        address: dto.address,
+        website: dto.website,
+        contact_person: dto.contactPerson,
+        contact_email: dto.contactEmail,
+        contact_phone: dto.contactPhone,
+        industry: dto.industry,
+        country: dto.country,
+        sort_order: dto.sortOrder,
+        notes: dto.notes,
+        tax_id: dto.taxId,
+        credit_limit: dto.creditLimit,
+        payment_terms: dto.paymentTerms,
+      };
+
+      if (dto.isActive !== undefined) {
+        updatePayload.status = dto.isActive ? 'active' : 'inactive';
+      }
+
       const { data, error } = await supabase
         .from('suppliers')
-        .update({
-          name: dto.name,
-          email: dto.email,
-          phone: dto.phone,
-          address: dto.address,
-          website: dto.website,
-          contact_person: dto.contactPerson,
-          contact_email: dto.contactEmail,
-          contact_phone: dto.contactPhone,
-          industry: dto.industry,
-          country: dto.country,
-          is_active: dto.isActive,
-          sort_order: dto.sortOrder,
-          notes: dto.notes,
-          tax_id: dto.taxId,
-          credit_limit: dto.creditLimit,
-          payment_terms: dto.paymentTerms,
-        })
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
@@ -526,7 +527,7 @@ class SupabaseReferenceDataService {
     try {
       const { error } = await supabase
         .from('suppliers')
-        .update({ is_active: false })
+        .update({ status: 'inactive', deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
@@ -540,25 +541,43 @@ class SupabaseReferenceDataService {
    * Context-specific methods (for ReferenceDataContext Layer 6)
    * These methods load data without explicit tenantId filtering - RLS policies handle it
    */
-  async getAllReferenceData(): Promise<AllReferenceData> {
+  async getAllReferenceData(tenantId?: string): Promise<AllReferenceData> {
     try {
+      const resolvedTenantId = await this.resolveTenantId(tenantId);
+
+      let statusQuery = supabase
+        .from('status_options')
+        .select('*')
+        .eq('is_active', true);
+
+      let referenceDataQuery = supabase
+        .from('reference_data')
+        .select('*')
+        .eq('is_active', true);
+
+      let categoriesQuery = supabase
+        .from('product_categories')
+        .select('*')
+        .eq('is_active', true);
+
+      let suppliersQuery = supabase
+        .from('suppliers')
+        .select('*')
+        .eq('status', 'active')
+        .is('deleted_at', null);
+
+      if (resolvedTenantId) {
+        statusQuery = statusQuery.eq('tenant_id', resolvedTenantId);
+        referenceDataQuery = referenceDataQuery.eq('tenant_id', resolvedTenantId);
+        categoriesQuery = categoriesQuery.eq('tenant_id', resolvedTenantId);
+        suppliersQuery = suppliersQuery.eq('tenant_id', resolvedTenantId);
+      }
+
       const [statusRes, refDataRes, categoriesRes, suppliersRes] = await Promise.all([
-        supabase
-          .from('status_options')
-          .select('*')
-          .eq('is_active', true),
-        supabase
-          .from('reference_data')
-          .select('*')
-          .eq('is_active', true),
-        supabase
-          .from('product_categories')
-          .select('*')
-          .eq('is_active', true),
-        supabase
-          .from('suppliers')
-          .select('*')
-          .eq('is_active', true),
+        statusQuery,
+        referenceDataQuery,
+        categoriesQuery,
+        suppliersQuery,
       ]);
 
       return {

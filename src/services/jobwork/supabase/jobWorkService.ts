@@ -4,12 +4,7 @@
  * Integrates with tenant context for multi-tenant support
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase as supabaseClient } from '@/services/supabase/client';
 
 const getSupabaseClient = () => supabaseClient;
 

@@ -66,83 +66,9 @@ interface UsePermissionBasedNavigationResult {
  * @throws Error if useAuth is called outside AuthProvider context
  */
 export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResult {
-  const { user, hasPermission, hasRole } = useAuth();
+  const { user, hasPermission, hasRole, getUserPermissions } = useAuth();
 
-  /**
-   * Get user permissions based on role
-   * Maps role to permissions for navigation purposes
-   */
-  const getUserPermissions = (role: string): string[] => {
-    const rolePermissionMap: Record<string, string[]> = {
-      super_admin: [
-        'read',
-        'write',
-        'delete',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_users',
-        'manage_roles',
-        'view_analytics',
-        'manage_settings',
-        'manage_companies',
-        'platform_admin',
-        'super_admin',
-        'manage_tenants',
-        'system_monitoring',
-      ],
-      admin: [
-        'read',
-        'write',
-        'delete',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_users',
-        'manage_roles',
-        'view_analytics',
-        'manage_settings',
-        'manage_companies',
-      ],
-      manager: [
-        'read',
-        'write',
-        'manage_customers',
-        'manage_sales',
-        'manage_tickets',
-        'manage_complaints',
-        'manage_contracts',
-        'manage_service_contracts',
-        'manage_products',
-        'manage_product_sales',
-        'view_analytics',
-      ],
-      engineer: [
-        'read',
-        'write',
-        'manage_products',
-        'manage_product_sales',
-        'manage_job_works',
-        'manage_tickets',
-      ],
-      agent: ['read', 'write', 'manage_customers', 'manage_tickets', 'manage_complaints'],
-      customer: ['read'],
-    };
-
-    return rolePermissionMap[role] || ['read'];
-  };
+  // Use DB-driven permissions via AuthContext
 
   /**
    * Create filter context from user data
@@ -151,8 +77,7 @@ export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResu
     if (!user) {
       return createNavigationFilterContext('customer', ['read']);
     }
-
-    const userPermissions = getUserPermissions(user.role);
+    const userPermissions = getUserPermissions();
     return createNavigationFilterContext(user.role, userPermissions);
   }, [user]);
 

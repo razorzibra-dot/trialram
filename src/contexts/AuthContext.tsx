@@ -50,6 +50,10 @@ interface AuthContextType extends AuthState {
    * @returns ImpersonationLogType object if impersonating, null otherwise
    */
   getCurrentImpersonationSession: () => ImpersonationLogType | null;
+  /**
+   * Get permissions for the current user (pulled from auth service / DB)
+   */
+  getUserPermissions: (role?: string) => string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -350,6 +354,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return factoryAuthService.hasPermission(permission);
   };
 
+  const getUserPermissions = (role?: string): string[] => {
+    try {
+      return factoryAuthService.getUserPermissions();
+    } catch (e) {
+      console.warn('[AuthContext] getUserPermissions failed', e);
+      return [];
+    }
+  };
+
   const sessionInfo = () => {
     return sessionManager.getSessionInfo();
   };
@@ -482,6 +495,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     hasRole,
     hasPermission,
+    getUserPermissions,
     sessionInfo,
     tenantId: tenant?.tenantId,
     getTenantId,

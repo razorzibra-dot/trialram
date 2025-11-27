@@ -41,56 +41,178 @@ export interface CustomerTag {
   color: string;
 }
 
-// Sale/Deal unified interface
-export interface Sale {
+export interface CustomerInteraction {
   id: string;
-  sale_number?: string;
+  customer_id: string;
+  type: 'call' | 'meeting' | 'email' | 'note' | 'visit' | 'demo' | 'presentation' | 'follow_up' | 'other';
+  direction?: 'inbound' | 'outbound'; // For calls/emails
+  subject: string;
+  description?: string;
+  interaction_date: string;
+  duration_minutes?: number;
+  outcome?: 'successful' | 'unsuccessful' | 'pending' | 'cancelled';
+  outcome_notes?: string;
+  contact_person?: string; // Customer contact involved
+  performed_by: string;
+  performed_by_name?: string; // For display
+  participants?: string[]; // Other participants (user IDs)
+  location?: string; // For meetings/visits
+  attachments?: CustomerInteractionAttachment[];
+  tags?: string[];
+  follow_up_required?: boolean;
+  follow_up_date?: string;
+  next_action?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface CustomerInteractionAttachment {
+  id: string;
+  interaction_id: string;
+  filename: string;
+  original_filename?: string;
+  file_path?: string;
+  file_url?: string;
+  content_type: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_by_name?: string;
+  created_at: string;
+}
+
+
+// Sales Pipeline Entities
+
+export interface Opportunity {
+  id: string;
   title: string;
   description?: string;
 
   // Customer Relationship
   customer_id: string;
+  customer_name?: string; // For display
 
   // Financial Information
-  value: number;
+  estimated_value: number;
   currency: string;
-  probability: number;
-  weighted_amount?: number;
+  probability: number; // 0-100
+  weighted_value?: number; // calculated: estimated_value * probability / 100
 
   // Sales Process
-  stage: 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
-  status: 'open' | 'won' | 'lost' | 'cancelled';
+  stage: 'prospecting' | 'qualification' | 'needs_analysis' | 'proposal' | 'negotiation' | 'decision' | 'contract';
+  status: 'open' | 'won' | 'lost' | 'on_hold' | 'cancelled';
   source?: string;
   campaign?: string;
 
   // Dates
   expected_close_date?: string;
-  actual_close_date?: string;
   last_activity_date?: string;
   next_activity_date?: string;
 
   // Assignment
   assigned_to: string;
+  assigned_to_name?: string; // For display
 
   // Additional Information
   notes?: string;
   tags?: string[];
   competitor_info?: string;
+  pain_points?: string[];
+  requirements?: string[];
 
-  // Products/Items
-  items?: SaleItem[];
+  // Products/Items (proposed)
+  proposed_items?: OpportunityItem[];
 
   // System Information
   tenant_id: string;
   created_at: string;
   updated_at: string;
-  created_by?: string;
+  created_by: string;
+  converted_to_deal_id?: string; // When opportunity becomes a deal
 }
 
-// Sale Item for product-based sales
-export interface SaleItem {
+export interface OpportunityItem {
   id: string;
-  sale_id: string;
+  opportunity_id: string;
+  product_id?: string;
+  product_name: string;
+  product_description?: string;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  tax: number;
+  line_total: number;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Deal {
+  id: string;
+  deal_number?: string;
+  title: string;
+  description?: string;
+
+  // Customer Relationship
+  customer_id: string;
+  customer_name?: string; // For display
+
+  // Financial Information
+  value: number;
+  currency: string;
+
+  // Sales Process
+  status: 'won' | 'lost' | 'cancelled';
+  source?: string;
+  campaign?: string;
+
+  // Dates
+  close_date: string; // When the deal was closed
+  expected_close_date?: string; // Original expected date
+
+  // Assignment
+  assigned_to: string;
+  assigned_to_name?: string; // For display
+
+  // Additional Information
+  notes?: string;
+  tags?: string[];
+  competitor_info?: string;
+  win_loss_reason?: string; // Why won or lost
+
+  // Products/Items (final)
+  items?: DealItem[];
+
+  // Relationships
+  opportunity_id?: string; // Link to original opportunity if converted
+  contract_id?: string; // Link to generated contract if deal is won
+
+  // Payment Processing
+  payment_terms?: string; // net_30, net_60, cod, etc.
+  payment_status?: 'pending' | 'partial' | 'paid' | 'overdue';
+  payment_due_date?: string;
+  paid_amount?: number;
+  outstanding_amount?: number;
+  payment_method?: string; // bank_transfer, check, credit_card, etc.
+
+  // Revenue Recognition
+  revenue_recognized?: number;
+  revenue_recognition_status?: 'not_started' | 'in_progress' | 'completed';
+  revenue_recognition_method?: 'immediate' | 'installments' | 'milestone' | 'time_based';
+  recognition_schedule?: RevenueRecognitionSchedule[];
+
+  // System Information
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface DealItem {
+  id: string;
+  deal_id: string;
   product_id?: string;
   product_name: string;
   product_description?: string;
@@ -101,8 +223,64 @@ export interface SaleItem {
   line_total: number;
 }
 
+export interface RevenueRecognitionSchedule {
+  id: string;
+  deal_id: string;
+  installment_number: number;
+  amount: number;
+  recognized_amount: number;
+  recognition_date: string; // When revenue should be recognized
+  actual_recognition_date?: string; // When it was actually recognized
+  status: 'pending' | 'recognized' | 'cancelled';
+  description?: string;
+  milestone?: string; // For milestone-based recognition
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalesActivity {
+  id: string;
+  activity_type: 'call' | 'meeting' | 'email' | 'demo' | 'proposal' | 'follow_up' | 'negotiation' | 'presentation' | 'site_visit' | 'other';
+  subject: string;
+  description?: string;
+
+  // Relationships
+  opportunity_id?: string;
+  deal_id?: string;
+  customer_id: string;
+
+  // Timing
+  start_date: string;
+  end_date?: string;
+  duration_minutes?: number;
+
+  // Participants
+  performed_by: string;
+  performed_by_name?: string; // For display
+  participants?: string[]; // Other participants (user IDs)
+  contact_person?: string; // Customer contact
+
+  // Outcome
+  outcome?: 'successful' | 'unsuccessful' | 'pending' | 'cancelled' | 'rescheduled';
+  outcome_notes?: string;
+  next_action?: string;
+  next_action_date?: string;
+
+  // Additional
+  location?: string; // For meetings, calls
+  attachments?: string[]; // File URLs/IDs
+  tags?: string[];
+
+  // System Information
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
 // Alias for backward compatibility
-export type Deal = Sale;
+export type Sale = Deal;
 
 export interface Ticket {
   id: string;
@@ -139,8 +317,13 @@ export interface Ticket {
   resolution_time?: number; // in minutes
   is_sla_breached?: boolean;
 
+  // SLA Tracking
+  sla_target?: number; // SLA target in hours
+  sla_start?: string; // When SLA clock started
+
   // Resolution and Notes
   resolution?: string;
+  notes?: string; // Internal notes for ticket creation rules
   tags?: string[];
 
   // Relationships

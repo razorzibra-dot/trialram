@@ -5,21 +5,20 @@
  * Part of 8-layer sync pattern for dynamic data loading architecture
  * 
  * ✅ SYNCHRONIZATION:
- * - Uses referenceDataLoader from factory (Layer 5)
+ * - Uses ReferenceDataContext (Layer 6) which caches Supabase results
  * - Returns types from referenceData.types.ts (Layer 2)
  * - Memoized for performance
  * - Proper error handling and loading states
  */
 
-import { useMemo, useCallback } from 'react';
-import { referenceDataLoader } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import {
   StatusOption,
   ReferenceData,
   ProductCategory,
   Supplier,
 } from '@/types/referenceData.types';
-import { useQuery } from '@tanstack/react-query';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 /**
  * Hook for loading and memoizing categories
@@ -28,23 +27,23 @@ import { useQuery } from '@tanstack/react-query';
  * @returns Object with categories, loading, error, and refetch
  */
 export function useCategories(
-  tenantId: string,
+  tenantId?: string,
   staleTime = 5 * 60 * 1000
 ) {
-  const { data: categories = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'categories', tenantId],
-    queryFn: () => referenceDataLoader.loadCategories(tenantId),
-    staleTime,
-  });
+  const {
+    categories,
+    isLoading,
+    error,
+    refreshCategories,
+  } = useReferenceData();
 
-  // Memoize category options for select dropdown
   const categoryOptions = useMemo(
     () => categories.map(cat => ({
       label: cat.name,
       value: cat.id,
       description: cat.description,
     })),
-    [categories]
+    [categories, tenantId, staleTime]
   );
 
   return {
@@ -52,7 +51,7 @@ export function useCategories(
     categoryOptions,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshCategories,
   };
 }
 
@@ -63,16 +62,16 @@ export function useCategories(
  * @returns Object with suppliers, loading, error, and refetch
  */
 export function useSuppliers(
-  tenantId: string,
+  tenantId?: string,
   staleTime = 5 * 60 * 1000
 ) {
-  const { data: suppliers = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'suppliers', tenantId],
-    queryFn: () => referenceDataLoader.loadSuppliers(tenantId),
-    staleTime,
-  });
+  const {
+    suppliers,
+    isLoading,
+    error,
+    refreshSuppliers,
+  } = useReferenceData();
 
-  // Memoize supplier options for select dropdown
   const supplierOptions = useMemo(
     () => suppliers.map(supplier => ({
       label: supplier.name,
@@ -80,7 +79,7 @@ export function useSuppliers(
       email: supplier.email,
       phone: supplier.phone,
     })),
-    [suppliers]
+    [suppliers, tenantId, staleTime]
   );
 
   return {
@@ -88,7 +87,7 @@ export function useSuppliers(
     supplierOptions,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshSuppliers,
   };
 }
 
@@ -104,13 +103,19 @@ export function useStatusOptions(
   module: string,
   staleTime = 5 * 60 * 1000
 ) {
-  const { data: statuses = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'statusOptions', tenantId, module],
-    queryFn: () => referenceDataLoader.loadStatusOptions(tenantId, module),
-    staleTime,
-  });
+  const {
+    statusOptions: allStatusOptions,
+    isLoading,
+    error,
+    refreshStatusOptions,
+    getStatusesByModule,
+  } = useReferenceData();
 
-  // Memoize status options for select dropdown with colors
+  const statuses = useMemo(
+    () => (module ? getStatusesByModule(module) : allStatusOptions),
+    [allStatusOptions, getStatusesByModule, module, tenantId, staleTime]
+  );
+
   const statusOptions = useMemo(
     () => statuses.map(status => ({
       label: status.displayLabel,
@@ -126,7 +131,7 @@ export function useStatusOptions(
     statusOptions,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshStatusOptions,
   };
 }
 
@@ -142,13 +147,18 @@ export function useReferenceDataByCategory(
   category: string,
   staleTime = 5 * 60 * 1000
 ) {
-  const { data: items = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'items', tenantId, category],
-    queryFn: () => referenceDataLoader.loadReferenceData(tenantId, category),
-    staleTime,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
 
-  // Memoize options for select dropdown
+  const items = useMemo(
+    () => getRefDataByCategory(category),
+    [category, getRefDataByCategory, tenantId, staleTime]
+  );
+
   const options = useMemo(
     () => items.map(item => ({
       label: item.label,
@@ -164,7 +174,7 @@ export function useReferenceDataByCategory(
     options,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshReferenceData,
   };
 }
 
@@ -176,30 +186,27 @@ export function useReferenceDataByCategory(
  * @returns Object with all reference data
  */
 export function useAllReferenceData(
-  tenantId: string,
+  tenantId?: string,
   staleTime = 5 * 60 * 1000
 ) {
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'all', tenantId],
-    queryFn: () => referenceDataLoader.loadAllReferenceData(tenantId),
-    staleTime,
-  });
-
-  const allData = data || {
-    statusOptions: [],
-    referenceData: [],
-    categories: [],
-    suppliers: [],
-  };
+  const {
+    statusOptions,
+    referenceData,
+    categories,
+    suppliers,
+    isLoading,
+    error,
+    refreshData,
+  } = useReferenceData();
 
   return {
-    statusOptions: allData.statusOptions,
-    referenceData: allData.referenceData,
-    categories: allData.categories,
-    suppliers: allData.suppliers,
+    statusOptions,
+    referenceData,
+    categories,
+    suppliers,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshData,
   };
 }
 
@@ -215,26 +222,21 @@ export function useReferenceDataOptions(
   categories: string[] = [],
   staleTime = 5 * 60 * 1000
 ) {
-  const { data: items = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['referenceData', 'options', tenantId, categories.join(',')],
-    queryFn: async () => {
-      if (categories.length === 0) {
-        return referenceDataLoader.loadReferenceData(tenantId);
-      }
+  const {
+    referenceData,
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
 
-      // Load data for all specified categories
-      const results = await Promise.all(
-        categories.map(cat =>
-          referenceDataLoader.loadReferenceData(tenantId, cat)
-        )
-      );
-      return results.flat();
-    },
-    staleTime,
-    enabled: categories.length > 0,
-  });
+  const items = useMemo(() => {
+    if (!categories.length) {
+      return referenceData;
+    }
+    return categories.flatMap(cat => getRefDataByCategory(cat));
+  }, [categories.join(','), referenceData, getRefDataByCategory, tenantId, staleTime]);
 
-  // Organize items by category
   const optionsByCategory = useMemo(() => {
     const organized: Record<string, Array<{
       label: string;
@@ -261,7 +263,7 @@ export function useReferenceDataOptions(
     optionsByCategory,
     loading: isLoading,
     error,
-    refetch,
+    refetch: refreshReferenceData,
   };
 }
 

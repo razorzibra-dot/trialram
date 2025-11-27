@@ -3,9 +3,9 @@
  * Fetches lead rating options from reference_data table
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface LeadRating {
   id: string;
@@ -23,21 +23,23 @@ function mapReferenceDataToLeadRating(data: ReferenceData): LeadRating {
   };
 }
 
-async function fetchLeadRatings(): Promise<LeadRating[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('lead_rating');
-    return referenceData.map(mapReferenceDataToLeadRating);
-  } catch (error) {
-    console.error('Error fetching lead ratings:', error);
-    throw error;
-  }
-}
-
 export function useLeadRating() {
-  return useQuery({
-    queryKey: ['lead_ratings'],
-    queryFn: fetchLeadRatings,
-    staleTime: 10 * 60 * 1000,
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const leadRatings = useMemo(() => {
+    return getRefDataByCategory('lead_rating').map(mapReferenceDataToLeadRating);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: leadRatings,
+    leadRatings,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

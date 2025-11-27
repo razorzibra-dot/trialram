@@ -30,7 +30,11 @@ class ProductService {
       tags: ['industrial', 'motor', 'assembly'],
       tenant_id: 'tenant_1',
       created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-20T14:30:00Z'
+      updated_at: '2024-01-20T14:30:00Z',
+      // Product hierarchy fields
+      parent_id: null,
+      is_variant: false,
+      variant_group_id: null
     },
     {
       id: '2',
@@ -55,7 +59,11 @@ class ProductService {
       tags: ['conveyor', 'belt', 'component'],
       tenant_id: 'tenant_1',
       created_at: '2024-01-16T09:00:00Z',
-      updated_at: '2024-01-22T11:15:00Z'
+      updated_at: '2024-01-22T11:15:00Z',
+      // Product hierarchy fields
+      parent_id: null,
+      is_variant: false,
+      variant_group_id: null
     },
     {
       id: '3',
@@ -80,7 +88,70 @@ class ProductService {
       tags: ['control', 'system', 'module', 'plc'],
       tenant_id: 'tenant_1',
       created_at: '2024-01-18T13:00:00Z',
-      updated_at: '2024-01-25T16:45:00Z'
+      updated_at: '2024-01-25T16:45:00Z',
+      // Product hierarchy fields
+      parent_id: null,
+      is_variant: false,
+      variant_group_id: null
+    },
+    // Add some hierarchical products for demonstration
+    {
+      id: '4',
+      name: 'Industrial Motor Assembly - 5HP',
+      sku: 'IMA-001-5HP',
+      type: 'Hardware',
+      description: '5HP variant of industrial motor assembly',
+      category_id: 'cat_1',
+      price: 1600,
+      currency: 'USD',
+      cost_price: 1100,
+      stock_quantity: 10,
+      min_stock_level: 2,
+      max_stock_level: 50,
+      unit: 'piece',
+      weight: 16.0,
+      dimensions: '32x22x16 cm',
+      supplier_id: '1',
+      status: 'active',
+      warranty_period: 12,
+      service_contract_available: true,
+      tags: ['industrial', 'motor', 'assembly', '5hp'],
+      tenant_id: 'tenant_1',
+      created_at: '2024-01-20T10:00:00Z',
+      updated_at: '2024-01-25T14:30:00Z',
+      // Product hierarchy: variant of product 1
+      parent_id: '1',
+      is_variant: true,
+      variant_group_id: 'motor-assembly-group'
+    },
+    {
+      id: '5',
+      name: 'Industrial Motor Assembly - 10HP',
+      sku: 'IMA-001-10HP',
+      type: 'Hardware',
+      description: '10HP variant of industrial motor assembly',
+      category_id: 'cat_1',
+      price: 2200,
+      currency: 'USD',
+      cost_price: 1500,
+      stock_quantity: 8,
+      min_stock_level: 1,
+      max_stock_level: 30,
+      unit: 'piece',
+      weight: 18.5,
+      dimensions: '35x25x18 cm',
+      supplier_id: '1',
+      status: 'active',
+      warranty_period: 12,
+      service_contract_available: true,
+      tags: ['industrial', 'motor', 'assembly', '10hp'],
+      tenant_id: 'tenant_1',
+      created_at: '2024-01-22T10:00:00Z',
+      updated_at: '2024-01-26T14:30:00Z',
+      // Product hierarchy: variant of product 1
+      parent_id: '1',
+      is_variant: true,
+      variant_group_id: 'motor-assembly-group'
     }
   ];
 
@@ -193,6 +264,9 @@ class ProductService {
       price: data.price,
       currency: data.currency || 'USD',
       cost_price: data.cost_price || data.price * 0.7, // Default cost as 70% of price
+      // Advanced pricing
+      pricing_tiers: data.pricing_tiers || [],
+      discount_rules: data.discount_rules || [],
       stock_quantity: data.stock_quantity || 0,
       min_stock_level: data.min_stock_level || 5,
       max_stock_level: data.max_stock_level || 100,
@@ -206,7 +280,11 @@ class ProductService {
       tags: [],
       tenant_id: finalTenantId,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Product hierarchy fields
+      parent_id: data.parent_id || null,
+      is_variant: data.is_variant || false,
+      variant_group_id: data.variant_group_id || null
     };
 
     this.mockProducts.push(newProduct);
@@ -247,10 +325,17 @@ class ProductService {
       ...(data.description && { description: data.description }),
       ...(data.price && { price: data.price }),
       ...(data.currency && { currency: data.currency }),
+      // Advanced pricing
+      ...(data.pricing_tiers !== undefined && { pricing_tiers: data.pricing_tiers }),
+      ...(data.discount_rules !== undefined && { discount_rules: data.discount_rules }),
       ...(data.supplier_id !== undefined && { supplier_id: data.supplier_id }), // ✅ NORMALIZED
       ...(data.status && { status: data.status }),
       ...(data.warranty_period && { warranty_period: data.warranty_period }),
       ...(data.service_contract_available !== undefined && { service_contract_available: data.service_contract_available }),
+      // Product hierarchy fields
+      ...(data.parent_id !== undefined && { parent_id: data.parent_id }),
+      ...(data.is_variant !== undefined && { is_variant: data.is_variant }),
+      ...(data.variant_group_id !== undefined && { variant_group_id: data.variant_group_id }),
       updated_at: new Date().toISOString()
     };
 
@@ -286,7 +371,7 @@ class ProductService {
 
     const user = authService.getCurrentUser();
     const finalTenantId = tenantId || user?.tenant_id;
-    
+
     if (!finalTenantId) throw new Error('Unauthorized');
 
     let products = this.mockProducts.filter(p => p.tenant_id === finalTenantId);
@@ -294,24 +379,24 @@ class ProductService {
     // Apply filters
     if (filters) {
       if (filters.category) {
-        products = products.filter(p => p.category === filters.category);
+        products = products.filter(p => p.category_id === filters.category);
       }
       if (filters.status) {
         products = products.filter(p => p.status === filters.status);
       }
       if (filters.search) {
         const search = filters.search.toLowerCase();
-        products = products.filter(p => 
+        products = products.filter(p =>
           p.name.toLowerCase().includes(search) ||
           p.sku.toLowerCase().includes(search) ||
-          p.description.toLowerCase().includes(search)
+          (p.description && p.description.toLowerCase().includes(search))
         );
       }
     }
 
     // Generate CSV content
     const headers = [
-      'ID', 'Name', 'SKU', 'Category', 'Description', 'Price', 'Status', 'Created At'
+      'ID', 'Name', 'SKU', 'Category ID', 'Description', 'Price', 'Status', 'Created At'
     ];
 
     const csvContent = [
@@ -320,7 +405,7 @@ class ProductService {
         product.id,
         `"${product.name}"`,
         product.sku,
-        product.category,
+        product.category_id || '',
         `"${product.description || ''}"`,
         product.price,
         product.status,
@@ -329,6 +414,112 @@ class ProductService {
     ].join('\r\n');
 
     return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  }
+
+  // Product Hierarchy Methods
+  async getProductChildren(parentId: string, tenantId?: string): Promise<Product[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const user = authService.getCurrentUser();
+    const finalTenantId = tenantId || user?.tenant_id;
+
+    if (!finalTenantId) throw new Error('Unauthorized');
+
+    return this.mockProducts.filter(p =>
+      p.tenant_id === finalTenantId &&
+      p.parent_id === parentId
+    );
+  }
+
+  async getProductParent(childId: string, tenantId?: string): Promise<Product | null> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const user = authService.getCurrentUser();
+    const finalTenantId = tenantId || user?.tenant_id;
+
+    if (!finalTenantId) throw new Error('Unauthorized');
+
+    const child = this.mockProducts.find(p =>
+      p.id === childId && p.tenant_id === finalTenantId
+    );
+
+    if (!child || !child.parent_id) return null;
+
+    return this.mockProducts.find(p =>
+      p.id === child.parent_id && p.tenant_id === finalTenantId
+    ) || null;
+  }
+
+  async getProductHierarchy(productId: string, tenantId?: string): Promise<{
+    product: Product;
+    parent?: Product;
+    children: Product[];
+    siblings: Product[];
+  }> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const user = authService.getCurrentUser();
+    const finalTenantId = tenantId || user?.tenant_id;
+
+    if (!finalTenantId) throw new Error('Unauthorized');
+
+    const product = this.mockProducts.find(p =>
+      p.id === productId && p.tenant_id === finalTenantId
+    );
+
+    if (!product) throw new Error('Product not found');
+
+    const [parent, children, siblings] = await Promise.all([
+      product.parent_id ? this.getProductParent(productId, finalTenantId) : Promise.resolve(null),
+      this.getProductChildren(productId, finalTenantId),
+      product.parent_id ? this.getProductChildren(product.parent_id, finalTenantId) : Promise.resolve([])
+    ]);
+
+    return {
+      product,
+      parent: parent || undefined,
+      children,
+      siblings: siblings.filter(s => s.id !== productId)
+    };
+  }
+
+  async getProductVariants(baseProductId: string, tenantId?: string): Promise<Product[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const user = authService.getCurrentUser();
+    const finalTenantId = tenantId || user?.tenant_id;
+
+    if (!finalTenantId) throw new Error('Unauthorized');
+
+    // Get the base product to find its variant_group_id
+    const baseProduct = this.mockProducts.find(p =>
+      p.id === baseProductId && p.tenant_id === finalTenantId
+    );
+
+    if (!baseProduct) throw new Error('Base product not found');
+
+    const variantGroupId = baseProduct.variant_group_id;
+    if (!variantGroupId) return [];
+
+    return this.mockProducts.filter(p =>
+      p.tenant_id === finalTenantId &&
+      p.variant_group_id === variantGroupId &&
+      p.is_variant === true
+    );
+  }
+
+  async getRootProducts(tenantId?: string): Promise<Product[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const user = authService.getCurrentUser();
+    const finalTenantId = tenantId || user?.tenant_id;
+
+    if (!finalTenantId) throw new Error('Unauthorized');
+
+    return this.mockProducts.filter(p =>
+      p.tenant_id === finalTenantId &&
+      (p.parent_id === null || p.parent_id === undefined)
+    );
   }
 }
 

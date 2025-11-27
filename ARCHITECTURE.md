@@ -542,6 +542,297 @@ serviceFactory.setApiMode('supabase');
 
 ---
 
+## 12. RBAC (Role-Based Access Control) System
+
+### 12.1 RBAC Architecture Overview
+
+The system implements a comprehensive **Role-Based Access Control (RBAC)** architecture with tenant isolation, super admin capabilities, and dynamic permission management.
+
+#### 12.1.1 Core Components
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    RBAC System Architecture                 │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │    USERS     │  │    ROLES     │  │  PERMISSIONS     │  │
+│  │              │  │              │  │                  │  │
+│  │ • Tenant ID  │  │ • Tenant ID  │  │ • Resource       │  │
+│  │ • Super Admin│  │ • System Role│  │ • Action         │  │
+│  │ • Status     │  │ • Permissions│  │ • Category       │  │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
+│         │                  │                    │           │
+│         └──────────┬───────┴────────┬───────────┘           │
+│                    │                │                       │
+│         ┌──────────▼────────┐  ┌───▼────────────────────┐  │
+│         │   USER_ROLES      │  │   ROLE_PERMISSIONS     │  │
+│         │                   │  │                        │  │
+│         │ • User ID         │  │ • Role ID              │  │
+│         │ • Role ID         │  │ • Permission ID        │  │
+│         │ • Tenant ID       │  │ • Granted By           │  │
+│         └───────────────────┘  └────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 12.2 Permission System Evolution
+
+#### Legacy Format (Pre-Nov 2025)
+```sql
+-- Old permission names
+INSERT INTO permissions (name, description) VALUES
+  ('manage_users', 'Manage users'),
+  ('manage_roles', 'Manage roles'),
+  ('manage_customers', 'Manage customers');
+```
+
+#### New Format (Post-Nov 2025)
+```sql
+-- New {resource}:{action} format
+INSERT INTO permissions (name, description, resource, action) VALUES
+  ('users:manage', 'Manage users', 'users', 'manage'),
+  ('roles:manage', 'Manage roles', 'roles', 'manage'),
+  ('customers:manage', 'Manage customers', 'customers', 'manage');
+```
+
+### 12.3 Tenant Isolation Architecture
+
+#### 12.3.1 Multi-Tenant Data Segregation
+
+```sql
+-- All tenant-scoped tables include tenant_id
+CREATE TABLE customers (
+  id UUID PRIMARY KEY,
+  tenant_id UUID REFERENCES tenants(id),
+  -- ... other columns
+);
+
+-- RLS Policy Example
+CREATE POLICY tenant_isolation ON customers
+  FOR ALL
+  USING (
+    tenant_id = (
+      SELECT tenant_id FROM users WHERE id = auth.uid()
+    )
+  );
+```
+
+#### 12.3.2 Super Admin Bypass
+
+Super administrators have global access across all tenants:
+
+```sql
+-- Super admin detection via role membership
+CREATE POLICY super_admin_bypass ON customers
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN roles r ON ur.role_id = r.id
+      WHERE u.id = auth.uid()
+      AND r.name = 'super_admin'
+    )
+  );
+```
+
+### 12.4 RBAC Service Integration
+
+#### 12.4.1 Service Factory RBAC Integration
+
+The `rbacService` integrates with the Service Factory pattern:
+
+```typescript
+// Service Registry Entry
+rbac: {
+  mock: mockRBACService,
+  supabase: supabaseRBACService,
+  description: 'Role-based access control and permission management'
+}
+```
+
+#### 12.4.2 Core RBAC Methods
+
+```typescript
+interface RBACService {
+  // Permission Management
+  getPermissions(): Promise<Permission[]>;
+  createPermission(permission: CreatePermissionRequest): Promise<Permission>;
+  
+  // Role Management
+  getRoles(tenantId?: string): Promise<Role[]>;
+  createRole(role: CreateRoleRequest): Promise<Role>;
+  assignRoleToUser(userId: string, roleId: string, tenantId: string): Promise<void>;
+  
+  // User Management
+  getUserRoles(userId: string, tenantId?: string): Promise<Role[]>;
+  getUserPermissions(userId: string, tenantId?: string): Promise<Permission[]>;
+  
+  // Validation
+  hasPermission(userId: string, permission: string, tenantId?: string): Promise<boolean>;
+  hasRole(userId: string, roleName: string, tenantId?: string): Promise<boolean>;
+}
+```
+
+### 12.5 Critical RBAC Fixes (November 2025)
+
+#### 12.5.1 Permission Format Migration
+
+**Issue**: Seed data used legacy permission names conflicting with migration `20251122000002`.
+
+**Solution**: Updated seed.sql to use new `{resource}:{action}` format:
+
+```sql
+-- BEFORE (Broken)
+INSERT INTO permissions (name) VALUES ('manage_users');
+
+-- AFTER (Fixed)
+INSERT INTO permissions (name, resource, action) VALUES 
+('users:manage', 'users', 'manage');
+```
+
+#### 12.5.2 Role Permissions Mapping
+
+Updated all role permission assignments to use new permission IDs:
+
+```sql
+-- Admin role gets all new format permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r
+CROSS JOIN permissions p
+WHERE r.name = 'Administrator'
+  AND p.name IN (
+    'read', 'write', 'delete',
+    'users:read', 'users:create', 'users:update', 'users:delete',
+    'customers:read', 'customers:create', 'customers:update', 'customers:delete'
+    -- ... etc
+  );
+```
+
+#### 12.5.3 Migration Order Dependencies
+
+**Critical**: Permission format migration must run BEFORE seed data insertion:
+
+```
+Migration Order:
+1. 20251122000001 - Add audit_logs RLS policies
+2. 20251122000002 - Update permissions format ← CRITICAL
+3. Seed data insertion ← Depends on #2 completion
+```
+
+### 12.6 RBAC Validation & Testing
+
+#### 12.6.1 Validation Scripts
+
+Comprehensive validation ensures RBAC integrity:
+
+```sql
+-- Permission format validation
+SELECT name, resource, action 
+FROM permissions 
+WHERE name NOT LIKE '%:%' 
+AND name NOT IN ('read', 'write', 'delete');
+
+-- Role assignment validation
+SELECT u.email, r.name as role, t.name as tenant
+FROM users u
+JOIN user_roles ur ON u.id = ur.user_id
+JOIN roles r ON ur.role_id = r.id
+LEFT JOIN tenants t ON ur.tenant_id = t.id;
+```
+
+#### 12.6.2 Test Scenarios
+
+1. **Tenant Isolation Test**: Users can only access their tenant's data
+2. **Super Admin Test**: Super admins access all tenants
+3. **Permission Matrix Test**: Each role has correct permissions
+4. **Migration Integrity Test**: Permission format changes don't break functionality
+
+### 12.7 RBAC Troubleshooting Guide
+
+#### 12.7.1 Common Issues
+
+**Issue**: Users getting "permission denied" errors
+**Solution**: Check role_permissions table assignments
+
+**Issue**: Super admin not accessing all tenants
+**Solution**: Verify user has 'super_admin' role with NULL tenant_id
+
+**Issue**: Permission checks failing
+**Solution**: Validate permission format matches expected `{resource}:{action}` pattern
+
+#### 12.7.2 Debug Queries
+
+```sql
+-- Check user's effective permissions
+SELECT DISTINCT p.name, p.resource, p.action
+FROM permissions p
+JOIN role_permissions rp ON p.id = rp.permission_id
+JOIN user_roles ur ON rp.role_id = ur.role_id
+WHERE ur.user_id = 'user-uuid-here';
+
+-- Check tenant isolation
+SELECT u.email, u.tenant_id, COUNT(c.id) as customer_count
+FROM users u
+LEFT JOIN customers c ON u.tenant_id = c.tenant_id
+WHERE u.id = 'user-uuid-here'
+GROUP BY u.email, u.tenant_id;
+```
+
+---
+
+## 13. Database Script Synchronization
+
+### 13.1 Critical Fixes Implemented
+
+#### 13.1.1 Permission Format Synchronization
+
+**Files Updated**:
+- `supabase/seed.sql` - Updated 34 permission entries
+- `supabase/migrations/20251122000002_update_permissions_to_resource_action_format.sql` - New format migration
+
+**Key Changes**:
+```sql
+-- Legacy format → New format
+'manage_users' → 'users:manage'
+'manage_roles' → 'roles:manage'
+'manage_customers' → 'customers:manage'
+-- ... etc for all 34 permissions
+```
+
+#### 13.1.2 Auth User Synchronization
+
+**Issue**: Auth users and database users must have matching UUIDs
+
+**Solution**: Automated sync process
+```typescript
+// scripts/seed-auth-users.ts - Creates auth users
+// scripts/sync-auth-to-sql.ts - Syncs IDs to seed.sql
+```
+
+#### 13.1.3 Validation Framework
+
+**Comprehensive Validation Scripts**:
+- `audit_logs_table_validation.sql` - 210 validation queries
+- `customer_tables_validation.sql` - 267 validation queries  
+- `contract_tables_validation.sql` - 402 validation queries
+
+### 13.2 Database Deployment Checklist
+
+**Pre-Deployment**:
+1. ✅ Run migrations in correct order
+2. ✅ Verify permission format consistency
+3. ✅ Test auth user synchronization
+4. ✅ Execute validation scripts
+
+**Post-Deployment**:
+1. ✅ Verify all users can authenticate
+2. ✅ Test RBAC functionality
+3. ✅ Validate tenant isolation
+4. ✅ Check audit logging
+
+---
+
 ## References
 
 - **Service Registry:** See serviceFactory.ts lines 90-213
@@ -549,7 +840,9 @@ serviceFactory.setApiMode('supabase');
 - **Service Consolidation:** See SERVICE_REGISTRY.md
 - **Health Check System:** See src/services/health.ts (planned)
 - **Phase 2 Consolidation:** See previous commit logs
+- **RBAC Fixes:** See `DATABASE_SCRIPT_SYNCHRONIZATION_FIX_CHECKLIST.md`
+- **RBAC Audit:** See `SCRIPT_SYNCHRONIZATION_AUDIT_REPORT.md`
 
 ---
 
-**Last Updated:** November 15, 2025 | **Maintained By:** Development Team
+**Last Updated:** November 22, 2025 | **Maintained By:** Development Team

@@ -38,6 +38,21 @@ export { useTenantContext } from './useTenantContext';
 export { useSessionManager } from './useSessionManager';
 export { usePermissionBasedNavigation } from './usePermissionBasedNavigation';
 
+// Phase 6: Permission & Access Control Hooks
+export {
+  usePermission,
+  useRole,
+  useIsSuperAdmin,
+  useIsImpersonating,
+  useCurrentImpersonationSession,
+  useIsAuthenticated,
+  useCurrentUser,
+  useCurrentTenantId,
+  usePermissionGate,
+  usePermissions,
+  useFeatureAccess,
+} from './usePermission';
+
 // Phase 5: Super Admin Isolation Hooks
 export { useModuleAccess, useAccessibleModules, type ModuleAccessResult } from './useModuleAccess';
 export { useCanAccessModule } from './useCanAccessModule';

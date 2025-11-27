@@ -4,12 +4,13 @@
  * ✅ Supports both mock and Supabase modes via service factory
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface Industry {
   id: string;
+  key: string;
   name: string;
   description?: string;
 }
@@ -20,34 +21,29 @@ export interface Industry {
 function mapReferenceDataToIndustry(data: ReferenceData): Industry {
   return {
     id: data.id,
+    key: data.key,
     name: data.label,
     description: data.description,
   };
 }
 
-/**
- * Fetch industries from reference_data service
- * ✅ Uses service factory to automatically route between mock and supabase
- */
-async function fetchIndustries(): Promise<Industry[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('industry');
-    return referenceData.map(mapReferenceDataToIndustry);
-  } catch (error) {
-    console.error('Error fetching industries:', error);
-    throw error;
-  }
-}
-
-/**
- * Hook to fetch industries
- * @returns {Object} Query object with data, isLoading, error
- */
 export function useIndustries() {
-  return useQuery({
-    queryKey: ['industries'],
-    queryFn: fetchIndustries,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const industries = useMemo(() => {
+    return getRefDataByCategory('industry').map(mapReferenceDataToIndustry);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: industries,
+    industries,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

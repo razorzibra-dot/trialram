@@ -4,12 +4,13 @@
  * ✅ Supports both mock and Supabase modes via service factory
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { referenceDataService } from '@/services/serviceFactory';
+import { useMemo } from 'react';
 import { ReferenceData } from '@/types/referenceData.types';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
 
 export interface CompanySize {
   id: string;
+  key: string;
   name: string;
   description?: string;
   minEmployees?: number;
@@ -24,6 +25,7 @@ function mapReferenceDataToCompanySize(data: ReferenceData): CompanySize {
   const metadata = data.metadata as any || {};
   return {
     id: data.id,
+    key: data.key,
     name: data.label,
     description: data.description,
     minEmployees: metadata.minEmployees,
@@ -31,29 +33,23 @@ function mapReferenceDataToCompanySize(data: ReferenceData): CompanySize {
   };
 }
 
-/**
- * Fetch company sizes from reference_data service
- * ✅ Uses service factory to automatically route between mock and supabase
- */
-async function fetchCompanySizes(): Promise<CompanySize[]> {
-  try {
-    const referenceData = await referenceDataService.getReferenceData('company_size');
-    return referenceData.map(mapReferenceDataToCompanySize);
-  } catch (error) {
-    console.error('Error fetching company sizes:', error);
-    throw error;
-  }
-}
-
-/**
- * Hook to fetch company sizes
- * @returns {Object} Query object with data, isLoading, error
- */
 export function useCompanySizes() {
-  return useQuery({
-    queryKey: ['companySizes'],
-    queryFn: fetchCompanySizes,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
-  });
+  const {
+    getRefDataByCategory,
+    isLoading,
+    error,
+    refreshReferenceData,
+  } = useReferenceData();
+
+  const companySizes = useMemo(() => {
+    return getRefDataByCategory('company_size').map(mapReferenceDataToCompanySize);
+  }, [getRefDataByCategory]);
+
+  return {
+    data: companySizes,
+    companySizes,
+    isLoading,
+    error,
+    refetch: refreshReferenceData,
+  };
 }

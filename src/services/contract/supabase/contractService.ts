@@ -4,15 +4,8 @@
  * Extends BaseSupabaseService for common database operations
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { supabaseAuthService } from '@/services/auth/supabase/authService';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-const getSupabaseClient = () => supabaseClient;
+import { supabase, getSupabaseClient } from '@/services/supabase/client';
+import { authService } from '../../serviceFactory';
 
 // Simple base service implementation since the import is missing
 class BaseSupabaseService {
@@ -65,8 +58,8 @@ export class SupabaseContractService extends BaseSupabaseService {
        this.log('Fetching contracts', filters);
 
        // ⭐ SECURITY: Get current tenant for isolation
-       const currentUser = supabaseAuthService.getCurrentUser();
-       const currentTenantId = supabaseAuthService.getCurrentTenantId();
+       const currentUser = authService.getCurrentUser();
+       const currentTenantId = authService.getCurrentTenantId();
 
        if (!currentTenantId && currentUser?.role !== 'super_admin') {
          throw new Error('Access denied: No tenant context');
@@ -198,8 +191,8 @@ export class SupabaseContractService extends BaseSupabaseService {
        this.log('Fetching contract', { id });
 
        // ⭐ SECURITY: Get current tenant for isolation
-       const currentUser = supabaseAuthService.getCurrentUser();
-       const currentTenantId = supabaseAuthService.getCurrentTenantId();
+       const currentUser = authService.getCurrentUser();
+       const currentTenantId = authService.getCurrentTenantId();
 
        if (!currentTenantId && currentUser?.role !== 'super_admin') {
          throw new Error('Access denied: No tenant context');
@@ -242,8 +235,8 @@ export class SupabaseContractService extends BaseSupabaseService {
        this.log('Creating contract', { customer_id: data.customer_id });
 
        // ⭐ SECURITY: Get current tenant and validate access
-       const currentUser = supabaseAuthService.getCurrentUser();
-       const currentTenantId = supabaseAuthService.getCurrentTenantId();
+       const currentUser = authService.getCurrentUser();
+       const currentTenantId = authService.getCurrentTenantId();
 
        if (!currentTenantId && currentUser?.role !== 'super_admin') {
          throw new Error('Access denied: No tenant context');
@@ -257,7 +250,7 @@ export class SupabaseContractService extends BaseSupabaseService {
 
        // ⭐ SECURITY: Validate tenant access if assigning to specific tenant
        if (assignedTenantId) {
-         supabaseAuthService.assertTenantAccess(assignedTenantId);
+         authService.assertTenantAccess(assignedTenantId);
        }
 
        const { data: created, error } = await getSupabaseClient()
@@ -333,8 +326,8 @@ export class SupabaseContractService extends BaseSupabaseService {
        this.log('Updating contract', { id });
 
        // ⭐ SECURITY: Get current tenant and validate access to the contract
-       const currentUser = supabaseAuthService.getCurrentUser();
-       const currentTenantId = supabaseAuthService.getCurrentTenantId();
+       const currentUser = authService.getCurrentUser();
+       const currentTenantId = authService.getCurrentTenantId();
 
        if (!currentTenantId && currentUser?.role !== 'super_admin') {
          throw new Error('Access denied: No tenant context');
@@ -359,7 +352,7 @@ export class SupabaseContractService extends BaseSupabaseService {
        }
 
        // ⭐ SECURITY: Validate tenant access
-       supabaseAuthService.assertTenantAccess(existingContract.tenant_id);
+       authService.assertTenantAccess(existingContract.tenant_id);
 
        let updateQuery = getSupabaseClient()
          .from('contracts')
@@ -434,8 +427,8 @@ export class SupabaseContractService extends BaseSupabaseService {
        this.log('Deleting contract', { id });
 
        // ⭐ SECURITY: Get current tenant and validate access to the contract
-       const currentUser = supabaseAuthService.getCurrentUser();
-       const currentTenantId = supabaseAuthService.getCurrentTenantId();
+       const currentUser = authService.getCurrentUser();
+       const currentTenantId = authService.getCurrentTenantId();
 
        if (!currentTenantId && currentUser?.role !== 'super_admin') {
          throw new Error('Access denied: No tenant context');
@@ -460,7 +453,7 @@ export class SupabaseContractService extends BaseSupabaseService {
        }
 
        // ⭐ SECURITY: Validate tenant access
-       supabaseAuthService.assertTenantAccess(existingContract.tenant_id);
+       authService.assertTenantAccess(existingContract.tenant_id);
 
        let deleteQuery = getSupabaseClient()
          .from('contracts')

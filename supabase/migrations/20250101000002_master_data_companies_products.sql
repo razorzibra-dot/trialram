@@ -3,6 +3,10 @@
 -- Migration: 002 - Companies and Products
 -- ============================================================================
 
+-- Enable required PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- ============================================================================
 -- 1. ENUMS - Master Data Types
 -- ============================================================================

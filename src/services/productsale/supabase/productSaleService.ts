@@ -7,12 +7,7 @@ import {
   FileAttachment
 } from '@/types/productSales';
 import type { ProductSalesAnalyticsDTO } from '@/types/dtos/productSalesDtos';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase as supabaseClient } from '@/services/supabase/client';
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
 // Stub implementations for missing query builders
 const addTenantFilter = (query: any, tenantId: string) => query.eq('tenant_id', tenantId);

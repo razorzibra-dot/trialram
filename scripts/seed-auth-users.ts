@@ -59,6 +59,12 @@ const TEST_USERS: TestUser[] = [
     displayName: 'User Acme',
     tenant: 'Acme Corporation',
   },
+  {
+    email: 'customer@acme.com',
+    password: 'password123',
+    displayName: 'Customer Acme',
+    tenant: 'Acme Corporation',
+  },
   
   // Tech Solutions Users
   {
@@ -116,14 +122,87 @@ interface AuthUserConfig {
 }
 
 async function seedAuthUsers(): Promise<void> {
+  // ============================================================================
+  // PRE-FLIGHT VALIDATION CHECKS
+  // ============================================================================
+  
   // Get environment variables
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.VITE_SUPABASE_SERVICE_KEY;
 
+  console.log('\n🔍 Pre-flight Validation Checks');
+  console.log('='.repeat(60));
+
+  // Check 1: Environment variables
   if (!supabaseUrl || !serviceRoleKey) {
     console.error('❌ Error: Missing environment variables');
     console.error('   Required: VITE_SUPABASE_URL, VITE_SUPABASE_SERVICE_KEY');
     console.error('   Set these in .env file');
+    process.exit(1);
+  }
+  
+  console.log('✅ Environment variables: OK');
+  console.log(`   Supabase URL: ${supabaseUrl}`);
+  console.log(`   Service Key: ${serviceRoleKey.substring(0, 20)}...`);
+
+  // Check 2: Supabase connection
+  try {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    
+    // Test connection by listing users (this will fail if credentials are wrong)
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) {
+      console.error('❌ Error: Cannot connect to Supabase Auth');
+      console.error(`   Error: ${error.message}`);
+      console.error('   Please check your VITE_SUPABASE_SERVICE_KEY');
+      process.exit(1);
+    }
+    
+    console.log('✅ Supabase Auth connection: OK');
+    console.log(`   Current users in system: ${data?.users?.length || 0}`);
+  } catch (error) {
+    console.error('❌ Error: Failed to connect to Supabase Auth');
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+
+  // Check 3: Validate required tenants exist
+  try {
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    
+    const { data: tenants, error } = await supabase
+      .from('tenants')
+      .select('name, id')
+      .in('name', ['Acme Corporation', 'Tech Solutions Inc', 'Global Trading Ltd']);
+    
+    if (error) {
+      console.error('❌ Error: Cannot query tenants table');
+      console.error(`   Error: ${error.message}`);
+      console.error('   💡 Check RLS policies and table permissions');
+      process.exit(1);
+    }
+    
+    const requiredTenants = ['Acme Corporation', 'Tech Solutions Inc', 'Global Trading Ltd'];
+    const existingTenants = tenants?.map(t => t.name) || [];
+    const missingTenants = requiredTenants.filter(t => !existingTenants.includes(t));
+    
+    if (missingTenants.length > 0) {
+      console.error('❌ Error: Missing required tenants');
+      missingTenants.forEach(tenant => console.error(`   Missing: ${tenant}`));
+      console.error('   💡 Run seed.sql first to create tenants');
+      process.exit(1);
+    }
+    
+    console.log('✅ Required tenants validation: OK');
+    tenants?.forEach(tenant => console.log(`   Found: ${tenant.name}`));
+  } catch (error) {
+    console.error('❌ Error: Failed to validate tenants');
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 
@@ -184,7 +263,20 @@ async function seedAuthUsers(): Promise<void> {
       });
 
       if (error) {
-        console.error(`❌ Error creating ${testUser.email}:`, error.message);
+        console.error(`❌ Error creating ${testUser.email}:`);
+        console.error(`   Message: ${error.message}`);
+        console.error(`   Status: ${error.status || 'Unknown'}`);
+        console.error(`   Details: ${(error as any).error_description || 'No additional details'}`);
+        
+        // Specific error handling
+        if (error.message.includes('already registered')) {
+          console.error(`   💡 Tip: User already exists - this is expected if running multiple times`);
+        } else if (error.message.includes('Invalid login credentials')) {
+          console.error(`   💡 Tip: Check your Supabase service key permissions`);
+        } else if (error.message.includes('Database error')) {
+          console.error(`   💡 Tip: Check database connectivity and RLS policies`);
+        }
+        
         errorCount++;
         continue;
       }

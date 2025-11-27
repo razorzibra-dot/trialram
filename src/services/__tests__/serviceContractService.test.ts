@@ -1,5 +1,26 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { serviceContractService } from '@/services/serviceContractService';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { serviceContractService } from '@/services';
+
+// Mock Supabase
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({ data: null, error: null })),
+          order: vi.fn(() => ({ data: [], error: null })),
+        })),
+        range: vi.fn(() => ({ data: [], error: null, count: 0 })),
+      })),
+      insert: vi.fn(() => ({ data: null, error: null, select: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })),
+      update: vi.fn(() => ({ data: null, error: null, select: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })),
+      delete: vi.fn(() => ({ error: null })),
+    })),
+    auth: {
+      getUser: vi.fn(() => ({ data: { user: { id: 'test-user' } }, error: null })),
+    },
+  })),
+}));
 
 describe('Service Contract Service - Normalized Data', () => {
   beforeEach(() => {
@@ -8,7 +29,8 @@ describe('Service Contract Service - Normalized Data', () => {
 
   describe('No Denormalized Fields', () => {
     it('should not have customer_name, product_name, assigned_to_name, secondary_contact_name', async () => {
-      const contracts = await (serviceContractService as any).getServiceContracts();
+      const response = await (serviceContractService as any).getServiceContracts();
+      const contracts = response.data;
       expect(contracts.length).toBeGreaterThan(0);
       contracts.forEach((sc: any) => {
         expect(sc).not.toHaveProperty('customer_name');
@@ -21,13 +43,14 @@ describe('Service Contract Service - Normalized Data', () => {
 
   describe('FK Relationships Intact', () => {
     it('should have customer_id, product_id, assigned_to FKs', async () => {
-      const contracts = await (serviceContractService as any).getServiceContracts();
-      const sc = contracts.find((c: any) => c.customer_id);
-      
+      const response = await (serviceContractService as any).getServiceContracts();
+      const contracts = response.data;
+      const sc = contracts.find((c: any) => c.customerId);
+
       expect(sc).toBeDefined();
-      expect(typeof sc.customer_id).toBe('string');
-      if (sc.product_id) {
-        expect(typeof sc.product_id).toBe('string');
+      expect(typeof sc.customerId).toBe('string');
+      if (sc.productId) {
+        expect(typeof sc.productId).toBe('string');
       }
     });
   });
@@ -35,22 +58,25 @@ describe('Service Contract Service - Normalized Data', () => {
   describe('CRUD Operations', () => {
     it('should create service contract with normalized structure', async () => {
       const newContract = {
-        customer_id: 'cust_1',
-        product_id: 'prod_1',
-        service_level: 'premium',
-        start_date: new Date().toISOString(),
-        status: 'active' as const,
+        title: 'Test Service Contract',
+        customerId: 'cust_1',
+        serviceType: 'support',
+        productId: 'prod_1',
+        value: 10000,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
-      
+
       const created = await (serviceContractService as any).createServiceContract(newContract);
       expect(created.id).toBeDefined();
-      expect(created.customer_id).toBe('cust_1');
+      expect(created.customerId).toBe('cust_1');
       expect(created).not.toHaveProperty('customer_name');
       expect(created).not.toHaveProperty('product_name');
     });
 
     it('should get service contract without denormalized fields', async () => {
-      const contracts = await (serviceContractService as any).getServiceContracts();
+      const response = await (serviceContractService as any).getServiceContracts();
+      const contracts = response.data;
       if (contracts.length > 0) {
         const contract = await (serviceContractService as any).getServiceContract(contracts[0].id);
         expect(contract).toBeDefined();
@@ -61,15 +87,16 @@ describe('Service Contract Service - Normalized Data', () => {
 
   describe('Search Normalized', () => {
     it('should search by customer_id, not customer_name', async () => {
-      const contracts = await (serviceContractService as any).getServiceContracts();
+      const response = await (serviceContractService as any).getServiceContracts();
+      const contracts = response.data;
       if (contracts.length > 0) {
-        const customerId = contracts[0].customer_id;
+        const customerId = contracts[0].customerId;
         const results = await (serviceContractService as any).getServiceContracts({
-          customer_id: customerId,
+          customerId: customerId,
         });
-        
-        results.forEach((sc: any) => {
-          expect(sc.customer_id).toBe(customerId);
+
+        results.data.forEach((sc: any) => {
+          expect(sc.customerId).toBe(customerId);
           expect(sc).not.toHaveProperty('customer_name');
         });
       }

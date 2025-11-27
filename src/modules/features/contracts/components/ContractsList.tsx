@@ -31,12 +31,14 @@ import {
 import { DataTable } from '@/modules/shared/components/DataTable';
 import { useAuth } from '@/contexts/AuthContext';
 import { Contract, ContractFilters } from '@/types/contracts';
-import { 
-  useContracts, 
-  useDeleteContract, 
+import {
+  useContracts,
+  useDeleteContract,
   useUpdateContractStatus,
   useApproveContract,
-  useExportContracts 
+  useExportContracts,
+  useExpiringContracts,
+  useContractsDueForRenewal
 } from '../hooks/useContracts';
 
 interface ContractsListProps {
@@ -57,6 +59,8 @@ export const ContractsList: React.FC<ContractsListProps> = ({
 
   // Queries and mutations
   const { contracts, pagination, isLoading } = useContracts(filters);
+  const { contracts: expiringContracts } = useExpiringContracts(30);
+  const { contracts: renewalContracts } = useContractsDueForRenewal(30);
   const deleteContract = useDeleteContract();
   const updateStatus = useUpdateContractStatus();
   const approveContract = useApproveContract();
@@ -124,6 +128,40 @@ export const ContractsList: React.FC<ContractsListProps> = ({
     return new Date(dateString).toLocaleDateString();
   };
 
+  const isExpiringSoon = (contract: Contract) => {
+    if (!contract.end_date) return false;
+    const endDate = new Date(contract.end_date);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return endDate <= thirtyDaysFromNow && endDate >= now;
+  };
+
+  const isDueForRenewal = (contract: Contract) => {
+    if (!contract.next_renewal_date) return false;
+    const renewalDate = new Date(contract.next_renewal_date);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return renewalDate <= thirtyDaysFromNow && renewalDate >= now;
+  };
+
+  const getDaysUntilExpiry = (contract: Contract) => {
+    if (!contract.end_date) return null;
+    const endDate = new Date(contract.end_date);
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getDaysUntilRenewal = (contract: Contract) => {
+    if (!contract.next_renewal_date) return null;
+    const renewalDate = new Date(contract.next_renewal_date);
+    const now = new Date();
+    const diffTime = renewalDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const handleDelete = async (contract: Contract) => {
     if (window.confirm(`Are you sure you want to delete contract "${contract.title}"?`)) {
       await deleteContract.mutateAsync(contract.id);
@@ -151,15 +189,42 @@ export const ContractsList: React.FC<ContractsListProps> = ({
       header: 'Contract',
       cell: ({ row }) => {
         const contract = row.original;
+        const expiringSoon = isExpiringSoon(contract);
+        const dueForRenewal = isDueForRenewal(contract);
+        const daysUntilExpiry = getDaysUntilExpiry(contract);
+        const daysUntilRenewal = getDaysUntilRenewal(contract);
+
         return (
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <FileText className="w-4 h-4 text-blue-600" />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                expiringSoon ? 'bg-red-100' :
+                dueForRenewal ? 'bg-orange-100' :
+                'bg-blue-100'
+              }`}>
+                {expiringSoon ? (
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                ) : dueForRenewal ? (
+                  <Clock className="w-4 h-4 text-orange-600" />
+                ) : (
+                  <FileText className="w-4 h-4 text-blue-600" />
+                )}
               </div>
             </div>
             <div>
-              <div className="font-medium text-gray-900">{contract.title}</div>
+              <div className="font-medium text-gray-900 flex items-center space-x-2">
+                <span>{contract.title}</span>
+                {expiringSoon && (
+                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                    Expires in {daysUntilExpiry} days
+                  </Badge>
+                )}
+                {dueForRenewal && (
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                    Renewal due in {daysUntilRenewal} days
+                  </Badge>
+                )}
+              </div>
               <div className="text-sm text-gray-500">{contract.contract_number}</div>
             </div>
           </div>

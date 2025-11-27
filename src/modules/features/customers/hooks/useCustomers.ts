@@ -23,6 +23,10 @@ export const customerKeys = {
   detail: (id: string) => [...customerKeys.details(), id] as const,
   stats: () => [...customerKeys.all, 'stats'] as const,
   tags: () => [...customerKeys.all, 'tags'] as const,
+  analytics: () => [...customerKeys.all, 'analytics'] as const,
+  segmentation: () => [...customerKeys.all, 'segmentation'] as const,
+  lifecycle: () => [...customerKeys.all, 'lifecycle'] as const,
+  behavior: () => [...customerKeys.all, 'behavior'] as const,
 } as const;
 
 /**
@@ -262,5 +266,82 @@ export const useBulkCustomerOperations = () => {
     onError: (error) => {
       handleError(error, 'useBulkCustomerOperations');
     },
+  });
+};
+
+/**
+ * Fetch customer analytics
+ *
+ * @param filters - Optional filters for analytics
+ * @returns Query result with analytics data
+ *
+ * @example
+ * const { data: analytics } = useCustomerAnalytics();
+ */
+export const useCustomerAnalytics = (filters?: {
+  dateRange?: { start: string; end: string };
+  segment?: string;
+  industry?: string;
+}) => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useQuery({
+    queryKey: customerKeys.analytics(),
+    queryFn: () => service.getCustomerAnalytics(filters),
+    ...STATS_QUERY_CONFIG,
+  });
+};
+
+/**
+ * Fetch customer segmentation analytics
+ *
+ * @returns Query result with segmentation data
+ *
+ * @example
+ * const { data: segmentation } = useCustomerSegmentationAnalytics();
+ */
+export const useCustomerSegmentationAnalytics = () => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useQuery({
+    queryKey: customerKeys.segmentation(),
+    queryFn: () => service.getCustomerSegmentationAnalytics(),
+    ...STATS_QUERY_CONFIG,
+  });
+};
+
+/**
+ * Fetch customer lifecycle analytics
+ *
+ * @returns Query result with lifecycle data
+ *
+ * @example
+ * const { data: lifecycle } = useCustomerLifecycleAnalytics();
+ */
+export const useCustomerLifecycleAnalytics = () => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useQuery({
+    queryKey: customerKeys.lifecycle(),
+    queryFn: () => service.getCustomerLifecycleAnalytics(),
+    ...STATS_QUERY_CONFIG,
+  });
+};
+
+/**
+ * Fetch customer behavior analytics
+ *
+ * @returns Query result with behavior data
+ *
+ * @example
+ * const { data: behavior } = useCustomerBehaviorAnalytics();
+ */
+export const useCustomerBehaviorAnalytics = () => {
+  const service = useService<ICustomerService>('customerService');
+
+  return useQuery({
+    queryKey: customerKeys.behavior(),
+    queryFn: () => service.getCustomerBehaviorAnalytics(),
+    ...STATS_QUERY_CONFIG,
   });
 };

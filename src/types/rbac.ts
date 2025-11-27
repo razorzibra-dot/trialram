@@ -1,3 +1,5 @@
+import { User } from './auth';
+
 export interface Tenant {
   id: string;
   name: string;
@@ -54,6 +56,7 @@ export interface Permission {
   category: 'core' | 'module' | 'administrative' | 'system';
   resource: string;
   action: string;
+  is_system_permission?: boolean;
 }
 
 export interface Role {
@@ -92,7 +95,7 @@ export interface AuditLog {
   ip_address: string;
   user_agent: string;
   tenant_id: string;
-  timestamp: string;
+  created_at: string;
 }
 
 export interface UserActivity {

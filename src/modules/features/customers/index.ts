@@ -56,10 +56,10 @@ export const customerModule = {
     
     try {
       const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { customerService } = await import('@/services/serviceFactory');
+      const { CustomerService } = await import('./services/customerService');
       
-      // Register customer service from factory
-      registerServiceInstance('customerService', customerService);
+      // Register layered customer service (which internally routes via service factory)
+      registerServiceInstance('customerService', new CustomerService());
       
       console.log('[customerModule.initialize] Customer module initialized successfully', {
         timestamp: new Date().toISOString()

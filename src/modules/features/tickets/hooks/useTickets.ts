@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { Ticket } from '@/types/crm';
+import { TicketDTO, TicketCommentDTO, TicketStatsDTO, TicketFiltersDTO, CreateTicketDTO, UpdateTicketDTO } from '@/types/dtos/ticketDtos';
 import { TicketService, TicketFilters, CreateTicketData } from '../services/ticketService';
 import { useTicketStore } from '../store/ticketStore';
 import { useService } from '@/modules/core/hooks/useService';

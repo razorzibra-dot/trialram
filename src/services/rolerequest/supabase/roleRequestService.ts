@@ -10,12 +10,7 @@
  * Last Updated: 2025-02-11
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase as supabaseClient } from '../../supabase/client';
 
 const getSupabaseClient = () => supabaseClient;
 import {

@@ -1,86 +1,139 @@
 /**
- * Complaints Page
- * Main page for managing customer complaints
+ * Complaints Page - Enterprise Design
+ * Main page for managing customer complaints with statistics and data table
  */
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Row, Col, Card, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { PageHeader, StatCard } from '@/components/common';
+import { ComplaintsList } from '../components/ComplaintsList';
+import { ComplaintsDetailPanel } from '../components/ComplaintsDetailPanel';
+import { ComplaintsFormPanel } from '../components/ComplaintsFormPanel';
+import { useComplaintStats } from '../hooks/useComplaints';
+import { Complaint } from '@/types/complaints';
+import { AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 export const ComplaintsPage: React.FC = () => {
+  const { data: stats, isLoading: statsLoading } = useComplaintStats();
+
+  // Drawer states
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
+
+  const handleCreate = () => {
+    setSelectedComplaint(null);
+    setDrawerMode('create');
+  };
+
+  const handleEdit = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setDrawerMode('edit');
+  };
+
+  const handleView = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setDrawerMode('view');
+  };
+
+  const handleDrawerClose = () => {
+    setDrawerMode(null);
+    setSelectedComplaint(null);
+  };
+
+  const handleEditFromDetail = () => {
+    setDrawerMode('edit');
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Complaints</h1>
-          <p className="text-muted-foreground">
-            Manage and track customer complaints and service requests
-          </p>
-        </div>
+    <>
+      <PageHeader
+        title="Complaints Management"
+        description="Track and manage customer complaints and service requests"
+        breadcrumb={{
+          items: [
+            { title: 'Dashboard', path: '/tenant/dashboard' },
+            { title: 'Complaints' }
+          ]
+        }}
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            New Complaint
+          </Button>
+        }
+      />
+
+      <div style={{ padding: 24 }}>
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} lg={6}>
+            <StatCard
+              title="Total Complaints"
+              value={stats?.total || 0}
+              description="All complaints"
+              icon={AlertCircle}
+              color="primary"
+              loading={statsLoading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatCard
+              title="New Complaints"
+              value={stats?.new || 0}
+              description="Awaiting review"
+              icon={Clock}
+              color="warning"
+              loading={statsLoading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatCard
+              title="In Progress"
+              value={stats?.in_progress || 0}
+              description="Being addressed"
+              icon={Clock}
+              color="info"
+              loading={statsLoading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatCard
+              title="Resolved"
+              value={stats?.closed || 0}
+              description="Completed"
+              icon={CheckCircle}
+              color="success"
+              loading={statsLoading}
+            />
+          </Col>
+        </Row>
+
+        {/* Complaints List */}
+        <ComplaintsList
+          onCreateComplaint={handleCreate}
+          onEditComplaint={handleEdit}
+          onViewComplaint={handleView}
+        />
       </div>
 
-      <Alert>
-        <InfoIcon className="h-4 w-4" />
-        <AlertDescription>
-          The complaints module is currently under development. Full functionality will be available soon.
-        </AlertDescription>
-      </Alert>
+      {/* Detail Panel (View) */}
+      <ComplaintsDetailPanel
+        visible={drawerMode === 'view'}
+        complaint={selectedComplaint}
+        onClose={handleDrawerClose}
+        onEdit={handleEditFromDetail}
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Complaints</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">No data available</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Complaints</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Awaiting review</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Being addressed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Completed this month</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Complaints Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Complaints management functionality will be implemented here.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      {/* Form Panel (Create/Edit) */}
+      <ComplaintsFormPanel
+        visible={drawerMode === 'create' || drawerMode === 'edit'}
+        complaint={drawerMode === 'edit' ? selectedComplaint : null}
+        onClose={handleDrawerClose}
+        onSuccess={() => {
+          setDrawerMode(null);
+          // Refetch data - TODO: implement refetch
+        }}
+      />
+    </>
   );
 };

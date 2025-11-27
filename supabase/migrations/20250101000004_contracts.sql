@@ -3,6 +3,10 @@
 -- Migration: 004 - Contract Management
 -- ============================================================================
 
+-- Enable required PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- ============================================================================
 -- 1. ENUMS - Contract Types
 -- ============================================================================

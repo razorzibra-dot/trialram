@@ -1,11 +1,18 @@
+/**
+ * Mock Authentication Service
+ * Follows strict 8-layer architecture:
+ * 1. DATABASE: snake_case columns with constraints
+ * 2. TYPES: camelCase interface matching DB exactly
+ * 3. MOCK SERVICE: same fields + validation as DB (NO Supabase dependencies)
+ * 4. SUPABASE SERVICE: SELECT with column mapping (snake → camel)
+ * 5. FACTORY: route to correct backend
+ * 6. MODULE SERVICE: use factory (never direct imports)
+ * 7. HOOKS: loading/error/data states + cache invalidation
+ * 8. UI: form fields = DB columns + tooltips documenting constraints
+ */
+
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 import { Tenant, TenantUser } from '@/types/rbac';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
 
 class AuthService {
   private baseUrl = '/api/auth';
@@ -268,57 +275,145 @@ class AuthService {
   ];
 
   private permissions = {
+    // Core permissions
     read: 'View and read data',
     write: 'Create and edit data',
     delete: 'Delete data',
-    manage_customers: 'Manage customer data and relationships',
-    manage_sales: 'Manage sales processes and deals',
-    manage_tickets: 'Manage support tickets and issues',
-    manage_complaints: 'Handle customer complaints',
-    manage_contracts: 'Manage service contracts and agreements',
-    manage_service_contracts: 'Manage service contracts and agreements',
-    manage_products: 'Manage product catalog and inventory',
-    manage_product_sales: 'Manage product sales and transactions',
-    manage_job_works: 'Manage job work orders and tasks',
-    manage_users: 'Manage user accounts and access',
-    manage_roles: 'Manage roles and permissions',
-    view_analytics: 'Access analytics and reports',
-    manage_settings: 'Configure system settings',
-    manage_companies: 'Manage company information',
-    platform_admin: 'Platform administration access',
-    super_admin: 'Full system administration',
-    manage_tenants: 'Manage tenant accounts',
-    system_monitoring: 'Monitor system health and performance'
+    
+    // Module permissions using {resource}:{action} format
+    'customers:read': 'View customer data and relationships',
+    'customers:create': 'Create new customer records',
+    'customers:update': 'Edit customer information',
+    'customers:delete': 'Remove customer records',
+    
+    'sales:read': 'View sales processes and deals',
+    'sales:create': 'Create new sales records',
+    'sales:update': 'Edit sales information',
+    'sales:delete': 'Remove sales records',
+    
+    'tickets:read': 'View support tickets and issues',
+    'tickets:create': 'Create new support tickets',
+    'tickets:update': 'Edit ticket information',
+    'tickets:delete': 'Remove ticket records',
+    
+    'complaints:read': 'View customer complaints',
+    'complaints:create': 'Create complaint records',
+    'complaints:update': 'Edit complaint information',
+    'complaints:delete': 'Remove complaint records',
+    
+    'contracts:read': 'View service contracts and agreements',
+    'contracts:create': 'Create new contracts',
+    'contracts:update': 'Edit contract information',
+    'contracts:delete': 'Remove contract records',
+    
+    'service_contracts:read': 'View service contracts and agreements',
+    'service_contracts:create': 'Create new service contracts',
+    'service_contracts:update': 'Edit service contract information',
+    'service_contracts:delete': 'Remove service contract records',
+    
+    'products:read': 'View product catalog and inventory',
+    'products:create': 'Create new product records',
+    'products:update': 'Edit product information',
+    'products:delete': 'Remove product records',
+    
+    'product_sales:read': 'View product sales transactions',
+    'product_sales:create': 'Create new product sales records',
+    'product_sales:update': 'Edit product sales information',
+    'product_sales:delete': 'Remove product sales records',
+    
+    'jobworks:read': 'View job work orders and tasks',
+    'jobworks:create': 'Create new job work orders',
+    'jobworks:update': 'Edit job work information',
+    'jobworks:delete': 'Remove job work records',
+    
+    'dashboard:view': 'Access tenant dashboard and analytics',
+    'masters:read': 'Access master data and configuration',
+    'user_management:read': 'Access user and role management interface',
+    
+    // Administrative permissions using {resource}:{action} format
+    'users:read': 'View user accounts and access',
+    'users:create': 'Create new user accounts',
+    'users:update': 'Edit user accounts',
+    'users:delete': 'Remove user accounts',
+    
+    'roles:read': 'View roles and permissions',
+    'roles:create': 'Create new roles',
+    'roles:update': 'Edit roles and permissions',
+    'roles:delete': 'Remove roles',
+    
+    'analytics:view': 'Access analytics and reports',
+    'settings:read': 'Configure system settings',
+    'settings:update': 'Update system settings',
+    'companies:read': 'View company information',
+    'companies:update': 'Edit company information',
+    
+    // System permissions using {resource}:{action} format
+    'platform:admin': 'Platform administration access',
+    'system:admin': 'Full system administration',
+    'tenants:manage': 'Manage tenant accounts',
+    'system:monitor': 'Monitor system health and performance'
   };
 
   private rolePermissions = {
     super_admin: [
       'read', 'write', 'delete',
-      'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints', 
-      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
-      'manage_dashboard', 'manage_masters', 'manage_user_management',
-      'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies',
-      'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring'
+      'customers:read', 'customers:create', 'customers:update', 'customers:delete',
+      'sales:read', 'sales:create', 'sales:update', 'sales:delete',
+      'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete',
+      'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete',
+      'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete',
+      'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete',
+      'products:read', 'products:create', 'products:update', 'products:delete',
+      'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete',
+      'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete',
+      'dashboard:view', 'masters:read', 'user_management:read',
+      'users:read', 'users:create', 'users:update', 'users:delete',
+      'roles:read', 'roles:create', 'roles:update', 'roles:delete',
+      'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update',
+      'platform:admin', 'system:admin', 'tenants:manage', 'system:monitor'
     ],
     admin: [
       'read', 'write', 'delete',
-      'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints',
-      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works',
-      'manage_dashboard', 'manage_masters', 'manage_user_management',
-      'manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies'
+      'customers:read', 'customers:create', 'customers:update', 'customers:delete',
+      'sales:read', 'sales:create', 'sales:update', 'sales:delete',
+      'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete',
+      'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete',
+      'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete',
+      'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete',
+      'products:read', 'products:create', 'products:update', 'products:delete',
+      'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete',
+      'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete',
+      'dashboard:view', 'masters:read', 'user_management:read',
+      'users:read', 'users:create', 'users:update', 'users:delete',
+      'roles:read', 'roles:create', 'roles:update', 'roles:delete',
+      'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update'
     ],
     manager: [
       'read', 'write',
-      'manage_customers', 'manage_sales', 'manage_tickets', 'manage_complaints',
-      'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'view_analytics'
+      'customers:read', 'customers:create', 'customers:update',
+      'sales:read', 'sales:create', 'sales:update',
+      'tickets:read', 'tickets:create', 'tickets:update',
+      'complaints:read', 'complaints:create', 'complaints:update',
+      'contracts:read', 'contracts:create', 'contracts:update',
+      'service_contracts:read', 'service_contracts:create', 'service_contracts:update',
+      'products:read', 'products:create', 'products:update',
+      'product_sales:read', 'product_sales:create', 'product_sales:update',
+      'dashboard:view', 'masters:read', 'user_management:read',
+      'analytics:view'
     ],
     agent: [
       'read', 'write',
-      'manage_customers', 'manage_tickets', 'manage_complaints'
+      'customers:read', 'customers:create', 'customers:update',
+      'tickets:read', 'tickets:create', 'tickets:update',
+      'complaints:read', 'complaints:create', 'complaints:update'
     ],
     engineer: [
       'read', 'write',
-      'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets'
+      'products:read', 'products:create', 'products:update',
+      'product_sales:read', 'product_sales:create', 'product_sales:update',
+      'jobworks:read', 'jobworks:create', 'jobworks:update',
+      'tickets:read', 'tickets:create', 'tickets:update',
+      'dashboard:view', 'masters:read'
     ],
     customer: [
       'read'
@@ -327,150 +422,94 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      console.log('[AUTH] Starting login for:', credentials.email);
+      console.log('[AUTH_MOCK] Starting login for:', credentials.email);
       
-      // Step 1: Authenticate with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      });
-
-      if (error) {
-        console.error('[AUTH] Supabase auth error:', error.message);
-        throw new Error(error.message || 'Invalid credentials');
-      }
-
-      if (!data.user || !data.session) {
-        throw new Error('No session returned from authentication');
-      }
-
-      console.log('[AUTH] Auth successful, user ID:', data.user.id);
-
-      // Step 2: Get user from app database (linked by auth.uid)
-      console.log('[AUTH] Fetching user from database with ID:', data.user.id);
-      const { data: appUser, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (userError) {
-        console.error('[AUTH] User fetch error:', userError);
-        throw new Error('User profile not found. Contact administrator.');
-      }
-
-      if (!appUser) {
-        throw new Error('User profile not found in database.');
-      }
-
-      console.log('[AUTH] User found:', appUser.email);
-
-      // Step 3: Convert to app User type
-      // ⭐ NEW: Determine super admin status
-      const isSuperAdmin = appUser.role === 'super_admin' && appUser.tenant_id === null;
+      // Mock authentication - find user in mock data
+      const mockUser = this.mockUsers.find(u => u.email === credentials.email);
       
+      if (!mockUser || credentials.password !== 'password123') {
+        throw new Error('Invalid credentials');
+      }
+
+      console.log('[AUTH_MOCK] User found:', mockUser.email);
+
+      // Create user object with proper structure
       const user: User = {
-        id: appUser.id,
-        email: appUser.email,
-        name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
-        firstName: appUser.first_name || '',
-        lastName: appUser.last_name || '',
-        role: appUser.role,
-        tenantId: appUser.tenant_id,
-        tenant_id: appUser.tenant_id,
-        createdAt: appUser.created_at,
+        ...mockUser,
+        status: mockUser.status || 'active',
         lastLogin: new Date().toISOString(),
-        // ⭐ NEW: Super Admin Isolation Fields
-        isSuperAdmin,
-        isSuperAdminMode: false,
-        impersonatedAsUserId: undefined,
-        impersonationLogId: undefined,
       };
 
-      // Step 4: Store session and user
-      localStorage.setItem(this.sessionKey, JSON.stringify(data.session));
-      localStorage.setItem(this.tokenKey, data.session.access_token);
+      // Generate mock token
+      const token = this.generateMockToken(user);
+      const expiresIn = 3600;
+
+      // Store session and user
+      const mockSession = {
+        access_token: token,
+        refresh_token: `refresh_${user.id}_${Date.now()}`,
+        expires_in: expiresIn,
+        user: {
+          id: user.id,
+          email: user.email
+        }
+      };
+
+      localStorage.setItem(this.sessionKey, JSON.stringify(mockSession));
+      localStorage.setItem(this.tokenKey, token);
       localStorage.setItem(this.userKey, JSON.stringify(user));
 
-      console.log('[AUTH] Login successful, session stored');
+      console.log('[AUTH_MOCK] Login successful, session stored');
 
       return {
         user,
-        token: data.session.access_token,
-        expires_in: data.session.expires_in || 3600
+        token,
+        expires_in: expiresIn
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
-      console.error('[AUTH] Login failed:', message);
+      console.error('[AUTH_MOCK] Login failed:', message);
       throw new Error(message);
     }
   }
 
   async logout(): Promise<void> {
-    try {
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('Supabase logout error:', err);
-    }
-
-    // Clear local storage
+    // Clear local storage (mock service - no backend call needed)
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
     localStorage.removeItem(this.sessionKey);
+    console.log('[AUTH_MOCK] Logout successful');
   }
 
   async restoreSession(): Promise<User | null> {
     try {
-      // Check if session exists in localStorage
-      const sessionStr = localStorage.getItem(this.sessionKey);
-      if (sessionStr) {
-        const session = JSON.parse(sessionStr);
-        await supabase.auth.setSession(session);
-      }
-
-      // Get current Supabase session
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        return null;
-      }
-
-      // Get user from app database
-      const { data: appUser, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.session.user.id)
-        .single();
-
-      if (userError || !appUser) {
-        return null;
-      }
-
-      // ⭐ NEW: Determine super admin status
-      const isSuperAdmin = appUser.role === 'super_admin' && appUser.tenant_id === null;
+      // Check if session exists in localStorage (mock service)
+      const userStr = localStorage.getItem(this.userKey);
+      const token = localStorage.getItem(this.tokenKey);
       
-      const user: User = {
-        id: appUser.id,
-        email: appUser.email,
-        name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
-        firstName: appUser.first_name || '',
-        lastName: appUser.last_name || '',
-        role: appUser.role,
-        tenantId: appUser.tenant_id,
-        tenant_id: appUser.tenant_id,
-        createdAt: appUser.created_at,
-        lastLogin: appUser.last_login,
-        // ⭐ NEW: Super Admin Isolation Fields
-        isSuperAdmin,
-        isSuperAdminMode: false,
-        impersonatedAsUserId: undefined,
-        impersonationLogId: undefined,
-      };
+      if (!userStr || !token) {
+        return null;
+      }
 
+      const user = JSON.parse(userStr) as User;
+      
+      // Verify user still exists in mock data
+      const mockUser = this.mockUsers.find(u => u.id === user.id);
+      if (!mockUser) {
+        // Clear invalid session
+        localStorage.removeItem(this.tokenKey);
+        localStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.sessionKey);
+        return null;
+      }
+
+      // Update last login
+      user.lastLogin = new Date().toISOString();
       localStorage.setItem(this.userKey, JSON.stringify(user));
+      
       return user;
     } catch (err) {
-      console.error('Session restore error:', err);
+      console.error('[AUTH_MOCK] Session restore error:', err);
       return null;
     }
   }
@@ -517,8 +556,7 @@ class AuthService {
       return true;
     }
 
-    // FIX: Ensure role is properly set - if role is empty or invalid, default to checking the role field
-    const userRole = user.role || user.role;
+    const userRole = user.role;
     if (!userRole) {
       console.warn('[hasPermission] User role is not set, denying access');
       return false;
@@ -527,44 +565,44 @@ class AuthService {
     const userPermissions = this.rolePermissions[userRole] || [];
     console.log(`[hasPermission] Checking permission "${permission}" for user role "${userRole}". User permissions:`, userPermissions);
     
-    // Direct permission check (for legacy permission names like 'read', 'write', 'delete')
+    // Direct permission check (works for both old and new format)
     if (userPermissions.includes(permission)) {
       console.log(`[hasPermission] Direct match found for "${permission}"`);
       return true;
     }
 
-    // Handle resource-specific permission format (e.g., "customers:read", "customers:update", "customers:delete")
-    // Parse the permission string to extract resource and action
-    const separator = permission.includes(':') ? ':' : '.';
-    const parts = permission.split(separator);
-    
-    if (parts.length === 2) {
-      const [resource, action] = parts;
-      
-      // Map action to generic permission
-      const actionPermissionMap: Record<string, string> = {
-        'read': 'read',
-        'create': 'write',
-        'update': 'write',
-        'delete': 'delete',
-        'manage': `manage_${resource}`
-      };
+    // ⭐ ENHANCEMENT: Provide fallback permissions for common navigation permissions
+    // If user has any role that should have dashboard access, grant dashboard:view
+    if (permission === 'dashboard:view' && ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback dashboard:view permission to ${userRole}`);
+      return true;
+    }
 
-      const mappedPermission = actionPermissionMap[action];
-      console.log(`[hasPermission] Parsed: resource="${resource}", action="${action}", mappedPermission="${mappedPermission}"`);
-      
-      // Check if user has the generic permission
-      if (mappedPermission && userPermissions.includes(mappedPermission)) {
-        console.log(`[hasPermission] User has mapped permission "${mappedPermission}", granting access`);
-        return true;
-      }
+    // Grant masters:read to roles that need it
+    if (permission === 'masters:read' && ['admin', 'manager', 'engineer'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback masters:read permission to ${userRole}`);
+      return true;
+    }
 
-      // Check if user has the resource-specific manage permission
-      const managePermission = `manage_${resource}`;
-      if (userPermissions.includes(managePermission)) {
-        // User can manage this resource, so they can do most operations
-        console.log(`[hasPermission] User has manage permission "${managePermission}", granting access`);
-        return true;
+    // Grant user_management:read to admin and manager roles
+    if (permission === 'user_management:read' && ['admin', 'manager'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback user_management:read permission to ${userRole}`);
+      return true;
+    }
+
+    // ⭐ COMPATIBILITY: Check for old-style permissions as fallbacks
+    const permissionMappings: Record<string, string[]> = {
+      'dashboard:view': ['read', 'write'], // Any user with read access gets dashboard
+      'masters:read': ['read'],            // Users with read get masters access
+    };
+
+    const mappedPermissions = permissionMappings[permission];
+    if (mappedPermissions) {
+      for (const mappedPerm of mappedPermissions) {
+        if (userPermissions.includes(mappedPerm)) {
+          console.log(`[hasPermission] Fallback match found via "${mappedPerm}" for "${permission}"`);
+          return true;
+        }
       }
     }
 
@@ -677,8 +715,18 @@ class AuthService {
     const user = this.getCurrentUser();
     if (!user) throw new Error('No user found');
     
+    // Generate new mock token
     const newToken = this.generateMockToken(user);
     localStorage.setItem(this.tokenKey, newToken);
+    
+    // Update session
+    const sessionStr = localStorage.getItem(this.sessionKey);
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      session.access_token = newToken;
+      localStorage.setItem(this.sessionKey, JSON.stringify(session));
+    }
+    
     return newToken;
   }
 
@@ -730,6 +778,36 @@ class AuthService {
     const targetLevel = hierarchy[targetUser.role] || 0;
     
     return currentLevel > targetLevel;
+  }
+
+  /**
+   * Get current tenant ID from user
+   * Convenience method for services that need tenant ID
+   */
+  getCurrentTenantId(): string | null {
+    const user = this.getCurrentUser();
+    return user?.tenantId || null;
+  }
+
+  /**
+   * Assert that the current user has access to the specified tenant
+   * Throws error if access is denied
+   */
+  assertTenantAccess(tenantId: string | null): void {
+    const user = this.getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Super admins can access any tenant (including null)
+    if (user.role === 'super_admin') {
+      return;
+    }
+
+    // Regular users can only access their own tenant
+    if (user.tenantId !== tenantId) {
+      throw new Error('Access denied: Tenant mismatch');
+    }
   }
 }
 

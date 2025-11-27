@@ -4,6 +4,7 @@
  */
 
 export { LoginPage } from './views/LoginPage';
+export { RegistrationPage } from './views/RegistrationPage';
 export { NotFoundPage } from './views/NotFoundPage';
 export { DemoAccountsPage } from './views/DemoAccountsPage';
 
@@ -16,6 +17,11 @@ export const authModule = {
     {
       path: '/login',
       element: 'LoginPage',
+      lazy: true
+    },
+    {
+      path: '/register',
+      element: 'RegistrationPage',
       lazy: true
     },
     {

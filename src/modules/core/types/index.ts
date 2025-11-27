@@ -56,7 +56,7 @@ export interface ModuleConfig {
 export interface FeatureModule {
   name: string;
   path?: string;
-  routes?: Array<Record<string, unknown>>;
+  routes?: unknown[];
   services?: string[];
   components?: Record<string, unknown>;
   dependencies?: string[];

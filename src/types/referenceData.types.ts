@@ -90,6 +90,7 @@ export interface ProductCategory {
   tenantId: string;
   name: string;
   description?: string;
+  parentId?: string; // For category hierarchy
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -101,6 +102,7 @@ export interface CreateProductCategoryDTO {
   tenantId: string;
   name: string;
   description?: string;
+  parentId?: string;
   isActive?: boolean;
   sortOrder?: number;
 }
@@ -108,6 +110,7 @@ export interface CreateProductCategoryDTO {
 export interface UpdateProductCategoryDTO {
   name?: string;
   description?: string;
+  parentId?: string;
   isActive?: boolean;
   sortOrder?: number;
 }

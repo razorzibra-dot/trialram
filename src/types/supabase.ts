@@ -25,6 +25,32 @@ export interface UserRow {
   last_login?: string;
   created_by?: string;
   deleted_at?: string;
+  // MFA fields
+  mfa_secret?: string;
+  mfa_backup_codes?: unknown[];
+  mfa_method?: 'none' | 'totp' | 'sms' | 'email';
+  // Session management
+  session_token?: string;
+  session_expires_at?: string;
+  concurrent_sessions_limit?: number;
+  // Security audit fields
+  failed_login_attempts?: number;
+  locked_until?: string;
+  last_failed_login?: string;
+  password_changed_at?: string;
+  last_password_reset?: string;
+  security_questions?: unknown[];
+  // Password policy
+  password_strength_score?: number;
+  password_expires_at?: string;
+  require_password_change?: boolean;
+  // Account lockout
+  account_locked?: boolean;
+  lock_reason?: string;
+  // Security monitoring
+  suspicious_activity_count?: number;
+  last_suspicious_activity?: string;
+  security_alerts_enabled?: boolean;
 }
 
 // Super Admin Tenant Access DB types

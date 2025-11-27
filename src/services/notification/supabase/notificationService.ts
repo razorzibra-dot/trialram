@@ -4,14 +4,7 @@
  * Extends BaseSupabaseService for common database operations
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-const getSupabaseClient = () => supabaseClient;
+import { supabase, getSupabaseClient } from '../../supabase/client';
 
 // Simple base service implementation since the import is missing
 class BaseSupabaseService {

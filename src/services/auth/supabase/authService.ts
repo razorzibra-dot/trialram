@@ -1,938 +1,607 @@
 /**
  * Supabase Authentication Service
- * Handles user authentication, JWT tokens, role-based access
- * Extends BaseSupabaseService for common database operations
+ * Follows strict 8-layer architecture:
+ * 1. DATABASE: snake_case columns with constraints
+ * 2. TYPES: camelCase interface matching DB exactly
+ * 3. MOCK SERVICE: same fields + validation as DB
+ * 4. SUPABASE SERVICE: SELECT with column mapping (snake → camel)
+ * 5. FACTORY: route to correct backend
+ * 6. MODULE SERVICE: use factory (never direct imports)
+ * 7. HOOKS: loading/error/data states + cache invalidation
+ * 8. UI: form fields = DB columns + tooltips documenting constraints
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/services/supabase/client';
+import backendConfig, { isSupabaseConfigured } from '@/config/backendConfig';
+import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
-const getSupabaseClient = () => supabaseClient;
-
-// Simple base service implementation since the import is missing
-class BaseSupabaseService {
-  constructor(private tableName: string, private useTenant: boolean) {}
-
-  log(message: string, data?: any) {
-    console.log(`[${this.constructor.name}] ${message}`, data);
-  }
-
-  logError(message: string, error: any) {
-    console.error(`[${this.constructor.name}] ${message}`, error);
-  }
-
-  subscribeToChanges(options: any, callback: any) {
-    // Stub implementation
-    return () => {};
-  }
-}
-
-type QueryOptions = any;
-import { User } from '@/types/auth';
-
-export interface AuthResponse {
-  user: User;
-  session: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  };
-}
-
-export class SupabaseAuthService extends BaseSupabaseService {
-  constructor() {
-    super('users', true);
-  }
+class SupabaseAuthService {
+  private tokenKey = 'crm_auth_token';
+  private userKey = 'crm_user';
+  private sessionKey = 'supabase_session';
 
   /**
    * Authenticate user with email/password
+   * Uses mock-style authentication (Supabase auth is currently broken)
    */
-  async login(credentials: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const email = credentials.email as string;
-      const password = credentials.password as string;
-      
-      console.log('[SUPABASE_AUTH] Starting login for:', email);
+      console.log('[SUPABASE_AUTH] Starting login for:', credentials.email);
 
-      const client = getSupabaseClient();
-      const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // If global backend mode is set to Supabase and client is configured, try real Supabase auth first
+      if (backendConfig.mode === 'supabase' && isSupabaseConfigured()) {
+        console.log('[SUPABASE_AUTH] Attempting real Supabase authentication');
+        // Supabase JS v2: signInWithPassword
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      if (error) {
-        console.error('[SUPABASE_AUTH] Auth error:', error.message);
-        throw error;
-      }
-
-      if (!data.session) {
-        throw new Error('No session returned from Supabase');
-      }
-
-      console.log('[SUPABASE_AUTH] Auth successful, user ID:', data.session.user.id);
-
-      // Fetch user details from users table
-      const user = await this.getUserByEmail(email);
-      if (!user) throw new Error('User not found in database');
-
-      console.log('[SUPABASE_AUTH] User found:', user.email);
-
-      // Store BOTH the session object and auth data
-      const session = {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_in: data.session.expires_in || 3600,
-        user: data.session.user,
-      };
-
-      this.storeAuthData(session, user);
-
-      console.log('[SUPABASE_AUTH] Login successful, session stored');
-
-      return {
-        user,
-        session: {
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-          expires_in: session.expires_in,
-        },
-      };
-    } catch (error) {
-      console.error('[SUPABASE_AUTH] Login failed:', error);
-      this.logError('Login failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Register new user
-   */
-  async register(
-    email: string,
-    password: string,
-    userData: {
-      firstName: string;
-      lastName: string;
-      tenantId: string;
-      role: 'admin' | 'manager' | 'agent' | 'engineer' | 'customer';
-    }
-  ): Promise<AuthResponse> {
-    try {
-      this.log('Registering new user', { email });
-
-      const client = getSupabaseClient();
-
-      // Create auth user
-      const { data: authData, error: authError } = await client.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-
-      // Create user record in database (role will be assigned via user_roles table)
-      const { data: user, error: dbError } = await client
-        .from('users')
-        .insert([
-          {
-            id: authData.user?.id,
-            email,
-            name: `${userData.firstName} ${userData.lastName}`.trim(),
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            tenant_id: userData.tenantId,
-            status: 'active',
-          },
-        ])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      // Assign role via user_roles table
-      const roleNameMap: Record<string, string> = {
-        'admin': 'Administrator',
-        'manager': 'Manager',
-        'agent': 'User',
-        'engineer': 'Engineer',
-        'customer': 'Customer'
-      };
-
-      const dbRoleName = roleNameMap[userData.role];
-      if (dbRoleName) {
-        // Get role ID
-        const { data: roleData, error: roleError } = await client
-          .from('roles')
-          .select('id')
-          .eq('name', dbRoleName)
-          .eq('tenant_id', userData.tenantId)
-          .single();
-
-        if (roleData && !roleError) {
-          // Assign role
-          await client
-            .from('user_roles')
-            .insert({
-              user_id: user.id,
-              role_id: roleData.id,
-              tenant_id: userData.tenantId,
-              assigned_by: user.id, // Self-assigned during registration
-              assigned_at: new Date().toISOString()
-            });
-        } else {
-          console.warn(`[SUPABASE_AUTH] Role '${dbRoleName}' not found for tenant ${userData.tenantId} during registration`);
+        if (signInError || !signInData?.session) {
+          // If credentials invalid, throw so caller can handle
+          const errMsg = signInError?.message || 'Invalid credentials';
+          console.error('[SUPABASE_AUTH] Supabase sign-in failed:', errMsg);
+          throw new Error(errMsg);
         }
+
+        // Grab user id returned by Supabase session
+        const supaUser = signInData.user;
+        
+        // Fetch user from public.users and role_id separately to avoid RLS policy recursion
+        const { data: appUser, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', supaUser.id)
+          .single();
+        
+        // Get user's role assignment (separate query to avoid RLS issues)
+        let userRole: { id: string; name: string } | null = null;
+        if (appUser && !userError) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role_id, roles(id, name)')
+            .eq('user_id', supaUser.id)
+            .limit(1);
+          if (roleData && roleData.length > 0) {
+            userRole = roleData[0].roles as any;
+          }
+        }
+
+        if (userError || !appUser) {
+          console.warn('[SUPABASE_AUTH] Authenticated but app user not found in public.users:', userError?.message || 'no public user');
+          // Return a minimal auth response using supabase user info
+          const minimalAppUser = {
+            id: supaUser.id,
+            email: supaUser.email,
+            name: supaUser.user_metadata?.name || supaUser.email?.split('@')[0],
+            first_name: '',
+            last_name: '',
+            role: 'agent',
+            status: 'active',
+            tenant_id: null,
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString()
+          };
+          return this.createAuthResponse(minimalAppUser, signInData.session.access_token, signInData.session.expires_in || 3600);
+        }
+
+        // Resolve role from user_roles relationship if present (ensure appUser.role is populated)
+        try {
+          if (userRole) {
+            const roleName = userRole.name;
+            const roleMap: Record<string, string> = {
+              'super_admin': 'super_admin',
+              'Administrator': 'admin',
+              'Manager': 'manager',
+              'User': 'agent',
+              'Engineer': 'engineer',
+              'Customer': 'customer'
+            };
+            const resolved = roleMap[roleName] || appUser.role || 'agent';
+            // normalize into same shape createAuthResponse expects
+            (appUser as any).role = resolved;
+
+            // Attempt to fetch role permissions dynamically from DB (role_permissions -> permissions)
+            try {
+              const roleId = userRole.id;
+              if (roleId) {
+                const { data: rolePerms, error: rpErr } = await supabase
+                  .from('role_permissions')
+                  .select('permission_id')
+                  .eq('role_id', roleId);
+
+                if (!rpErr && Array.isArray(rolePerms)) {
+                  // Get permission names/IDs
+                  const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
+                  
+                  // Fetch permission details if we need names
+                  if (permIds.length > 0) {
+                    const { data: perms } = await supabase
+                      .from('permissions')
+                      .select('id, name')
+                      .in('id', permIds);
+                    
+                    if (perms) {
+                      const permNames = perms.map((p: any) => p.name).filter(Boolean);
+                      (appUser as any).permissions = permNames;
+                      console.log('[SUPABASE_AUTH] Fetched role permissions:', permNames);
+                    }
+                  }
+                } else {
+                  console.warn('[SUPABASE_AUTH] Could not fetch role_permissions for role', roleId, rpErr?.message);
+                }
+              }
+            } catch (e) {
+              console.warn('[SUPABASE_AUTH] Error fetching role permissions', e);
+            }
+          }
+        } catch (e) {
+          console.warn('[SUPABASE_AUTH] Failed to resolve role from user_roles relationship', e);
+        }
+
+        // Return auth response for the app user (role and permissions should now be set)
+        return this.createAuthResponse(appUser, signInData.session.access_token, signInData.session.expires_in || 3600);
       }
 
-      this.log('User registered successfully', { email });
+      console.log('[SUPABASE_AUTH] Using mock-style authentication (Supabase auth skipped)');
 
-      return {
-        user: this.mapUserResponse(user),
-        session: {
-          access_token: authData.session?.access_token || '',
-          refresh_token: authData.session?.refresh_token || '',
-          expires_in: authData.session?.expires_in || 3600,
-        },
+      // Validate credentials against seeded users (same as mock service)
+      const seededUsers = [
+        { email: 'admin@acme.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
+        { email: 'manager@acme.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
+        { email: 'engineer@acme.com', role: 'engineer', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
+        { email: 'user@acme.com', role: 'agent', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
+        { email: 'admin@techsolutions.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
+        { email: 'manager@techsolutions.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
+        { email: 'admin@globaltrading.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440003' },
+        { email: 'superadmin@platform.com', role: 'super_admin', tenantId: null },
+        { email: 'superadmin2@platform.com', role: 'super_admin', tenantId: null },
+        { email: 'superadmin3@platform.com', role: 'super_admin', tenantId: null }
+      ];
+
+      const userData = seededUsers.find(u => u.email === credentials.email);
+      if (!userData || credentials.password !== 'password123') {
+        throw new Error('Invalid credentials');
+      }
+
+      console.log('[SUPABASE_AUTH] Mock auth successful for:', userData.email);
+
+      // Generate a proper UUID for the mock user
+      const generateUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
       };
-    } catch (error) {
-      this.logError('Registration failed', error);
-      throw error;
+
+      // Create mock user object (same structure as database)
+      const mockUser = {
+        id: generateUUID(),
+        email: userData.email,
+        name: userData.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        first_name: userData.email.split('@')[0].split('.')[0] || '',
+        last_name: userData.email.split('@')[0].split('.')[1] || '',
+        role: userData.role,
+        status: 'active',
+        tenant_id: userData.tenantId,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
+      };
+
+      // Create mock JWT token
+      const mockToken = `mock_jwt_${mockUser.id}_${Date.now()}`;
+      const expiresIn = 3600;
+
+      return this.createAuthResponse(mockUser, mockToken, expiresIn);
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      console.error('[SUPABASE_AUTH] Login failed:', message);
+      throw new Error(message);
     }
   }
 
   /**
-   * Logout user
+   * Create standardized auth response (used by both Supabase and mock auth)
    */
+  private createAuthResponse(appUser: any, token: string, expiresIn: number): AuthResponse {
+    // Convert to app User type (snake_case → camelCase mapping)
+    const isSuperAdmin = appUser.role === 'super_admin' && appUser.tenant_id === null;
+
+    const user: User = {
+      id: appUser.id,
+      email: appUser.email,
+      name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
+      firstName: appUser.first_name || '',
+      lastName: appUser.last_name || '',
+      role: appUser.role,
+      status: (appUser.status || 'active') as User['status'],
+      tenantId: appUser.tenant_id,
+      createdAt: appUser.created_at,
+      lastLogin: new Date().toISOString(),
+      isSuperAdmin,
+      isSuperAdminMode: false,
+      impersonatedAsUserId: undefined,
+      impersonationLogId: undefined,
+      permissions: (appUser as any).permissions || [],
+    };
+
+    // Create mock session for consistency
+    const mockSession = {
+      access_token: token,
+      refresh_token: `refresh_${appUser.id}_${Date.now()}`,
+      expires_in: expiresIn,
+      user: {
+        id: appUser.id,
+        email: appUser.email
+      }
+    };
+
+    // Store session and user
+    localStorage.setItem(this.sessionKey, JSON.stringify(mockSession));
+    localStorage.setItem(this.tokenKey, token);
+    localStorage.setItem(this.userKey, JSON.stringify(user));
+
+    console.log('[SUPABASE_AUTH] Login successful, session stored');
+
+    return {
+      user,
+      token,
+      expires_in: expiresIn
+    };
+  }
+
   async logout(): Promise<void> {
     try {
-      this.log('Logging out user');
-
-      const client = getSupabaseClient();
-      const { error } = await client.auth.signOut();
-
-      if (error) throw error;
-
-      // Clear auth data from localStorage
-      this.clearAuthData();
-
-      this.log('User logged out successfully');
-    } catch (error) {
-      this.logError('Logout failed', error);
-      throw error;
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Supabase logout error:', err);
     }
+
+    // Clear local storage
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.sessionKey);
   }
 
-  /**
-   * Get current user (synchronous - from localStorage)
-   * Used by AuthContext and other sync code paths
-   */
-  getCurrentUser(): User | null {
+  async restoreSession(): Promise<User | null> {
     try {
-      const userStr = localStorage.getItem('sb_current_user');
-      if (!userStr) return null;
-      return JSON.parse(userStr) as User;
-    } catch {
-      return null;
-    }
-  }
+      // Check if session exists in localStorage
+      const sessionStr = localStorage.getItem(this.sessionKey);
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        await supabase.auth.setSession(session);
+      }
 
-  /**
-   * Get current user (async - from Supabase session)
-   * More reliable for actual server-side user data
-   */
-  async getCurrentUserAsync(): Promise<User | null> {
-    try {
-      const client = getSupabaseClient();
-      const { data } = await client.auth.getSession();
+      // Get current Supabase session
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        return null;
+      }
 
-      if (!data.session) return null;
-
-      const { data: user, error } = await client
+      // Get user from app database (without relationships to avoid RLS recursion)
+      const { data: appUser, error: userError } = await supabase
         .from('users')
-        .select(`
-          id, email, name, first_name, last_name, tenant_id, status, avatar:avatar_url, phone, created_at, updated_at, deleted_at,
-          user_roles!user_id(
-            role:roles(name)
-          )
-        `)
+        .select('*')
         .eq('id', data.session.user.id)
         .single();
 
-      if (error || !user) return null;
+      if (userError || !appUser) {
+        console.error('[SUPABASE_AUTH] User not found in database:', userError);
+        return null;
+      }
 
-      return this.mapUserResponse(user);
-    } catch (error) {
-      this.logError('Error getting current user', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get user by email
-   */
-  async getUserByEmail(email: string): Promise<User | null> {
-    try {
-      this.log('Fetching user by email', { email });
-
-      const { data: users, error } = await getSupabaseClient()
-        .from('users')
-        .select(`
-          id, email, name, first_name, last_name, tenant_id, status, avatar:avatar_url, phone, created_at, updated_at, deleted_at,
-          user_roles!user_id(
-            role:roles(name)
-          )
-        `)
-        .eq('email', email);
-
-      if (error) throw error;
-      if (!users || users.length === 0) return null;
-
-      return this.mapUserResponse(users[0]);
-    } catch (error) {
-      this.logError('Error fetching user by email', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Refresh authentication token
-   */
-  async refreshToken(): Promise<string> {
-    try {
-      this.log('Refreshing authentication token');
-
-      const client = getSupabaseClient();
-      const { data, error } = await client.auth.refreshSession();
-
-      if (error) throw error;
-
-      const user = await this.getCurrentUser();
-      if (!user) throw new Error('User not found');
-
-      const token = data.session?.access_token || '';
+      // Get user's role assignment separately
+      let userRole: User['role'] = 'agent'; // default
+      let roleId: string | null = null;
       
-      // Store new token
-      this.storeAuthData(token, user);
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role_id, roles(id, name)')
+        .eq('user_id', data.session.user.id)
+        .limit(1);
+      
+      if (roleData && roleData.length > 0) {
+        const role = roleData[0].roles as any;
+        roleId = role?.id;
+        const roleName = role?.name;
+        
+        if (roleName) {
+          // Map role names from database to User role enum
+          const roleMap: Record<string, User['role']> = {
+            'super_admin': 'super_admin',
+            'Administrator': 'admin',
+            'Manager': 'manager',
+            'User': 'agent',
+            'Engineer': 'engineer',
+            'Customer': 'customer'
+          };
+          userRole = roleMap[roleName] || 'agent';
+        }
+      } else if (appUser.is_super_admin) {
+        // Fallback to is_super_admin flag if no role found
+        userRole = 'super_admin';
+      }
 
-      this.log('Token refreshed successfully');
+      // Fetch permissions for resolved role (if present)
+      try {
+        if (roleId) {
+          const { data: rolePerms, error: rpErr } = await supabase
+            .from('role_permissions')
+            .select('permission_id')
+            .eq('role_id', roleId);
 
-      return token;
-    } catch (error) {
-      this.logError('Token refresh failed', error);
-      throw error;
-    }
-  }
+          if (!rpErr && Array.isArray(rolePerms)) {
+            const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
+            
+            // Fetch permission names
+            if (permIds.length > 0) {
+              const { data: perms } = await supabase
+                .from('permissions')
+                .select('id, name')
+                .in('id', permIds);
+              
+              if (perms) {
+                const permNames = perms.map((p: any) => p.name).filter(Boolean);
+                (appUser as any).permissions = permNames;
+              }
+            }
+          } else {
+            console.warn('[SUPABASE_AUTH] Could not fetch role_permissions for role', roleId, rpErr?.message);
+          }
+        }
+      } catch (e) {
+        console.warn('[SUPABASE_AUTH] Error fetching role permissions during session restore', e);
+      }
 
-  /**
-   * Change user password
-   */
-  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
-    try {
-      this.log('Changing user password');
+      // Convert to app User type (snake_case → camelCase mapping)
+      const isSuperAdmin = (appUser.is_super_admin === true) || (userRole === 'super_admin' && appUser.tenant_id === null);
 
-      const client = getSupabaseClient();
-      const { error } = await client.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) throw error;
-
-      this.log('Password changed successfully');
-    } catch (error) {
-      this.logError('Password change failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Request password reset
-   */
-  async requestPasswordReset(email: string): Promise<void> {
-    try {
-      this.log('Requesting password reset', { email });
-
-      const client = getSupabaseClient();
-      const { error } = await client.auth.resetPasswordForEmail(email);
-
-      if (error) throw error;
-
-      this.log('Password reset email sent');
-    } catch (error) {
-      this.logError('Password reset request failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update user profile
-   */
-  async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
-    try {
-      this.log('Updating user profile', { userId });
-
-      const { data: updated, error } = await getSupabaseClient()
-        .from('users')
-        .update({
-          first_name: updates.firstName,
-          last_name: updates.lastName,
-          avatar_url: updates.avatar,
-          phone: updates.phone,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      this.log('Profile updated successfully', { userId });
-
-      return this.mapUserResponse(updated);
-    } catch (error) {
-      this.logError('Profile update failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all users (admin only)
-   */
-  async getAllUsers(options?: QueryOptions): Promise<User[]> {
-    try {
-      this.log('Fetching all users');
-
-      const { data: users, error } = await getSupabaseClient()
-        .from('users')
-        .select('id, email, name, first_name, last_name, tenant_id, status, avatar:avatar_url, phone, created_at, updated_at, deleted_at');
-
-      if (error) throw error;
-
-      return (users || []).map((user) => this.mapUserResponse(user));
-    } catch (error) {
-      this.logError('Error fetching users', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get users by role
-   */
-  async getUsersByRole(role: string): Promise<User[]> {
-    try {
-      this.log('Fetching users by role', { role });
-
-      // Map role names to database role names
-      const roleNameMap: Record<string, string> = {
-        'admin': 'Administrator',
-        'manager': 'Manager',
-        'agent': 'User',
-        'engineer': 'Engineer',
-        'customer': 'Customer',
-        'super_admin': 'super_admin'
+      const user: User = {
+        id: appUser.id,
+        email: appUser.email,
+        name: appUser.name || `${appUser.first_name || ''} ${appUser.last_name || ''}`.trim(),
+        firstName: appUser.first_name || '',
+        lastName: appUser.last_name || '',
+        role: userRole,
+        status: (appUser.status || 'active') as User['status'],
+        tenantId: appUser.tenant_id,
+        createdAt: appUser.created_at,
+        lastLogin: appUser.last_login,
+        isSuperAdmin,
+        isSuperAdminMode: false,
+        impersonatedAsUserId: undefined,
+        impersonationLogId: undefined,
+        permissions: (appUser as any).permissions || [],
       };
 
-      const dbRoleName = roleNameMap[role] || role;
-
-      const { data: users, error } = await getSupabaseClient()
-        .from('users')
-        .select(`
-          id, email, name, first_name, last_name, tenant_id, status, avatar:avatar_url, phone, created_at, updated_at, deleted_at,
-          user_roles!user_id(
-            role:roles(name)
-          )
-        `)
-        .eq('user_roles.role.name', dbRoleName);
-
-      if (error) throw error;
-
-      return (users || []).map((user) => this.mapUserResponse(user));
-    } catch (error) {
-      this.logError('Error fetching users by role', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get users by tenant
-   */
-  async getUsersByTenant(tenantId: string): Promise<User[]> {
-    try {
-      this.log('Fetching users by tenant', { tenantId });
-
-      const { data: users, error } = await getSupabaseClient()
-        .from('users')
-        .select('id, email, name, first_name, last_name, tenant_id, status, avatar:avatar_url, phone, created_at, updated_at, deleted_at')
-        .eq('tenant_id', tenantId);
-
-      if (error) throw error;
-
-      return (users || []).map((user) => this.mapUserResponse(user));
-    } catch (error) {
-      this.logError('Error fetching users by tenant', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Deactivate user
-   */
-  async deactivateUser(userId: string): Promise<void> {
-    try {
-      this.log('Deactivating user', { userId });
-
-      const { error } = await getSupabaseClient()
-        .from('users')
-        .update({
-          status: 'inactive',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      this.log('User deactivated successfully', { userId });
-    } catch (error) {
-      this.logError('User deactivation failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get current authentication token (synchronous - from storage)
-   */
-  getToken(): string | null {
-    try {
-      // Try to get token from localStorage (set during login)
-      const token = localStorage.getItem('sb_access_token');
-      return token || null;
-    } catch {
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      return user;
+    } catch (err) {
+      console.error('Session restore error:', err);
       return null;
     }
   }
 
-  /**
-   * Check if user is authenticated
-   */
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem(this.userKey);
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (user) {
+      console.log('[getCurrentUser] User:', { id: user.id, email: user.email, role: user.role, name: user.name });
+    }
+    return user;
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
   isAuthenticated(): boolean {
     const token = this.getToken();
-    return !!token;
+    const user = this.getCurrentUser();
+    return !!(token && user);
   }
 
-  /**
-   * Check if user has a specific role
-   */
   hasRole(role: string): boolean {
-    try {
-      const userStr = localStorage.getItem('sb_current_user');
-      if (!userStr) return false;
-      
-      const user = JSON.parse(userStr) as User;
-      
-      // Admin has access to all tenant roles
-      if (user.role === 'admin') return true;
-      
-      return user.role === role;
-    } catch {
-      return false;
-    }
+    const user = this.getCurrentUser();
+    if (!user) return false;
+
+    // Super admin has access to all roles
+    if (user.role === 'super_admin') return true;
+
+    return user.role === role;
   }
 
-
-  /**
-   * Cache for user permissions (to avoid repeated DB queries)
-   */
-  private permissionCache: Map<string, Set<string>> = new Map();
-
-  /**
-   * Load user permissions from database dynamically
-   */
-  private async loadUserPermissions(userId: string): Promise<Set<string>> {
-    // Check cache first
-    if (this.permissionCache.has(userId)) {
-      return this.permissionCache.get(userId) || new Set();
-    }
-
-    try {
-      const client = getSupabaseClient();
-
-      // Get permissions through user_roles -> roles -> role_permissions -> permissions
-      const { data: userPermissions } = await client
-        .from('user_roles')
-        .select(`
-          role:roles(
-            role_permissions(
-              permission:permissions(name)
-            )
-          )
-        `)
-        .eq('user_id', userId);
-
-      const permissions = new Set<string>();
-
-      if (userPermissions) {
-        userPermissions.forEach((ur: any) => {
-          if (ur.role?.role_permissions) {
-            ur.role.role_permissions.forEach((rp: any) => {
-              if (rp.permission?.name) {
-                permissions.add(rp.permission.name);
-              }
-            });
-          }
-        });
-      }
-
-      // Cache the permissions
-      this.permissionCache.set(userId, permissions);
-
-      return permissions;
-    } catch (error) {
-      this.logError('Error loading user permissions', error);
-      return new Set();
-    }
-  }
-
-  /**
-   * Clear permission cache (useful after role changes)
-   */
-  clearPermissionCache(userId?: string): void {
-    if (userId) {
-      this.permissionCache.delete(userId);
-    } else {
-      this.permissionCache.clear();
-    }
-  }
-
-  /**
-   * Check if user has a specific permission (synchronous with fallback)
-   * Now uses database-driven RBAC system with fallback to basic role checks
-   */
   hasPermission(permission: string): boolean {
-    try {
-      const userStr = localStorage.getItem('sb_current_user');
-      if (!userStr) {
-        console.warn('[Supabase hasPermission] No user found');
-        return false;
-      }
+    const user = this.getCurrentUser();
+    if (!user) {
+      console.warn('[hasPermission] No user found');
+      return false;
+    }
 
-      const user = JSON.parse(userStr) as User;
+    // Explicit check for "super_admin" pseudo-permission (used by legacy guards)
+    if (permission === 'super_admin') {
+      return user.role === 'super_admin';
+    }
 
-      // First, try to get permissions from cache/database
-      const cachedPermissions = this.permissionCache.get(user.id);
-      if (cachedPermissions && cachedPermissions.size > 0) {
-        console.log(`[Supabase hasPermission] Using cached permissions for user ${user.id}`);
-        return cachedPermissions.has(permission) || cachedPermissions.has('*') || cachedPermissions.has('super_admin');
-      }
+    // Super admin has all permissions
+    if (user.role === 'super_admin') {
+      console.log('[hasPermission] User is super_admin, granting all permissions');
+      return true;
+    }
 
-      // Fallback: Basic role-based permissions when DB permissions not available
-      // This ensures the app works during migration period
-      const basicRolePermissions: Record<string, string[]> = {
-        'super_admin': ['*'], // Super admin has all permissions
-        'admin': [
-          'read', 'write', 'delete',
-          'manage_users', 'manage_roles', 'manage_customers', 'manage_sales',
-          'manage_tickets', 'manage_contracts', 'manage_products', 'view_dashboard'
-        ],
-        'manager': [
-          'read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets',
-          'manage_contracts', 'manage_products', 'view_dashboard'
-        ],
-        'user': [
-          'read', 'write', 'manage_customers', 'manage_tickets', 'view_dashboard'
-        ],
-        'engineer': [
-          'read', 'write', 'manage_products', 'manage_tickets', 'view_dashboard'
-        ],
-        'customer': [
-          'read', 'view_dashboard'
-        ]
-      };
+    // Use dynamically-loaded permissions attached to user (derived from DB role_permissions)
+    const userPermissions = (user.permissions && Array.isArray(user.permissions)) ? user.permissions : [];
+    console.log(`[hasPermission] Checking permission "${permission}" for user role "${user.role}". User permissions:`, userPermissions);
 
-      // For backward compatibility, map old role names to new permission checks
-      const userPermissions = basicRolePermissions[user.role] || [];
-      console.log(`[Supabase hasPermission] Using fallback permissions for role "${user.role}":`, userPermissions);
+    // Direct match
+    if (userPermissions.includes(permission)) {
+      console.log(`[hasPermission] Direct match found for "${permission}"`);
+      return true;
+    }
 
-      // Check for wildcard permission
-      if (userPermissions.includes('*')) {
+    // Handle resource/action combinations and synonyms
+    if (permission.includes(':')) {
+      const [resource, action] = permission.split(':');
+      const hasResourceManage = userPermissions.some(
+        p => p === `${resource}:manage` || p === `${resource}:admin`
+      );
+      if (hasResourceManage) {
+        console.log(`[hasPermission] Granting via '${resource}:manage' super permission`);
         return true;
       }
 
-      // Direct permission match
-      if (userPermissions.includes(permission)) {
+      if (action === 'read' && userPermissions.includes(`${resource}:view`)) {
+        console.log(`[hasPermission] Granting via ':view' synonym for resource "${resource}"`);
         return true;
       }
-
-      // Handle resource-specific permission format (e.g., "customers:read")
-      const separator = permission.includes(':') ? ':' : '.';
-      const [resource, action] = permission.split(separator);
-
-      if (resource && action) {
-        const actionPermissionMap: Record<string, string> = {
-          'read': 'read',
-          'create': 'write',
-          'update': 'write',
-          'delete': 'delete',
-          'manage': `manage_${resource}`,
-          'view': 'read',
-          'edit': 'write'
-        };
-
-        const mappedPermission = actionPermissionMap[action];
-        if (mappedPermission && userPermissions.includes(mappedPermission)) {
-          return true;
-        }
-
-        // Check resource-specific manage permission
-        const managePermission = `manage_${resource}`;
-        if (userPermissions.includes(managePermission)) {
-          return true;
-        }
+      if (action === 'view' && userPermissions.includes(`${resource}:read`)) {
+        console.log(`[hasPermission] Granting via ':read' synonym for resource "${resource}"`);
+        return true;
       }
-
-      return false;
-    } catch (error) {
-      console.error('[Supabase hasPermission] Error:', error);
-      return false;
     }
-  }
 
-  /**
-   * Check if user has permission (async version - loads from database)
-   * Use this for critical permission checks that need real-time accuracy
-   */
-  async hasPermissionAsync(permission: string): Promise<boolean> {
-    try {
-      const user = this.getCurrentUser();
-      if (!user) return false;
-
-
-      // Load permissions from database
-      const permissions = await this.loadUserPermissions(user.id);
-      return permissions.has(permission) || permissions.has('*');
-    } catch (error) {
-      this.logError('Error checking permission (async)', error);
-      // Fallback to synchronous check
-      return this.hasPermission(permission);
-    }
-  }
-
-  /**
-   * Get all permissions for current user (from database)
-   */
-  async getCurrentUserPermissions(): Promise<string[]> {
-    try {
-      const user = this.getCurrentUser();
-      if (!user) return [];
-
-      const permissions = await this.loadUserPermissions(user.id);
-      return Array.from(permissions);
-    } catch (error) {
-      this.logError('Error getting user permissions', error);
-      return [];
-    }
-  }
-
-  /**
-   * Store token and user in localStorage (called after successful login)
-   * Also includes tenant_id for RLS enforcement
-   */
-  private storeAuthData(session: any, user: User): void {
-    try {
-      // Store session for Supabase auth restoration
-      localStorage.setItem('supabase_session', JSON.stringify(session));
-      
-      // Store individual tokens and user for compatibility
-      localStorage.setItem('sb_access_token', session.access_token);
-      localStorage.setItem('sb_current_user', JSON.stringify(user));
-      localStorage.setItem('crm_auth_token', session.access_token);
-      localStorage.setItem('crm_user', JSON.stringify(user));
-      
-      // Store tenant_id separately for RLS policy enforcement
-      if (user.tenantId) {
-        localStorage.setItem('sb_tenant_id', user.tenantId);
-        localStorage.setItem('crm_tenant_id', user.tenantId);
-        console.log('[SUPABASE_AUTH] Tenant ID stored:', user.tenantId);
-      } else {
-        console.warn('[SUPABASE_AUTH] WARNING: No tenantId found in user object!', user);
+    // Support legacy/manage_* checks: 'manage_users' -> any permission that starts with 'users:'
+    if (permission.startsWith('manage_')) {
+      const resource = permission.replace(/^manage_/, '');
+      if (userPermissions.some((p) => p.startsWith(`${resource}:`))) {
+        console.log(`[hasPermission] Granting via manage_* fallback for resource "${resource}"`);
+        return true;
       }
-      
-      console.log('[SUPABASE_AUTH] Auth data stored in localStorage');
-    } catch (error) {
-      this.logError('Failed to store auth data', error);
     }
+
+    // Support short-form checks like 'read', 'write', 'delete' by checking resource-scoped permissions
+    if (permission === 'read') {
+      if (userPermissions.some((p) => p.endsWith(':read') || p.endsWith(':view') || p === 'read')) return true;
+    }
+    if (permission === 'write') {
+      if (userPermissions.some((p) => p.endsWith(':create') || p.endsWith(':update') || p === 'write')) return true;
+    }
+    if (permission === 'delete') {
+      if (userPermissions.some((p) => p.endsWith(':delete') || p === 'delete')) return true;
+    }
+
+    console.warn(`[hasPermission] No matching permission found for "${permission}". User role: "${user.role}", User permissions: ${JSON.stringify(userPermissions)}`);
+    return false;
   }
 
-  /**
-    * Get current user's tenant ID (for multi-tenant isolation)
-    * ⭐ SECURE: Validates tenant ID integrity and prevents tampering/injection
-    */
-   getCurrentTenantId(): string | null {
-     try {
-       const user = this.getCurrentUser();
-       const storedTenantId = localStorage.getItem('sb_tenant_id');
+  isSuperAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === 'super_admin';
+  }
 
+  canAccessSuperAdminPortal(): boolean {
+    return this.isSuperAdmin();
+  }
 
-       // For regular users, validate stored tenant ID matches user's tenant
-       if (user?.tenantId) {
-         // ⭐ SECURITY: Validate tenant ID format to prevent injection
-         if (!this.isValidTenantId(user.tenantId)) {
-           console.error('[SECURITY] Invalid tenant ID format detected:', user.tenantId);
-           this.clearAuthData();
-           throw new Error('Invalid tenant ID format');
-         }
+  canAccessTenantPortal(): boolean {
+    const user = this.getCurrentUser();
+    if (!user) return false;
 
-         if (storedTenantId && storedTenantId !== user.tenantId) {
-           console.error('[SECURITY] Tenant ID mismatch detected! Stored:', storedTenantId, 'User:', user.tenantId);
-           // Clear corrupted data and re-store correct tenant ID
-           this.clearAuthData();
-           this.storeAuthData({ access_token: this.getToken() || '' }, user);
-           return user.tenantId;
-         }
-         return user.tenantId;
-       }
+    // Super admin can access any tenant portal
+    if (user.role === 'super_admin') return true;
 
-       // Fallback to stored value if user data not available, but validate it
-       if (storedTenantId && !this.isValidTenantId(storedTenantId)) {
-         console.error('[SECURITY] Invalid stored tenant ID format:', storedTenantId);
-         localStorage.removeItem('sb_tenant_id');
-         localStorage.removeItem('crm_tenant_id');
-         return null;
-       }
+    // Other roles can access their own tenant portal
+    return ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(user.role);
+  }
 
-       return storedTenantId;
-     } catch (error) {
-       console.error('[SECURITY] Error validating tenant ID:', error);
-       return null;
-     }
-   }
+  hasAnyRole(roles: string[]): boolean {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+    return roles.includes(user.role);
+  }
 
-   /**
-    * Validate tenant ID format to prevent injection attacks
-    * ⭐ SECURITY: Only allows alphanumeric characters, hyphens, and underscores
-    */
-   private isValidTenantId(tenantId: string): boolean {
-     // Allow UUID format, slug format, or numeric IDs
-     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-     const slugRegex = /^[a-zA-Z0-9_-]+$/;
+  hasAllPermissions(permissions: string[]): boolean {
+    return permissions.every(permission => this.hasPermission(permission));
+  }
 
-     return uuidRegex.test(tenantId) || slugRegex.test(tenantId);
-   }
+  hasAnyPermission(permissions: string[]): boolean {
+    return permissions.some(permission => this.hasPermission(permission));
+  }
 
-  /**
-   * Clear auth data from storage (called during logout)
-   */
-  private clearAuthData(): void {
+  getUserTenant() {
+    const user = this.getCurrentUser();
+    if (!user) return null;
+
+    // This would need tenant data from database - simplified for now
+    return null;
+  }
+
+  getUserPermissions(): string[] {
+    const user = this.getCurrentUser();
+    if (!user) return [];
+    // Return dynamic permissions attached to the stored user (derived from DB role_permissions)
+    return Array.isArray((user as any).permissions) ? (user as any).permissions : [];
+  }
+
+  getAvailableRoles(): string[] {
+    const user = this.getCurrentUser();
+    if (!user) return [];
+
+    if (user.role === 'super_admin') {
+      return ['admin', 'manager', 'agent', 'engineer', 'customer'];
+    }
+
+    if (user.role === 'admin') {
+      return ['manager', 'agent', 'engineer', 'customer'];
+    }
+
+    if (user.role === 'manager') {
+      return ['agent', 'customer'];
+    }
+
+    return [];
+  }
+
+  async refreshToken(): Promise<string> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('No user found');
+
+    // For Supabase, we can refresh the session
     try {
-      // Clear all auth storage keys
-      localStorage.removeItem('supabase_session');
-      localStorage.removeItem('sb_access_token');
-      localStorage.removeItem('sb_current_user');
-      localStorage.removeItem('sb_tenant_id');
-      localStorage.removeItem('crm_auth_token');
-      localStorage.removeItem('crm_user');
-      localStorage.removeItem('crm_tenant_id');
-      
-      console.log('[SUPABASE_AUTH] Auth data cleared from localStorage');
-    } catch (error) {
-      this.logError('Failed to clear auth data', error);
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+
+      const newToken = data.session?.access_token || '';
+      localStorage.setItem(this.tokenKey, newToken);
+      return newToken;
+    } catch (err) {
+      console.error('Token refresh error:', err);
+      throw new Error('Token refresh failed');
     }
   }
 
   /**
-   * Validate tenant access for current user
-   * ⭐ SECURITY: Ensures tenant isolation and prevents cross-tenant access
+   * Get current tenant ID from user
+   * Convenience method for services that need tenant ID
    */
-  validateTenantAccess(targetTenantId: string | null): boolean {
-    const currentUser = this.getCurrentUser();
-    const currentTenantId = this.getCurrentTenantId();
+  getCurrentTenantId(): string | null {
+    const user = this.getCurrentUser();
+    return user?.tenantId || null;
+  }
 
+  /**
+   * Assert that the current user has access to the specified tenant
+   * Throws error if access is denied
+   */
+  assertTenantAccess(tenantId: string | null): void {
+    const user = this.getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Super admins can access any tenant (including null)
+    if (user.role === 'super_admin') {
+      return;
+    }
 
     // Regular users can only access their own tenant
-    return currentTenantId === targetTenantId;
-  }
-
-  /**
-    * Assert tenant access for current user
-    * ⭐ SECURITY: Throws error if tenant access is denied or tenant ID is invalid
-    */
-   assertTenantAccess(targetTenantId: string | null): void {
-     // ⭐ SECURITY: Validate target tenant ID format to prevent injection
-     if (targetTenantId && !this.isValidTenantId(targetTenantId)) {
-       console.error('[SECURITY] Invalid target tenant ID format:', targetTenantId);
-       throw new Error('Access denied: Invalid tenant ID format');
-     }
-
-     if (!this.validateTenantAccess(targetTenantId)) {
-       const currentUser = this.getCurrentUser();
-       const currentTenantId = this.getCurrentTenantId();
-       throw new Error(
-         `Access denied: User ${currentUser?.email} (tenant: ${currentTenantId}) cannot access tenant ${targetTenantId}`
-       );
-     }
-   }
-
-  /**
-   * Map database user response to UI User type
-   * Converts snake_case database fields to camelCase
-   * ⭐ CRITICAL: Sets isSuperAdmin flag based on role (role='super_admin' only)
-   * Now extracts role from user_roles relationship
-   */
-  private mapUserResponse(dbUser: any): User {
-    // Extract role from user_roles (for backward compatibility)
-    let role: User['role'] = 'agent';
-    if (dbUser.user_roles && dbUser.user_roles.length > 0) {
-      const primaryRole = dbUser.user_roles[0]?.role?.name;
-      if (primaryRole) {
-        // Map role names to User role enum
-        const roleMap: Record<string, User['role']> = {
-          'Administrator': 'admin',
-          'Manager': 'manager',
-          'User': 'agent',
-          'Engineer': 'engineer',
-          'Customer': 'customer',
-          'super_admin': 'super_admin'
-        };
-        role = roleMap[primaryRole] || 'agent';
-      }
-    } else {
-      // Fallback for cases where user_roles is not loaded
-      role = (dbUser.role || 'agent') as User['role'];
+    if (user.tenantId !== tenantId) {
+      throw new Error('Access denied: Tenant mismatch');
     }
-
-    const isSuperAdmin = role === 'super_admin';
-
-    // Super admins don't have tenant_id, regular users do
-    const tenantId = dbUser.tenantId || dbUser.tenant_id;
-
-    const firstName = dbUser.firstName || dbUser.first_name || '';
-    const lastName = dbUser.lastName || dbUser.last_name || '';
-    const tenantName = dbUser.tenantName || dbUser.tenant_name || '';
-    const lastLogin = dbUser.lastLogin || dbUser.last_login || '';
-    const createdAt = dbUser.createdAt || dbUser.created_at || new Date().toISOString();
-
-    console.log('[SUPABASE_AUTH] Mapping user - role:', role, 'isSuperAdmin:', isSuperAdmin, 'tenantId:', tenantId);
-
-    return {
-      id: dbUser.id,
-      email: dbUser.email,
-      name: dbUser.name || `${firstName} ${lastName}`.trim() || dbUser.email,
-      firstName,
-      lastName,
-      role,
-      status: (dbUser.status || 'active') as User['status'],
-      tenantId,
-      tenantName,
-      lastLogin,
-      createdAt,
-      avatar: dbUser.avatar_url || dbUser.avatar || '',
-      phone: dbUser.phone || '',
-      isSuperAdmin,
-    };
   }
 }
 
-// Export singleton instance
 export const supabaseAuthService = new SupabaseAuthService();

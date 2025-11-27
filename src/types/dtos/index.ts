@@ -46,6 +46,15 @@ export type {
 
 // Sales DTOs
 export type {
+  LeadStatus,
+  LeadQualificationStatus,
+  LeadStage,
+  LeadDTO,
+  CreateLeadDTO,
+  UpdateLeadDTO,
+  LeadFiltersDTO,
+  LeadListResponseDTO,
+  LeadConversionMetricsDTO,
   DealStatus,
   DealStage,
   DealDTO,

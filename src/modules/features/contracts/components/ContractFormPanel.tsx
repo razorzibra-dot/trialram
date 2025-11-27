@@ -117,6 +117,89 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
     }
   }, [visible, contract, form]);
 
+  const handleTemplateChange = (templateId: string) => {
+    if (!templateId) {
+      // Clear template-specific fields when blank contract is selected
+      form.setFieldsValue({
+        type: undefined,
+        status: 'draft',
+        priority: 'medium',
+        payment_terms: undefined,
+        auto_renewal: false,
+        renewal_period_months: undefined,
+        renewal_terms: undefined,
+        compliance_status: 'compliant',
+      });
+      return;
+    }
+
+    // Pre-fill form based on selected template
+    const templateDefaults: Record<string, Partial<any>> = {
+      service_agreement: {
+        type: 'service_agreement',
+        title: 'Service Agreement',
+        status: 'draft',
+        priority: 'medium',
+        payment_terms: 'Net 30',
+        auto_renewal: true,
+        renewal_period_months: 12,
+        renewal_terms: 'Automatic renewal for 12 months unless terminated with 30 days notice.',
+        compliance_status: 'compliant',
+        description: 'This Service Agreement outlines the terms and conditions for the provision of services.',
+      },
+      nda: {
+        type: 'nda',
+        title: 'Non-Disclosure Agreement',
+        status: 'draft',
+        priority: 'high',
+        payment_terms: 'N/A',
+        auto_renewal: true,
+        renewal_period_months: 24,
+        renewal_terms: 'This NDA remains in effect for 2 years from the date of execution.',
+        compliance_status: 'compliant',
+        description: 'This Non-Disclosure Agreement protects confidential information shared between parties.',
+      },
+      purchase_order: {
+        type: 'purchase_order',
+        title: 'Purchase Order',
+        status: 'draft',
+        priority: 'medium',
+        payment_terms: 'Net 15',
+        auto_renewal: false,
+        compliance_status: 'compliant',
+        description: 'This Purchase Order authorizes the procurement of goods and services.',
+      },
+      employment: {
+        type: 'employment',
+        title: 'Employment Contract',
+        status: 'draft',
+        priority: 'high',
+        payment_terms: 'Monthly',
+        auto_renewal: false,
+        compliance_status: 'compliant',
+        description: 'This Employment Contract establishes the terms of employment relationship.',
+      },
+      license: {
+        type: 'license',
+        title: 'Software License Agreement',
+        status: 'draft',
+        priority: 'medium',
+        payment_terms: 'Annual',
+        auto_renewal: true,
+        renewal_period_months: 12,
+        renewal_terms: 'License automatically renews annually unless cancelled 60 days prior.',
+        compliance_status: 'compliant',
+        description: 'This Software License Agreement grants rights to use the specified software.',
+      },
+    };
+
+    const templateData = templateDefaults[templateId];
+    if (templateData) {
+      form.setFieldsValue(templateData);
+      message.info(`Contract template "${templateId.replace('_', ' ')}" applied`);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -193,6 +276,81 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
         requiredMark="optional"
         autoComplete="off"
       >
+        {/* Template Selection Section */}
+        {!isEditMode && (
+          <Card style={sectionStyles.card as any}>
+            <div style={sectionStyles.header as any}>
+              <FileTextOutlined style={sectionStyles.headerIcon as any} />
+              <h3 style={sectionStyles.headerTitle as any}>Contract Template</h3>
+            </div>
+
+            <Form.Item
+              label="Start from Template"
+              name="template_id"
+              tooltip="Select a template to pre-fill contract details, or choose 'Blank Contract' to start fresh"
+            >
+              <Select
+                placeholder="Choose a contract template..."
+                size="large"
+                allowClear
+                onChange={(value) => handleTemplateChange(value)}
+              >
+                <Select.Option value="">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined />
+                    <span>Blank Contract - Start from scratch</span>
+                  </div>
+                </Select.Option>
+                <Select.Option value="service_agreement">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined style={{ color: '#1890ff' }} />
+                    <div>
+                      <div style={{ fontWeight: 500 }}>Service Agreement</div>
+                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>Standard service delivery contract</div>
+                    </div>
+                  </div>
+                </Select.Option>
+                <Select.Option value="nda">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined style={{ color: '#52c41a' }} />
+                    <div>
+                      <div style={{ fontWeight: 500 }}>Non-Disclosure Agreement</div>
+                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>Confidentiality and non-disclosure terms</div>
+                    </div>
+                  </div>
+                </Select.Option>
+                <Select.Option value="purchase_order">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined style={{ color: '#faad14' }} />
+                    <div>
+                      <div style={{ fontWeight: 500 }}>Purchase Order</div>
+                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>Goods and services procurement</div>
+                    </div>
+                  </div>
+                </Select.Option>
+                <Select.Option value="employment">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined style={{ color: '#f5222d' }} />
+                    <div>
+                      <div style={{ fontWeight: 500 }}>Employment Contract</div>
+                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>Staff hiring and employment terms</div>
+                    </div>
+                  </div>
+                </Select.Option>
+                <Select.Option value="license">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined style={{ color: '#722ed1' }} />
+                    <div>
+                      <div style={{ fontWeight: 500 }}>Software License</div>
+                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>Software usage and licensing terms</div>
+                    </div>
+                  </div>
+                </Select.Option>
+              </Select>
+            </Form.Item>
+          </Card>
+        )}
+
         {/* Basic Information Section */}
         <Card style={sectionStyles.card as any}>
           <div style={sectionStyles.header as any}>
@@ -209,8 +367,8 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
             ]}
             tooltip="Provide a clear, descriptive title for the contract"
           >
-            <Input 
-              placeholder="e.g., Software License Agreement 2025" 
+            <Input
+              placeholder="e.g., Software License Agreement 2025"
               size="large"
               prefix={<FileTextOutlined />}
               allowClear
@@ -491,6 +649,70 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
           </Form.Item>
         </Card>
 
+        {/* Terms & Conditions Section */}
+        <Card style={sectionStyles.card as any}>
+          <div style={sectionStyles.header as any}>
+            <FileTextOutlined style={sectionStyles.headerIcon as any} />
+            <h3 style={sectionStyles.headerTitle as any}>Terms & Conditions</h3>
+          </div>
+
+          <Form.Item
+            label="Terms and Conditions"
+            name="terms_and_conditions"
+            tooltip="Detailed terms and conditions of the contract"
+          >
+            <Input.TextArea
+              rows={6}
+              placeholder="Enter the detailed terms and conditions of this contract..."
+              maxLength={5000}
+              showCount
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Termination Clause"
+                name="termination_clause"
+                tooltip="Conditions under which the contract can be terminated"
+              >
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Specify termination conditions..."
+                  maxLength={1000}
+                  showCount
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Governing Law"
+                name="governing_law"
+                tooltip="Jurisdiction that governs this contract"
+              >
+                <Input
+                  placeholder="e.g., State of California, USA"
+                  size="large"
+                  allowClear
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Dispute Resolution"
+                name="dispute_resolution"
+                tooltip="Method for resolving disputes"
+              >
+                <Select size="large" placeholder="Select dispute resolution method">
+                  <Select.Option value="court">Court Litigation</Select.Option>
+                  <Select.Option value="arbitration">Arbitration</Select.Option>
+                  <Select.Option value="mediation">Mediation</Select.Option>
+                  <Select.Option value="negotiation">Direct Negotiation</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
         {/* Compliance Section */}
         <Card style={sectionStyles.card as any}>
           <div style={sectionStyles.header as any}>
@@ -516,13 +738,203 @@ export const ContractFormPanel: React.FC<ContractFormPanelProps> = ({
             name="notes"
             tooltip="Any additional information or special conditions"
           >
-            <Input.TextArea 
-              rows={3} 
-              placeholder="Add any important notes, special conditions, or additional information..." 
+            <Input.TextArea
+              rows={3}
+              placeholder="Add any important notes, special conditions, or additional information..."
               maxLength={1000}
               showCount
             />
           </Form.Item>
+        </Card>
+
+        {/* Approval Workflow Section */}
+        <Card style={sectionStyles.card as any}>
+          <div style={sectionStyles.header as any}>
+            <CheckCircleOutlined style={sectionStyles.headerIcon as any} />
+            <h3 style={sectionStyles.headerTitle as any}>Approval Workflow</h3>
+          </div>
+
+          <Form.Item
+            label="Approval Stage"
+            name="approval_stage"
+            tooltip="Current stage in the approval process"
+          >
+            <Select
+              placeholder="Select approval stage"
+              size="large"
+              allowClear
+            >
+              <Select.Option value="draft">📝 Draft</Select.Option>
+              <Select.Option value="legal_review">⚖️ Legal Review</Select.Option>
+              <Select.Option value="management_approval">👔 Management Approval</Select.Option>
+              <Select.Option value="executive_approval">🏢 Executive Approval</Select.Option>
+              <Select.Option value="final_approval">✅ Final Approval</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Approval Notes"
+            name="approval_notes"
+            tooltip="Notes for approvers or approval requirements"
+          >
+            <Input.TextArea
+              rows={2}
+              placeholder="Add approval requirements, special conditions, or notes for approvers..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          {contract?.approval_history && contract.approval_history.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Approval History</h4>
+              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {contract.approval_history.map((record, index) => (
+                  <div
+                    key={record.id}
+                    style={{
+                      padding: 12,
+                      marginBottom: 8,
+                      background: '#f9fafb',
+                      borderRadius: 6,
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 500 }}>{record.stage}</span>
+                      <span style={{
+                        color: record.status === 'approved' ? '#10b981' : record.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                        fontSize: 12,
+                        fontWeight: 500
+                      }}>
+                        {record.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                      Approved by {record.approver} on {new Date(record.timestamp).toLocaleDateString()}
+                    </div>
+                    {record.comments && (
+                      <div style={{ fontSize: 12, marginTop: 4, color: '#374151' }}>
+                        {record.comments}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Digital Signing Section */}
+        <Card style={sectionStyles.card as any}>
+          <div style={sectionStyles.header as any}>
+            <FileTextOutlined style={sectionStyles.headerIcon as any} />
+            <h3 style={sectionStyles.headerTitle as any}>Digital Signing</h3>
+          </div>
+
+          <Form.Item
+            label="Signature Status"
+            tooltip="Current status of digital signatures"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 14 }}>
+                {contract?.signature_status ? (
+                  <>
+                    <span style={{ fontWeight: 500 }}>
+                      {contract.signature_status.completed}/{contract.signature_status.total_required} signatures completed
+                    </span>
+                    {contract.signature_status.pending.length > 0 && (
+                      <span style={{ color: '#f59e0b', marginLeft: 8 }}>
+                        Pending: {contract.signature_status.pending.join(', ')}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: '#6b7280' }}>No signatures required yet</span>
+                )}
+              </span>
+            </div>
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Customer Signature"
+                tooltip="Status of customer signature"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {contract?.signed_by_customer ? (
+                    <>
+                      <CheckCircleOutlined style={{ color: '#10b981' }} />
+                      <span style={{ fontSize: 14 }}>Signed by {contract.signed_by_customer}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: '#6b7280', fontSize: 14 }}>Not signed</span>
+                    </>
+                  )}
+                </div>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Company Signature"
+                tooltip="Status of company signature"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {contract?.signed_by_company ? (
+                    <>
+                      <CheckCircleOutlined style={{ color: '#10b981' }} />
+                      <span style={{ fontSize: 14 }}>Signed by {contract.signed_by_company}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: '#6b7280', fontSize: 14 }}>Not signed</span>
+                    </>
+                  )}
+                </div>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            label="Signing Instructions"
+            name="signing_instructions"
+            tooltip="Instructions for parties who need to sign this contract"
+          >
+            <Input.TextArea
+              rows={2}
+              placeholder="Add instructions for digital signing process..."
+              maxLength={300}
+              showCount
+            />
+          </Form.Item>
+
+          {contract && (
+            <div style={{ marginTop: 16, padding: 12, background: '#f0f9ff', borderRadius: 6, border: '1px solid #0ea5e9' }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#0ea5e9', marginBottom: 8 }}>
+                Digital Signing Actions
+              </div>
+              <Space>
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<FileTextOutlined />}
+                  disabled={contract.signature_status?.completed === contract.signature_status?.total_required}
+                >
+                  Send Signing Request
+                </Button>
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<CheckCircleOutlined />}
+                  disabled={!contract.signature_status || contract.signature_status.completed === 0}
+                >
+                  View Signatures
+                </Button>
+              </Space>
+            </div>
+          )}
         </Card>
 
         {/* Helper Alert */}

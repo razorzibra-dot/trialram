@@ -3,6 +3,10 @@
 -- Migration: 006 - Notifications, Additional Indexes, and Optimization
 -- ============================================================================
 
+-- Enable required PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- ============================================================================
 -- 1. ENUMS - Notification Types
 -- ============================================================================

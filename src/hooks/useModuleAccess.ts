@@ -182,17 +182,15 @@ export function useModuleAccess(moduleName: string): ModuleAccessResult {
       // RULE 5: Regular user accessing tenant module - check RBAC permissions
       if (isTenantModule(normalizedModuleName)) {
         try {
-          // Build permission key for the module
-          // e.g., 'customers' -> 'customers:read', 'manage_customers'
-          const permissionKey = `manage_${normalizedModuleName}`;
+          // Build permission key for the module using new {resource}:{action} format
+          // e.g., 'customers' -> 'customers:read'
           const readPermissionKey = `${normalizedModuleName}:read`;
 
-          // Check both permission formats
-          const hasManagePermission = authService.hasPermission(permissionKey);
+          // Check new permission format first, then generic read permission
           const hasReadPermission = authService.hasPermission(readPermissionKey);
           const hasGenericPermission = authService.hasPermission('read');
 
-          const canAccessModule = hasManagePermission || hasReadPermission || hasGenericPermission;
+          const canAccessModule = hasReadPermission || hasGenericPermission;
 
           if (canAccessModule) {
             console.log(
@@ -241,21 +239,21 @@ export function useModuleAccess(moduleName: string): ModuleAccessResult {
     },
     enabled: !!user && !authLoading, // Only query when user is loaded
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
     retry: false, // Don't retry permission checks
   });
 
   // Invalidate cache when user changes (logout, login, role change)
-  if (user && data && user.id !== data.isSuperAdmin) {
+  if (user && data && (data as ModuleAccessResult).isSuperAdmin !== user.isSuperAdmin) {
     queryClient.invalidateQueries({ queryKey: ['moduleAccess'] });
   }
 
   return {
-    canAccess: data?.canAccess ?? false,
+    canAccess: (data as ModuleAccessResult)?.canAccess ?? false,
     isLoading: authLoading || isLoading,
-    error: data?.error || (error instanceof Error ? error : null),
-    isSuperAdmin: data?.isSuperAdmin ?? false,
-    reason: data?.reason,
+    error: (data as ModuleAccessResult)?.error || (error instanceof Error ? error : null),
+    isSuperAdmin: (data as ModuleAccessResult)?.isSuperAdmin ?? false,
+    reason: (data as ModuleAccessResult)?.reason,
   };
 }
 
@@ -298,11 +296,9 @@ export function useAccessibleModules() {
 
       // Regular users can access tenant modules (with permission checks)
       for (const module of TENANT_MODULES) {
-        const permissionKey = `manage_${module}`;
         const readPermissionKey = `${module}:read`;
 
         const hasAccess =
-          authService.hasPermission(permissionKey) ||
           authService.hasPermission(readPermissionKey) ||
           authService.hasPermission('read');
 
@@ -319,7 +315,7 @@ export function useAccessibleModules() {
     },
     enabled: !!user && !authLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
   });
 
   return {

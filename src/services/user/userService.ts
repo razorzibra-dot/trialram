@@ -41,6 +41,12 @@ const mockUsers: UserDTO[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-20T14:30:00Z',
     lastLogin: '2024-01-20T14:30:00Z',
+    // Security fields with defaults
+    mfaMethod: 'none',
+    failedLoginAttempts: 0,
+    concurrentSessionsLimit: 5,
+    passwordChangedAt: '2024-01-01T00:00:00Z',
+    securityAlertsEnabled: true,
   },
   {
     id: '2',
@@ -61,20 +67,26 @@ const mockUsers: UserDTO[] = [
   },
   {
     id: '3',
-    email: 'agent@company.com',
-    name: 'Mike Agent',
+    email: 'user@company.com',
+    name: 'Mike User',
     firstName: 'Mike',
-    lastName: 'Agent',
-    role: 'agent',
+    lastName: 'User',
+    role: 'user',
     status: 'active',
     tenantId: 'tenant_1',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
     phone: '+1-555-0103',
     companyName: 'Acme Corporation',
-    position: 'Sales Agent',
+    position: 'Sales User',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-19T16:45:00Z',
     lastLogin: '2024-01-19T16:45:00Z',
+    // Security fields with defaults
+    mfaMethod: 'none',
+    failedLoginAttempts: 0,
+    concurrentSessionsLimit: 5,
+    passwordChangedAt: '2024-01-01T00:00:00Z',
+    securityAlertsEnabled: true,
   },
 ];
 
@@ -164,9 +176,6 @@ class MockUserService {
     if (!data.status) {
       throw new Error('Status is required');
     }
-    if (!data.tenantId) {
-      throw new Error('Tenant ID is required');
-    }
 
     // Validate email format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -206,7 +215,7 @@ class MockUserService {
     }
 
     // Validate role
-    const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
+    const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
     if (!validRoles.includes(data.role)) {
       throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
     }
@@ -225,7 +234,7 @@ class MockUserService {
       lastName: data.lastName,
       role: data.role,
       status: data.status,
-      tenantId: data.tenantId || 'tenant_1',
+      tenantId: 'tenant_1', // Default tenant for mock
       avatarUrl: data.avatarUrl,
       phone: data.phone,
       mobile: data.mobile,
@@ -296,7 +305,7 @@ class MockUserService {
 
     // Validate role if provided
     if (data.role) {
-      const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
+      const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
       if (!validRoles.includes(data.role)) {
         throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
       }
@@ -364,7 +373,7 @@ class MockUserService {
       'super_admin': mockUsers.filter(u => u.role === 'super_admin').length,
       'admin': mockUsers.filter(u => u.role === 'admin').length,
       'manager': mockUsers.filter(u => u.role === 'manager').length,
-      'agent': mockUsers.filter(u => u.role === 'agent').length,
+      'user': mockUsers.filter(u => u.role === 'user').length,
       'engineer': mockUsers.filter(u => u.role === 'engineer').length,
       'customer': mockUsers.filter(u => u.role === 'customer').length,
     };
@@ -390,7 +399,7 @@ class MockUserService {
    * Get available roles
    */
   async getRoles(): Promise<UserRole[]> {
-    return ['super_admin', 'admin', 'manager', 'agent', 'engineer', 'customer'];
+    return ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
   }
 
   /**

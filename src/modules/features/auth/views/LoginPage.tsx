@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Building2, Shield, Users, BarChart3, Clock, AlertTriangle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -195,6 +197,20 @@ export const LoginPage: React.FC = () => {
                   />
                 </div>
 
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <Label
+                    htmlFor="rememberMe"
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Remember me for 30 days
+                  </Label>
+                </div>
+
                 {sessionExpired && error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
@@ -259,8 +275,16 @@ export const LoginPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="text-center text-sm text-gray-500">
-                  Password for all demo accounts: <code className="bg-gray-100 px-1 rounded">password123</code>
+                <div className="text-center text-sm text-gray-500 space-y-2">
+                  <div>
+                    Password for all demo accounts: <code className="bg-gray-100 px-1 rounded">password123</code>
+                  </div>
+                  <div>
+                    Don't have an account?{' '}
+                    <a href="/auth/register" className="text-blue-600 hover:underline font-medium">
+                      Sign up here
+                    </a>
+                  </div>
                 </div>
               </div>
             </CardContent>

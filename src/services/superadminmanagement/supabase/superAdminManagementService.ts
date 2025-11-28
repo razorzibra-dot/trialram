@@ -65,12 +65,13 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         throw new Error(`Failed to create super admin: ${createError.message}`);
       }
 
-      // Audit log
+      // Audit log (using columns that exist in the schema)
       await supabase.from('audit_logs').insert({
         user_id: newUser.id,
         action: 'create_super_admin',
-        target_id: newUser.id,
-        details: { email: data.email },
+        table_name: 'users',
+        record_id: newUser.id,
+        new_values: { email: data.email },
         tenant_id: null, // Platform-wide action
         created_at: new Date().toISOString()
       });
@@ -125,12 +126,13 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         .delete()
         .eq('super_admin_id', data.userId);
 
-      // Audit log
+      // Audit log (using columns that exist in the schema)
       await supabase.from('audit_logs').insert({
         user_id: data.userId,
         action: 'promote_super_admin',
-        target_id: data.userId,
-        details: { reason: data.reason || 'No reason provided' },
+        table_name: 'users',
+        record_id: data.userId,
+        new_values: { reason: data.reason || 'No reason provided' },
         tenant_id: null,
         created_at: new Date().toISOString()
       });
@@ -226,8 +228,9 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
       await supabase.from('audit_logs').insert({
         user_id: data.superAdminId,
         action: 'grant_tenant_access',
-        target_id: data.tenantId,
-        details: { accessLevel: data.accessLevel },
+        table_name: 'super_user_tenant_access',
+        record_id: data.tenantId,
+        new_values: { accessLevel: data.accessLevel },
         tenant_id: null,
         created_at: new Date().toISOString()
       });
@@ -258,8 +261,9 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
       await supabase.from('audit_logs').insert({
         user_id: data.superAdminId,
         action: 'revoke_tenant_access',
-        target_id: data.tenantId,
-        details: { reason: data.reason || 'No reason provided' },
+        table_name: 'super_user_tenant_access',
+        record_id: data.tenantId,
+        new_values: { reason: data.reason || 'No reason provided' },
         tenant_id: null,
         created_at: new Date().toISOString()
       });

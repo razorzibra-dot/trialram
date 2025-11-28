@@ -8,6 +8,7 @@ import { Drawer, Descriptions, Row, Col, Avatar, Tag, Button, Space, Divider, Ba
 import { EditOutlined, MailOutlined, PhoneOutlined, CrownOutlined, CalendarOutlined, UserOutlined, BankOutlined, IdcardOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons';
 import { UserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { useAuth } from '@/contexts/AuthContext';
+import { shouldShowTenantIdField } from '@/utils/tenantIsolation';
 
 interface UserDetailPanelProps {
   user: UserDTO | null;
@@ -28,7 +29,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
   onDelete,
   onResetPassword
 }) => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user: currentUser } = useAuth();
 
   // ⚠️ NOTE: These switch cases are for UI display only (icons/colors), not security checks.
   // For security checks, use permission-based checks (authService.hasPermission()).
@@ -40,7 +41,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
         return <CrownOutlined />;
       case 'manager':
         return <EditOutlined />;
-      case 'agent':
+      case 'user':
       case 'engineer':
         return <UserOutlined />;
       default:
@@ -57,7 +58,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
         return 'red';
       case 'manager':
         return 'blue';
-      case 'agent':
+      case 'user':
         return 'cyan';
       case 'engineer':
         return 'green';
@@ -91,11 +92,15 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
   };
 
   /**
-   * ✅ Task 2.5: Get tenant display for super admins
-   * Shows "Platform-Wide Super Admin" badge for super admins (tenantId=null)
-   * Shows tenant ID for regular users
+   * ⚠️ SECURITY: Get tenant display - ONLY shows tenant_id to super admins
+   * 
+   * **Security Rule**: Tenant users should NEVER see tenant_id.
+   * Only super admins can see tenant_id for cross-tenant management.
    */
   const getTenantDisplay = (): React.ReactNode => {
+    // ⚠️ SECURITY: Only show tenant_id to super admins
+    const showTenantId = shouldShowTenantIdField(currentUser);
+    
     // Super admin has null tenantId and isSuperAdmin=true
     if (user.isSuperAdmin || user.tenantId === null) {
       return (
@@ -104,8 +109,18 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
         </Tag>
       );
     }
-    // Regular users have a tenant ID
-    return <code style={{ fontSize: '11px' }}>{user.tenantId}</code>;
+    
+    // ⚠️ SECURITY: Only show tenant_id if current user is super admin
+    if (showTenantId) {
+      return <code style={{ fontSize: '11px' }}>{user.tenantId}</code>;
+    }
+    
+    // Tenant users: Don't show tenant_id at all
+    return (
+      <Tag color="blue">
+        Tenant User
+      </Tag>
+    );
   };
 
   if (loading) {

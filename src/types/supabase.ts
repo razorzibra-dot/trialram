@@ -10,7 +10,7 @@ export interface UserRow {
   name: string;
   first_name?: string;
   last_name?: string;
-  role: 'super_admin' | 'admin' | 'manager' | 'agent' | 'engineer' | 'customer';
+  role: 'super_admin' | 'admin' | 'manager' | 'user' | 'engineer' | 'customer';
   status: 'active' | 'inactive' | 'suspended';
   tenant_id?: string | null;
   is_super_admin?: boolean;

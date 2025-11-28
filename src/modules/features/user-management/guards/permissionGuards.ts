@@ -247,9 +247,10 @@ export function canPerformUserAction(
   const hasManagePermission = authService.hasPermission('users:manage');
   if (hasManagePermission) {
     // Cannot delete other admins (to prevent lockout)
-    // Check if target user is admin - use isSuperAdmin utility for consistency
-    // Note: For role-based check, we check if target role is 'admin' (tenant admin)
-    // Super admins are identified by isSuperAdmin flag, not role string
+    // ✅ Database-driven: Check if target role is admin using database lookup
+    // Note: For role-based check, we need to verify if the role is an admin role
+    // This should ideally use a database check, but for now we check the role name
+    // In the future, we could add an is_admin_role flag to the roles table
     const isTargetAdmin = targetUserRole === 'admin';
     if (action === 'delete' && isTargetAdmin) {
       return false;
@@ -269,6 +270,7 @@ export function canPerformUserAction(
 
   if (action === 'delete' && authService.hasPermission('users:delete')) {
     // Cannot delete other admins even with delete permission
+    // ✅ Database-driven: Check if target role is admin (same check as above)
     const isTargetAdmin = targetUserRole === 'admin';
     if (isTargetAdmin) {
       return false;

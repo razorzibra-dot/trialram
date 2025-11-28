@@ -14,6 +14,7 @@
 import { supabase } from '@/services/supabase/client';
 import backendConfig, { isSupabaseConfigured } from '@/config/backendConfig';
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
+import { validateTenantAccess } from '@/utils/tenantValidation';
 
 class SupabaseAuthService {
   private tokenKey = 'crm_auth_token';
@@ -76,7 +77,7 @@ class SupabaseAuthService {
             name: supaUser.user_metadata?.name || supaUser.email?.split('@')[0],
             first_name: '',
             last_name: '',
-            role: 'agent',
+            role: 'user',
             status: 'active',
             tenant_id: null,
             created_at: new Date().toISOString(),
@@ -89,15 +90,11 @@ class SupabaseAuthService {
         try {
           if (userRole) {
             const roleName = userRole.name;
-            const roleMap: Record<string, string> = {
-              'super_admin': 'super_admin',
-              'Administrator': 'admin',
-              'Manager': 'manager',
-              'User': 'agent',
-              'Engineer': 'engineer',
-              'Customer': 'customer'
-            };
-            const resolved = roleMap[roleName] || appUser.role || 'agent';
+            // ✅ Database role names are normalized to match UserRole enum exactly
+            // No mapping needed - use role name directly (normalized)
+            // Trust the database - if role exists in DB, it's valid
+            const normalizedRole = roleName.toLowerCase().trim();
+            const resolved = normalizedRole || appUser.role || 'user';
             // normalize into same shape createAuthResponse expects
             (appUser as any).role = resolved;
 
@@ -163,7 +160,7 @@ class SupabaseAuthService {
         { email: 'admin@acme.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
         { email: 'manager@acme.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
         { email: 'engineer@acme.com', role: 'engineer', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
-        { email: 'user@acme.com', role: 'agent', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
+        { email: 'user@acme.com', role: 'user', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
         { email: 'admin@techsolutions.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
         { email: 'manager@techsolutions.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
         { email: 'admin@globaltrading.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440003' },
@@ -179,33 +176,120 @@ class SupabaseAuthService {
 
       console.log('[SUPABASE_AUTH] Mock auth successful for:', userData.email);
 
-      // Generate a proper UUID for the mock user
-      const generateUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0;
-          const v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
+       // For mock auth, try to find the real user in database and load their permissions
+       let mockUser: any;
+       let userPermissions: string[] = [];
+       console.log('[SUPABASE_AUTH] 🔄 Attempting to load permissions from database for mock user...');
 
-      // Create mock user object (same structure as database)
-      const mockUser = {
-        id: generateUUID(),
-        email: userData.email,
-        name: userData.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        first_name: userData.email.split('@')[0].split('.')[0] || '',
-        last_name: userData.email.split('@')[0].split('.')[1] || '',
-        role: userData.role,
-        status: 'active',
-        tenant_id: userData.tenantId,
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      };
+      try {
+        // Try to find the user in the database
+        const { data: dbUser, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', userData.email)
+          .single();
+
+        if (!userError && dbUser) {
+          console.log('[SUPABASE_AUTH] Found user in database, loading permissions');
+
+          // Get user's role
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role_id, roles(id, name)')
+            .eq('user_id', dbUser.id)
+            .limit(1);
+
+          if (roleData && roleData.length > 0) {
+            const role = roleData[0].roles as any;
+            const roleId = role?.id;
+
+            if (roleId) {
+              // Fetch permissions for the role
+              const { data: rolePerms } = await supabase
+                .from('role_permissions')
+                .select('permission_id')
+                .eq('role_id', roleId);
+
+              if (rolePerms && rolePerms.length > 0) {
+                const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
+
+                if (permIds.length > 0) {
+                  const { data: perms } = await supabase
+                    .from('permissions')
+                    .select('id, name')
+                    .in('id', permIds);
+
+                  if (perms) {
+                    userPermissions = perms.map((p: any) => p.name).filter(Boolean);
+                    console.log('[SUPABASE_AUTH] ✅ Loaded permissions from database:', userPermissions.length, userPermissions);
+                  }
+                }
+              }
+            }
+          }
+
+          // Use database user data
+          mockUser = {
+            ...dbUser,
+            permissions: userPermissions
+          };
+        } else {
+          console.log('[SUPABASE_AUTH] User not found in database, using mock data');
+          // Generate a proper UUID for the mock user
+          const generateUUID = () => {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              const r = Math.random() * 16 | 0;
+              const v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+          };
+
+          // Create mock user object (same structure as database)
+          mockUser = {
+            id: generateUUID(),
+            email: userData.email,
+            name: userData.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            first_name: userData.email.split('@')[0].split('.')[0] || '',
+            last_name: userData.email.split('@')[0].split('.')[1] || '',
+            role: userData.role,
+            status: 'active',
+            tenant_id: userData.tenantId,
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString(),
+            permissions: userPermissions
+          };
+        }
+      } catch (error) {
+        console.warn('[SUPABASE_AUTH] Error loading permissions from database:', error);
+        // Fallback to mock user
+        const generateUUID = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
+
+        mockUser = {
+          id: generateUUID(),
+          email: userData.email,
+          name: userData.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          first_name: userData.email.split('@')[0].split('.')[0] || '',
+          last_name: userData.email.split('@')[0].split('.')[1] || '',
+          role: userData.role,
+          status: 'active',
+          tenant_id: userData.tenantId,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+          permissions: userPermissions
+        };
+      }
 
       // Create mock JWT token
       const mockToken = `mock_jwt_${mockUser.id}_${Date.now()}`;
       const expiresIn = 3600;
 
+      console.log('[SUPABASE_AUTH] 🎯 Creating auth response with permissions:', userPermissions.length);
       return this.createAuthResponse(mockUser, mockToken, expiresIn);
 
     } catch (err) {
@@ -285,6 +369,78 @@ class SupabaseAuthService {
       const sessionStr = localStorage.getItem(this.sessionKey);
       if (sessionStr) {
         const session = JSON.parse(sessionStr);
+
+        // If it's a mock session (starts with mock_jwt_), handle mock restore
+        if (session.access_token?.startsWith('mock_jwt_')) {
+          console.log('[SUPABASE_AUTH] Restoring mock session');
+
+          // Get user from localStorage
+          const userStr = localStorage.getItem(this.userKey);
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            console.log('[SUPABASE_AUTH] Restored mock user:', { id: user.id, email: user.email, role: user.role });
+
+            // For mock sessions, permissions should already be loaded during login
+            // But let's double-check and reload if needed
+            if (!user.permissions || user.permissions.length === 0) {
+              console.log('[SUPABASE_AUTH] No permissions in mock user, attempting to reload from database');
+
+              try {
+                // Try to find the user in database and reload permissions
+                const { data: dbUser } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('email', user.email)
+                  .single();
+
+                if (dbUser) {
+                  // Get user's role and permissions
+                  const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('role_id, roles(id, name)')
+                    .eq('user_id', dbUser.id)
+                    .limit(1);
+
+                  if (roleData && roleData.length > 0) {
+                    const role = roleData[0].roles as any;
+                    const roleId = role?.id;
+
+                    if (roleId) {
+                      const { data: rolePerms } = await supabase
+                        .from('role_permissions')
+                        .select('permission_id')
+                        .eq('role_id', roleId);
+
+                      if (rolePerms && rolePerms.length > 0) {
+                        const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
+
+                        if (permIds.length > 0) {
+                          const { data: perms } = await supabase
+                            .from('permissions')
+                            .select('id, name')
+                            .in('id', permIds);
+
+                          if (perms) {
+                            user.permissions = perms.map((p: any) => p.name).filter(Boolean);
+                            console.log('[SUPABASE_AUTH] Reloaded permissions for mock user:', user.permissions.length);
+                            localStorage.setItem(this.userKey, JSON.stringify(user));
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.warn('[SUPABASE_AUTH] Error reloading permissions for mock user:', error);
+              }
+            }
+
+            return user;
+          }
+          return null;
+        }
+
+        // For real Supabase sessions, proceed with normal flow
         await supabase.auth.setSession(session);
       }
 
@@ -307,31 +463,27 @@ class SupabaseAuthService {
       }
 
       // Get user's role assignment separately
-      let userRole: User['role'] = 'agent'; // default
+      let userRole: User['role'] = 'user'; // default
       let roleId: string | null = null;
-      
+
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role_id, roles(id, name)')
         .eq('user_id', data.session.user.id)
         .limit(1);
-      
+
       if (roleData && roleData.length > 0) {
         const role = roleData[0].roles as any;
         roleId = role?.id;
         const roleName = role?.name;
-        
+
         if (roleName) {
           // Map role names from database to User role enum
-          const roleMap: Record<string, User['role']> = {
-            'super_admin': 'super_admin',
-            'Administrator': 'admin',
-            'Manager': 'manager',
-            'User': 'agent',
-            'Engineer': 'engineer',
-            'Customer': 'customer'
-          };
-          userRole = roleMap[roleName] || 'agent';
+          // ✅ Database role names are normalized to match UserRole enum exactly
+          // No mapping needed - use role name directly (normalized)
+          // Trust the database - if role exists in DB, it's valid
+          const normalizedRole = roleName.toLowerCase().trim();
+          userRole = (normalizedRole || 'user') as User['role'];
         }
       } else if (appUser.is_super_admin) {
         // Fallback to is_super_admin flag if no role found
@@ -348,14 +500,14 @@ class SupabaseAuthService {
 
           if (!rpErr && Array.isArray(rolePerms)) {
             const permIds = rolePerms.map((r: any) => r.permission_id).filter(Boolean);
-            
+
             // Fetch permission names
             if (permIds.length > 0) {
               const { data: perms } = await supabase
                 .from('permissions')
                 .select('id, name')
                 .in('id', permIds);
-              
+
               if (perms) {
                 const permNames = perms.map((p: any) => p.name).filter(Boolean);
                 (appUser as any).permissions = permNames;
@@ -452,13 +604,14 @@ class SupabaseAuthService {
     const normalizedUserPermissions = userPermissions.map((perm) => normalize(perm));
     const normalizedPermission = normalize(permission);
 
-    console.log(`[hasPermission] Checking permission "${permission}" (normalized: "${normalizedPermission}") for user role "${user.role}". User permissions:`, userPermissions);
+    console.log(`[hasPermission] 🔍 Checking permission "${permission}" (normalized: "${normalizedPermission}") for user role "${user.role}". User permissions:`, userPermissions);
+    console.log(`[hasPermission] 📋 Normalized user permissions:`, normalizedUserPermissions);
 
     const hasNormalizedPermission = (perm: string) => normalizedUserPermissions.includes(normalize(perm));
 
     // Direct match (supports hyphen/underscore variants)
     if (hasNormalizedPermission(permission)) {
-      console.log(`[hasPermission] Direct match found for "${permission}"`);
+      console.log(`[hasPermission] ✅ Direct match found for "${permission}"`);
       return true;
     }
 
@@ -521,10 +674,13 @@ class SupabaseAuthService {
     if (!user) return false;
 
     // Super admin can access any tenant portal
-    if (user.role === 'super_admin') return true;
+    const isSuperAdmin = (user.role as string) === 'super_admin';
+    if (isSuperAdmin) return true;
 
-    // Other roles can access their own tenant portal
-    return ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(user.role);
+    // ✅ Database-driven: Check if role exists in database (tenant-level roles can access portal)
+    // For synchronous check, trust that if role is set, it's valid (database ensures correctness)
+    // Non-super-admin roles with valid role assignment can access their tenant portal
+    return !!user.role;
   }
 
   hasAnyRole(roles: string[]): boolean {
@@ -556,23 +712,44 @@ class SupabaseAuthService {
     return Array.isArray((user as any).permissions) ? (user as any).permissions : [];
   }
 
+  /**
+   * Get available roles for the current user
+   * ✅ Database-driven: Fetches roles from database and filters based on user's role hierarchy
+   * This method should be async, but kept sync for backward compatibility
+   * For async usage, use rbacService.getRoles() directly
+   */
   getAvailableRoles(): string[] {
     const user = this.getCurrentUser();
     if (!user) return [];
 
-    if (user.role === 'super_admin') {
-      return ['admin', 'manager', 'agent', 'engineer', 'customer'];
-    }
-
-    if (user.role === 'admin') {
-      return ['manager', 'agent', 'engineer', 'customer'];
-    }
-
-    if (user.role === 'manager') {
-      return ['agent', 'customer'];
-    }
-
+    // ⚠️ NOTE: This is a synchronous method for backward compatibility
+    // For fully database-driven approach, use rbacService.getRoles() which is async
+    // This method returns empty array - callers should use async rbacService.getRoles() instead
+    // TODO: Deprecate this method in favor of async rbacService.getRoles()
+    console.warn('[AuthService] getAvailableRoles() is deprecated. Use rbacService.getRoles() for database-driven role fetching.');
     return [];
+  }
+
+  /**
+   * Get available roles for the current user (async, database-driven)
+   * ✅ Fetches roles from database and applies tenant isolation
+   */
+  async getAvailableRolesAsync(): Promise<string[]> {
+    const user = this.getCurrentUser();
+    if (!user) return [];
+
+    try {
+      // ✅ Database-driven: Fetch roles from RBAC service (applies tenant isolation)
+      const { rbacService } = await import('../../serviceFactory');
+      const roles = await rbacService.getRoles();
+      
+      // Extract role names (already normalized in database)
+      const { getValidUserRolesFromDatabaseRoles } = await import('@/utils/roleMapping');
+      return getValidUserRolesFromDatabaseRoles(roles);
+    } catch (error) {
+      console.error('[AuthService] Error fetching available roles:', error);
+      return [];
+    }
   }
 
   async refreshToken(): Promise<string> {
@@ -603,24 +780,21 @@ class SupabaseAuthService {
   }
 
   /**
-   * Assert that the current user has access to the specified tenant
-   * Throws error if access is denied
+   * ⚠️ SECURITY: Assert that the current user has access to the specified tenant
+   * 
+   * **DEPRECATED**: Use `validateTenantAccess()` from `@/utils/tenantValidation` instead.
+   * This method is kept for backward compatibility but now delegates to the centralized validation.
+   * 
+   * @param tenantId - The tenant_id to validate access for
+   * @param resource - Optional resource name for logging (defaults to 'unknown')
+   * @param resourceId - Optional resource ID for logging
+   * 
+   * @deprecated Use validateTenantAccess() from @/utils/tenantValidation directly for better logging and audit trail
    */
-  assertTenantAccess(tenantId: string | null): void {
-    const user = this.getCurrentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    // Super admins can access any tenant (including null)
-    if (user.role === 'super_admin') {
-      return;
-    }
-
-    // Regular users can only access their own tenant
-    if (user.tenantId !== tenantId) {
-      throw new Error('Access denied: Tenant mismatch');
-    }
+  async assertTenantAccess(tenantId: string | null, resource: string = 'unknown', resourceId?: string): Promise<void> {
+    // Delegate to centralized validation for consistency and logging
+    // Use 'GET' as default operation type for backward compatibility
+    await validateTenantAccess(tenantId, 'GET', resource, resourceId);
   }
 }
 

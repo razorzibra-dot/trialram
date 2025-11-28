@@ -1,6 +1,7 @@
--- Migration: Ensure acme@admin.com user exists and has Administrator role
+-- Migration: Ensure acme@admin.com user exists and has admin role
 -- Purpose: Fix user role assignment for admin user
 -- Date: 2025-11-28
+-- ✅ Uses normalized role name 'admin' (not 'Administrator')
 
 DO $$
 DECLARE
@@ -80,28 +81,29 @@ BEGIN
     RAISE NOTICE 'User already exists in public.users: %', admin_user_id;
   END IF;
 
-  -- Step 3: Find Administrator role for this tenant
+  -- Step 3: Find admin role for this tenant
+  -- ✅ Use normalized role name 'admin' (not 'Administrator')
   SELECT id INTO admin_role_id
   FROM roles
-  WHERE name = 'Administrator'
+  WHERE name = 'admin'
     AND (tenant_id = tenant_id_val OR (tenant_id IS NULL AND tenant_id_val IS NULL))
   LIMIT 1;
 
   IF admin_role_id IS NULL THEN
-    RAISE NOTICE 'Administrator role not found for tenant: %. Trying to find any Administrator role.', tenant_id_val;
+    RAISE NOTICE 'admin role not found for tenant: %. Trying to find any admin role.', tenant_id_val;
     SELECT id INTO admin_role_id
     FROM roles
-    WHERE name = 'Administrator'
+    WHERE name = 'admin'
     LIMIT 1;
   END IF;
 
   IF admin_role_id IS NULL THEN
-    RAISE EXCEPTION 'Administrator role not found in database. Please run the seed migration first.';
+    RAISE EXCEPTION 'admin role not found in database. Please run the seed migration first.';
   END IF;
 
-  RAISE NOTICE 'Found Administrator role: %', admin_role_id;
+  RAISE NOTICE 'Found admin role: %', admin_role_id;
 
-  -- Step 4: Ensure user has Administrator role assigned
+  -- Step 4: Ensure user has admin role assigned
   INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
   VALUES (admin_user_id, admin_role_id, tenant_id_val, NOW())
   ON CONFLICT (user_id, role_id, tenant_id) DO UPDATE

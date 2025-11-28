@@ -57,6 +57,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
 import { usePermissions } from '../hooks';
 import { UserPermission } from '../guards/permissionGuards';
+import { shouldShowTenantIdField } from '@/utils/tenantIsolation';
 import { Role, Permission, RoleTemplate } from '@/types/rbac';
 
 const { TextArea } = Input;
@@ -70,7 +71,7 @@ interface RoleFormData {
 
 export const RoleManagementPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user: currentUser } = useAuth();
   const { canManageRoles, canManagePermissions, isLoading: permLoading, hasPermission } = usePermissions();
   const rbacService = useService<any>('rbacService');
   const [form] = Form.useForm();
@@ -133,11 +134,17 @@ export const RoleManagementPage: React.FC = () => {
   // Handle edit role
   const handleEdit = (role: Role) => {
     setEditingRole(role);
-    setSelectedPermissions(role.permissions ?? []);
+    // ✅ FIX: Filter permissions to only include those that exist in current permissions list
+    // This prevents "Tree missing keys" warnings when permissions are filtered by tenant isolation
+    const availablePermissionIds = permissions.map(p => p.id);
+    const validPermissions = (role.permissions ?? []).filter(permId => 
+      availablePermissionIds.includes(permId)
+    );
+    setSelectedPermissions(validPermissions);
     form.setFieldsValue({
       name: role.name,
       description: role.description,
-      permissions: role.permissions ?? []
+      permissions: validPermissions
     });
     setIsModalVisible(true);
   };
@@ -157,11 +164,16 @@ export const RoleManagementPage: React.FC = () => {
   // Handle duplicate role
   const handleDuplicate = (role: Role) => {
     setEditingRole(null);
-    setSelectedPermissions(role.permissions ?? []);
+    // ✅ FIX: Filter permissions to only include those that exist in current permissions list
+    const availablePermissionIds = permissions.map(p => p.id);
+    const validPermissions = (role.permissions ?? []).filter(permId => 
+      availablePermissionIds.includes(permId)
+    );
+    setSelectedPermissions(validPermissions);
     form.setFieldsValue({
       name: `${role.name} (Copy)`,
       description: role.description,
-      permissions: role.permissions ?? []
+      permissions: validPermissions
     });
     setIsModalVisible(true);
   };
@@ -336,17 +348,18 @@ export const RoleManagementPage: React.FC = () => {
         />
       )
     },
-    {
+    // ⚠️ SECURITY: Only show tenant_id column to super admins
+    ...(shouldShowTenantIdField(currentUser) ? [{
       title: 'Tenant',
       dataIndex: 'tenant_id',
       key: 'tenant_id',
       width: 150,
       render: (tenantId: string) => (
-        <Tag color={tenantId === 'platform' ? 'purple' : 'blue'}>
-          {tenantId === 'platform' ? 'Platform' : tenantId}
+        <Tag color={tenantId === 'platform' || tenantId === null ? 'purple' : 'blue'}>
+          {tenantId === 'platform' || tenantId === null ? 'Platform' : tenantId}
         </Tag>
       )
-    },
+    }] : []),
     {
       title: 'Created',
       dataIndex: 'created_at',
@@ -616,7 +629,16 @@ export const RoleManagementPage: React.FC = () => {
               <Tree
                 checkable
                 defaultExpandAll
-                checkedKeys={selectedPermissions}
+                // ✅ FIX: Filter checkedKeys to only include keys that exist in treeData
+                // This prevents "Tree missing keys" warnings
+                checkedKeys={selectedPermissions.filter(key => {
+                  // Check if key exists in treeData (either as a permission ID or category)
+                  const existsInTree = permissionTreeData.some(category => 
+                    category.key === key || 
+                    (category.children || []).some(child => child.key === key)
+                  );
+                  return existsInTree;
+                })}
                 onCheck={(checkedKeys) => {
                   const keys = checkedKeys as string[];
                   // Filter out category keys, only keep permission IDs
@@ -769,7 +791,12 @@ export const RoleManagementPage: React.FC = () => {
             <Descriptions bordered column={1}>
               <Descriptions.Item label="Role Name">{selectedRole.name}</Descriptions.Item>
               <Descriptions.Item label="Description">{selectedRole.description}</Descriptions.Item>
-              <Descriptions.Item label="Tenant ID">{selectedRole.tenant_id}</Descriptions.Item>
+              {/* ⚠️ SECURITY: Only show tenant_id to super admins */}
+              {shouldShowTenantIdField(currentUser) && (
+                <Descriptions.Item label="Tenant ID">
+                  {selectedRole.tenant_id || 'Platform'}
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="System Role">
                 {selectedRole.is_system_role ? (
                   <Tag color="gold">Yes</Tag>

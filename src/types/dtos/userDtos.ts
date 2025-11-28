@@ -234,6 +234,9 @@ export interface CreateUserDTO {
 
   /** Job position/title */
   position?: string;
+
+  /** Tenant identifier (optional - only used by super admins, ignored for tenant users) */
+  tenantId?: string | null;
 }
 
 /**
@@ -276,6 +279,9 @@ export interface UpdateUserDTO {
 
   /** Job position/title */
   position?: string;
+
+  /** Tenant identifier (optional - only used by super admins, ignored for tenant users) */
+  tenantId?: string | null;
 }
 
 /**

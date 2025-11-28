@@ -11,10 +11,12 @@
  * - Dynamic section visibility (only shows if children are visible)
  * - Caching for performance
  * 
- * @see src/config/navigationPermissions.ts for navigation configuration
+ * @see src/hooks/useNavigation.ts for database-driven navigation
+ * @see src/services/navigation/navigationService.ts for navigation service
  */
 
 import { NavigationItemConfig } from '@/config/navigationPermissions';
+import { authService } from '@/services/serviceFactory';
 
 /**
  * Navigation filter context
@@ -62,25 +64,38 @@ export function isItemVisible(
   item: NavigationItemConfig,
   context: NavigationFilterContext
 ): boolean {
+  console.log(`[navigationFilter] 🔍 Checking visibility for item: "${item.label}" (key: ${item.key})`);
+
   // Section items are visible if they have visible children
   if (item.isSection) {
+    console.log(`[navigationFilter] 📁 Item "${item.label}" is a section - visibility depends on children`);
     return true; // Will be filtered based on children visibility
   }
 
-  // Check role requirement
+  // ⚠️ DEPRECATED: Role requirement check (removed from navigation config)
+  // Navigation now uses permission-based checks only (database-driven)
+  // This check is kept for backward compatibility but should not be used
   if (item.requiredRole) {
+    console.warn('[navigationFilter] requiredRole is deprecated. Use permission checks instead (database-driven).');
     if (!context.hasRole(item.requiredRole)) {
+      console.log(`[navigationFilter] ❌ Item "${item.label}" hidden due to role requirement: ${item.requiredRole}`);
       return false;
     }
   }
 
   // Check permission requirement
   if (item.permission) {
+    console.log(`[navigationFilter] 🔐 Item "${item.label}" requires permission: "${item.permission}"`);
     if (!context.hasPermission(item.permission)) {
+      console.log(`[navigationFilter] ❌ Item "${item.label}" hidden - permission "${item.permission}" not granted`);
       return false;
     }
+    console.log(`[navigationFilter] ✅ Item "${item.label}" permission check passed`);
+  } else {
+    console.log(`[navigationFilter] ℹ️ Item "${item.label}" has no permission requirement`);
   }
 
+  console.log(`[navigationFilter] ✅ Item "${item.label}" is visible`);
   return true;
 }
 
@@ -128,7 +143,9 @@ export function filterNavigationItems(
   items: NavigationItemConfig[],
   context: NavigationFilterContext
 ): FilteredNavigationItem[] {
-  return items
+  console.log(`[navigationFilter] 🎯 Starting navigation filtering for ${items.length} items`);
+
+  const filtered = items
     .map((item) => {
       // Check if item is visible
       const isVisible = isItemVisible(item, context);
@@ -145,6 +162,8 @@ export function filterNavigationItems(
       // For section items, visibility depends on having visible children
       const finalIsVisible = item.isSection ? hasVisibleChildItems : isVisible;
 
+      console.log(`[navigationFilter] 📊 Item "${item.label}": isVisible=${isVisible}, hasVisibleChildren=${hasVisibleChildItems}, finalIsVisible=${finalIsVisible}`);
+
       return {
         ...item,
         isVisible: finalIsVisible,
@@ -153,6 +172,13 @@ export function filterNavigationItems(
       };
     })
     .filter((item) => item.isVisible);
+
+  console.log(`[navigationFilter] ✅ Filtered navigation: ${filtered.length} visible items out of ${items.length} total`);
+  filtered.forEach(item => {
+    console.log(`[navigationFilter] 📋 Visible item: "${item.label}" (${item.key})`);
+  });
+
+  return filtered;
 }
 
 /**
@@ -244,8 +270,11 @@ export function getAllVisibleItems(
  * 
  * Helper function to create the context object needed for filtering.
  * 
+ * ✅ CRITICAL: Uses authService.hasPermission() to properly handle permission supersets
+ * (e.g., 'masters:manage' grants 'masters:read', 'resource:manage' grants 'resource:read', etc.)
+ * 
  * @param userRole - User's role
- * @param userPermissions - User's permissions
+ * @param userPermissions - User's permissions (for reference, but authService handles the actual check)
  * @returns Navigation filter context
  */
 export function createNavigationFilterContext(
@@ -256,7 +285,10 @@ export function createNavigationFilterContext(
     userRole,
     userPermissions,
     hasPermission: (permission: string): boolean => {
-      return userPermissions.includes(permission);
+      // ✅ Use authService.hasPermission() to properly handle permission supersets
+      // This ensures that permissions like 'masters:manage' grant 'masters:read',
+      // and 'resource:manage' grants 'resource:read', etc.
+      return authService.hasPermission(permission);
     },
     hasRole: (role: string | string[]): boolean => {
       if (Array.isArray(role)) {

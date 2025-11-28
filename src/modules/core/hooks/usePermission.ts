@@ -52,7 +52,10 @@ export const usePermission = () => {
   const checkFeatureAccess = useCallback((feature: string): boolean => {
     if (!auth.isAuthenticated) return false;
 
-    // Map features to required permissions
+    // ✅ ACCEPTABLE: Feature-to-permission mapping (not role mapping)
+    // This maps application features to database permissions, which is acceptable.
+    // Features are application concepts, permissions are database-driven.
+    // If new permissions are added to database, they can be mapped here.
     const featurePermissions: Record<string, string[]> = {
       customer_management: ['customers:read'],
       customer_creation: ['customers:create'],
@@ -159,23 +162,28 @@ export const usePermission = () => {
 
   /**
    * Get user's current role hierarchy level
-   * ⚠️ NOTE: Role hierarchy levels are business rules for UI/hierarchy comparison.
+   * ⚠️ NOTE: Role hierarchy levels are business rules for UI/hierarchy comparison ONLY.
    * For security checks, use permission-based checks instead of role hierarchy.
-   * TODO: Consider storing role hierarchy in database for full dynamic support.
+   * 
+   * ⚠️ TODO: This should be database-driven. Add hierarchy_level column to roles table
+   * and fetch it dynamically via rbacService.getRoles().
+   * 
+   * ⚠️ FALLBACK: This is a hardcoded fallback for UI display purposes only.
+   * It should NOT be used for security checks. Use authService.hasPermission() for security.
+   * 
    * @returns number representing role level (higher = more permissions)
    */
   const getRoleLevel = useCallback((): number => {
     if (!auth.isAuthenticated || !auth.user) return 0;
 
-    // ⚠️ NOTE: This is a business rule map for hierarchy comparison.
-    // For security checks, use authService.hasPermission() instead.
-    // In the future, this could be fetched from database if roles table has a hierarchy_level column.
+    // ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (not for security)
+    // This should be removed once roles table has hierarchy_level column
+    // TODO: Fetch from database when hierarchy_level column is added to roles table
     const roleLevels: Record<string, number> = {
       super_admin: 6,
       admin: 5,
       manager: 4,
       engineer: 3,
-      agent: 2,
       user: 1,
       customer: 0,
     };
@@ -185,8 +193,15 @@ export const usePermission = () => {
 
   /**
    * Check if user can manage another user (role hierarchy)
-   * ⚠️ NOTE: This uses role hierarchy for comparison, but for security checks,
-   * use permission-based checks (e.g., authService.hasPermission('users:manage')).
+   * ⚠️ NOTE: For security checks, use permission-based checks instead:
+   * return authService.hasPermission('users:manage');
+   * 
+   * This hierarchy check is for UI/hierarchy comparison ONLY.
+   * 
+   * ⚠️ FALLBACK: This uses hardcoded hierarchy for UI display purposes only.
+   * It should NOT be used for security checks. Use authService.hasPermission() for security.
+   * 
+   * ⚠️ TODO: Make this fully database-driven by adding hierarchy_level to roles table.
    * @param targetUserRole - Role of the user to be managed
    * @returns boolean indicating if current user can manage target user
    */
@@ -194,18 +209,15 @@ export const usePermission = () => {
     if (!auth.isAuthenticated) return false;
     if (auth.isSuperAdmin()) return true;
 
-    // ⚠️ NOTE: For security checks, prefer permission-based approach:
-    // return authService.hasPermission('users:manage');
-    // This hierarchy check is for UI/hierarchy comparison only.
-
+    // ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (not for security)
+    // This should be removed once roles table has hierarchy_level column
+    // TODO: Fetch from database when hierarchy_level column is added to roles table
     const currentLevel = getRoleLevel();
-    // ⚠️ NOTE: This map should ideally come from database if roles table has hierarchy_level column
     const targetLevel = {
       super_admin: 6,
       admin: 5,
       manager: 4,
       engineer: 3,
-      agent: 2,
       user: 1,
       customer: 0,
     }[targetUserRole] || 0;

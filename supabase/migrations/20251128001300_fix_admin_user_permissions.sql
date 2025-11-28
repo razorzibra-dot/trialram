@@ -24,21 +24,22 @@ BEGIN
   RAISE NOTICE 'Found user acme@admin.com with ID: %', admin_user_id;
   RAISE NOTICE 'User tenant_id: %', tenant_id_val;
 
-  -- Find the Administrator role for this tenant
+  -- Find the admin role for this tenant
+  -- ✅ Use normalized role name 'admin' (not 'Administrator')
   SELECT id INTO admin_role_id
   FROM roles
-  WHERE name = 'Administrator'
+  WHERE name = 'admin'
     AND (tenant_id = tenant_id_val OR (tenant_id IS NULL AND tenant_id_val IS NULL))
   LIMIT 1;
 
   IF admin_role_id IS NULL THEN
-    RAISE NOTICE 'Administrator role not found for tenant: %', tenant_id_val;
+    RAISE NOTICE 'admin role not found for tenant: %', tenant_id_val;
     RETURN;
   END IF;
 
-  RAISE NOTICE 'Found Administrator role with ID: %', admin_role_id;
+  RAISE NOTICE 'Found admin role with ID: %', admin_role_id;
 
-  -- Ensure user has Administrator role assigned
+  -- Ensure user has admin role assigned
   INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
   VALUES (admin_user_id, admin_role_id, tenant_id_val, NOW())
   ON CONFLICT (user_id, role_id, tenant_id) DO UPDATE
@@ -53,7 +54,7 @@ BEGIN
   WHERE rp.role_id = admin_role_id
     AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
 
-  RAISE NOTICE 'Administrator role has % user management permissions', perm_count;
+  RAISE NOTICE 'admin role has % user management permissions', perm_count;
 END $$;
 
 -- Step 2: Check if user exists
@@ -99,13 +100,13 @@ SELECT
   COUNT(ur.user_id) as user_count
 FROM roles r
 LEFT JOIN user_roles ur ON r.id = ur.role_id
-WHERE r.name IN ('Administrator', 'Manager', 'super_admin')
+WHERE r.name IN ('admin', 'manager', 'super_admin')
 GROUP BY r.name, r.id, r.tenant_id
 ORDER BY r.name, r.tenant_id;
 
--- Step 6: Check Administrator role permissions
+-- Step 6: Check admin role permissions
 SELECT 
-  'Administrator Permissions' as check_type,
+  'admin Permissions' as check_type,
   r.name as role_name,
   p.name as permission_name,
   p.resource,
@@ -113,7 +114,7 @@ SELECT
 FROM roles r
 JOIN role_permissions rp ON r.id = rp.role_id
 JOIN permissions p ON rp.permission_id = p.id
-WHERE r.name = 'Administrator'
+WHERE r.name = 'admin'
   AND (p.name LIKE 'users:%' OR p.name = 'user_management:read')
 ORDER BY p.name;
 

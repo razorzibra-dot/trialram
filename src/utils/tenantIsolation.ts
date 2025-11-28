@@ -332,3 +332,85 @@ export function getPermissionQueryFilters(user?: User | null) {
   };
 }
 
+/**
+ * ⚠️ SECURITY: Determine if tenant_id field should be visible in UI forms
+ * 
+ * **Security Rule**: Tenant users should NEVER see or be able to select tenant_id.
+ * Only super admins can see/manage tenant_id fields.
+ * 
+ * **Rationale**: 
+ * - Prevents data tampering and security breaches
+ * - Tenant_id is automatically set from current user context in backend services
+ * - Super admins need to see tenant_id for cross-tenant management
+ * 
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @returns true if tenant_id field should be visible (super admin only), false otherwise
+ * 
+ * @example
+ * ```typescript
+ * // In form component
+ * const shouldShowTenantId = shouldShowTenantIdField();
+ * 
+ * {shouldShowTenantId && (
+ *   <Form.Item name="tenantId" label="Tenant">
+ *     <Select>...</Select>
+ *   </Form.Item>
+ * )}
+ * ```
+ */
+export function shouldShowTenantIdField(user?: User | null): boolean {
+  // Always hide for tenant users - only super admins can see tenant_id
+  return isSuperAdmin(user);
+}
+
+/**
+ * ⚠️ SECURITY: Get tenant_id value to use in forms (for super admins only)
+ * 
+ * For tenant users, this returns null and tenant_id should be set automatically
+ * by backend services from current user context.
+ * 
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @param providedTenantId - Tenant ID provided in form data (for super admins)
+ * @returns Tenant ID to use, or null if should be auto-set by backend
+ */
+export function getFormTenantId(user?: User | null, providedTenantId?: string | null): string | null {
+  const currentUser = user || authService.getCurrentUser();
+  
+  // Super admins can specify tenant_id
+  if (isSuperAdmin(currentUser)) {
+    return providedTenantId || null;
+  }
+  
+  // Tenant users: return null - backend will auto-set from current user context
+  return null;
+}
+
+/**
+ * ⚠️ SECURITY: Check if Organization section should be shown in forms
+ * 
+ * **Security Rule**: Organization section (tenant selection) should ONLY be visible to super admins.
+ * Tenant users should NEVER see organization/tenant selection sections.
+ * 
+ * This function uses database-driven checks (isSuperAdmin) - no hardcoded role names.
+ * 
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @returns true if Organization section should be shown (super admins only), false otherwise
+ * 
+ * @example
+ * ```typescript
+ * // In form component
+ * const showOrgSection = shouldShowOrganizationSection();
+ * 
+ * {showOrgSection && (
+ *   <Card title="Organization">
+ *     <Form.Item name="tenantId">...</Form.Item>
+ *   </Card>
+ * )}
+ * ```
+ */
+export function shouldShowOrganizationSection(user?: User | null): boolean {
+  // ✅ Database-driven: Uses isSuperAdmin which checks database flags, not hardcoded role names
+  // Only super admins can see organization/tenant selection sections
+  return isSuperAdmin(user);
+}
+

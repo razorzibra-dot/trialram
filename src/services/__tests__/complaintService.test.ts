@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { complaintService } from '@/services/complaintService';
+import { complaintService } from '@/services/serviceFactory';
 
 describe('Complaint Service - Normalized Data', () => {
   beforeEach(() => {

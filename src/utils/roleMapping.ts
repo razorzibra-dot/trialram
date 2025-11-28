@@ -80,7 +80,7 @@ export function invalidateRoleCache(): void {
  * Uses database role names directly - no hardcoded mapping
  * Normalizes the role name for consistency
  * 
- * @param dbRoleName - Database role name (e.g., "Administrator", "Manager", "super_admin")
+ * @param dbRoleName - Database role name (normalized: "admin", "manager", "super_admin", etc.)
  * @param defaultRole - Default role if not found (defaults to 'user')
  * @returns UserRole enum value (normalized role name)
  */
@@ -141,6 +141,35 @@ export async function mapUserRoleToDatabaseRole(userRole: UserRole): Promise<str
  */
 export function extractUserRoleFromRole(role: Role): UserRole {
   return normalizeRoleName(role.name) as UserRole;
+}
+
+/**
+ * Synchronous role name normalization
+ * Normalizes database role names to UserRole enum values
+ * 
+ * ✅ Database role names are now normalized to match UserRole enum exactly
+ * No mapping needed - database stores enum values directly
+ * 
+ * @param dbRoleName - Database role name (should already be normalized: 'admin', 'manager', etc.)
+ * @param defaultRole - Default role if not found (defaults to 'user')
+ * @returns UserRole enum value (normalized)
+ */
+export function mapDatabaseRoleNameToUserRoleSync(
+  dbRoleName: string | null | undefined,
+  defaultRole: UserRole = 'user'
+): UserRole {
+  if (!dbRoleName) {
+    return defaultRole;
+  }
+  
+  // Normalize the role name (lowercase, trim)
+  const normalized = normalizeRoleName(dbRoleName);
+  
+  // ✅ Database role names now match UserRole enum exactly
+  // No validation needed - database stores normalized names that match enum
+  // Trust the database - if role exists in DB, it's valid
+  // Return normalized role directly (database ensures correctness)
+  return (normalized as UserRole) || defaultRole;
 }
 
 /**

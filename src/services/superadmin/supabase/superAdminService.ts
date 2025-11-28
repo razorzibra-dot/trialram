@@ -671,8 +671,14 @@ class SupabaseSuperAdminService {
     return ['active', 'inactive', 'suspended', 'deleted'];
   }
 
+  /**
+   * Get available user roles
+   * ✅ Database-driven: Fetches roles from database
+   */
   async getUserRoles(): Promise<string[]> {
-    return ['super_admin', 'admin', 'manager', 'agent'];
+    // ✅ Database-driven: Fetch roles from database
+    const { getValidUserRoles } = await import('@/utils/roleMapping');
+    return await getValidUserRoles();
   }
 
   async getUserStatuses(): Promise<string[]> {

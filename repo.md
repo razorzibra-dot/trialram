@@ -1,6 +1,6 @@
 # PDS CRM Application - Repository Documentation
 
-**Last Updated:** November 16, 2025  
+**Last Updated:** November 27, 2025  
 **Current Architecture:** Service Factory Pattern with 24 Unified Services  
 **RBAC System:** Database-Driven Role-Based Access Control  
 **Phase:** Production-Ready Implementation  
@@ -18,6 +18,10 @@
 7. [Implementation Guidelines](#7-implementation-guidelines)
 8. [Development Standards](#8-development-standards)
 9. [Rules for Future Implementation](#9-rules-for-future-implementation)
+10. [Tenant ID Security Guidelines](#10-tenant-id-security-guidelines)
+11. [Form Success Message Pattern](#11-form-success-message-pattern---critical-ux)
+12. [Emergency Procedures](#12-emergency-procedures)
+13. [Tenant Validation System](#13-tenant-validation-system---critical-security)
 
 ---
 
@@ -82,23 +86,18 @@ The CRM application follows a **Service Factory Architecture** with:
 | Database Role | User Type Enum | Tenant Scope | Responsibilities |
 |---------------|----------------|--------------|------------------|
 | `super_admin` | `super_admin` | **Platform-level** | Platform administration, cross-tenant access, impersonation |
-| `Administrator` | `admin` | **Single tenant** | Full tenant management, user lifecycle, role assignment |
-| `Manager` | `manager` | **Single tenant** | Team management, limited user editing, password resets |
-| `User` | `agent` | **Single tenant** | Standard CRM operations, limited user editing |
-| `Engineer` | `engineer` | **Single tenant** | Technical operations, product management, limited user editing |
-| `Customer` | `customer` | **Single tenant** | Read-only access to own data and basic CRM features |
+| `admin` | `admin` | **Single tenant** | Full tenant management, user lifecycle, role assignment |
+| `manager` | `manager` | **Single tenant** | Team management, limited user editing, password resets |
+| `user` | `user` | **Single tenant** | Standard CRM operations, limited user editing |
+| `engineer` | `engineer` | **Single tenant** | Technical operations, product management, limited user editing |
+| `customer` | `customer` | **Single tenant** | Read-only access to own data and basic CRM features |
 
-**Role Mapping Implementation:**
-```typescript
-const roleMap: Record<string, User['role']> = {
-  'Administrator': 'admin',
-  'Manager': 'manager', 
-  'User': 'agent',
-  'Engineer': 'engineer',
-  'Customer': 'customer',
-  'super_admin': 'super_admin'
-};
-```
+**✅ Role Names Normalized**: Database role names now match UserRole enum exactly. No mapping needed.
+
+**✅ No Role Mapping Needed**: Database role names match UserRole enum exactly:
+- Database stores: `'admin'`, `'manager'`, `'user'`, `'engineer'`, `'customer'`, `'super_admin'`
+- UserRole enum: `'admin'`, `'manager'`, `'user'`, `'engineer'`, `'customer'`, `'super_admin'`
+- Direct usage: `role.name` can be used directly as `UserRole` without mapping
 
 ### 2.2 Role Responsibilities Detailed
 
@@ -444,7 +443,7 @@ async getRoles(tenantId?: string): Promise<Role[]> {
 **❌ WRONG: Hardcoded values (DO NOT USE)**
 ```typescript
 // ❌ WRONG: Hardcoded role array
-const roles = ['admin', 'manager', 'user']; // Should fetch from database
+const validRoles = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer']; // Should fetch from database
 
 // ❌ WRONG: Hardcoded role mapping
 const roleMap = { 'admin': 'Administrator' }; // Should lookup from database
@@ -454,6 +453,33 @@ if (role.name === 'super_admin') return false; // Should use database flags
 
 // ❌ WRONG: Hardcoded permission name check
 if (['super_admin', 'platform_admin'].includes(perm.name)) return false; // Should use database flags
+
+// ❌ WRONG: Hardcoded role validation
+if (!['admin', 'manager', 'user'].includes(userRole)) throw new Error('Invalid role'); // Should use isValidUserRole()
+
+// ❌ WRONG: Hardcoded role arrays in navigation config
+requiredRole: ['admin', 'manager', 'user'] // Should use permission checks only
+
+// ❌ WRONG: Hardcoded role hierarchy
+const roleHierarchy = { admin: 4, manager: 3, ... } // Should fetch from database (hierarchy_level column)
+```
+
+**⚠️ ACCEPTABLE: UI Display Only (Not for Security)**
+```typescript
+// ✅ ACCEPTABLE: Switch statements for UI icons/colors (display only, not security)
+switch (role) {
+  case 'admin': return <CrownIcon />; // OK for UI display
+  case 'manager': return <ManagerIcon />; // OK for UI display
+}
+
+// ✅ ACCEPTABLE: Feature-to-permission mapping (not role mapping)
+const featurePermissions = {
+  customer_management: ['customers:read'], // Maps features to permissions (DB-driven)
+};
+
+// ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (documented as fallback)
+// Should be removed when hierarchy_level column is added to roles table
+const roleLevels = { admin: 5, manager: 4, ... }; // Documented as UI-only fallback
 ```
 
 **Future-Proof Design:**
@@ -517,6 +543,108 @@ const ROLE_PERMISSIONS = { 'admin': ['users:update', ...] };
 - No code deployment needed for permission updates
 - Consistent permission checking across all modules
 - Single source of truth (database) for all permissions
+
+### 2.8.1 Navigation Permission Checking - CRITICAL
+
+**⚠️ CRITICAL: Always Use `authService.hasPermission()` for Navigation Filtering**
+
+**Problem:**
+Navigation items may not appear for users even when they have the correct permissions in the database. This happens when navigation filtering uses simple array includes checks instead of `authService.hasPermission()`.
+
+**Root Cause:**
+The `authService.hasPermission()` method has sophisticated logic to handle:
+- **Permission Supersets**: `masters:manage` grants `masters:read`, `resource:manage` grants `resource:read`
+- **Permission Synonyms**: `:view` is equivalent to `:read`, `:create`/`:update` are equivalent to `:write`
+- **Super Admin Handling**: Super admin role automatically grants all permissions
+- **Resource/Action Combinations**: Handles complex permission patterns
+
+A simple `userPermissions.includes(permission)` check misses these relationships.
+
+**❌ WRONG: Simple Array Check (DO NOT USE)**
+```typescript
+// ❌ WRONG: Simple array check misses permission supersets
+export function createNavigationFilterContext(
+  userRole: string,
+  userPermissions: string[]
+): NavigationFilterContext {
+  return {
+    userRole,
+    userPermissions,
+    hasPermission: (permission: string): boolean => {
+      return userPermissions.includes(permission); // ❌ MISSES SUPERSETS!
+    },
+    // ...
+  };
+}
+```
+
+**✅ CORRECT: Use authService.hasPermission() (ALWAYS USE)**
+```typescript
+// ✅ CORRECT: Use authService.hasPermission() to handle supersets
+import { authService } from '@/services/serviceFactory';
+
+export function createNavigationFilterContext(
+  userRole: string,
+  userPermissions: string[]
+): NavigationFilterContext {
+  return {
+    userRole,
+    userPermissions,
+    hasPermission: (permission: string): boolean => {
+      // ✅ Use authService.hasPermission() to properly handle permission supersets
+      // This ensures that permissions like 'masters:manage' grant 'masters:read',
+      // and 'resource:manage' grants 'resource:read', etc.
+      return authService.hasPermission(permission);
+    },
+    hasRole: (role: string | string[]): boolean => {
+      if (Array.isArray(role)) {
+        return role.includes(userRole);
+      }
+      return role === userRole;
+    },
+  };
+}
+```
+
+**Why This Matters:**
+- **Permission Supersets**: Users with `masters:manage` should see navigation items requiring `masters:read`
+- **Consistency**: Navigation filtering uses the same permission logic as the rest of the application
+- **Future-Proof**: New permission relationships are automatically handled by `authService.hasPermission()`
+- **Admin Access**: Admin users with various `*:manage` permissions will correctly see all navigation items
+
+**Where This Applies:**
+- ✅ Navigation filtering (`src/utils/navigationFilter.ts`)
+- ✅ Menu visibility checks
+- ✅ Route guards
+- ✅ Component-level permission checks
+- ✅ Any code that filters items based on permissions
+
+**Checklist for Navigation Permission Checks:**
+- [ ] Navigation filter uses `authService.hasPermission()` (not simple array check)
+- [ ] Permission context is created using `createNavigationFilterContext()` from `navigationFilter.ts`
+- [ ] No direct `userPermissions.includes()` checks for navigation items
+- [ ] Navigation items are fetched from database (`navigation_items` table)
+- [ ] Permission requirements are stored in database (`permission_name` column)
+
+**Common Mistakes to Avoid:**
+- ❌ Using `userPermissions.includes(permission)` in navigation filters
+- ❌ Creating custom permission check functions instead of using `authService.hasPermission()`
+- ❌ Hardcoding permission checks in navigation components
+- ❌ Not using `createNavigationFilterContext()` helper function
+- ❌ Assuming simple array checks will work for all permission scenarios
+
+**Example Issue:**
+- Admin user has `masters:read` and `masters:manage` permissions in database
+- Navigation item requires `masters:read` permission
+- Simple array check: `userPermissions.includes('masters:read')` → ✅ Works if exact match exists
+- But if admin only has `masters:manage` (not `masters:read`), simple check fails
+- `authService.hasPermission('masters:read')` → ✅ Works because it recognizes `masters:manage` grants `masters:read`
+
+**Related Files:**
+- `src/utils/navigationFilter.ts` - Navigation filtering logic
+- `src/hooks/useNavigation.ts` - Navigation hook that uses filtering
+- `src/services/auth/supabase/authService.ts` - Permission checking logic
+- `src/components/layout/EnterpriseLayout.tsx` - Layout that renders navigation
 
 ### 2.9 Permission Hook Property Name Consistency - CRITICAL
 
@@ -1394,7 +1522,7 @@ if (!authService.hasPermission('manage_[resource]')) {
 
 ---
 
-## 11. Emergency Procedures
+## 12. Emergency Procedures
 
 ### 11.1 Security Incidents
 
@@ -1430,7 +1558,142 @@ if (!authService.hasPermission('manage_[resource]')) {
 
 ---
 
-## 12. Conclusion
+## 11. Form Success Message Pattern - CRITICAL UX
+
+### 11.1 ⚠️ CRITICAL RULE: No Duplicate Success Messages
+
+**Problem**: Duplicate success messages appear when both form components and page components show success messages.
+
+**Standard Pattern**:
+- **Form Components** (`*FormPanel.tsx`, `*FormModal.tsx`): Should NOT show success messages. They should only call the `onSave`/`onSuccess` callback.
+- **Page Components** (`*Page.tsx`): Should show success messages. They handle the actual mutation and know when it succeeds.
+
+**Rationale**:
+1. Prevents duplicate notifications
+2. Makes form components reusable
+3. Page components control the flow and can show appropriate messages
+4. Consistent UX across the application
+
+**Example - Correct Pattern**:
+```typescript
+// ✅ Form Component (UserFormPanel.tsx)
+const handleSave = async () => {
+  try {
+    const values = await form.validateFields();
+    await onSave(values); // Just call callback, no message
+    form.resetFields();
+    onClose();
+  } catch (error) {
+    message.error(error.message); // Only show errors
+  }
+};
+
+// ✅ Page Component (UsersPage.tsx)
+const handleFormSave = async (values: CreateUserDTO | UpdateUserDTO) => {
+  try {
+    if (drawerMode === 'edit' && selectedUser) {
+      await updateUser.mutateAsync(values as UpdateUserDTO);
+      message.success('User updated successfully'); // Show success here
+    } else if (drawerMode === 'create') {
+      await createUser.mutateAsync(values as CreateUserDTO);
+      message.success('User created successfully'); // Show success here
+    }
+    closeDrawer();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : 'Failed to save user');
+  }
+};
+```
+
+**Example - Incorrect Pattern (DUPLICATE)**:
+```typescript
+// ❌ Form Component (UserFormPanel.tsx) - WRONG
+const handleSave = async () => {
+  await onSave(values);
+  message.success('User updated successfully!'); // ❌ Duplicate message
+  onClose();
+};
+
+// ❌ Page Component (UsersPage.tsx) - WRONG
+const handleFormSave = async (values) => {
+  await updateUser.mutateAsync(values);
+  message.success('User updated successfully'); // ❌ Duplicate message
+  closeDrawer();
+};
+```
+
+**Files to Check for Duplicates**:
+- `src/modules/features/user-management/components/UserFormPanel.tsx` ✅ Fixed
+- `src/modules/features/customers/components/CustomerFormPanel.tsx` (form shows, page doesn't - OK)
+- `src/modules/features/service-contracts/components/ServiceContractFormModal.tsx` (form shows, page doesn't - OK)
+- All other form components should follow the same pattern
+
+**Migration Strategy**:
+1. Remove success messages from form components
+2. Add success messages to page components that handle mutations
+3. Ensure form components only call `onSave`/`onSuccess` callbacks
+4. Test each module to ensure no duplicate messages
+
+---
+
+## 12. Tenant Validation System - CRITICAL SECURITY
+
+### 11.1 ⚠️ CRITICAL SECURITY RULE: All Operations Must Validate Tenant TENANT_ID_SECURITY_IMPLEMENTATION.md
+
+**Security Principle**: Every GET/POST/PUT/DELETE operation MUST validate tenant_id. No cross-tenant operations are allowed (except for super admins). All validation attempts are logged for audit purposes.
+
+**Rationale**:
+- Prevents unauthorized cross-tenant data access
+- Ensures data isolation at the service layer
+- Provides comprehensive audit trail for security compliance
+- No bypasses or tampering is possible
+
+### 11.2 Centralized Validation System
+
+**Location**: `src/utils/tenantValidation.ts`
+
+**Key Functions**:
+- `validateTenantAccess()` - Validates access to existing records (GET/PUT/DELETE)
+- `validateTenantForOperation()` - Validates tenant assignment for new records (POST)
+- `getOperationTenantId()` - Gets the correct tenant_id to use
+- `applyTenantFilter()` - Applies tenant filter to queries
+
+### 12.3 Base Service Class
+
+**Location**: `src/services/base/BaseSupabaseService.ts`
+
+All Supabase services should extend `BaseSupabaseService` to get automatic tenant validation. See `TENANT_VALIDATION_IMPLEMENTATION.md` for detailed usage examples.
+
+### 12.4 Validation Patterns
+
+All CRUD operations must use the validation methods:
+- **GET (List)**: Use `applyTenantFilterToQuery()`
+- **GET (Single)**: Use `validateTenantAccessForGet()`
+- **POST**: Use `validateTenantForCreate()` and `ensureTenantId()`
+- **PUT**: Use `validateTenantAccessForUpdate()` and `ensureTenantId()`
+- **DELETE**: Use `validateTenantAccessForUpdate()`
+
+### 12.5 Audit Logging
+
+All tenant validation attempts are automatically logged with:
+- Operation type, resource, resource ID
+- Requested tenant ID, current user tenant ID
+- User ID, role, super admin status
+- Validation result (ALLOWED/DENIED) and reason
+
+Access audit log: `getValidationAuditLog(limit)`
+
+### 12.6 Security Benefits
+
+1. **No Bypasses**: All operations go through centralized validation
+2. **Comprehensive Logging**: Every validation attempt is logged
+3. **Audit Trail**: Complete history of all tenant access attempts
+4. **Consistent Enforcement**: Same validation logic across all services
+5. **Easy Monitoring**: Centralized logging makes monitoring easier
+
+---
+
+## 13. Conclusion
 
 This documentation serves as the **ruleset for future implementation** and **criteria for making any changes** to ensure all layers remain in sync and consistent with the current code structure and implemented design.
 
@@ -1453,5 +1716,5 @@ This documentation serves as the **ruleset for future implementation** and **cri
 
 **Document Owner:** Development Team  
 **Review Cycle:** Monthly  
-**Last Reviewed:** November 16, 2025  
-**Next Review:** December 16, 2025
+**Last Reviewed:** November 27, 2025  
+**Next Review:** December 27, 2025

@@ -10,7 +10,7 @@ import { SaveOutlined, CloseOutlined, InfoCircleOutlined, MailOutlined, UserOutl
 import { UserDTO, CreateUserDTO, UpdateUserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
-import * as tenantIsolation from '@/utils/tenantIsolation';
+import { shouldShowTenantIdField, getFormTenantId, shouldShowOrganizationSection } from '@/utils/tenantIsolation';
 
 interface UserFormPanelProps {
   open: boolean;
@@ -104,7 +104,21 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
         return;
       }
 
-      const values = await form.validateFields();
+      // ⚠️ SECURITY: Only validate tenantId field if it's visible (super admin)
+      const showTenantField = shouldShowTenantIdField(currentUser);
+      
+      // If tenant field is hidden, exclude it from validation
+      // Use validateFields with field names to skip tenantId validation for tenant users
+      const fieldsToValidate = showTenantField 
+        ? undefined // Validate all fields including tenantId (super admin)
+        : ['name', 'firstName', 'lastName', 'email', 'role', 'status', 'phone', 'mobile', 'companyName', 'department', 'position']; // Exclude tenantId (tenant user)
+
+      const values = await form.validateFields(fieldsToValidate);
+      
+      // ⚠️ SECURITY: Get tenant_id using utility function
+      // For tenant users, this returns null and backend will auto-set from current user context
+      // For super admins, this returns the selected tenant_id
+      const tenantId = getFormTenantId(currentUser, values.tenantId);
       
       // Convert form values to appropriate DTO
       const data: CreateUserDTO | UpdateUserDTO = {
@@ -119,10 +133,13 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
         companyName: values.companyName,
         department: values.department,
         position: values.position,
+        // ⚠️ SECURITY: Only include tenantId if user is super admin
+        // For tenant users, backend will auto-set tenant_id from current user context
+        ...(tenantId && { tenantId }),
       };
       
       await onSave(data);
-      message.success(mode === 'create' ? 'User created successfully!' : 'User updated successfully!');
+      // Success message is shown by the parent component (UsersPage)
       form.resetFields();
       onClose();
     } catch (error) {
@@ -135,14 +152,26 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
   const title = mode === 'create' ? 'Create New User' : 'Edit User';
 
   /**
-   * ✅ Task 2.6: Render tenant field with super admin handling
-   * Disables tenant selection for super admins (isSuperAdmin=true, tenantId=null)
-   * Shows info alert explaining super admin scope
+   * ⚠️ SECURITY: Render tenant field - ONLY visible to super admins
+   * 
+   * **Security Rule**: Tenant users should NEVER see or be able to select tenant_id.
+   * Tenant_id is automatically set from current user context in backend services.
+   * Only super admins can see/manage tenant_id for cross-tenant management.
    */
   const renderTenantField = (): React.ReactNode => {
-    const isSuperAdmin = user?.isSuperAdmin === true || user?.tenantId === null;
+    // ⚠️ SECURITY: Only show tenant_id field to super admins
+    const showTenantField = shouldShowTenantIdField(currentUser);
+    
+    if (!showTenantField) {
+      // Tenant users: Don't show tenant_id field at all
+      // Backend will automatically set tenant_id from current user context
+      return null;
+    }
 
-    if (isSuperAdmin) {
+    // Super admin: Show tenant selector
+    const isEditingSuperAdmin = mode === 'edit' && user && (user.isSuperAdmin === true || user.tenantId === null);
+    
+    if (isEditingSuperAdmin) {
       return (
         <div style={{ marginBottom: 16 }}>
           <Alert
@@ -156,21 +185,20 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
       );
     }
 
-    // Regular user - show tenant selector
+    // Super admin creating/editing regular user: Show tenant selector
     return (
       <Form.Item
         label={
           <span>
-            Tenant <Tooltip title="Organization/Tenant this user belongs to. Required for non-super admins."><InfoCircleOutlined /></Tooltip>
+            Tenant <Tooltip title="Organization/Tenant this user belongs to. Only super admins can see this field."><InfoCircleOutlined /></Tooltip>
           </span>
         }
         name="tenantId"
-        rules={[{ required: true, message: 'Tenant is required for non-super admin users' }]}
+        rules={showTenantField ? [{ required: true, message: 'Tenant is required' }] : []}
       >
         <Select
           placeholder="Select a tenant"
           prefix={<TeamOutlined />}
-          disabled={mode === 'edit' && user ? !tenantIsolation.isSuperAdmin(user as any) : false}
         >
           {allTenants.map(tenant => (
             <Select.Option key={tenant.id} value={tenant.id}>
@@ -294,10 +322,12 @@ export const UserFormPanel: React.FC<UserFormPanelProps> = ({
           </Row>
         </Card>
 
-        {/* Tenant Selection Section - ✅ Task 2.6 */}
-        <Card title="Organization" style={{ marginBottom: 16 }} size="small">
-          {renderTenantField()}
-        </Card>
+        {/* Organization Section - ✅ Only visible to super admins */}
+        {shouldShowOrganizationSection(currentUser) && (
+          <Card title="Organization" style={{ marginBottom: 16 }} size="small">
+            {renderTenantField()}
+          </Card>
+        )}
 
         {/* Personal Information Section */}
         <Card title="Personal Information" style={{ marginBottom: 16 }} size="small">

@@ -54,7 +54,7 @@ type EnvironmentType = 'development' | 'production' | 'highSecurity' | 'lowSecur
  * - Tenant-specific configuration
  * - Dynamic configuration updates
  */
-class SessionConfigService {
+class MockSessionConfigService {
   private config: SessionConfig = DEFAULT_SESSION_CONFIG;
   private configListeners: Set<(config: SessionConfig) => void> = new Set();
 
@@ -177,7 +177,7 @@ Session Config:
   }
 }
 
-export const sessionConfigService = new SessionConfigService();
+export const mockSessionConfigService = new MockSessionConfigService();
 
 // Initialize from environment on import
 sessionConfigService.initializeFromEnvironment();

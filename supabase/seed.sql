@@ -67,20 +67,17 @@ INSERT INTO permissions (name, description, resource, action, category) VALUES
 ('permissions.delete', 'Delete permissions', 'permissions', 'delete', 'admin')
 ON CONFLICT (name) DO NOTHING;
 -- Insert default roles for each tenant
+-- ✅ Normalized role names to match UserRole enum exactly (no mapping needed)
 INSERT INTO roles (name, description, tenant_id, is_system_role) VALUES
 -- System roles (tenant_id will be set when tenant is created)
 ('super_admin', 'Super administrator with full system access', NULL, true),
-
 ('admin', 'Administrator with full tenant access', NULL, true),
-
 ('manager', 'Manager with departmental access', NULL, true),
-
 ('user', 'Standard user with limited access', NULL, true),
-
+('engineer', 'Engineer with technical access', NULL, true),
+('customer', 'Customer with read-only access', NULL, true),
 ('sales_rep', 'Sales representative', NULL, true),
-
 ('support_agent', 'Support agent', NULL, true),
-
 ('contract_manager', 'Contract manager', NULL, true)
 ON CONFLICT DO NOTHING;
 -- Tenants already seeded by isolated reset migration

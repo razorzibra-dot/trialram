@@ -1,6 +1,6 @@
 # Service Factory Architecture
 
-**Updated:** November 15, 2025
+**Updated:** November 27, 2025
 **Phase:** 4 - Deep Clean & Structure Optimization
 **Status:** Production-Ready
 
@@ -700,7 +700,7 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.name = 'Administrator'
+WHERE r.name = 'admin'
   AND p.name IN (
     'read', 'write', 'delete',
     'users:read', 'users:create', 'users:update', 'users:delete',
@@ -821,6 +821,9 @@ async isPlatformRoleByName(roleName: string): Promise<boolean>
 
 // Find role record in database
 async findRoleByName(roleName: string): Promise<Role | null>
+
+// Synchronous normalization (trusts database - no validation array)
+mapDatabaseRoleNameToUserRoleSync(dbRoleName: string): UserRole
 ```
 
 #### 12.8.2 Tenant Isolation Using Database Flags
@@ -906,7 +909,7 @@ const isPlatform = await isPlatformRoleByName(roleName);
 **❌ WRONG: Hardcoded Values (DO NOT USE)**
 ```typescript
 // ❌ WRONG: Hardcoded role array
-const roles = ['admin', 'manager', 'user'];
+const validRoles = ['super_admin', 'admin', 'manager', 'user', 'engineer', 'customer'];
 
 // ❌ WRONG: Hardcoded role mapping
 const roleMap = { 'admin': 'Administrator' };
@@ -916,6 +919,33 @@ if (role.name === 'super_admin') return false;
 
 // ❌ WRONG: Hardcoded permission check
 if (['super_admin', 'platform_admin'].includes(perm.name)) return false;
+
+// ❌ WRONG: Hardcoded role validation
+if (!['admin', 'manager'].includes(userRole)) throw new Error('Invalid role');
+
+// ❌ WRONG: Hardcoded role arrays in navigation config
+requiredRole: ['admin', 'manager', 'user'] // Should use permission checks only
+
+// ❌ WRONG: Hardcoded role hierarchy
+const roleHierarchy = { admin: 4, manager: 3, ... } // Should fetch from database
+```
+
+**⚠️ ACCEPTABLE: UI Display Only (Not for Security)**
+```typescript
+// ✅ ACCEPTABLE: Switch statements for UI icons/colors (display only, not security)
+switch (role) {
+  case 'admin': return <CrownIcon />; // OK for UI display
+  case 'manager': return <ManagerIcon />; // OK for UI display
+}
+
+// ✅ ACCEPTABLE: Feature-to-permission mapping (not role mapping)
+const featurePermissions = {
+  customer_management: ['customers:read'], // Maps features to permissions (DB-driven)
+};
+
+// ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (documented as fallback)
+// Should be removed when hierarchy_level column is added to roles table
+const roleLevels = { admin: 5, manager: 4, ... }; // Documented as UI-only fallback
 ```
 
 #### 12.8.6 System Architecture
@@ -1054,4 +1084,212 @@ GROUP BY u.email, u.tenant_id;
 
 ---
 
-**Last Updated:** November 22, 2025 | **Maintained By:** Development Team
+---
+
+## 13. Tenant ID Security Guidelines
+
+### 13.1 ⚠️ CRITICAL SECURITY RULE: Tenant ID Visibility
+
+**Security Principle**: Tenant users should **NEVER** see or be able to select `tenant_id` in UI forms. This prevents data tampering and security breaches.
+
+**Rationale**:
+- `tenant_id` is automatically set from current user context in backend services
+- Allowing tenant users to see/select `tenant_id` creates security vulnerabilities
+- Users could attempt to access or create data in other tenants
+- Only super admins need to see/manage `tenant_id` for cross-tenant management
+
+### 13.2 Implementation Guidelines
+
+#### 13.2.1 Utility Functions
+
+Use the centralized utility functions from `src/utils/tenantIsolation.ts`:
+
+```typescript
+import { shouldShowTenantIdField, getFormTenantId } from '@/utils/tenantIsolation';
+
+// Check if tenant_id field should be visible
+const showTenantField = shouldShowTenantIdField(currentUser);
+
+// Get tenant_id value for form submission (returns null for tenant users)
+const tenantId = getFormTenantId(currentUser, formValues.tenantId);
+```
+
+#### 13.2.2 Form Implementation Pattern
+
+**✅ CORRECT: Hide entire Organization section for tenant users**
+```typescript
+import { shouldShowOrganizationSection, shouldShowTenantIdField, getFormTenantId } from '@/utils/tenantIsolation';
+
+// Hide entire Organization Card section for tenant users
+{shouldShowOrganizationSection(currentUser) && (
+  <Card title="Organization">
+    {renderTenantField()}
+  </Card>
+)}
+
+// Render tenant field helper
+const renderTenantField = (): React.ReactNode => {
+  const showTenantField = shouldShowTenantIdField(currentUser);
+  
+  if (!showTenantField) {
+    // Tenant users: Don't show tenant_id field at all
+    // Backend will automatically set tenant_id from current user context
+    return null;
+  }
+
+  // Super admin: Show tenant selector
+  return (
+    <Form.Item name="tenantId" label="Tenant">
+      <Select>...</Select>
+    </Form.Item>
+  );
+};
+```
+
+#### 13.2.3 Backend Service Pattern
+
+Backend services automatically set `tenant_id` from current user context:
+
+```typescript
+// In service create/update methods
+const currentUser = authService.getCurrentUser();
+const currentTenantId = authService.getCurrentTenantId();
+
+if (isSuperAdmin(currentUser)) {
+  // Super admins can specify tenant_id
+  assignedTenantId = data.tenantId || currentTenantId;
+} else {
+  // Tenant users: Always use current user's tenant
+  assignedTenantId = currentTenantId;
+  // Ignore any tenantId from form data
+}
+```
+
+### 13.3 Security Benefits
+
+1. **Prevents Data Tampering**: Users cannot attempt to change their tenant assignment
+2. **Prevents Cross-Tenant Access**: Users cannot see or select other tenant IDs
+3. **Enforces Backend Control**: Tenant assignment is always controlled by backend services
+4. **Maintains Data Integrity**: Tenant isolation is enforced at both UI and backend layers
+5. **Audit Trail**: All tenant assignments are logged and traceable
+
+---
+
+## 14. Tenant Validation System Architecture
+
+### 14.1 Overview
+
+The tenant validation system ensures that **ALL** CRUD operations validate tenant_id and prevent cross-tenant access. This is enforced at the utility level with comprehensive logging and audit trails.
+
+### 14.2 Architecture Components
+
+```
+┌─────────────────────────────────────────────────────────┐
+│         Service Layer (CRUD Operations)                │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │     BaseSupabaseService (Base Class)             │  │
+│  │  - validateTenantAccessForGet()                  │  │
+│  │  - validateTenantForCreate()                      │  │
+│  │  - validateTenantAccessForUpdate()                │  │
+│  │  - applyTenantFilterToQuery()                     │  │
+│  │  - ensureTenantId()                               │  │
+│  └──────────────────┬───────────────────────────────┘  │
+│                      │                                    │
+│                      ▼                                    │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │     Tenant Validation Utilities                  │  │
+│  │  - validateTenantAccess()                        │  │
+│  │  - validateTenantForOperation()                  │  │
+│  │  - getOperationTenantId()                        │  │
+│  │  - applyTenantFilter()                           │  │
+│  └──────────────────┬───────────────────────────────┘  │
+│                      │                                    │
+│                      ▼                                    │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │     Audit Logging System                         │  │
+│  │  - Logs all validation attempts                  │  │
+│  │  - Tracks allow/deny decisions                   │  │
+│  │  - Records user, tenant, operation details        │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 14.3 Validation Flow
+
+**GET Operation Flow**:
+1. Service calls `validateTenantAccessForGet(id, 'GET')`
+2. Base service fetches record's tenant_id
+3. Validation utility checks access
+4. Audit log entry created
+5. Query proceeds with tenant filter applied
+
+**POST Operation Flow**:
+1. Service calls `validateTenantForCreate(data)`
+2. Validation utility checks tenant assignment
+3. Audit log entry created
+4. `ensureTenantId()` sets correct tenant_id
+5. Insert proceeds with validated tenant_id
+
+**PUT/DELETE Operation Flow**:
+1. Service calls `validateTenantAccessForUpdate(id, 'PUT'/'DELETE')`
+2. Base service fetches record's tenant_id
+3. Validation utility checks access
+4. Audit log entry created
+5. Update/delete proceeds with tenant filter
+
+### 14.4 Security Guarantees
+
+1. **No Bypasses**: All operations must go through validation utilities
+2. **Automatic Logging**: Every validation attempt is logged
+3. **Consistent Enforcement**: Same validation logic everywhere
+4. **Super Admin Handling**: Properly handles super admin access
+5. **Tenant User Protection**: Tenant users cannot access other tenants
+
+### 14.5 Implementation Example
+
+```typescript
+import { BaseSupabaseService } from '@/services/base/BaseSupabaseService';
+
+export class CustomerService extends BaseSupabaseService {
+  constructor() {
+    super('customers', true); // Table uses tenant isolation
+  }
+
+  async getCustomer(id: string) {
+    // ⚠️ SECURITY: Validate tenant access
+    await this.validateTenantAccessForGet(id, 'GET');
+    
+    const query = this.getClient()
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id);
+    
+    const filteredQuery = this.applyTenantFilterToQuery(query);
+    const { data, error } = await filteredQuery.single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async createCustomer(data: any) {
+    // ⚠️ SECURITY: Validate tenant assignment
+    await this.validateTenantForCreate(data);
+    
+    // ⚠️ SECURITY: Ensure tenant_id is set correctly
+    const safeData = this.ensureTenantId(data);
+    
+    const { data: created, error } = await this.getClient()
+      .from(this.tableName)
+      .insert(safeData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return created;
+  }
+}
+```
+
+---
+
+**Last Updated:** November 27, 2025 | **Maintained By:** Development Team

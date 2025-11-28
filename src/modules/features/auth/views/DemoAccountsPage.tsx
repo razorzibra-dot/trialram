@@ -80,7 +80,7 @@ export const DemoAccountsPage: React.FC = () => {
       case 'super_admin': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'manager': return 'bg-green-100 text-green-800 border-green-200';
-      case 'agent': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'user': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'engineer': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'customer': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -92,7 +92,7 @@ export const DemoAccountsPage: React.FC = () => {
       case 'super_admin': return Crown;
       case 'admin': return Shield;
       case 'manager': return Users;
-      case 'agent': return Activity;
+      case 'user': return Activity;
       case 'engineer': return Settings;
       case 'customer': return Users;
       default: return Users;
@@ -104,7 +104,7 @@ export const DemoAccountsPage: React.FC = () => {
       case 'super_admin': return 'Full platform administration with all permissions';
       case 'admin': return 'Tenant administrator with full tenant permissions';
       case 'manager': return 'Business operations manager with analytics access';
-      case 'agent': return 'Customer service agent with basic operations';
+      case 'user': return 'Standard user with basic operations';
       case 'engineer': return 'Technical engineer with product and job work access';
       case 'customer': return 'Customer with read-only access to own data';
       default: return 'Standard user access';

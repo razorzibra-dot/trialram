@@ -10,7 +10,8 @@
  * - Full RBAC integration with AuthContext
  * - Responsive design with collapsed sidebar
  * 
- * @see src/config/navigationPermissions.ts for navigation configuration
+ * ✅ Database-driven: Navigation items fetched from navigation_items table
+ * @see src/hooks/useNavigation.ts for database-driven navigation hook
  * @see src/utils/navigationFilter.ts for filtering logic
  */
 
@@ -39,12 +40,8 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { navigationConfig } from '@/config/navigationPermissions';
-import {
-  filterNavigationItems,
-  createNavigationFilterContext,
-  getPermissionAwareBreadcrumbs,
-} from '@/utils/navigationFilter';
+import { useNavigation } from '@/hooks/useNavigation';
+import { createNavigationFilterContext, getPermissionAwareBreadcrumbs } from '@/utils/navigationFilter';
 import type { FilteredNavigationItem } from '@/utils/navigationFilter';
 
 const { Header, Sider, Content } = Layout;
@@ -59,30 +56,23 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
   const location = useLocation();
   const { user, logout, hasRole, hasPermission, getUserPermissions } = useAuth();
 
-  // Permissions are dynamic and provided by the auth service (DB-driven).
+  // ✅ Database-driven: Fetch navigation items from database
+  const { filteredItems: filteredNavItems, configItems, isLoading: navLoading } = useNavigation();
 
-  /**
-   * Get permission-filtered navigation items
-   * 
-   * Memoized computation to avoid recalculating on every render.
-   * Filters navigation items based on user permissions and roles.
-   * Only includes items the user has access to.
-   */
-  const filteredNavItems = useMemo(() => {
-    if (!user) return [];
-
-    // Get user permissions from auth context (DB-driven)
-    const userPermissions = getUserPermissions();
-
-    const filterContext = createNavigationFilterContext(user.role, userPermissions);
-    return filterNavigationItems(navigationConfig, filterContext);
-  }, [user]);
-
-  /**
-   * Get permission-aware breadcrumbs
-   */
+  // Debug logging for navigation items
+  React.useEffect(() => {
+    console.log('[EnterpriseLayout] 🎯 Filtered navigation items:', filteredNavItems.length);
+    filteredNavItems.forEach(item => {
+      console.log(`[EnterpriseLayout] 📋 Menu item: "${item.label}" (key: ${item.key}, visible: ${item.isVisible})`);
+      if (item.filteredChildren) {
+        item.filteredChildren.forEach(child => {
+          console.log(`[EnterpriseLayout]   └─ "${child.label}" (key: ${child.key}, visible: ${child.isVisible})`);
+        });
+      }
+    });
+  }, [filteredNavItems]);
   const breadcrumbItems = useMemo(() => {
-    if (!user) return [];
+    if (!user || !configItems || configItems.length === 0) return [];
 
     const userPermissions = getUserPermissions();
     const filterContext = createNavigationFilterContext(user.role, userPermissions);
@@ -99,13 +89,42 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
       },
     ];
 
+    // Find breadcrumb path from database navigation items
+    const findBreadcrumbPath = (items: typeof configItems, pathname: string): typeof configItems => {
+      for (const item of items) {
+        if (item.routePath === pathname || item.key === pathname) {
+          return [item];
+        }
+        if (item.children) {
+          const childPath = findBreadcrumbPath(item.children, pathname);
+          if (childPath.length > 0) {
+            return [item, ...childPath];
+          }
+        }
+      }
+      return [];
+    };
+
+    const path = findBreadcrumbPath(configItems, location.pathname);
+    path.forEach(item => {
+      if (!item.isSection && item.routePath) {
+        breadcrumbs.push({
+          title: item.label,
+          href: item.routePath,
+        });
+      }
+    });
+
     return breadcrumbs;
-  }, [user, location.pathname]);
+  }, [user, location.pathname, configItems, getUserPermissions]);
 
   /**
    * Convert filtered navigation config to Ant Design menu items
+   * ✅ Database-driven: Uses navigation items from database
    */
   const getMenuItems = (): MenuProps['items'] => {
+    // ✅ Database-driven: Icon mapping can be extended to use item.icon from database
+    // For now, keeping hardcoded icons for UI display only (acceptable per rules)
     const iconMap: Record<string, React.ReactNode> = {
       '/tenant/dashboard': <DashboardOutlined />,
       '/tenant/customers': <TeamOutlined />,
@@ -125,7 +144,17 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
 
     const convertToMenuItems = (items: FilteredNavigationItem[]): MenuProps['items'] => {
       return items.map((item) => {
-        // Section items become groups
+        // Section items with children become submenus (not groups)
+        if (item.isSection && item.filteredChildren && item.filteredChildren.length > 0) {
+          return {
+            key: item.key,
+            icon: iconMap[item.key] || (item.icon ? <span>{item.icon}</span> : <AppstoreOutlined />),
+            label: item.label,
+            children: convertToMenuItems(item.filteredChildren),
+          };
+        }
+  
+        // Section items without children become groups (visual separators)
         if (item.isSection) {
           return {
             type: 'group',
@@ -133,23 +162,24 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
             label: item.label,
           };
         }
-
+  
         // Items with children become submenus
         if (item.filteredChildren && item.filteredChildren.length > 0) {
           return {
             key: item.key,
-            icon: iconMap[item.key] || <AppstoreOutlined />,
+            icon: iconMap[item.key] || (item.icon ? <span>{item.icon}</span> : <AppstoreOutlined />),
             label: item.label,
             children: convertToMenuItems(item.filteredChildren),
           };
         }
-
-        // Regular items
+  
+        // Regular items - use routePath from database if available
+        const routePath = item.routePath || item.key;
         return {
           key: item.key,
-          icon: iconMap[item.key] || <AppstoreOutlined />,
+          icon: iconMap[item.key] || (item.icon ? <span>{item.icon}</span> : <AppstoreOutlined />),
           label: item.label,
-          onClick: () => navigate(item.key),
+          onClick: () => navigate(routePath),
         };
       });
     };

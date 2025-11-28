@@ -56,14 +56,27 @@ class SupabaseRBACService {
     const { filterFn } = getPermissionQueryFilters(currentUser);
     const filteredData = filterFn(data);
 
-    console.log('[RBAC] Permissions fetched:', filteredData.length, 'of', data.length, 'for user role:', currentUser?.role);
-    return filteredData;
+    // ✅ Map database rows to Permission interface (snake_case → camelCase)
+    const mappedPermissions: Permission[] = filteredData.map(perm => ({
+      id: perm.id,
+      name: perm.name,
+      description: perm.description || '',
+      category: perm.category as 'core' | 'module' | 'administrative' | 'system',
+      resource: perm.resource || '',
+      action: perm.action || '',
+      is_system_permission: perm.is_system_permission || false
+    }));
+
+    console.log('[RBAC] Permissions fetched:', mappedPermissions.length, 'of', data.length, 'for user role:', currentUser?.role);
+    return mappedPermissions;
   }
 
   /**
    * Get all roles, optionally filtered by tenant
    * ⚠️ TENANT ISOLATION: Uses systematic tenant isolation utilities
    * Platform-level roles are filtered using database flags (is_system_role=true AND tenant_id IS NULL)
+   * 
+   * ✅ FIXED: Now fetches permissions from role_permissions table and maps them correctly
    */
   async getRoles(tenantId?: string): Promise<Role[]> {
     const currentUser = authService.getCurrentUser();
@@ -102,15 +115,60 @@ class SupabaseRBACService {
       return [];
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return [];
     }
 
     // Apply systematic filtering using utility functions
     const filteredData = filterRolesByTenant(data, currentUser);
 
-    console.log('[RBAC] Roles fetched:', filteredData.length, 'of', data.length, 'for user role:', currentUser.role);
-    return filteredData;
+    // ✅ FIX: Fetch permissions for each role from role_permissions table
+    const roleIds = filteredData.map(role => role.id);
+    
+    if (roleIds.length === 0) {
+      return [];
+    }
+
+    // Fetch all role-permission mappings
+    const { data: rolePermissions, error: rolePermissionsError } = await supabase
+      .from('role_permissions')
+      .select('role_id, permission_id')
+      .in('role_id', roleIds);
+
+    if (rolePermissionsError) {
+      console.error('[RBAC] Error fetching role permissions:', rolePermissionsError);
+      // Continue without permissions - roles will have empty permissions array
+    }
+
+    // Map permissions to roles
+    const permissionsByRole = new Map<string, string[]>();
+    if (rolePermissions) {
+      rolePermissions.forEach(rp => {
+        const roleId = rp.role_id;
+        const permissionId = rp.permission_id;
+        if (!permissionsByRole.has(roleId)) {
+          permissionsByRole.set(roleId, []);
+        }
+        permissionsByRole.get(roleId)!.push(permissionId);
+      });
+    }
+
+    // Map database rows to Role interface (snake_case → camelCase)
+    const mappedRoles: Role[] = filteredData.map(role => ({
+      id: role.id,
+      name: role.name,
+      description: role.description || '',
+      tenant_id: role.tenant_id,
+      permissions: permissionsByRole.get(role.id) || [], // ✅ Populate permissions array
+      is_system_role: role.is_system_role || false,
+      created_at: role.created_at,
+      updated_at: role.updated_at
+    }));
+
+    console.log('[RBAC] Roles fetched:', mappedRoles.length, 'of', data.length, 'for user role:', currentUser.role);
+    console.log('[RBAC] Permissions mapped for', permissionsByRole.size, 'roles');
+    
+    return mappedRoles;
   }
 
   /**
@@ -144,15 +202,18 @@ class SupabaseRBACService {
       }
     }
 
-    const newRole = {
-      ...roleData,
+    // ✅ FIX: Extract permissions from roleData (permissions are stored in role_permissions table, not roles table)
+    const { permissions, ...roleDataWithoutPermissions } = roleData;
+    
+    const roleToInsert = {
+      ...roleDataWithoutPermissions,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
       .from(this.rolesTable)
-      .insert(newRole)
+      .insert(roleToInsert)
       .select()
       .single();
 
@@ -161,13 +222,40 @@ class SupabaseRBACService {
       throw new Error(`Failed to create role: ${error.message}`);
     }
 
+    // ✅ FIX: Insert permissions into role_permissions table if provided
+    if (permissions && permissions.length > 0) {
+      const rolePermissions = permissions.map(permissionId => ({
+        role_id: data.id,
+        permission_id: permissionId,
+        granted_by: currentUser.id,
+        granted_at: new Date().toISOString()
+      }));
+
+      const { error: insertPermsError } = await supabase
+        .from('role_permissions')
+        .insert(rolePermissions);
+
+      if (insertPermsError) {
+        console.error('[RBAC] Error creating role permissions:', insertPermsError);
+        // Rollback role creation
+        await supabase.from(this.rolesTable).delete().eq('id', data.id);
+        throw new Error(`Failed to create role permissions: ${insertPermsError.message}`);
+      }
+    }
+
     // Log the action
     await this.logAction('role_created', 'role', data.id, { role_name: data.name });
 
     // Invalidate role cache so new role is immediately available
     invalidateRoleCache();
 
-    return data as Role;
+    // ✅ FIX: Fetch the created role with permissions to return complete data
+    const createdRole = await this.getRoles(roleDataWithoutPermissions.tenant_id).then(roles => roles.find(r => r.id === data.id));
+    if (!createdRole) {
+      throw new Error('Failed to fetch created role');
+    }
+
+    return createdRole;
   }
 
   /**
@@ -184,7 +272,7 @@ class SupabaseRBACService {
     // First, get the existing role to check permissions
     const { data: existingRole, error: fetchError } = await supabase
       .from(this.rolesTable)
-      .select('name, tenant_id, is_system_role')
+      .select('id, name, description, tenant_id, is_system_role, created_at, updated_at')
       .eq('id', roleId)
       .single();
 
@@ -214,25 +302,114 @@ class SupabaseRBACService {
       throw new Error('Access denied: Cannot assign role to another tenant.');
     }
 
+    // ✅ FIX: Extract permissions from updates (permissions are stored in role_permissions table, not roles table)
+    const { permissions, ...roleUpdates } = updates;
+    
     const updateData = {
-      ...updates,
+      ...roleUpdates,
       updated_at: new Date().toISOString(),
     };
 
+    // Remove permissions from updateData if it was included (it's not a column in roles table)
+    delete (updateData as any).permissions;
+
+    // Update role metadata (name, description, etc.) - permissions are handled separately
+    // ✅ FIX: Use maybeSingle() to handle cases where RLS might block the select
     const { data, error } = await supabase
       .from(this.rolesTable)
       .update(updateData)
       .eq('id', roleId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
-      console.error('Error updating role:', error);
+      console.error('[RBAC] Error updating role:', error);
       throw new Error(`Failed to update role: ${error.message}`);
     }
 
+    // ✅ FIX: If no data returned, verify the role exists (might be RLS blocking select)
     if (!data) {
-      throw new Error('Role not found');
+      // Verify role exists by fetching it directly (this will respect RLS)
+      const { data: verifyData, error: verifyError } = await supabase
+        .from(this.rolesTable)
+        .select('id, name')
+        .eq('id', roleId)
+        .maybeSingle();
+      
+      if (verifyError) {
+        console.error('[RBAC] Error verifying role after update:', verifyError);
+        throw new Error(`Failed to verify role update: ${verifyError.message}`);
+      }
+      
+      if (!verifyData) {
+        throw new Error('Role not found or access denied');
+      }
+      
+      // Role exists but select was blocked - update was likely successful
+      // We'll fetch the full role with permissions below
+      console.log('[RBAC] Role update successful but select was blocked by RLS, fetching role separately');
+    }
+
+    // ✅ FIX: Update role_permissions table if permissions array was provided
+    if (permissions !== undefined && Array.isArray(permissions)) {
+      // Get current permissions for this role
+      const { data: currentRolePermissions, error: fetchPermsError } = await supabase
+        .from('role_permissions')
+        .select('permission_id')
+        .eq('role_id', roleId);
+
+      if (fetchPermsError) {
+        console.error('[RBAC] Error fetching current role permissions:', fetchPermsError);
+        throw new Error(`Failed to fetch current permissions: ${fetchPermsError.message}`);
+      }
+
+      const currentPermissionIds = (currentRolePermissions || []).map(rp => rp.permission_id);
+      const newPermissionIds = permissions;
+
+      // Find permissions to add (in new but not in current)
+      const permissionsToAdd = newPermissionIds.filter(pid => !currentPermissionIds.includes(pid));
+      
+      // Find permissions to remove (in current but not in new)
+      const permissionsToRemove = currentPermissionIds.filter(pid => !newPermissionIds.includes(pid));
+
+      // Remove permissions that are no longer assigned
+      if (permissionsToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('role_permissions')
+          .delete()
+          .eq('role_id', roleId)
+          .in('permission_id', permissionsToRemove);
+
+        if (deleteError) {
+          console.error('[RBAC] Error removing role permissions:', deleteError);
+          throw new Error(`Failed to remove permissions: ${deleteError.message}`);
+        }
+      }
+
+      // Add new permissions
+      if (permissionsToAdd.length > 0) {
+        const newRolePermissions = permissionsToAdd.map(permissionId => ({
+          role_id: roleId,
+          permission_id: permissionId,
+          granted_by: currentUser.id,
+          granted_at: new Date().toISOString()
+        }));
+
+        const { error: insertError } = await supabase
+          .from('role_permissions')
+          .insert(newRolePermissions);
+
+        if (insertError) {
+          console.error('[RBAC] Error adding role permissions:', insertError);
+          throw new Error(`Failed to add permissions: ${insertError.message}`);
+        }
+      }
+
+      console.log('[RBAC] Updated role permissions:', {
+        roleId,
+        added: permissionsToAdd.length,
+        removed: permissionsToRemove.length
+      });
     }
 
     // Log the action
@@ -241,7 +418,28 @@ class SupabaseRBACService {
     // Invalidate role cache so updated role is immediately available
     invalidateRoleCache();
 
-    return data as Role;
+    // ✅ FIX: Fetch the updated role with permissions to return complete data
+    // Use existingRole.tenant_id if available, otherwise use current user's tenant
+    const roleTenantId = existingRole.tenant_id || currentUser.tenantId;
+    const updatedRole = await this.getRoles(roleTenantId).then(roles => roles.find(r => r.id === roleId));
+    if (!updatedRole) {
+      // If we can't fetch the role, construct it from the update data and existing role
+      // This handles cases where RLS blocks the select but update was successful
+      console.warn('[RBAC] Could not fetch updated role, constructing from update data');
+      const constructedRole: Role = {
+        id: roleId,
+        name: (updateData.name as string) || existingRole.name,
+        description: (updateData.description as string) || existingRole.description || '',
+        tenant_id: existingRole.tenant_id,
+        permissions: permissions || [], // Use provided permissions or empty array
+        is_system_role: existingRole.is_system_role,
+        created_at: existingRole.created_at || new Date().toISOString(),
+        updated_at: updateData.updated_at as string
+      };
+      return constructedRole;
+    }
+
+    return updatedRole;
   }
 
   /**

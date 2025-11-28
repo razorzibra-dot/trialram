@@ -106,12 +106,14 @@ export const ProductsPage: React.FC = () => {
       if (drawerMode === 'create') {
         // Create new product
         await createProduct.mutateAsync(values as ProductFormData);
+        message.success('Product created successfully');
       } else if (drawerMode === 'edit' && selectedProduct) {
         // Update existing product
         await updateProduct.mutateAsync({
           id: selectedProduct.id,
           data: values,
         });
+        message.success('Product updated successfully');
       }
       
       handleDrawerClose();

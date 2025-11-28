@@ -93,6 +93,9 @@ export const UsersPage: React.FC = () => {
 
   // Mutations - declared after state to avoid TDZ (Temporal Dead Zone) issues
   const createUser = useCreateUser();
+  // Initialize with empty string - will be updated when selectedUser changes
+  // Note: React Query mutations don't re-initialize, so we need to ensure
+  // the user ID is always correct when calling the mutation
   const updateUser = useUpdateUser(selectedUser?.id || '');
   const deleteUser = useDeleteUser();
   const resetPassword = useResetPassword();
@@ -215,6 +218,13 @@ export const UsersPage: React.FC = () => {
   const handleFormSave = async (values: CreateUserDTO | UpdateUserDTO) => {
     try {
       if (drawerMode === 'edit' && selectedUser) {
+        // Ensure we have a valid user ID before updating
+        if (!selectedUser.id) {
+          message.error('Invalid user ID');
+          return;
+        }
+        // Use the hook with the current selectedUser.id
+        // The hook will be re-created when selectedUser changes due to useMemo
         await updateUser.mutateAsync(values as UpdateUserDTO);
         message.success('User updated successfully');
       } else if (drawerMode === 'create') {
@@ -237,7 +247,7 @@ export const UsersPage: React.FC = () => {
         return <CrownOutlined />;
       case 'manager':
         return <SafetyOutlined />;
-      case 'viewer':
+      case 'user':
         return <UserAntIcon />;
       default:
         return <TeamOutlined />;
@@ -251,7 +261,7 @@ export const UsersPage: React.FC = () => {
         return 'red';
       case 'manager':
         return 'blue';
-      case 'viewer':
+      case 'user':
         return 'default';
       default:
         return 'green';
@@ -430,13 +440,13 @@ export const UsersPage: React.FC = () => {
     }
   ];
 
-  // Calculate stats
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.status === 'active').length;
-  // Count admin users - using role string for stats (acceptable for display purposes)
-  // Note: For security checks, use permission-based checks instead
-  const adminUsers = users.filter(u => u.role === 'admin').length;
-  const suspendedUsers = users.filter(u => u.status === 'suspended').length;
+  // Calculate stats from userStats service (preferred) or fallback to users array
+  // ✅ Use stats from service for accurate counts (includes all users, not just loaded page)
+  const totalUsers = userStats?.totalUsers ?? users.length;
+  const activeUsers = userStats?.activeUsers ?? users.filter(u => u.status === 'active').length;
+  // ✅ Use usersByRole from stats service for accurate role counts
+  const adminUsers = userStats?.usersByRole?.admin ?? users.filter(u => u.role === 'admin').length;
+  const suspendedUsers = userStats?.suspendedUsers ?? users.filter(u => u.status === 'suspended').length;
 
   // Show loading while checking authentication
   if (authLoading) {

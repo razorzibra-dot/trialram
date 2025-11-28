@@ -317,17 +317,19 @@ class SupabaseAuditService {
 
       if (!user) return;
 
+      // Map resource to table_name for audit_logs schema
+      const tableName = resource || 'unknown';
+      
       const { error } = await supabase.from('audit_logs').insert({
         action,
-        resource,
-        resource_id: resourceId,
+        table_name: tableName,
+        record_id: resourceId,
         user_id: user.id,
-        user_name: user.user_metadata?.full_name || user.email,
-        user_email: user.email,
-        changes,
-        metadata,
+        old_values: changes?.before || null,
+        new_values: changes?.after || null,
         ip_address: '127.0.0.1', // In production, capture from request
         user_agent: navigator?.userAgent || 'Unknown',
+        tenant_id: user.tenant_id || null,
         created_at: new Date().toISOString()
       });
 

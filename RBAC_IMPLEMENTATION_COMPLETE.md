@@ -333,12 +333,16 @@ VALUES ('new_perm', 'system', true);
 - ❌ Hardcoded role mappings: `{ 'admin': 'Administrator' }`
 - ❌ Hardcoded role name checks: `if (role.name === 'super_admin')`
 - ❌ Hardcoded permission name checks: `if (['super_admin', ...].includes(perm.name))`
+- ❌ Hardcoded role arrays in navigation config: `requiredRole: ['admin', 'manager']`
+- ❌ Hardcoded role hierarchy: `const roleHierarchy = { admin: 4, ... }`
 
 **Replaced With:**
 - ✅ Database-driven role fetching: `await getValidUserRoles()`
 - ✅ Database-driven role mapping: `await mapUserRoleToDatabaseRole()`
 - ✅ Database flag checks: `await isPlatformRoleByName()` (uses `is_system_role`, `tenant_id`)
 - ✅ Database flag checks: `isPlatformPermission()` (uses `category`, `is_system_permission`)
+- ✅ Permission-based navigation: Removed `requiredRole` arrays, uses `permission` checks only
+- ✅ Database-driven role validation: `await isValidUserRole()` instead of hardcoded arrays
 
 ### Files Modified
 
@@ -346,8 +350,16 @@ VALUES ('new_perm', 'system', true);
 2. `src/utils/tenantIsolation.ts` - Uses database flags instead of hardcoded names
 3. `src/services/user/supabase/userService.ts` - Uses dynamic role utilities
 4. `src/services/rbac/supabase/rbacService.ts` - Cache invalidation on role changes
-5. `Repo.md` - Updated documentation with dynamic approach guidelines
-6. `ARCHITECTURE.md` - Added section 12.8 on fully dynamic role system
+5. `src/services/auth/supabase/authService.ts` - Removed hardcoded role arrays
+6. `src/services/user/userService.ts` - Uses database-driven role validation
+7. `src/services/superadmin/*/superAdminService.ts` - Uses database-driven role fetching
+8. `src/config/navigationPermissions.ts` - Removed `requiredRole` arrays, uses permissions only
+9. `src/utils/navigationFilter.ts` - Deprecated `requiredRole` checks
+10. `src/modules/core/hooks/usePermission.ts` - Documented hierarchy as UI-only fallback
+11. `src/modules/features/user-management/**` - Fixed `'agent'` → `'user'`, documented UI switches
+12. `supabase/migrations/**` - Updated all migrations to use normalized role names
+13. `Repo.md` - Updated documentation with dynamic approach guidelines
+14. `ARCHITECTURE.md` - Added section 12.8 on fully dynamic role system
 
 ### Verification
 

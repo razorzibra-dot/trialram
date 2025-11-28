@@ -1,15 +1,17 @@
--- Migration: Grant full user management access to Administrator and Manager roles
--- Purpose: Ensure Administrator and Manager roles have all user management permissions
+-- Migration: Grant full user management access to admin and manager roles
+-- Purpose: Ensure admin and manager roles have all user management permissions
 -- Date: 2025-11-28
 --
--- ⚠️ CRITICAL: This migration ensures Administrator and Manager roles have all granular
+-- ⚠️ CRITICAL: This migration ensures admin and manager roles have all granular
 -- user management permissions required for permission hooks to work correctly.
 -- See Repo.md section 2.9 for details on permission hook property name consistency.
 --
+-- ✅ Uses normalized role names: 'admin' and 'manager' (not 'Administrator' and 'Manager')
+--
 -- This migration is idempotent and safe to run multiple times. It will:
 -- 1. Create granular permissions if they don't exist (users:read, users:create, users:update, users:delete)
--- 2. Assign all user management permissions to Administrator role
--- 3. Assign all user management permissions to Manager role
+-- 2. Assign all user management permissions to admin role
+-- 3. Assign all user management permissions to manager role
 --
 -- Note: The isolated_reset migration (20251126000001) already includes these permissions
 -- and assignments, so this migration is primarily for fixing existing databases.
@@ -26,13 +28,13 @@ VALUES
   ('users:delete', 'Delete users', 'module', 'users', 'delete', false)
 ON CONFLICT (name) DO NOTHING;
 
--- Grant all user management permissions to Administrator role
--- Administrator should have full user management access
+-- Grant all user management permissions to admin role
+-- admin should have full user management access
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.name = 'Administrator'
+WHERE r.name = 'admin'
   AND p.name IN (
     'users:read',
     'users:create',
@@ -46,13 +48,13 @@ WHERE r.name = 'Administrator'
     WHERE rp.role_id = r.id AND rp.permission_id = p.id
   );
 
--- Grant all user management permissions to Manager role
--- Manager should also have full user management access
+-- Grant all user management permissions to manager role
+-- manager should also have full user management access
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.name = 'Manager'
+WHERE r.name = 'manager'
   AND p.name IN (
     'users:read',
     'users:create',
@@ -76,17 +78,17 @@ BEGIN
   FROM role_permissions rp
   JOIN roles r ON rp.role_id = r.id
   JOIN permissions p ON rp.permission_id = p.id
-  WHERE r.name = 'Administrator'
+  WHERE r.name = 'admin'
     AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
   
   SELECT COUNT(*) INTO manager_count
   FROM role_permissions rp
   JOIN roles r ON rp.role_id = r.id
   JOIN permissions p ON rp.permission_id = p.id
-  WHERE r.name = 'Manager'
+  WHERE r.name = 'manager'
     AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
   
-  RAISE NOTICE 'Administrator role now has % user management permissions', admin_count;
-  RAISE NOTICE 'Manager role now has % user management permissions', manager_count;
+  RAISE NOTICE 'admin role now has % user management permissions', admin_count;
+  RAISE NOTICE 'manager role now has % user management permissions', manager_count;
 END $$;
 

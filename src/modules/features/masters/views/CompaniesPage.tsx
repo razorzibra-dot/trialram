@@ -104,12 +104,14 @@ export const CompaniesPage: React.FC = () => {
       if (drawerMode === 'create') {
         // Create new company
         await createCompany.mutateAsync(values as CompanyFormData);
+        message.success('Company created successfully');
       } else if (drawerMode === 'edit' && selectedCompany) {
         // Update existing company
         await updateCompany.mutateAsync({
           id: selectedCompany.id,
           data: values,
         });
+        message.success('Company updated successfully');
       }
       
       handleDrawerClose();

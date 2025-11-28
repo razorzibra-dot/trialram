@@ -24,7 +24,19 @@ import {
   canAccessNavigationItem,
   NavigationFilterContext,
 } from './navigationFilter';
-import { navigationConfig } from '@/config/navigationPermissions';
+// ⚠️ NOTE: Test file uses mock navigation config for testing purposes
+// In production, navigation items come from database via useNavigation() hook
+// This test file can be updated to use database-driven navigation in the future
+const mockNavigationConfig = [
+  { key: '/tenant/dashboard', label: 'Dashboard', permission: 'dashboard:view' },
+  { key: '/tenant/customers', label: 'Customers', permission: 'customers:manage' },
+  { key: '/tenant/users', label: 'User Management', permission: 'users:manage', children: [
+    { key: '/tenant/users/list', label: 'Users', permission: 'users:manage' },
+    { key: '/tenant/users/roles', label: 'Roles', permission: 'roles:manage' },
+  ]},
+  { key: 'admin-section', label: 'Administration', isSection: true, permission: 'masters:read' },
+];
+const navigationConfig = mockNavigationConfig; // For backward compatibility in tests
 
 /**
  * Test suite runner

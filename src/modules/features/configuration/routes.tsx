@@ -10,7 +10,7 @@
  * - /tenant/tenant-configuration (old route, still works)
  * 
  * This structure aligns with:
- * 1. Navigation configuration in src/config/navigationPermissions.ts
+ * 1. Navigation configuration in database (navigation_items table) - ✅ Database-driven
  * 2. Application routing patterns (Masters, User Management modules)
  * 3. React Router nested routing best practices
  */

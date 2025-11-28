@@ -4,8 +4,9 @@
  * Provides convenient access to permission-filtered navigation items.
  * Use this hook in components that need to display navigation based on permissions.
  * 
+ * ✅ Database-driven: Navigation items fetched from navigation_items table
+ * @see src/hooks/useNavigation.ts for database-driven navigation hook
  * @see src/utils/navigationFilter.ts for filtering logic
- * @see src/config/navigationPermissions.ts for navigation configuration
  * 
  * @example
  * ```tsx
@@ -27,7 +28,7 @@
 
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { navigationConfig } from '@/config/navigationPermissions';
+import { useNavigation } from './useNavigation';
 import {
   filterNavigationItems,
   createNavigationFilterContext,
@@ -37,22 +38,25 @@ import {
   FilteredNavigationItem,
   NavigationFilterContext,
 } from '@/utils/navigationFilter';
+import { NavigationItemConfig } from '@/config/navigationPermissions';
 
 interface UsePermissionBasedNavigationResult {
   /** Filtered navigation items based on user permissions */
   filteredItems: FilteredNavigationItem[];
   /** Get user permissions based on their role */
-  getUserPermissions: (role: string) => string[];
+  getUserPermissions: () => string[];
   /** Check if a specific navigation item is visible */
   isItemVisible: (itemKey: string) => boolean;
   /** Check if user has access to a navigation item */
   canAccess: (itemKey: string) => boolean;
   /** Get all visible navigation items (flat list) */
-  visibleItems: FilteredNavigationItem[];
+  visibleItems: NavigationItemConfig[];
   /** Get breadcrumbs for current path */
   breadcrumbs: Array<{ key: string; label: string; href?: string }>;
   /** Filter context for advanced usage */
   filterContext: NavigationFilterContext;
+  /** Loading state */
+  isLoading: boolean;
 }
 
 /**
@@ -67,6 +71,9 @@ interface UsePermissionBasedNavigationResult {
  */
 export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResult {
   const { user, hasPermission, hasRole, getUserPermissions } = useAuth();
+  
+  // ✅ Database-driven: Fetch navigation items from database
+  const { configItems, filteredItems: dbFilteredItems, isLoading } = useNavigation();
 
   // Use DB-driven permissions via AuthContext
 
@@ -79,30 +86,32 @@ export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResu
     }
     const userPermissions = getUserPermissions();
     return createNavigationFilterContext(user.role, userPermissions);
-  }, [user]);
+  }, [user, getUserPermissions]);
 
   /**
-   * Get filtered navigation items
+   * Get filtered navigation items (from database)
    */
   const filteredItems = useMemo(() => {
-    return filterNavigationItems(navigationConfig, filterContext);
-  }, [filterContext]);
+    if (!configItems || configItems.length === 0) return [];
+    return filterNavigationItems(configItems, filterContext);
+  }, [configItems, filterContext]);
 
   /**
    * Get all visible items (flat list)
    */
   const visibleItems = useMemo(() => {
-    return getAllVisibleItems(navigationConfig, filterContext);
-  }, [filterContext]);
+    if (!configItems || configItems.length === 0) return [];
+    return getAllVisibleItems(configItems, filterContext);
+  }, [configItems, filterContext]);
 
   /**
    * Get breadcrumbs for current path
    */
   const breadcrumbs = useMemo(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined' || !configItems || configItems.length === 0) return [];
     const pathname = window.location.pathname;
-    return getPermissionAwareBreadcrumbs(pathname, navigationConfig, filterContext);
-  }, [filterContext]);
+    return getPermissionAwareBreadcrumbs(pathname, configItems, filterContext);
+  }, [configItems, filterContext]);
 
   /**
    * Check if an item is visible
@@ -115,7 +124,8 @@ export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResu
    * Check if user can access an item
    */
   const canAccess = (itemKey: string): boolean => {
-    return canAccessNavigationItem(itemKey, navigationConfig, filterContext);
+    if (!configItems || configItems.length === 0) return false;
+    return canAccessNavigationItem(itemKey, configItems, filterContext);
   };
 
   return {
@@ -126,6 +136,7 @@ export function usePermissionBasedNavigation(): UsePermissionBasedNavigationResu
     visibleItems,
     breadcrumbs,
     filterContext,
+    isLoading, // ✅ Add loading state
   };
 }
 

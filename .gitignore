@@ -36,3 +36,7 @@ out/
 tsconfig.tsbuildinfo
 bun.lockb
 pnpm-lock.yaml
+
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc

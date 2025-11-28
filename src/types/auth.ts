@@ -15,7 +15,7 @@ export interface User {
   name: string;
   firstName?: string;
   lastName?: string;
-  role: 'super_admin' | 'admin' | 'manager' | 'agent' | 'engineer' | 'customer';
+  role: 'super_admin' | 'admin' | 'manager' | 'user' | 'engineer' | 'customer';
   status: 'active' | 'inactive' | 'suspended';
   tenantId: string | null; // NULL for super admins (platform-level access)
   tenantName?: string;

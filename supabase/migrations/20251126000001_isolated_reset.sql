@@ -738,27 +738,28 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('system_monitoring', 'System monitoring', 'system', 'system', 'monitor', true);
 
 -- Insert roles per tenant
+-- ✅ Normalized role names to match UserRole enum exactly (no mapping needed)
 INSERT INTO roles (name, description, tenant_id, is_system_role) VALUES
 -- Acme Corporation roles
-('Administrator', 'Full system access for tenant', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('Manager', 'Management level access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('Engineer', 'Technical user with limited access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('User', 'Standard user with basic access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('Customer', 'External customer access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('admin', 'Full system access for tenant', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('manager', 'Management level access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('engineer', 'Technical user with limited access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('user', 'Standard user with basic access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('customer', 'External customer access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
 
 -- Tech Solutions roles
-('Administrator', 'Full system access for tenant', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('Manager', 'Management level access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('Engineer', 'Technical user with limited access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('User', 'Standard user with basic access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('Customer', 'External customer access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('admin', 'Full system access for tenant', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('manager', 'Management level access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('engineer', 'Technical user with limited access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('user', 'Standard user with basic access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('customer', 'External customer access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
 
 -- Global Trading roles
-('Administrator', 'Full system access for tenant', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('Manager', 'Management level access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('Engineer', 'Technical user with limited access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('User', 'Standard user with basic access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('Customer', 'External customer access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('admin', 'Full system access for tenant', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('manager', 'Management level access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('engineer', 'Technical user with limited access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('user', 'Standard user with basic access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('customer', 'External customer access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
 
 -- Global super admin role
 ('super_admin', 'Global system administrator', NULL, true);
@@ -768,10 +769,11 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r
 CROSS JOIN permissions p
 WHERE 
-    -- Administrator role gets all permissions including full user management
+    -- admin role gets all permissions including full user management
     -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
     -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
-    (r.name = 'Administrator' AND p.name IN (
+    -- ✅ Use normalized role name 'admin' (not 'Administrator')
+    (r.name = 'admin' AND p.name IN (
         'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
         'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
         'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
@@ -780,10 +782,11 @@ WHERE
         'export_data', 'view_audit_logs'
     ))
     OR 
-    -- Manager role gets most permissions including full user management
+    -- manager role gets most permissions including full user management
     -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
     -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
-    (r.name = 'Manager' AND p.name IN (
+    -- ✅ Use normalized role name 'manager' (not 'Manager')
+    (r.name = 'manager' AND p.name IN (
         'read', 'write', 'dashboard:view', 'masters:read', 'user_management:read',
         'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
         'customers:manage', 'sales:manage', 'contracts:manage',
@@ -792,20 +795,23 @@ WHERE
         'export_data', 'view_audit_logs'
     ))
     OR 
-    -- Engineer role gets technical permissions
-    (r.name = 'Engineer' AND p.name IN (
+    -- engineer role gets technical permissions
+    -- ✅ Use normalized role name 'engineer' (not 'Engineer')
+    (r.name = 'engineer' AND p.name IN (
         'read', 'write', 'dashboard:view', 'masters:read',
         'products:manage', 'job_works:manage', 'tickets:manage',
         'companies:manage', 'export_data', 'view_audit_logs'
     ))
     OR 
-    -- User role gets basic permissions
-    (r.name = 'User' AND p.name IN (
+    -- user role gets basic permissions
+    -- ✅ Use normalized role name 'user' (not 'User')
+    (r.name = 'user' AND p.name IN (
         'read', 'write', 'masters:read', 'customers:manage', 'companies:manage'
     ))
     OR 
-    -- Customer role gets limited permissions
-    (r.name = 'Customer' AND p.name IN ('read', 'companies:manage'))
+    -- customer role gets limited permissions
+    -- ✅ Use normalized role name 'customer' (not 'Customer')
+    (r.name = 'customer' AND p.name IN ('read', 'companies:manage'))
     OR 
     -- Super admin gets everything
     (r.name = 'super_admin' AND p.name IN (
@@ -887,13 +893,13 @@ BEGIN
       SELECT id INTO user_tenant_id FROM tenants ORDER BY created_at LIMIT 1;
     END IF;
 
-    -- Determine role name from email
+    -- ✅ Use normalized role names (matching UserRole enum exactly)
     role_name := CASE
-      WHEN NEW.email LIKE '%admin%' THEN 'Administrator'
-      WHEN NEW.email LIKE '%manager%' THEN 'Manager'
-      WHEN NEW.email LIKE '%engineer%' THEN 'Engineer'
-      WHEN NEW.email LIKE '%customer%' THEN 'Customer'
-      ELSE 'User'
+      WHEN NEW.email LIKE '%admin%' THEN 'admin'        -- Normalized: was 'Administrator'
+      WHEN NEW.email LIKE '%manager%' THEN 'manager'     -- Normalized: was 'Manager'
+      WHEN NEW.email LIKE '%engineer%' THEN 'engineer'  -- Normalized: was 'Engineer'
+      WHEN NEW.email LIKE '%customer%' THEN 'customer'  -- Normalized: was 'Customer'
+      ELSE 'user'                                        -- Normalized: was 'User'
     END;
   END IF;
 

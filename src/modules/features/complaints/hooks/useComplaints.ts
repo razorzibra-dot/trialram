@@ -8,7 +8,7 @@ import { Complaint, ComplaintFilters, ComplaintFormData, ComplaintUpdateData, Co
 import { useService } from '@/modules/core/hooks/useService';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 import { handleError } from '@/modules/core/utils/errorHandler';
-import { complaintService } from '@/services/complaints/complaintService';
+import { complaintService } from '@/services/serviceFactory';
 
 // Query Keys
 export const complaintKeys = {

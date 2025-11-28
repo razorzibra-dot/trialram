@@ -7,33 +7,33 @@
 import { ApiMode } from '@/types';
 
 // Import all mock services
-import { authService as mockAuthService } from './auth/authService';
-import { mockServiceContractService } from './servicecontract/serviceContractService';
-import { productSaleService as mockProductSaleService } from './productsale/productSaleService';
-import { salesService as mockSalesService } from './sales/salesService';
-import { leadsService as mockLeadsService } from './sales/leadsService';
-import { customerService as mockCustomerService } from './customer/customerService';
-import { jobWorkService as mockJobWorkService } from './jobwork/jobWorkService';
-import { productService as mockProductService } from './product/productService';
-import { companyService as mockCompanyService } from './company/companyService';
-import { userService as mockUserService } from './user/userService';
-import { rbacService as mockRbacService } from './rbac/rbacService';
-import { uiNotificationService as mockUINotificationService } from './uiNotificationService';
-import { notificationService as mockNotificationService } from './notification/notificationService';
-import { tenantService as mockTenantService } from './tenant/tenantService';
-import { ticketService as mockTicketService } from './ticket/ticketService';
-import { superAdminManagementService as mockSuperAdminManagementService } from './superadminmanagement/superAdminManagementService';
-import { superAdminService as mockSuperAdminService } from './superadmin/superAdminService';
-import { contractService as mockContractService } from './contract/contractService';
-import { mockRoleRequestService } from './rolerequest/roleRequestService';
-import { auditService as mockAuditService } from './audit/auditService';
-import { mockComplianceNotificationService } from './compliancenotification/complianceNotificationService';
-import { mockRateLimitService } from './ratelimit/rateLimitService';
-import { mockReferenceDataService } from './referencedata/referenceDataService';
-import { mockReferenceDataLoader } from './referencedata/referenceDataLoader';
-import { sessionConfigService as mockSessionConfigService } from './sessionConfigService';
-import { complaintService as mockComplaintService } from './complaints/complaintService';
-import { productCategoryService as mockProductCategoryService } from './productcategory/productCategoryService';
+import { mockAuthService } from './auth/mockAuthService';
+import { mockServiceContractService } from './servicecontract/mockServiceContractService';
+import { mockProductSaleService } from './productsale/mockProductSaleService';
+import { mockSalesService } from './sales/mockSalesService';
+import { mockLeadsService } from './sales/mockLeadsService';
+import { mockCustomerService } from './customer/mockCustomerService';
+import { mockJobWorkService } from './jobwork/mockJobWorkService';
+import { mockProductService } from './product/mockProductService';
+import { mockCompanyService } from './company/mockCompanyService';
+import { mockUserService } from './user/mockUserService';
+import { mockRbacService } from './rbac/mockRbacService';
+import { mockUINotificationService } from './mockUINotificationService';
+import { mockNotificationService } from './notification/mockNotificationService';
+import { mockTenantService } from './tenant/mockTenantService';
+import { mockTicketService } from './ticket/mockTicketService';
+import { mockSuperAdminManagementService } from './superadminmanagement/mockSuperAdminManagementService';
+import { mockSuperAdminService } from './superadmin/mockSuperAdminService';
+import { mockContractService } from './contract/mockContractService';
+import { mockRoleRequestService } from './rolerequest/mockRoleRequestService';
+import { mockAuditService } from './audit/mockAuditService';
+import { mockComplianceNotificationService } from './compliancenotification/mockComplianceNotificationService';
+import { mockRateLimitService } from './ratelimit/mockRateLimitService';
+import { mockReferenceDataService } from './referencedata/mockReferenceDataService';
+import { mockReferenceDataLoader } from './referencedata/mockReferenceDataLoader';
+import { mockSessionConfigService } from './mockSessionConfigService';
+import { mockComplaintService } from './complaints/mockComplaintService';
+import { mockProductCategoryService } from './productcategory/mockProductCategoryService';
 
 // Import all supabase services
 import { supabaseServiceContractService } from './servicecontract/supabase/serviceContractService';
@@ -63,18 +63,20 @@ import { supabaseAuthService } from './auth/supabase/authService';
 import { supabaseSuperAdminService } from './superadmin/supabase/superAdminService';
 import { supabaseComplaintService } from './complaints/supabase/complaintService';
 import { supabaseProductCategoryService } from './productcategory/supabase/productCategoryService';
-import { ticketCommentService as mockTicketCommentService } from './ticketCommentService';
+import { mockTicketCommentService } from './mockTicketCommentService';
 import { ticketCommentService as supabaseTicketCommentService } from './supabase/ticketCommentService';
-import { ticketAttachmentService as mockTicketAttachmentService } from './ticketAttachmentService';
+import { mockTicketAttachmentService } from './mockTicketAttachmentService';
 import { ticketAttachmentService as supabaseTicketAttachmentService } from './supabase/ticketAttachmentService';
 import { mockDealsService } from './deals/mock/dealsService';
 import { supabaseDealsService } from './deals/supabase/dealsService';
-import { mockSalesActivityService } from './sales-activities/mock/salesActivityService';
+import { mockSalesActivityService } from './sales-activities/mockSalesActivityService';
 import { supabaseSalesActivityService } from './sales-activities/supabase/salesActivityService';
-import { opportunityService as mockOpportunityService } from './opportunities/opportunityService';
+import { mockOpportunityService } from './opportunities/mockOpportunityService';
 import { supabaseOpportunityService } from './opportunities/supabase/opportunityService';
-import { purchaseOrderService as mockPurchaseOrderService } from './purchaseorder/purchaseOrderService';
+import { mockPurchaseOrderService } from './purchaseorder/mockPurchaseOrderService';
 import { supabasePurchaseOrderService } from './purchaseorder/supabase/purchaseOrderService';
+import { mockNavigationService } from './navigation/mockNavigationService';
+import { supabaseNavigationService } from './navigation/supabase/navigationService';
 
 // Service Registry Entry Interface
 interface ServiceRegistryEntry {
@@ -198,7 +200,7 @@ class ServiceFactory {
         description: 'Role-based access control'
       },
       uinotification: {
-        special: () => mockUINotificationService,
+        mock: mockUINotificationService,
         description: 'Client-side UI notifications'
       },
       notification: {
@@ -274,6 +276,11 @@ class ServiceFactory {
         mock: mockReferenceDataLoader,
         supabase: supabaseReferenceDataLoader,
         description: 'Reference data loader'
+      },
+      navigation: {
+        mock: mockNavigationService,
+        supabase: supabaseNavigationService,
+        description: 'Navigation items management'
       },
       sessionconfig: {
         special: () => mockSessionConfigService,
@@ -424,6 +431,7 @@ export const impersonationService = createServiceProxy('impersonation');
 export const rateLimitService = createServiceProxy('ratelimit');
 export const referenceDataService = createServiceProxy('referencedata');
 export const referenceDataLoader = createServiceProxy('referencedataloader');
+export const navigationService = createServiceProxy('navigation');
 export const sessionConfigService = createServiceProxy('sessionconfig');
 export const complaintService = createServiceProxy('complaint');
 export const productCategoryService = createServiceProxy('productcategory');

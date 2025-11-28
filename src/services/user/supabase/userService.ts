@@ -34,6 +34,7 @@ import {
   getValidUserRoles,
   isValidUserRole,
   isPlatformRoleByName,
+  mapDatabaseRoleNameToUserRoleSync,
 } from '@/utils/roleMapping';
 import { isSuperAdmin } from '@/utils/tenantIsolation';
 import {
@@ -82,15 +83,14 @@ function mapUserRow(dbRow: any): UserDTO {
   const metadata = dbRow?.metadata || {};
 
   // Extract primary role from user_roles (take first one, or default to 'user')
-  // Uses dynamic database-driven role mapping (synchronous normalization for mapping)
+  // ✅ Database role names are normalized to match UserRole enum exactly
+  // No mapping needed - database stores enum values directly ('admin', 'manager', 'user', etc.)
   let role: UserRole = 'user';
   if (dbRow.user_roles && dbRow.user_roles.length > 0) {
     const primaryRole = dbRow.user_roles[0]?.role?.name;
     if (primaryRole) {
-      // Normalize role name directly (synchronous operation for mapping)
-      // Full validation happens when roles are fetched from database
-      const normalized = primaryRole.toLowerCase().trim();
-      role = (normalized as UserRole) || 'user';
+      // Normalize and validate role name (database should already have normalized names)
+      role = mapDatabaseRoleNameToUserRoleSync(primaryRole, 'user');
     }
   }
 
@@ -299,22 +299,22 @@ class SupabaseUserService {
 
      // Uses systematic tenant isolation utility instead of hardcoded permission check
      if (isSuperAdmin(currentUser)) {
-       // Super admins can assign users to any tenant or make them platform-wide
-       // For now, super admins creating users will assign them to their current tenant context
-       // TODO: Add tenant selection UI for super admins
-       assignedTenantId = currentTenantId;
+       // ⚠️ SECURITY: Super admins can assign users to any tenant or make them platform-wide
+       // Use tenantId from form data if provided (from super admin UI), otherwise use current tenant context
+       assignedTenantId = data.tenantId || currentTenantId;
      } else {
-       // Tenant admins can only create users in their own tenant
+       // ⚠️ SECURITY: Tenant admins can only create users in their own tenant
+       // Ignore any tenantId from form data - always use current user's tenant
        assignedTenantId = currentTenantId;
        if (!assignedTenantId) {
          throw new Error('Cannot create user: Current user has no tenant assignment');
        }
      }
 
-     // Validate tenant access if assigning to a specific tenant
-     if (assignedTenantId) {
-       authService.assertTenantAccess(assignedTenantId);
-     }
+    // Validate tenant access if assigning to a specific tenant
+    if (assignedTenantId) {
+      await authService.assertTenantAccess(assignedTenantId, 'users');
+    }
 
      // Validate email format
      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -428,7 +428,7 @@ class SupabaseUserService {
 
        if (roleData) {
          // Assign role
-         await supabase
+         const { error: roleAssignError } = await supabase
            .from('user_roles')
            .insert({
              user_id: createdUser.id,
@@ -437,6 +437,11 @@ class SupabaseUserService {
              assigned_by: currentUser?.id,
              assigned_at: now
            });
+         
+         if (roleAssignError) {
+           console.error('[UserService] Error assigning role:', roleAssignError);
+           throw new Error(`Failed to assign role: ${roleAssignError.message}`);
+         }
        }
      }
 
@@ -458,10 +463,26 @@ class SupabaseUserService {
     }
 
     // ⭐ SECURITY: Validate tenant access
-    authService.assertTenantAccess(targetUser.tenantId);
+    await authService.assertTenantAccess(targetUser.tenantId, 'users', id);
 
-    // ⭐ SECURITY: Prevent tenant admins from changing tenant assignments
+    // ⭐ SECURITY: Handle tenant_id updates based on current user's permissions
     const currentUser = authService.getCurrentUser();
+    
+    // ⚠️ SECURITY: Only super admins can change tenant assignments
+    if (data.tenantId !== undefined) {
+      if (isSuperAdmin(currentUser)) {
+        // Super admins can change tenant assignments
+        // Validate tenant access if assigning to a specific tenant
+        if (data.tenantId) {
+          await authService.assertTenantAccess(data.tenantId, 'users', id);
+        }
+        // Allow tenant_id update for super admins
+      } else {
+        // Tenant admins cannot change tenant assignments - ignore tenantId from form data
+        // Always keep the user's current tenant
+        delete data.tenantId;
+      }
+    }
     // If email is being updated, check uniqueness and format
     if (data.email) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -474,10 +495,10 @@ class SupabaseUserService {
         .eq('email', data.email)
         .neq('id', id)
         .is('deleted_at', null)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw new Error('Error checking email uniqueness');
+      if (checkError) {
+        throw new Error(`Error checking email uniqueness: ${checkError.message}`);
       }
 
       if (existingUser) {
@@ -536,6 +557,10 @@ class SupabaseUserService {
     if (data.phone !== undefined) updatePayload.phone = data.phone;
     if (data.department !== undefined) updatePayload.department = data.department;
     if (data.position !== undefined) updatePayload.position = data.position;
+    // ⚠️ SECURITY: Only include tenant_id if user is super admin (handled above)
+    if (data.tenantId !== undefined && isSuperAdmin(currentUser)) {
+      updatePayload.tenant_id = data.tenantId;
+    }
 
     // Handle role updates via user_roles table
     // Uses dynamic database-driven role mapping
@@ -563,13 +588,18 @@ class SupabaseUserService {
 
         if (roleData) {
           // Remove existing role assignments for this user
-          await supabase
+          const { error: deleteError } = await supabase
             .from('user_roles')
             .delete()
             .eq('user_id', id);
+          
+          if (deleteError) {
+            console.error('[UserService] Error removing existing role:', deleteError);
+            throw new Error(`Failed to remove existing role: ${deleteError.message}`);
+          }
 
           // Assign new role
-          await supabase
+          const { error: roleAssignError } = await supabase
             .from('user_roles')
             .insert({
               user_id: id,
@@ -578,6 +608,11 @@ class SupabaseUserService {
               assigned_by: currentUser?.id,
               assigned_at: new Date().toISOString()
             });
+          
+          if (roleAssignError) {
+            console.error('[UserService] Error assigning role:', roleAssignError);
+            throw new Error(`Failed to assign role: ${roleAssignError.message}`);
+          }
         }
       }
     }
@@ -619,7 +654,7 @@ class SupabaseUserService {
     }
 
     // ⭐ SECURITY: Validate tenant access
-    authService.assertTenantAccess(targetUser.tenantId);
+    await authService.assertTenantAccess(targetUser.tenantId, 'users', id);
 
     // ⭐ SECURITY: Prevent tenant admins from deleting other admins
     // Uses systematic tenant isolation utility instead of hardcoded role check

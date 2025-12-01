@@ -31,6 +31,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services';
+import { MODULE_PERMISSION_MAP } from '@/constants/modulePermissionMap';
 
 /**
  * Module access check result
@@ -182,15 +183,21 @@ export function useModuleAccess(moduleName: string): ModuleAccessResult {
       // RULE 5: Regular user accessing tenant module - check RBAC permissions
       if (isTenantModule(normalizedModuleName)) {
         try {
-          // Build permission key for the module using new {resource}:{action} format
-          // e.g., 'customers' -> 'customers:read'
-          const readPermissionKey = `${normalizedModuleName}:read`;
+          // Get FRS-compliant permission key for the module
+          const readPermissionKey = MODULE_PERMISSION_MAP[normalizedModuleName];
 
-          // Check new permission format first, then generic read permission
-          const hasReadPermission = authService.hasPermission(readPermissionKey);
-          const hasGenericPermission = authService.hasPermission('read');
+          if (!readPermissionKey) {
+            console.warn(`[useModuleAccess] No FRS permission mapping found for module: ${moduleName}`);
+            return {
+              canAccess: false,
+              isLoading: false,
+              error: null,
+              isSuperAdmin: false,
+              reason: 'No permission mapping configured for this module',
+            };
+          }
 
-          const canAccessModule = hasReadPermission || hasGenericPermission;
+          const canAccessModule = authService.hasPermission(readPermissionKey);
 
           if (canAccessModule) {
             console.log(
@@ -296,11 +303,14 @@ export function useAccessibleModules() {
 
       // Regular users can access tenant modules (with permission checks)
       for (const module of TENANT_MODULES) {
-        const readPermissionKey = `${module}:read`;
+        const readPermissionKey = MODULE_PERMISSION_MAP[module];
 
-        const hasAccess =
-          authService.hasPermission(readPermissionKey) ||
-          authService.hasPermission('read');
+        if (!readPermissionKey) {
+          console.warn(`[useAccessibleModules] No FRS permission mapping found for module: ${module}`);
+          continue;
+        }
+
+        const hasAccess = authService.hasPermission(readPermissionKey);
 
         if (hasAccess) {
           modules.push(module);

@@ -17,8 +17,8 @@ import { ProductSale } from '@/types/productSales';
  */
 export enum ProductSalesRbacAction {
   // Create operations
-  CREATE_PRODUCT_SALE = 'product_sales:create',
-  CREATE_PRODUCT_SALE_WITH_CONTRACT = 'product_sales:create_with_contract',
+  CREATE_PRODUCT_SALE = 'crm:product-sale:record:create',
+  CREATE_PRODUCT_SALE_WITH_CONTRACT = 'crm:product-sale:record:create_with_contract',
   
   // Read operations
   VIEW_PRODUCT_SALES = 'product_sales:view',
@@ -32,7 +32,7 @@ export enum ProductSalesRbacAction {
   CHANGE_STATUS = 'product_sales:change_status',
   
   // Delete operations
-  DELETE_PRODUCT_SALE = 'product_sales:delete',
+  DELETE_PRODUCT_SALE = 'crm:product-sale:record:delete',
   BULK_DELETE_PRODUCT_SALES = 'product_sales:bulk_delete',
   
   // Approval operations

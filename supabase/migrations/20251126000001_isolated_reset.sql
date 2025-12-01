@@ -692,136 +692,330 @@ INSERT INTO tenants (id, name, domain, subscription_plan, status) VALUES
 ('b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', 'Tech Solutions Inc', 'techsolutions.com', 'professional', 'active'),
 ('c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', 'Global Trading Ltd', 'globaltrading.com', 'basic', 'active');
 
--- Insert permissions (Resource:Action format)
-INSERT INTO permissions (name, description, category, resource, action, is_system_permission) VALUES
--- Core permissions
-('read', 'Read access', 'core', '*', 'read', true),
-('write', 'Write access', 'core', '*', 'write', true),
-('delete', 'Delete access', 'core', '*', 'delete', true),
+-- Insert permissions (Atomic CRM permission tokens with crm: prefix)
+INSERT INTO permissions (name, description, resource, action, category, is_system_permission) VALUES
+-- Contact Management (Customers)
+('crm:customer:record:read', 'View customer records', 'contact', 'record:read', 'module', true),
+('crm:customer:record:create', 'Create customer records', 'contact', 'record:create', 'module', true),
+('crm:customer:record:update', 'Update customer records', 'contact', 'record:update', 'module', true),
+('crm:customer:record:delete', 'Delete customer records', 'contact', 'record:delete', 'module', true),
+('crm:customer:record:field.email:update', 'Update customer email field', 'contact', 'record:field.email:update', 'module', true),
 
--- Navigation permissions
-('dashboard:view', 'Access tenant dashboard and analytics', 'navigation', 'dashboard', 'view', false),
-('masters:read', 'Access master data and configuration', 'navigation', 'masters', 'read', false),
-('user_management:read', 'Access user and role management interface', 'navigation', 'users', 'read', false),
+-- Deal Management (Sales)
+('crm:deal:record:read', 'View deal records', 'deal', 'record:read', 'module', true),
+('crm:deal:record:create', 'Create deal records', 'deal', 'record:create', 'module', true),
+('crm:deal:record:update', 'Update deal records', 'deal', 'record:update', 'module', true),
+('crm:deal:record:delete', 'Delete deal records', 'deal', 'record:delete', 'module', true),
+('crm:deal:pipeline:move', 'Move deals in pipeline', 'deal', 'pipeline:move', 'module', true),
 
--- Module management permissions
--- ⚠️ CRITICAL: Granular user management permissions required for permission hooks
--- These permissions (users:read, users:create, users:update, users:delete, users:manage)
--- are checked by authService.hasPermission() and must be assigned to roles that need
--- user management access. See Repo.md section 2.9 for permission hook requirements.
-('users:read', 'Read user information', 'module', 'users', 'read', false),
-('users:create', 'Create new users', 'module', 'users', 'create', false),
-('users:update', 'Update user information', 'module', 'users', 'update', false),
-('users:delete', 'Delete users', 'module', 'users', 'delete', false),
-('users:manage', 'Manage users', 'module', 'users', 'manage', false),
-('roles:manage', 'Manage roles', 'module', 'roles', 'manage', false),
-('customers:manage', 'Manage customers', 'module', 'customers', 'manage', false),
-('sales:manage', 'Manage sales', 'module', 'sales', 'manage', false),
-('contracts:manage', 'Manage contracts', 'module', 'contracts', 'manage', false),
-('service_contracts:manage', 'Manage service contracts', 'module', 'service_contracts', 'manage', false),
-('products:manage', 'Manage products', 'module', 'products', 'manage', false),
-('job_works:manage', 'Manage job works', 'module', 'job_works', 'manage', false),
-('tickets:manage', 'Manage tickets', 'module', 'tickets', 'manage', false),
-('complaints:manage', 'Manage complaints', 'module', 'complaints', 'manage', false),
-('companies:manage', 'Manage companies', 'module', 'companies', 'manage', false),
-('reports:manage', 'Access reports and analytics', 'module', 'reports', 'manage', false),
-('settings:manage', 'Manage system settings', 'module', 'settings', 'manage', false),
+-- Support System (Tickets)
+('crm:support:ticket:read', 'View support tickets', 'support', 'ticket:read', 'module', true),
+('crm:support:ticket:create', 'Create support tickets', 'support', 'ticket:create', 'module', true),
+('crm:support:ticket:update', 'Update support tickets', 'support', 'ticket:update', 'module', true),
+('crm:support:ticket:delete', 'Delete support tickets', 'support', 'ticket:delete', 'module', true),
 
--- Action-specific permissions
-('export_data', 'Export data and reports', 'module', 'data', 'export', false),
-('view_audit_logs', 'View audit logs', 'module', 'audit', 'read', false),
+-- Complaints Management
+('crm:support:complaint:read', 'View complaints', 'support', 'complaint:read', 'module', true),
+('crm:support:complaint:create', 'Create complaints', 'support', 'complaint:create', 'module', true),
+('crm:support:complaint:update', 'Update complaints', 'support', 'complaint:update', 'module', true),
+('crm:support:complaint:delete', 'Delete complaints', 'support', 'complaint:delete', 'module', true),
 
--- System permissions
-('platform_admin', 'Platform administration', 'system', 'platform', 'admin', true),
-('super_admin', 'Full system administration', 'system', 'system', 'admin', true),
-('tenants:manage', 'Manage tenants', 'system', 'tenants', 'manage', true),
-('system_monitoring', 'System monitoring', 'system', 'system', 'monitor', true);
+-- Contract Management
+('crm:contract:record:read', 'View contract records', 'contract', 'record:read', 'module', true),
+('crm:contract:record:create', 'Create contract records', 'contract', 'record:create', 'module', true),
+('crm:contract:record:update', 'Update contract records', 'contract', 'record:update', 'module', true),
+('crm:contract:record:delete', 'Delete contract records', 'contract', 'record:delete', 'module', true),
 
--- Insert roles per tenant
--- ✅ Normalized role names to match UserRole enum exactly (no mapping needed)
+-- Service Contract Management
+('crm:contract:service:read', 'View service contracts', 'contract', 'service:read', 'module', true),
+('crm:contract:service:create', 'Create service contracts', 'contract', 'service:create', 'module', true),
+('crm:contract:service:update', 'Update service contracts', 'contract', 'service:update', 'module', true),
+('crm:contract:service:delete', 'Delete service contracts', 'contract', 'service:delete', 'module', true),
+
+-- Product Management
+('crm:product:record:read', 'View product records', 'product', 'record:read', 'module', true),
+('crm:product:record:create', 'Create product records', 'product', 'record:create', 'module', true),
+('crm:product:record:update', 'Update product records', 'product', 'record:update', 'module', true),
+('crm:product:record:delete', 'Delete product records', 'product', 'record:delete', 'module', true),
+
+-- Job Work Management
+('crm:job:work:read', 'View job work records', 'job', 'work:read', 'module', true),
+('crm:job:work:create', 'Create job work records', 'job', 'work:create', 'module', true),
+('crm:job:work:update', 'Update job work records', 'job', 'work:update', 'module', true),
+('crm:job:work:delete', 'Delete job work records', 'job', 'work:delete', 'module', true),
+
+-- User Management
+('crm:user:record:read', 'View user records', 'user', 'record:read', 'administrative', true),
+('crm:user:record:create', 'Create user records', 'user', 'record:create', 'administrative', true),
+('crm:user:record:update', 'Update user records', 'user', 'record:update', 'administrative', true),
+('crm:user:record:delete', 'Delete user records', 'user', 'record:delete', 'administrative', true),
+
+-- Role Management
+('crm:role:record:read', 'View role records', 'role', 'record:read', 'administrative', true),
+('crm:role:record:create', 'Create role records', 'role', 'record:create', 'administrative', true),
+('crm:role:record:update', 'Update role records', 'role', 'record:update', 'administrative', true),
+('crm:role:record:delete', 'Delete role records', 'role', 'record:delete', 'administrative', true),
+
+-- Permission Management
+('crm:permission:record:read', 'View permission records', 'permission', 'record:read', 'administrative', true),
+('crm:permission:record:create', 'Create permission records', 'permission', 'record:create', 'administrative', true),
+('crm:permission:record:update', 'Update permission records', 'permission', 'record:update', 'administrative', true),
+('crm:permission:record:delete', 'Delete permission records', 'permission', 'record:delete', 'administrative', true),
+
+-- Tenant Management
+('crm:tenant:record:read', 'View tenant records', 'tenant', 'record:read', 'system', true),
+('crm:tenant:record:create', 'Create tenant records', 'tenant', 'record:create', 'system', true),
+('crm:tenant:record:update', 'Update tenant records', 'tenant', 'record:update', 'system', true),
+('crm:tenant:record:delete', 'Delete tenant records', 'tenant', 'record:delete', 'system', true),
+
+-- Company Management
+('crm:company:record:read', 'View company records', 'company', 'record:read', 'module', true),
+('crm:company:record:create', 'Create company records', 'company', 'record:create', 'module', true),
+('crm:company:record:update', 'Update company records', 'company', 'record:update', 'module', true),
+('crm:company:record:delete', 'Delete company records', 'company', 'record:delete', 'module', true),
+
+-- Audit & Compliance
+('crm:audit:log:read', 'View audit logs', 'audit', 'log:read', 'system', true),
+('crm:audit:log:export', 'Export audit logs', 'audit', 'log:export', 'system', true),
+
+-- Dashboard & Analytics
+('crm:dashboard:panel:view', 'Access dashboard and analytics', 'dashboard', 'view', 'module', true),
+('crm:report:record:view', 'View reports', 'report', 'view', 'module', true),
+('crm:analytics:insight:view', 'Access analytics', 'analytics', 'view', 'module', true),
+
+-- System Administration
+('crm:system:platform:admin', 'System administration', 'system', 'admin', 'system', true),
+('crm:platform:control:admin', 'Platform administration', 'platform', 'admin', 'system', true),
+('crm:system:config:manage', 'Manage system settings', 'settings', 'manage', 'system', true),
+
+-- Data Operations
+('crm:data:export', 'Export data and reports', 'data', 'export', 'module', true),
+('crm:data:import', 'Import data', 'data', 'import', 'module', true),
+
+-- Notification Management
+('crm:notification:channel:manage', 'Manage notifications', 'notification', 'manage', 'module', true),
+
+-- Masters/Reference Data
+('crm:master:data:read', 'View master/reference data', 'master', 'data:read', 'module', true),
+('crm:master:data:manage', 'Manage master/reference data', 'master', 'data:manage', 'administrative', true)
+ON CONFLICT (name) DO NOTHING;
+
+-- Insert FRS-compliant roles per tenant
+-- ✅ FRS Specification: 9 roles total (1 system-wide + 8 tenant-specific)
 INSERT INTO roles (name, description, tenant_id, is_system_role) VALUES
--- Acme Corporation roles
-('admin', 'Full system access for tenant', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('manager', 'Management level access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('engineer', 'Technical user with limited access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('user', 'Standard user with basic access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
-('customer', 'External customer access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+-- FRS System Role (no tenant_id)
+('super_admin', 'Global system administrator', NULL, true),
 
--- Tech Solutions roles
-('admin', 'Full system access for tenant', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('manager', 'Management level access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('engineer', 'Technical user with limited access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('user', 'Standard user with basic access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
-('customer', 'External customer access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+-- FRS Tenant-Specific Roles for Acme Corporation
+('tenant_admin', 'Tenant administrator with full access', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('sales_manager', 'Sales team manager', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('sales_representative', 'Sales representative', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('support_manager', 'Support team manager', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('support_agent', 'Support agent', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('contract_manager', 'Contract manager', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('project_manager', 'Project manager', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
+('business_analyst', 'Business analyst', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false),
 
--- Global Trading roles
-('admin', 'Full system access for tenant', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('manager', 'Management level access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('engineer', 'Technical user with limited access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('user', 'Standard user with basic access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
-('customer', 'External customer access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+-- FRS Tenant-Specific Roles for Tech Solutions Inc
+('tenant_admin', 'Tenant administrator with full access', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('sales_manager', 'Sales team manager', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('sales_representative', 'Sales representative', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('support_manager', 'Support team manager', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('support_agent', 'Support agent', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('contract_manager', 'Contract manager', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('project_manager', 'Project manager', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
+('business_analyst', 'Business analyst', 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22', false),
 
--- Global super admin role
-('super_admin', 'Global system administrator', NULL, true);
+-- FRS Tenant-Specific Roles for Global Trading Ltd
+('tenant_admin', 'Tenant administrator with full access', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('sales_manager', 'Sales team manager', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('sales_representative', 'Sales representative', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('support_manager', 'Support team manager', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('support_agent', 'Support agent', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('contract_manager', 'Contract manager', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('project_manager', 'Project manager', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false),
+('business_analyst', 'Business analyst', 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33', false);
 
--- Assign permissions to roles
+-- ============================================================================
+-- FRS-COMPLIANT ROLE PERMISSIONS ASSIGNMENT
+-- Based on Functional Requirement Specification Appendix A
+-- ============================================================================
+
+-- Super Admin gets ALL permissions (system-wide access)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r
 CROSS JOIN permissions p
-WHERE 
-    -- admin role gets all permissions including full user management
-    -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
-    -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
-    -- ✅ Use normalized role name 'admin' (not 'Administrator')
-    (r.name = 'admin' AND p.name IN (
-        'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
-        'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
-        'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
-        'complaints:manage', 'companies:manage', 'reports:manage', 'settings:manage',
-        'export_data', 'view_audit_logs'
-    ))
-    OR 
-    -- manager role gets most permissions including full user management
-    -- ⚠️ CRITICAL: Must include all granular user permissions (users:read, users:create, users:update, users:delete, users:manage)
-    -- These are required for permission hooks to work correctly. See Repo.md section 2.9.
-    -- ✅ Use normalized role name 'manager' (not 'Manager')
-    (r.name = 'manager' AND p.name IN (
-        'read', 'write', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:read', 'users:create', 'users:update', 'users:delete', 'users:manage',
-        'customers:manage', 'sales:manage', 'contracts:manage',
-        'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
-        'complaints:manage', 'companies:manage', 'reports:manage',
-        'export_data', 'view_audit_logs'
-    ))
-    OR 
-    -- engineer role gets technical permissions
-    -- ✅ Use normalized role name 'engineer' (not 'Engineer')
-    (r.name = 'engineer' AND p.name IN (
-        'read', 'write', 'dashboard:view', 'masters:read',
-        'products:manage', 'job_works:manage', 'tickets:manage',
-        'companies:manage', 'export_data', 'view_audit_logs'
-    ))
-    OR 
-    -- user role gets basic permissions
-    -- ✅ Use normalized role name 'user' (not 'User')
-    (r.name = 'user' AND p.name IN (
-        'read', 'write', 'masters:read', 'customers:manage', 'companies:manage'
-    ))
-    OR 
-    -- customer role gets limited permissions
-    -- ✅ Use normalized role name 'customer' (not 'Customer')
-    (r.name = 'customer' AND p.name IN ('read', 'companies:manage'))
-    OR 
-    -- Super admin gets everything
-    (r.name = 'super_admin' AND p.name IN (
-        'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:manage', 'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
-        'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
-        'complaints:manage', 'companies:manage', 'reports:manage', 'settings:manage',
-        'export_data', 'view_audit_logs', 'platform_admin', 'super_admin', 
-        'tenants:manage', 'system_monitoring'
-    ));
+WHERE r.name = 'super_admin' AND r.is_system_role = true;
+
+-- Tenant Admin: Full access within tenant (organization management)
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    -- Authentication & Profile
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    -- User Management (Full CRUD)
+    'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete',
+    'crm:user:role:assign', 'crm:user:role:revoke',
+    -- Role Management (Full CRUD)
+    'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete',
+    'crm:role:permission:assign',
+    -- Customer Management (Full CRUD)
+    'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete',
+    'crm:customer:contact:add', 'crm:customer:contact:remove', 'crm:customer:document:upload', 'crm:customer:document:download',
+    -- Sales Management (Full CRUD + Pipeline)
+    'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:sales:deal:close',
+    'crm:sales:pipeline:view', 'crm:sales:pipeline:manage', 'crm:sales:forecast:view', 'crm:sales:forecast:create',
+    'crm:sales:activity:log',
+    -- Product Management (Full CRUD + Inventory/Pricing)
+    'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete',
+    'crm:product:inventory:manage', 'crm:product:pricing:manage',
+    -- Contract Management (Full CRUD + Services)
+    'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete',
+    'crm:contract:service:approve', 'crm:contract:service:renew',
+    'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete',
+    'crm:contract:record:approve',
+    -- Project Management (Full CRUD + Resources/Milestones)
+    'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete',
+    'crm:project:task:assign', 'crm:project:resource:allocate', 'crm:project:milestone:manage',
+    -- Support Management (Full CRUD + Investigation/Resolution)
+    'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:assign',
+    'crm:support:ticket:resolve', 'crm:support:ticket:close',
+    'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update',
+    'crm:support:complaint:investigate', 'crm:support:complaint:resolve',
+    -- Reporting & Analytics (Full Access)
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    -- Audit & Compliance (Read + Export)
+    'crm:audit:log:read', 'crm:audit:log:export', 'crm:audit:report:generate',
+    -- System Administration (Platform + Config + Backup)
+    'crm:system:platform:admin', 'crm:system:config:manage', 'crm:system:backup:create', 'crm:system:backup:restore',
+    'crm:platform:tenant:create', 'crm:platform:tenant:update', 'crm:platform:tenant:delete', 'crm:platform:tenant:suspend',
+    -- Notification Management
+    'crm:notification:channel:manage', 'crm:notification:template:create', 'crm:notification:campaign:create',
+    -- Reference Data Management
+    'crm:reference:data:read', 'crm:reference:data:manage', 'crm:reference:data:import', 'crm:reference:data:export'
+)
+WHERE r.name = 'tenant_admin';
+
+-- Sales Manager: Sales team management and pipeline oversight
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+    'crm:customer:contact:add', 'crm:customer:contact:remove', 'crm:customer:document:upload', 'crm:customer:document:download',
+    'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:sales:deal:close',
+    'crm:sales:pipeline:view', 'crm:sales:pipeline:manage', 'crm:sales:forecast:view', 'crm:sales:forecast:create',
+    'crm:sales:activity:log',
+    'crm:product:record:read',
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    'crm:user:record:read' -- Can view team members
+)
+WHERE r.name = 'sales_manager';
+
+-- Sales Representative: Individual sales activities
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+    'crm:customer:contact:add', 'crm:customer:contact:remove', 'crm:customer:document:upload', 'crm:customer:document:download',
+    'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:sales:deal:close',
+    'crm:sales:pipeline:view', 'crm:sales:activity:log',
+    'crm:product:record:read',
+    'crm:report:record:view', 'crm:report:record:export',
+    'crm:analytics:insight:view',
+    'crm:dashboard:panel:view'
+)
+WHERE r.name = 'sales_representative';
+
+-- Support Manager: Support team management and SLA monitoring
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read',
+    'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:assign',
+    'crm:support:ticket:resolve', 'crm:support:ticket:close',
+    'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update',
+    'crm:support:complaint:investigate', 'crm:support:complaint:resolve',
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    'crm:user:record:read', -- Can view team members
+    'crm:audit:log:read' -- Can view audit logs for compliance
+)
+WHERE r.name = 'support_manager';
+
+-- Support Agent: Individual support ticket handling
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read',
+    'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
+    'crm:support:ticket:resolve', 'crm:support:ticket:close',
+    'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update',
+    'crm:support:complaint:investigate', 'crm:support:complaint:resolve',
+    'crm:report:record:view', 'crm:report:record:export',
+    'crm:analytics:insight:view',
+    'crm:dashboard:panel:view'
+)
+WHERE r.name = 'support_agent';
+
+-- Contract Manager: Contract lifecycle and compliance management
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read',
+    'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete',
+    'crm:contract:service:approve', 'crm:contract:service:renew',
+    'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete',
+    'crm:contract:record:approve',
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    'crm:audit:log:read'
+)
+WHERE r.name = 'contract_manager';
+
+-- Project Manager: Project planning and resource management
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read',
+    'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete',
+    'crm:project:task:assign', 'crm:project:resource:allocate', 'crm:project:milestone:manage',
+    'crm:product:record:read',
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    'crm:user:record:read' -- Can view team members
+)
+WHERE r.name = 'project_manager';
+
+-- Business Analyst: Reporting and data analysis
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r
+JOIN permissions p ON p.name IN (
+    'crm:auth:login', 'crm:auth:logout', 'crm:auth:profile:read', 'crm:auth:profile:update',
+    'crm:customer:record:read',
+    'crm:sales:deal:read', 'crm:sales:pipeline:view', 'crm:sales:forecast:view',
+    'crm:contract:service:read', 'crm:contract:record:read',
+    'crm:project:record:read',
+    'crm:support:ticket:read', 'crm:support:complaint:read',
+    'crm:product:record:read',
+    'crm:report:record:view', 'crm:report:record:create', 'crm:report:record:export',
+    'crm:analytics:insight:view', 'crm:analytics:insight:create',
+    'crm:dashboard:panel:view', 'crm:dashboard:panel:create',
+    'crm:reference:data:read'
+)
+WHERE r.name = 'business_analyst';
 
 -- Insert sample companies
 INSERT INTO companies (name, registration_number, address, city, state, country, phone, email, tenant_id) VALUES
@@ -893,13 +1087,17 @@ BEGIN
       SELECT id INTO user_tenant_id FROM tenants ORDER BY created_at LIMIT 1;
     END IF;
 
-    -- ✅ Use normalized role names (matching UserRole enum exactly)
+    -- ✅ Use FRS-compliant role names (matching Functional Requirement Specification)
     role_name := CASE
-      WHEN NEW.email LIKE '%admin%' THEN 'admin'        -- Normalized: was 'Administrator'
-      WHEN NEW.email LIKE '%manager%' THEN 'manager'     -- Normalized: was 'Manager'
-      WHEN NEW.email LIKE '%engineer%' THEN 'engineer'  -- Normalized: was 'Engineer'
-      WHEN NEW.email LIKE '%customer%' THEN 'customer'  -- Normalized: was 'Customer'
-      ELSE 'user'                                        -- Normalized: was 'User'
+      WHEN NEW.email LIKE '%admin%' THEN 'tenant_admin'              -- FRS: Tenant Administrator
+      WHEN NEW.email LIKE '%sales%' AND NEW.email LIKE '%manager%' THEN 'sales_manager'         -- FRS: Sales Manager
+      WHEN NEW.email LIKE '%sales%' THEN 'sales_representative'      -- FRS: Sales Representative
+      WHEN NEW.email LIKE '%support%' AND NEW.email LIKE '%manager%' THEN 'support_manager'    -- FRS: Support Manager
+      WHEN NEW.email LIKE '%support%' THEN 'support_agent'           -- FRS: Support Agent
+      WHEN NEW.email LIKE '%contract%' THEN 'contract_manager'       -- FRS: Contract Manager
+      WHEN NEW.email LIKE '%project%' THEN 'project_manager'          -- FRS: Project Manager
+      WHEN NEW.email LIKE '%analyst%' THEN 'business_analyst'         -- FRS: Business Analyst
+      ELSE 'sales_representative'                                     -- Default: Sales Representative
     END;
   END IF;
 

@@ -837,7 +837,7 @@ Headers:
 
 **Acceptance Criteria** - ALL MET ✅:
 - ✅ Widget appears on super admin dashboard
-- ✅ Widget not visible for regular users (RBAC permission check: super_admin:view_analytics)
+- ✅ Widget not visible for regular users (RBAC permission check: super_admin:crm:analytics:insight:view)
 - ✅ Impersonation starts when used (onSuccess callback triggers navigation)
 - ✅ Widget positioned alongside other dashboard components
 - ✅ Responsive layout (lg={12} responsive grid)
@@ -852,7 +852,7 @@ Headers:
   - Added export for QuickImpersonationWidget
   - Organized in Impersonation section with ImpersonationActiveCard and ImpersonationLogTable
 - **Integration**:
-  - Widget inherits dashboard permission checks (super_admin:view_analytics)
+  - Widget inherits dashboard permission checks (super_admin:crm:analytics:insight:view)
   - Widget uses existing Ant Design theme and styling
   - Widget uses existing toast notification system (sonner)
   - Responsive layout matches dashboard grid system
@@ -874,7 +874,7 @@ Headers:
   - Type safety verified: ✅ PASSED
 
 **Access Control**:
-- Super Admin Dashboard already requires `super_admin:view_analytics` permission
+- Super Admin Dashboard already requires `super_admin:crm:analytics:insight:view` permission
 - QuickImpersonationWidget only visible when user has permission
 - Regular users cannot access Super Admin Dashboard (permission check on page level)
 - Additional RBAC: ImpersonationContext already validates super admin status

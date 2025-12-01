@@ -169,7 +169,7 @@ class MockComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 
@@ -194,7 +194,7 @@ class MockComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 
@@ -231,7 +231,7 @@ class MockComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 

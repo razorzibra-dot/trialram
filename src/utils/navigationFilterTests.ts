@@ -28,13 +28,13 @@ import {
 // In production, navigation items come from database via useNavigation() hook
 // This test file can be updated to use database-driven navigation in the future
 const mockNavigationConfig = [
-  { key: '/tenant/dashboard', label: 'Dashboard', permission: 'dashboard:view' },
+  { key: '/tenant/dashboard', label: 'Dashboard', permission: 'crm:dashboard:panel:view' },
   { key: '/tenant/customers', label: 'Customers', permission: 'customers:manage' },
-  { key: '/tenant/users', label: 'User Management', permission: 'users:manage', children: [
-    { key: '/tenant/users/list', label: 'Users', permission: 'users:manage' },
-    { key: '/tenant/users/roles', label: 'Roles', permission: 'roles:manage' },
+  { key: '/tenant/users', label: 'User Management', permission: 'crm:user:record:update', children: [
+    { key: '/tenant/users/list', label: 'Users', permission: 'crm:user:record:update' },
+    { key: '/tenant/users/roles', label: 'Roles', permission: 'crm:role:permission:assign' },
   ]},
-  { key: 'admin-section', label: 'Administration', isSection: true, permission: 'masters:read' },
+  { key: 'admin-section', label: 'Administration', isSection: true, permission: 'crm:reference:data:read' },
 ];
 const navigationConfig = mockNavigationConfig; // For backward compatibility in tests
 
@@ -69,8 +69,8 @@ export class NavigationFilterTestSuite {
   private testPermissionFiltering(): void {
     const context = createNavigationFilterContext('admin', [
       'read',
-      'manage_customers',
-      'manage_users',
+      'crm:customer:record:update',
+      'crm:user:record:update',
     ]);
 
     const result = isItemVisible(navigationConfig[0], context); // Dashboard (read permission)
@@ -91,7 +91,7 @@ export class NavigationFilterTestSuite {
    * Test role-based filtering
    */
   private testRoleBasedFiltering(): void {
-    const adminContext = createNavigationFilterContext('admin', ['manage_users']);
+    const adminContext = createNavigationFilterContext('admin', ['crm:user:record:update']);
     const adminItem = navigationConfig.find((item) => item.key === '/tenant/users');
 
     const adminResult = adminItem ? isItemVisible(adminItem, adminContext) : false;
@@ -107,8 +107,8 @@ export class NavigationFilterTestSuite {
    */
   private testNestedItemFiltering(): void {
     const context = createNavigationFilterContext('admin', [
-      'manage_users',
-      'manage_roles',
+      'crm:user:record:update',
+      'crm:role:record:update',
     ]);
 
     const userManagementItem = navigationConfig.find((item) => item.key === '/tenant/users');
@@ -139,8 +139,8 @@ export class NavigationFilterTestSuite {
    */
   private testDynamicSectionVisibility(): void {
     const adminContext = createNavigationFilterContext('admin', [
-      'manage_users',
-      'manage_settings',
+      'crm:user:record:update',
+      'crm:system:config:manage',
       'manage_companies',
     ]);
 
@@ -168,8 +168,8 @@ export class NavigationFilterTestSuite {
   private testBreadcrumbGeneration(): void {
     const context = createNavigationFilterContext('admin', [
       'read',
-      'manage_users',
-      'manage_roles',
+      'crm:user:record:update',
+      'crm:role:record:update',
     ]);
 
     const breadcrumbs = getPermissionAwareBreadcrumbs(
@@ -196,9 +196,9 @@ export class NavigationFilterTestSuite {
     const adminContext = createNavigationFilterContext('admin', [
       'read',
       'write',
-      'manage_customers',
-      'manage_users',
-      'manage_settings',
+      'crm:customer:record:update',
+      'crm:user:record:update',
+      'crm:system:config:manage',
     ]);
 
     const visibleItems = getAllVisibleItems(navigationConfig, adminContext);
@@ -213,7 +213,7 @@ export class NavigationFilterTestSuite {
 
     const superAdminContext = createNavigationFilterContext('super_admin', [
       'super_admin',
-      'manage_tenants',
+      'crm:platform:tenant:manage',
     ]);
     const superAdminItems = getAllVisibleItems(navigationConfig, superAdminContext);
 
@@ -228,8 +228,8 @@ export class NavigationFilterTestSuite {
    */
   private testNavigationItemAccess(): void {
     const adminContext = createNavigationFilterContext('admin', [
-      'manage_users',
-      'manage_roles',
+      'crm:user:record:update',
+      'crm:role:record:update',
     ]);
 
     const canAccessUsers = canAccessNavigationItem(

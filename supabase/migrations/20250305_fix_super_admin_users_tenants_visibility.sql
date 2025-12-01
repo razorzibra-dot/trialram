@@ -113,9 +113,9 @@ CREATE POLICY "tenants_view_with_super_admin_access" ON tenants
   );
 
 -- Super admins can manage tenants
-DROP POLICY IF EXISTS "admins_manage_tenants" ON tenants;
+DROP POLICY IF EXISTS "admins_crm:platform:tenant:manage" ON tenants;
 
-CREATE POLICY "admins_manage_tenants" ON tenants
+CREATE POLICY "admins_crm:platform:tenant:manage" ON tenants
   FOR UPDATE
   USING (
     is_current_user_super_admin()

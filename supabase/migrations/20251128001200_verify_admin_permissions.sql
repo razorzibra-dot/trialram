@@ -12,7 +12,7 @@ FROM roles r
 JOIN role_permissions rp ON r.id = rp.role_id
 JOIN permissions p ON rp.permission_id = p.id
 WHERE r.name IN ('Administrator', 'Manager')
-  AND (p.name LIKE 'users:%' OR p.name = 'user_management:read')
+  AND (p.name LIKE 'users:%' OR p.name = 'crm:user:record:read')
 ORDER BY r.name, p.name;
 
 -- Count permissions for each role
@@ -23,6 +23,6 @@ FROM roles r
 JOIN role_permissions rp ON r.id = rp.role_id
 JOIN permissions p ON rp.permission_id = p.id
 WHERE r.name IN ('Administrator', 'Manager')
-  AND (p.name LIKE 'users:%' OR p.name = 'user_management:read')
+  AND (p.name LIKE 'users:%' OR p.name = 'crm:user:record:read')
 GROUP BY r.name;
 

@@ -52,8 +52,8 @@ INSERT INTO permissions (id, name, description, resource, action) VALUES
   ('00000000-0000-0000-0000-000000000001'::UUID, 'read', 'Read access', '*', 'read'),
   ('00000000-0000-0000-0000-000000000101'::UUID, 'write', 'Write access', '*', 'write'),
   ('00000000-0000-0000-0000-000000000102'::UUID, 'delete', 'Delete access', '*', 'delete'),
-  ('00000000-0000-0000-0000-000000000103'::UUID, 'users:manage', 'Manage users', 'users', 'manage'),
-  ('00000000-0000-0000-0000-000000000104'::UUID, 'roles:manage', 'Manage roles', 'roles', 'manage'),
+  ('00000000-0000-0000-0000-000000000103'::UUID, 'crm:user:record:update', 'Manage users', 'users', 'manage'),
+  ('00000000-0000-0000-0000-000000000104'::UUID, 'crm:role:permission:assign', 'Manage roles', 'roles', 'manage'),
   ('00000000-0000-0000-0000-000000000105'::UUID, 'customers:manage', 'Manage customers', 'customers', 'manage'),
   ('00000000-0000-0000-0000-000000000201'::UUID, 'sales:manage', 'Manage sales', 'sales', 'manage'),
   ('00000000-0000-0000-0000-000000000202'::UUID, 'contracts:manage', 'Manage contracts', 'contracts', 'manage'),
@@ -64,11 +64,11 @@ INSERT INTO permissions (id, name, description, resource, action) VALUES
   ('00000000-0000-0000-0000-000000000303'::UUID, 'tickets:manage', 'Manage tickets', 'tickets', 'manage'),
   ('00000000-0000-0000-0000-000000000304'::UUID, 'complaints:manage', 'Manage complaints', 'complaints', 'manage'),
   ('00000000-0000-0000-0000-000000000401'::UUID, 'dashboard:manage', 'Access dashboard', 'dashboard', 'manage'),
-  ('00000000-0000-0000-0000-000000000402'::UUID, 'settings:manage', 'Manage settings', 'settings', 'manage'),
+  ('00000000-0000-0000-0000-000000000402'::UUID, 'crm:system:config:manage', 'Manage settings', 'settings', 'manage'),
   ('00000000-0000-0000-0000-000000000501'::UUID, 'companies:manage', 'Manage companies', 'companies', 'manage'),
-  ('00000000-0000-0000-0000-000000000502'::UUID, 'platform_admin', 'Platform administration', 'platform', 'admin'),
+  ('00000000-0000-0000-0000-000000000502'::UUID, 'crm:platform:control:admin', 'Platform administration', 'platform', 'admin'),
   ('00000000-0000-0000-0000-000000000601'::UUID, 'super_admin', 'Full system administration', 'system', 'admin'),
-  ('00000000-0000-0000-0000-000000000602'::UUID, 'tenants:manage', 'Manage tenants', 'tenants', 'manage'),
+  ('00000000-0000-0000-0000-000000000602'::UUID, 'crm:platform:tenant:manage', 'Manage tenants', 'tenants', 'manage'),
   ('00000000-0000-0000-0000-000000000701'::UUID, 'system_monitoring', 'System monitoring', 'system', 'monitor'),
   ('00000000-0000-0000-0000-000000000403'::UUID, 'reports:manage', 'Access reports and analytics', 'reports', 'manage'),
   ('00000000-0000-0000-0000-000000000404'::UUID, 'export_data', 'Export data and reports', 'data', 'export'),
@@ -97,15 +97,15 @@ SELECT
 FROM permissions
 WHERE name IN (
   'read', 'write', 'delete',
-  'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+  'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
   'contracts:manage', 'service_contracts:manage', 'products:manage',
   'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-  'dashboard:manage', 'settings:manage', 'companies:manage',
+  'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
   'reports:manage', 'export_data', 'view_audit_logs',
   'create_tickets', 'update_tickets', 'create_products', 'update_products',
   'inventory:manage', 'view_financials', 'integrations:manage',
   'bulk_operations', 'advanced_search', 'api_access',
-  'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+  'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 );
 
 -- Check for expected count (should be 34)
@@ -118,15 +118,15 @@ BEGIN
     FROM permissions
     WHERE name IN (
       'read', 'write', 'delete',
-      'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+      'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
       'contracts:manage', 'service_contracts:manage', 'products:manage',
       'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-      'dashboard:manage', 'settings:manage', 'companies:manage',
+      'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
       'reports:manage', 'export_data', 'view_audit_logs',
       'create_tickets', 'update_tickets', 'create_products', 'update_products',
       'inventory:manage', 'view_financials', 'integrations:manage',
       'bulk_operations', 'advanced_search', 'api_access',
-      'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+      'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
     );
     
     IF permission_count = expected_count THEN
@@ -149,7 +149,7 @@ SELECT
   END as validation_result
 FROM permissions
 WHERE name NOT LIKE '%:%' 
-  AND name NOT IN ('read', 'write', 'delete', 'platform_admin', 'super_admin', 'system_monitoring')
+  AND name NOT IN ('read', 'write', 'delete', 'crm:platform:control:admin', 'super_admin', 'system_monitoring')
   AND name IS NOT NULL;
 
 -- Verify permissions have correct structure
@@ -159,15 +159,15 @@ SELECT
 FROM permissions
 WHERE name IN (
   'read', 'write', 'delete',
-  'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+  'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
   'contracts:manage', 'service_contracts:manage', 'products:manage',
   'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-  'dashboard:manage', 'settings:manage', 'companies:manage',
+  'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
   'reports:manage', 'export_data', 'view_audit_logs',
   'create_tickets', 'update_tickets', 'create_products', 'update_products',
   'inventory:manage', 'view_financials', 'integrations:manage',
   'bulk_operations', 'advanced_search', 'api_access',
-  'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+  'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 )
 AND description IS NOT NULL 
 AND resource IS NOT NULL 
@@ -204,21 +204,21 @@ SELECT
   action,
   CASE 
     WHEN name LIKE '%:manage' THEN 'Module Permission'
-    WHEN name IN ('platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring') THEN 'System Permission'
+    WHEN name IN ('crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring') THEN 'System Permission'
     ELSE 'Core Permission'
   END as permission_type
 FROM permissions
 WHERE name IN (
   'read', 'write', 'delete',
-  'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+  'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
   'contracts:manage', 'service_contracts:manage', 'products:manage',
   'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-  'dashboard:manage', 'settings:manage', 'companies:manage',
+  'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
   'reports:manage', 'export_data', 'view_audit_logs',
   'create_tickets', 'update_tickets', 'create_products', 'update_products',
   'inventory:manage', 'view_financials', 'integrations:manage',
   'bulk_operations', 'advanced_search', 'api_access',
-  'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+  'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 )
 ORDER BY 
   CASE 
@@ -244,15 +244,15 @@ SELECT
 -- Clean up test data for next test
 DELETE FROM permissions WHERE name IN (
   'read', 'write', 'delete',
-  'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+  'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
   'contracts:manage', 'service_contracts:manage', 'products:manage',
   'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-  'dashboard:manage', 'settings:manage', 'companies:manage',
+  'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
   'reports:manage', 'export_data', 'view_audit_logs',
   'create_tickets', 'update_tickets', 'create_products', 'update_products',
   'inventory:manage', 'view_financials', 'integrations:manage',
   'bulk_operations', 'advanced_search', 'api_access',
-  'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+  'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 );
 
 -- ============================================================================

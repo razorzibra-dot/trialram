@@ -75,7 +75,7 @@ seed_data_check AS (
     SELECT 
         'SEED_DATA_STATUS' as check_type,
         CASE 
-            WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'users:manage') 
+            WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'crm:user:record:update') 
             THEN 'SEED_DATA_PRESENT'
             ELSE 'SEED_DATA_NOT_PRESENT'
         END as status

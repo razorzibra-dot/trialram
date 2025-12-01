@@ -82,23 +82,23 @@ interface Permission {
 - `delete` - Delete data (global access)
 
 **2. Module Permissions (Feature-Specific):**
-- `manage_customers` - Full customer management
-- `manage_sales` - Sales process management
+- `crm:customer:record:update` - Full customer management
+- `crm:sales:deal:update` - Sales process management
 - `manage_tickets` - Support ticket management
 - `manage_products` - Product catalog management
 - `manage_contracts` - Contract lifecycle management
-- `manage_complaints` - Complaint handling
+- `crm:support:complaint:update` - Complaint handling
 
 **3. Administrative Permissions (User Management):**
-- `manage_users` - User account management
-- `manage_roles` - Role and permission management
-- `view_analytics` - Analytics and reporting access
-- `manage_settings` - System configuration
+- `crm:user:record:update` - User account management
+- `crm:role:record:update` - Role and permission management
+- `crm:analytics:insight:view` - Analytics and reporting access
+- `crm:system:config:manage` - System configuration
 
 **4. System Permissions (Platform-Level):**
 - `super_admin` - Platform administrator (super_admin role only)
 - `tenant:users` - Tenant user management
-- `user:manage_roles` - User role assignment
+- `user:crm:role:record:update` - User role assignment
 
 **User-Specific Permissions (from PermissionGuard):**
 - `user:list` - View user lists
@@ -107,7 +107,7 @@ interface Permission {
 - `user:edit` - Edit user profiles
 - `user:delete` - Delete users
 - `user:reset_password` - Reset user passwords
-- `user:manage_roles` - Assign roles to users
+- `user:crm:role:record:update` - Assign roles to users
 
 **Permission Validation Flow:**
 1. Check synchronous permission cache
@@ -194,15 +194,15 @@ const basicRolePermissions: Record<string, string[]> = {
   'super_admin': ['*'], // Super admin has all permissions
   'admin': [
     'read', 'write', 'delete',
-    'manage_users', 'manage_roles', 'manage_customers', 'manage_sales',
+    'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update',
     'manage_tickets', 'manage_contracts', 'manage_products', 'view_dashboard'
   ],
   'manager': [
-    'read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets',
+    'read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
     'manage_contracts', 'manage_products', 'view_dashboard'
   ],
   'user': [
-    'read', 'write', 'manage_customers', 'manage_tickets', 'view_dashboard'
+    'read', 'write', 'crm:customer:record:update', 'manage_tickets', 'view_dashboard'
   ],
   'engineer': [
     'read', 'write', 'manage_products', 'manage_tickets', 'view_dashboard'

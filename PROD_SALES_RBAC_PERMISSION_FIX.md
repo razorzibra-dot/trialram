@@ -102,19 +102,19 @@ supabase psql
 ### Roles Created Per Tenant
 
 #### Acme Corporation (tenant_id: 550e8400-e29b-41d4-a716-446655440001)
-- **Super Administrator** → `manage_product_sales` permission
-- **Administrator** → `manage_product_sales` permission
-- **Manager** → `manage_product_sales` permission
+- **Super Administrator** → `crm:product-sale:record:update` permission
+- **Administrator** → `crm:product-sale:record:update` permission
+- **Manager** → `crm:product-sale:record:update` permission
 - **Agent** → Limited permissions (no product sales)
-- **Engineer** → `manage_product_sales` permission
+- **Engineer** → `crm:product-sale:record:update` permission
 
 #### Tech Solutions Inc (tenant_id: 550e8400-e29b-41d4-a716-446655440002)
-- **Super Administrator** → `manage_product_sales` permission
-- **Administrator** → `manage_product_sales` permission
-- **Manager** → `manage_product_sales` permission
+- **Super Administrator** → `crm:product-sale:record:update` permission
+- **Administrator** → `crm:product-sale:record:update` permission
+- **Manager** → `crm:product-sale:record:update` permission
 
 #### Global Trading Ltd (tenant_id: 550e8400-e29b-41d4-a716-446655440003)
-- **Super Administrator** → `manage_product_sales` permission
+- **Super Administrator** → `crm:product-sale:record:update` permission
 
 ### Users Assigned to Roles
 
@@ -163,7 +163,7 @@ supabase psql
    ↓
 2. productSalesRbacService.canCreateProductSale() called
    ↓
-3. Maps action to permission: "product_sales:create" → "manage_product_sales"
+3. Maps action to permission: "crm:product-sale:record:create" → "crm:product-sale:record:update"
    ↓
 4. rbacService.validateRolePermissions() called
    ↓
@@ -171,7 +171,7 @@ supabase psql
    ↓
 6. For each role_id, queries roles table: SELECT permissions WHERE id = ?
    ↓
-7. Checks if "manage_product_sales" exists in role permissions
+7. Checks if "crm:product-sale:record:update" exists in role permissions
    ↓
 8. Returns TRUE (allowed) or FALSE (denied)
 ```
@@ -291,8 +291,8 @@ After applying the fix, verify:
 ### Issue: Permission Still Denied After Fix
 
 **Solution**:
-1. Verify user's role has "manage_product_sales" permission
-2. Check `roles.permissions` JSONB column contains "manage_product_sales"
+1. Verify user's role has "crm:product-sale:record:update" permission
+2. Check `roles.permissions` JSONB column contains "crm:product-sale:record:update"
 3. Verify user's tenant_id matches role's tenant_id
 4. Check browser console for detailed permission check logs
 
@@ -316,10 +316,10 @@ A: Authentication (are you logged in?) is separate from Authorization (can you d
 **Q: Can I assign custom permissions to roles?**  
 A: Yes, via the Admin panel or directly in database. Permissions are stored in `roles.permissions` JSONB array.
 
-**Q: What's the difference between "manage_product_sales" and "manage_sales"?**  
+**Q: What's the difference between "crm:product-sale:record:update" and "crm:sales:deal:update"?**  
 A: These are separate modules:
-- `manage_product_sales` = Product Sales module (inventory transactions)
-- `manage_sales` = Sales module (deals and opportunities)
+- `crm:product-sale:record:update` = Product Sales module (inventory transactions)
+- `crm:sales:deal:update` = Sales module (deals and opportunities)
 
 **Q: Can a user have multiple roles?**  
 A: Yes, via multiple `user_roles` records for the same user_id with different role_ids.

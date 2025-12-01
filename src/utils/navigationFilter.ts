@@ -55,7 +55,7 @@ export interface FilteredNavigationItem extends NavigationItemConfig {
  * @example
  * const isVisible = isItemVisible(dashboardItem, {
  *   userRole: 'admin',
- *   userPermissions: ['read', 'manage_users'],
+ *   userPermissions: ['read', 'crm:user:record:update'],
  *   hasPermission: (p) => userPermissions.includes(p),
  *   hasRole: (r) => r === userRole,
  * });
@@ -131,7 +131,7 @@ export function hasVisibleChildren(
  * @example
  * const filteredItems = filterNavigationItems(navigationConfig, {
  *   userRole: 'admin',
- *   userPermissions: ['read', 'manage_users'],
+ *   userPermissions: ['read', 'crm:user:record:update'],
  *   hasPermission: (p) => userPermissions.includes(p),
  *   hasRole: (r) => r === userRole,
  * });
@@ -271,7 +271,7 @@ export function getAllVisibleItems(
  * Helper function to create the context object needed for filtering.
  * 
  * ✅ CRITICAL: Uses authService.hasPermission() to properly handle permission supersets
- * (e.g., 'masters:manage' grants 'masters:read', 'resource:manage' grants 'resource:read', etc.)
+ * (e.g., 'masters:manage' grants 'crm:reference:data:read', 'resource:manage' grants 'resource:read', etc.)
  * 
  * @param userRole - User's role
  * @param userPermissions - User's permissions (for reference, but authService handles the actual check)
@@ -286,7 +286,7 @@ export function createNavigationFilterContext(
     userPermissions,
     hasPermission: (permission: string): boolean => {
       // ✅ Use authService.hasPermission() to properly handle permission supersets
-      // This ensures that permissions like 'masters:manage' grant 'masters:read',
+      // This ensures that permissions like 'masters:manage' grant 'crm:reference:data:read',
       // and 'resource:manage' grants 'resource:read', etc.
       return authService.hasPermission(permission);
     },

@@ -229,8 +229,8 @@
 - Optimistic updates with refetch on success
 
 ### **Permissions**
-- products:create, products:update, products:delete
-- companies:create, companies:update, companies:delete
+- crm:product:record:create, crm:product:record:update, crm:product:record:delete
+- crm:company:record:create, crm:company:record:update, crm:company:record:delete
 
 ---
 

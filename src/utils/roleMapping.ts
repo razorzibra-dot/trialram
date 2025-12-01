@@ -203,8 +203,15 @@ export async function getValidUserRoles(): Promise<UserRole[]> {
 export async function isValidUserRole(role: string | null | undefined): Promise<boolean> {
   if (!role) return false;
   
+  // Normalize the role name before validation (lowercase, trim)
+  const normalizedRole = normalizeRoleName(role);
+  
+  // Get valid roles from database (already normalized)
   const validRoles = await getValidUserRoles();
-  return validRoles.includes(role as UserRole);
+  
+  // Check if normalized role exists in valid roles list
+  // validRoles are already normalized, so we can compare directly
+  return validRoles.some(validRole => normalizeRoleName(validRole) === normalizedRole);
 }
 
 /**
@@ -255,4 +262,50 @@ export async function isPlatformRoleByName(roleName: string): Promise<boolean> {
   
   // Platform role: is_system_role=true AND tenant_id IS NULL
   return role.is_system_role === true && !role.tenant_id;
+}
+
+/**
+ * Get all roles grouped by normalized UserRole enum value
+ * This creates a dynamic mapping from database roles to UserRole enum values
+ * 
+ * @returns Map of normalized UserRole to array of database role names that map to it
+ */
+export async function getRolesByUserRole(): Promise<Map<UserRole, string[]>> {
+  const roles = await getRolesCached();
+  const roleMap = new Map<UserRole, string[]>();
+  
+  for (const role of roles) {
+    const normalized = normalizeRoleName(role.name) as UserRole;
+    if (!roleMap.has(normalized)) {
+      roleMap.set(normalized, []);
+    }
+    roleMap.get(normalized)!.push(role.name);
+  }
+  
+  return roleMap;
+}
+
+/**
+ * Check if a role name (normalized or database name) matches a UserRole enum value
+ * Uses database lookup to find all roles that map to the target UserRole
+ * 
+ * @param roleName - Role name to check (can be database name or normalized)
+ * @param targetUserRole - Target UserRole enum value to match against
+ * @returns True if the role maps to the target UserRole
+ */
+export async function isRoleOfType(roleName: string, targetUserRole: UserRole): Promise<boolean> {
+  const normalizedRoleName = normalizeRoleName(roleName);
+  const normalizedTarget = normalizeRoleName(targetUserRole);
+  
+  // Direct match after normalization
+  if (normalizedRoleName === normalizedTarget) {
+    return true;
+  }
+  
+  // Check database to see if this role maps to the target UserRole
+  const role = await findRoleByName(roleName);
+  if (!role) return false;
+  
+  const roleNormalized = normalizeRoleName(role.name) as UserRole;
+  return roleNormalized === normalizedTarget;
 }

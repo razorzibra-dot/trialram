@@ -393,7 +393,7 @@ const CustomerDetailPage: React.FC = () => {
       >
         Back
       </Button>
-      {hasPermission('customers.update') && (
+      {hasPermission('crm:customer:record:update') && (
         <Button
           type="primary"
           icon={<EditOutlined />}
@@ -402,7 +402,7 @@ const CustomerDetailPage: React.FC = () => {
           Edit Customer
         </Button>
       )}
-      {hasPermission('customers.delete') && (
+      {hasPermission('crm:customer:record:delete') && (
         <Popconfirm
           title="Delete Customer"
           description="Are you sure you want to delete this customer? This action cannot be undone."

@@ -134,7 +134,7 @@ SELECT
     'PERMISSION_FORMATS' as check_type,
     CASE 
         WHEN name LIKE '%:%' THEN 'resource:action_format'
-        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin') THEN 'simple_format'
+        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin') THEN 'simple_format'
         ELSE 'legacy_format'
     END as format_type,
     COUNT(*) as permission_count,
@@ -161,9 +161,9 @@ SELECT
     is_system_permission
 FROM permissions 
 WHERE name IN (
-    'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
-    'contracts:manage', 'products:manage', 'dashboard:manage', 'settings:manage',
-    'read', 'write', 'delete', 'super_admin', 'platform_admin'
+    'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
+    'contracts:manage', 'products:manage', 'dashboard:manage', 'crm:system:config:manage',
+    'read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin'
 )
 ORDER BY name;
 

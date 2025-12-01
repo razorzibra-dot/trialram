@@ -353,12 +353,12 @@ export const ServiceContractsPage: React.FC = () => {
           <Tooltip title="View Details">
             <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewContract(record)} />
           </Tooltip>
-          {hasPermission('manage_service_contracts') && (
+          {hasPermission('crm:contract:service:update') && (
             <Tooltip title="Edit">
               <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
             </Tooltip>
           )}
-          {hasPermission('manage_service_contracts') && (
+          {hasPermission('crm:contract:service:update') && (
             <Popconfirm
               title="Delete Contract"
               description={`Are you sure you want to delete ${record.contractNumber}?`}
@@ -377,7 +377,7 @@ export const ServiceContractsPage: React.FC = () => {
     }
   ];
 
-  if (!hasPermission('manage_service_contracts')) {
+  if (!hasPermission('crm:contract:service:update')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

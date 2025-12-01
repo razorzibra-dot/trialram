@@ -74,7 +74,7 @@ const { canAccess } = useModuleAccess('customers');
 
 ### Criterion 3: Regular User with Permissions ✅
 ```typescript
-// Regular user with 'manage_customers' permission
+// Regular user with 'crm:customer:record:update' permission
 const { canAccess } = useModuleAccess('customers');
 // Result: canAccess = true (if authService.hasPermission returns true)
 ```
@@ -137,8 +137,8 @@ const { data, isLoading, error } = useQuery({
 ### Permission Checking Logic
 
 **Implemented Permission Formats**:
-1. **Manage Permission**: `manage_${moduleName}` (e.g., `manage_customers`)
-2. **Read Permission**: `${moduleName}:read` (e.g., `customers:read`)
+1. **Manage Permission**: `manage_${moduleName}` (e.g., `crm:customer:record:update`)
+2. **Read Permission**: `${moduleName}:read` (e.g., `crm:customer:record:read`)
 3. **Generic Permission**: `read` (fallback for general access)
 
 **Permission Check Order**:

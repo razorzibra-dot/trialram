@@ -122,19 +122,19 @@ DELIVERABLES.md                    [NEW] - This file
     
 [5] Fetch permission names: SUCCESS
     - Format: Correct (module:action)
-    - Sample: dashboard:view, users:manage, etc.
+    - Sample: crm:dashboard:panel:view, crm:user:record:update, etc.
 ```
 
 ### Permissions Loaded (21 Total) ✅
 ```
 Core:
 - read, write, delete (legacy format)
-- dashboard:view ✓
+- crm:dashboard:panel:view ✓
 
 Management:
-- user_management:read ✓
-- users:manage ✓
-- roles:manage ✓
+- crm:user:record:read ✓
+- crm:user:record:update ✓
+- crm:role:permission:assign ✓
 
 Business:
 - customers:manage ✓
@@ -149,9 +149,9 @@ Business:
 - inventory:manage ✓
 
 Admin:
-- masters:read ✓
+- crm:reference:data:read ✓
 - reports:manage ✓
-- settings:manage ✓
+- crm:system:config:manage ✓
 - export_data ✓
 - view_audit_logs ✓
 ```

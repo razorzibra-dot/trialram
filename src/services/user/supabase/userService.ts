@@ -527,11 +527,19 @@ class SupabaseUserService {
     }
 
     // Validate role if provided using dynamic database-driven utility
+    // Skip validation if role hasn't changed (allows users with legacy roles to be updated)
     if (data.role) {
-      const isValid = await isValidUserRole(data.role);
-      if (!isValid) {
-        const validRoles = await getValidUserRoles();
-        throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
+      const currentRole = targetUser.role;
+      const normalizedCurrentRole = currentRole?.toLowerCase().trim();
+      const normalizedNewRole = data.role.toLowerCase().trim();
+      
+      // Only validate if role is actually changing
+      if (normalizedCurrentRole !== normalizedNewRole) {
+        const isValid = await isValidUserRole(data.role);
+        if (!isValid) {
+          const validRoles = await getValidUserRoles();
+          throw new Error(`Invalid role: ${data.role}. Allowed roles: ${validRoles.join(', ')}`);
+        }
       }
     }
 
@@ -565,56 +573,77 @@ class SupabaseUserService {
     // Handle role updates via user_roles table
     // Uses dynamic database-driven role mapping
     if (data.role !== undefined) {
-      const dbRoleName = await mapUserRoleToDatabaseRole(data.role);
-      if (dbRoleName) {
-        // Check if role is platform role to determine tenant_id
-        const isPlatform = await isPlatformRoleByName(data.role);
-        const roleTenantId = isPlatform ? null : targetUser.tenantId;
-        
-        // Get new role ID
-        let roleQuery = supabase
-          .from('roles')
-          .select('id')
-          .eq('name', dbRoleName);
-        
-        // Apply tenant_id filter based on platform role check
-        if (roleTenantId === null) {
-          roleQuery = roleQuery.is('tenant_id', null);
+      const currentRole = targetUser.role;
+      const normalizedCurrentRole = currentRole?.toLowerCase().trim();
+      const normalizedNewRole = data.role.toLowerCase().trim();
+      
+      // Only update role if it's actually changing
+      if (normalizedCurrentRole !== normalizedNewRole) {
+        const dbRoleName = await mapUserRoleToDatabaseRole(data.role);
+        if (dbRoleName) {
+          // Check if role is platform role to determine tenant_id
+          const isPlatform = await isPlatformRoleByName(data.role);
+          const roleTenantId = isPlatform ? null : targetUser.tenantId;
+          
+          // Get new role ID
+          let roleQuery = supabase
+            .from('roles')
+            .select('id')
+            .eq('name', dbRoleName);
+          
+          // Apply tenant_id filter based on platform role check
+          if (roleTenantId === null) {
+            roleQuery = roleQuery.is('tenant_id', null);
+          } else {
+            roleQuery = roleQuery.eq('tenant_id', roleTenantId);
+          }
+          
+          const { data: roleData, error: roleQueryError } = await roleQuery.maybeSingle();
+
+          if (roleQueryError) {
+            console.error('[UserService] Error querying role:', roleQueryError);
+            throw new Error(`Failed to find role: ${roleQueryError.message}`);
+          }
+
+          if (roleData) {
+            // Remove existing role assignments for this user
+            const { error: deleteError } = await supabase
+              .from('user_roles')
+              .delete()
+              .eq('user_id', id);
+            
+            if (deleteError) {
+              console.error('[UserService] Error removing existing role:', deleteError);
+              throw new Error(`Failed to remove existing role: ${deleteError.message}`);
+            }
+
+            // Assign new role
+            const { error: roleAssignError } = await supabase
+              .from('user_roles')
+              .insert({
+                user_id: id,
+                role_id: roleData.id,
+                tenant_id: targetUser.tenantId,
+                assigned_by: currentUser?.id,
+                assigned_at: new Date().toISOString()
+              });
+            
+            if (roleAssignError) {
+              console.error('[UserService] Error assigning role:', roleAssignError);
+              throw new Error(`Failed to assign role: ${roleAssignError.message}`);
+            }
+          } else {
+            // Role not found in database - this shouldn't happen if validation passed
+            console.warn(`[UserService] Role "${dbRoleName}" not found in database for tenant ${roleTenantId}`);
+            throw new Error(`Role "${data.role}" not found in database. Please select a valid role.`);
+          }
         } else {
-          roleQuery = roleQuery.eq('tenant_id', roleTenantId);
-        }
-        
-        const { data: roleData } = await roleQuery.single();
-
-        if (roleData) {
-          // Remove existing role assignments for this user
-          const { error: deleteError } = await supabase
-            .from('user_roles')
-            .delete()
-            .eq('user_id', id);
-          
-          if (deleteError) {
-            console.error('[UserService] Error removing existing role:', deleteError);
-            throw new Error(`Failed to remove existing role: ${deleteError.message}`);
-          }
-
-          // Assign new role
-          const { error: roleAssignError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: id,
-              role_id: roleData.id,
-              tenant_id: targetUser.tenantId,
-              assigned_by: currentUser?.id,
-              assigned_at: new Date().toISOString()
-            });
-          
-          if (roleAssignError) {
-            console.error('[UserService] Error assigning role:', roleAssignError);
-            throw new Error(`Failed to assign role: ${roleAssignError.message}`);
-          }
+          // Could not map role to database role name
+          console.warn(`[UserService] Could not map role "${data.role}" to database role name`);
+          throw new Error(`Invalid role: "${data.role}". Please select a valid role from the dropdown.`);
         }
       }
+      // If role hasn't changed, skip role update (allows users with legacy roles to be updated)
     }
 
     const { data: updatedUser, error: updateError } = await supabase
@@ -800,14 +829,51 @@ class SupabaseUserService {
      const inactiveUsers = users.filter(u => u.status === 'inactive').length;
      const suspendedUsers = users.filter(u => u.status === 'suspended').length;
 
+     // ✅ DATABASE-DRIVEN: Count users by role using normalized roles from database
+     // mapUserRow already normalizes roles from database using mapDatabaseRoleNameToUserRoleSync
+     // So user.role is already a valid UserRole enum value derived from database
+     // Get valid UserRole values from database to ensure we're counting correctly
+     const { getValidUserRoles } = await import('@/utils/roleMapping');
+     const validRoles = await getValidUserRoles();
+     
+     // Initialize counts for all UserRole enum values
      const usersByRole: Record<UserRole, number> = {
-       'super_admin': users.filter(u => u.role === 'super_admin').length,
-       'admin': users.filter(u => u.role === 'admin').length,
-       'manager': users.filter(u => u.role === 'manager').length,
-       'user': users.filter(u => u.role === 'user').length,
-       'engineer': users.filter(u => u.role === 'engineer').length,
-       'customer': users.filter(u => u.role === 'customer').length,
+       'super_admin': 0,
+       'admin': 0,
+       'manager': 0,
+       'user': 0,
+       'engineer': 0,
+       'customer': 0,
      };
+
+     // Count users by role - fully database-driven
+     // user.role is already normalized by mapUserRow from database role names
+     for (const user of users) {
+       // Check super_admin using isSuperAdmin flag (database-driven, not hardcoded)
+       if (user.isSuperAdmin === true) {
+         usersByRole['super_admin']++;
+         continue; // Super admin is exclusive
+       }
+       
+       // For other roles, use the normalized role from mapUserRow
+       // This role was derived from database using mapDatabaseRoleNameToUserRoleSync
+       const userRole = user.role as UserRole;
+       
+       // Verify the role is in the valid roles list from database
+       // If it matches a valid UserRole enum value, count it
+       if (userRole && validRoles.includes(userRole)) {
+         // Role is valid and matches a UserRole enum value
+         if (Object.prototype.hasOwnProperty.call(usersByRole, userRole)) {
+           usersByRole[userRole]++;
+         } else {
+           // Role exists in database but doesn't match enum - count as 'user' (fallback)
+           usersByRole['user']++;
+         }
+       } else {
+         // Role not found in database valid roles - count as 'user' (fallback)
+         usersByRole['user']++;
+       }
+     }
 
      const thirtyDaysAgo = new Date();
      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

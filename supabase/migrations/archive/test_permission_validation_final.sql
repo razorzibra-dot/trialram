@@ -31,7 +31,7 @@ BEGIN
     BEGIN
         SELECT COUNT(*) INTO correct_format_count
         FROM permissions
-        WHERE name LIKE '%:%' OR name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+        WHERE name LIKE '%:%' OR name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
         
         RAISE NOTICE 'Permissions in correct format: % (Total: 34)', correct_format_count;
         

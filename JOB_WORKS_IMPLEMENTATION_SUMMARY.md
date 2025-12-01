@@ -345,14 +345,14 @@ Success/Error handling
 ### **RBAC Integration**
 ```
 User Permissions
-    ├─ jobworks:create → "New Job Work" visible
-    ├─ jobworks:update → "Edit" button visible
-    └─ jobworks:delete → "Delete" button visible
+    ├─ crm:project:record:create → "New Job Work" visible
+    ├─ crm:project:record:update → "Edit" button visible
+    └─ crm:project:record:delete → "Delete" button visible
 
 Form Permissions
-    ├─ hasPermission('jobworks:create')
-    ├─ hasPermission('jobworks:update')
-    └─ hasPermission('jobworks:delete')
+    ├─ hasPermission('crm:project:record:create')
+    ├─ hasPermission('crm:project:record:update')
+    └─ hasPermission('crm:project:record:delete')
 ```
 
 ---

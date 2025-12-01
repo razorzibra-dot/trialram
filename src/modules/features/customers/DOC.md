@@ -430,22 +430,22 @@ interface CustomerFilters {
 
 ```typescript
 Required Permissions:
-- customers:view - View customer list and details
-- customers:create - Create new customers
-- customers:update - Edit customer information
-- customers:delete - Delete customers
-- customers:export - Export customer data
-- customers:bulk_update - Perform bulk operations
+- crm:customer:record:read - View customer list and details
+- crm:customer:record:create - Create new customers
+- crm:customer:record:update - Edit customer information
+- crm:customer:record:delete - Delete customers
+- crm:customer:record:export - Export customer data
+- crm:customer:record:bulk:update - Perform bulk operations
 ```
 
 **Feature Visibility**:
 ```typescript
-canViewCustomers: hasPermission('customers:view')
-canCreateCustomer: hasPermission('customers:create')
-canEditCustomer: hasPermission('customers:update')
-canDeleteCustomer: hasPermission('customers:delete')
-canExportCustomers: hasPermission('customers:export')
-canBulkUpdate: hasPermission('customers:bulk_update')
+canViewCustomers: hasPermission('crm:customer:record:read')
+canCreateCustomer: hasPermission('crm:customer:record:create')
+canEditCustomer: hasPermission('crm:customer:record:update')
+canDeleteCustomer: hasPermission('crm:customer:record:delete')
+canExportCustomers: hasPermission('crm:customer:record:export')
+canBulkUpdate: hasPermission('crm:customer:record:bulk:update')
 ```
 
 ## Common Use Cases

@@ -511,7 +511,7 @@ function MyComponent() {
 import { useHasPermission } from '@/modules/features/user-management/hooks';
 
 function AdminPanel() {
-  const canManageUsers = useHasPermission('manage_users');
+  const canManageUsers = useHasPermission('crm:user:record:update');
   
   if (!canManageUsers) return <AccessDenied />;
   // ... render admin panel

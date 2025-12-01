@@ -112,7 +112,7 @@ console.log('Permissions:', permissions);
 1. **Check specific permission**:
    ```typescript
    const hasPermission = await rbacService.validatePermission(
-     'super_user:view_audit_logs'
+     'crm:platform:audit:view'
    );
    console.log('Has permission:', hasPermission);
    ```
@@ -138,21 +138,21 @@ console.log('Permissions:', permissions);
 - Form won't submit
 - Error "Missing required permission"
 
-**Root Cause**: User lacks `super_user:manage_users` permission
+**Root Cause**: User lacks `crm:platform:user:manage` permission
 
 **Solution**:
 
 ```typescript
 // Verify permission
 const canManageUsers = await rbacService.validatePermission(
-  'super_user:manage_users'
+  'crm:platform:user:manage'
 );
 console.log('Can manage users:', canManageUsers);
 
 // If false, user needs this permission added
 ```
 
-1. Request admin to add `super_user:manage_users` permission
+1. Request admin to add `crm:platform:user:manage` permission
 2. Or use super_admin role (includes all permissions)
 
 ---

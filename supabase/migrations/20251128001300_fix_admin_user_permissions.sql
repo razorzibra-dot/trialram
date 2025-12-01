@@ -52,7 +52,7 @@ BEGIN
   FROM role_permissions rp
   JOIN permissions p ON rp.permission_id = p.id
   WHERE rp.role_id = admin_role_id
-    AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
+    AND p.name IN ('crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete', 'crm:user:record:update', 'crm:user:record:read');
 
   RAISE NOTICE 'admin role has % user management permissions', perm_count;
 END $$;
@@ -115,6 +115,6 @@ FROM roles r
 JOIN role_permissions rp ON r.id = rp.role_id
 JOIN permissions p ON rp.permission_id = p.id
 WHERE r.name = 'admin'
-  AND (p.name LIKE 'users:%' OR p.name = 'user_management:read')
+  AND (p.name LIKE 'users:%' OR p.name = 'crm:user:record:read')
 ORDER BY p.name;
 

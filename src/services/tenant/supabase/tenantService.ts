@@ -45,7 +45,7 @@ class SupabaseTenantService {
 
     // Only super admin or tenant admin can update settings
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('manage_settings'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:system:config:manage'))) {
       throw new Error('Unauthorized: Insufficient permissions');
     }
 
@@ -74,7 +74,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== targetTenantId || !authService.hasPermission('manage_users'))) {
+        (currentUser.tenant_id !== targetTenantId || !authService.hasPermission('crm:user:record:update'))) {
       throw new Error('Unauthorized: Cannot access user data');
     }
 
@@ -87,7 +87,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('manage_users'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:user:record:update'))) {
       throw new Error('Unauthorized: Cannot add users');
     }
 
@@ -109,7 +109,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('manage_users'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:user:record:update'))) {
       throw new Error('Unauthorized: Cannot remove users');
     }
 
@@ -132,7 +132,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('manage_users'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:user:record:update'))) {
       throw new Error('Unauthorized: Cannot update user roles');
     }
 
@@ -174,7 +174,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('view_analytics'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:analytics:insight:view'))) {
       throw new Error('Unauthorized: Cannot access analytics');
     }
 
@@ -284,7 +284,7 @@ class SupabaseTenantService {
 
     // Check permissions
     if (currentUser.role !== 'super_admin' && 
-        (currentUser.tenant_id !== tenantId || !authService.hasPermission('manage_settings'))) {
+        (currentUser.tenant_id !== tenantId || !authService.hasPermission('crm:system:config:manage'))) {
       throw new Error('Unauthorized: Cannot update branding');
     }
 

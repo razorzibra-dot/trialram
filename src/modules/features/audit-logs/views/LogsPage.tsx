@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { useService } from '@/modules/core/hooks/useService';
+import { auditService } from '@/services/serviceFactory';
 import dayjs, { Dayjs } from 'dayjs';
 import type { AuditLog } from '@/types';
 
@@ -52,7 +52,6 @@ interface AuditLogFilters {
 
 export const LogsPage: React.FC = () => {
   const { hasPermission } = useAuth();
-  const auditService = useService<any>('auditService');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -261,14 +260,14 @@ export const LogsPage: React.FC = () => {
             <Button 
               icon={<DownloadOutlined />} 
               onClick={() => handleExport('csv')}
-              disabled={!hasPermission('export_logs')}
+              disabled={!hasPermission('crm:audit:log:export')}
             >
               Export CSV
             </Button>
             <Button 
               icon={<DownloadOutlined />} 
               onClick={() => handleExport('json')}
-              disabled={!hasPermission('export_logs')}
+              disabled={!hasPermission('crm:audit:log:export')}
             >
               Export JSON
             </Button>

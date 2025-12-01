@@ -446,15 +446,15 @@ importProducts(data: string, format: 'csv' | 'json'): Promise<Product[]>
 
 Required permissions:
 - `products:view` - View products list
-- `products:create` - Create new product
+- `crm:product:record:create` - Create new product
 - `products:edit` - Edit products
-- `products:delete` - Delete products
+- `crm:product:record:delete` - Delete products
 - `products:export` - Export data
 - `products:import` - Import data
 - `companies:view` - View companies
-- `companies:create` - Create company
+- `crm:company:record:create` - Create company
 - `companies:edit` - Edit company
-- `companies:delete` - Delete company
+- `crm:company:record:delete` - Delete company
 
 ---
 

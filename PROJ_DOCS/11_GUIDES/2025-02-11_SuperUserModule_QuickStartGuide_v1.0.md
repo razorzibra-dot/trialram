@@ -436,12 +436,12 @@ All super admin features require `super_user` or `super_admin` role:
 | Feature | Role | Specific Permission |
 |---------|------|-------------------|
 | View Dashboard | super_user | super_user:view_dashboard |
-| Manage Users | super_user | super_user:manage_users |
-| Grant Access | super_user | super_user:manage_tenants |
+| Manage Users | super_user | crm:platform:user:manage |
+| Grant Access | super_user | crm:platform:tenant:manage |
 | Impersonate | super_user | super_user:impersonate_users |
-| View Logs | super_user | super_user:view_audit_logs |
-| Manage Config | super_user | super_user:manage_config |
-| View Analytics | super_user | super_user:view_analytics |
+| View Logs | super_user | crm:platform:audit:view |
+| Manage Config | super_user | crm:platform:config:manage |
+| View Analytics | super_user | crm:platform:crm:analytics:insight:view |
 | Manage Permissions | super_admin | super_user:manage_permissions |
 
 ---

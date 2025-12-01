@@ -61,7 +61,7 @@ In this session, I completed the critical **Phase 3: RBAC & Permission Integrati
 
 **Content Includes**:
 1. **Permission Categories**
-   - 10 user management permissions (user:list, user:view, user:create, user:edit, user:delete, user:reset_password, user:manage_roles)
+   - 10 user management permissions (user:list, user:view, user:create, user:edit, user:delete, user:reset_password, user:crm:role:record:update)
    - 3 role management permissions (role:manage, role:view, role:assign)
    - 2 permission management permissions (permission:manage, permission:view)
    - 2 tenant management permissions (tenant:users, tenant:view)

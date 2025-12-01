@@ -17,12 +17,12 @@ BEGIN
         FROM permissions
         WHERE name IN (
             'read', 'write', 'delete',
-            'users:manage', 'roles:manage', 'customers:manage',
+            'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage',
             'sales:manage', 'contracts:manage', 'service_contracts:manage',
             'products:manage', 'product_sales:manage', 'job_works:manage',
             'tickets:manage', 'complaints:manage', 'dashboard:manage',
-            'settings:manage', 'companies:manage', 'platform_admin',
-            'super_admin', 'tenants:manage', 'system_monitoring',
+            'crm:system:config:manage', 'companies:manage', 'crm:platform:control:admin',
+            'super_admin', 'crm:platform:tenant:manage', 'system_monitoring',
             'reports:manage', 'export_data', 'view_audit_logs',
             'create_tickets', 'update_tickets', 'create_products',
             'update_products', 'inventory:manage', 'view_financials',

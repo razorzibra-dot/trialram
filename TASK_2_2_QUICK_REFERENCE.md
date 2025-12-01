@@ -82,8 +82,8 @@ useModuleAccess('super-admin')   // ❌ BLOCKED
 ### Feature 3: Permission Format Support
 ```typescript
 // All these formats supported:
-authService.hasPermission('manage_customers')   // manage permission
-authService.hasPermission('customers:read')     // resource:action
+authService.hasPermission('crm:customer:record:update')   // manage permission
+authService.hasPermission('crm:customer:record:read')     // resource:action
 authService.hasPermission('read')               // generic permission
 ```
 

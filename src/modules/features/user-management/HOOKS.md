@@ -527,7 +527,7 @@ useHasPermission(permission: UserPermission): boolean
 **Example**:
 ```typescript
 function ManageRolesPanel() {
-  const hasPermission = useHasPermission('manage_roles');
+  const hasPermission = useHasPermission('crm:role:record:update');
 
   if (!hasPermission) {
     return <div>You don't have permission to manage roles</div>;

@@ -534,9 +534,9 @@ interface ProductSaleStats {
 ```typescript
 // Required Permissions
 - product-sales:view         // View product sales
-- product-sales:create       // Create sales orders
+- product-crm:sales:deal:create       // Create sales orders
 - product-sales:edit         // Edit sales orders
-- product-sales:delete       // Delete sales orders
+- product-crm:sales:deal:delete       // Delete sales orders
 - product-sales:ship         // Mark as shipped
 - product-sales:invoice      // Generate invoices
 

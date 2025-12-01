@@ -5,20 +5,20 @@
 
 export const TICKETS_PERMISSIONS = {
   // Read permissions
-  READ: 'tickets:read',
+  READ: 'crm:support:ticket:read',
   LIST: 'tickets:list',
   VIEW: 'tickets:view',
   
   // Create permissions
-  CREATE: 'tickets:create',
+  CREATE: 'crm:support:ticket:create',
   IMPORT: 'tickets:import',
   
   // Update permissions
-  UPDATE: 'tickets:update',
+  UPDATE: 'crm:support:ticket:update',
   EDIT: 'tickets:edit',
   
   // Delete permissions
-  DELETE: 'tickets:delete',
+  DELETE: 'crm:support:ticket:delete',
   BULK_DELETE: 'tickets:bulk_delete',
   
   // Export permissions
@@ -29,7 +29,7 @@ export const TICKETS_PERMISSIONS = {
   REASSIGN: 'tickets:reassign',
   CLOSE: 'tickets:close',
   REOPEN: 'tickets:reopen',
-  VIEW_ANALYTICS: 'tickets:view_analytics',
+  VIEW_ANALYTICS: 'tickets:crm:analytics:insight:view',
   MANAGE_PRIORITIES: 'tickets:manage_priorities',
 } as const;
 

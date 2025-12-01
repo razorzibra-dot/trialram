@@ -22,7 +22,7 @@ Based on your console logs, I've identified and resolved these critical issues:
 - Sync missing `auth.users` to `public.users` 
 - Create missing tenants (Acme Corporation, Tech Solutions, etc.)
 - Assign appropriate roles based on email patterns
-- Grant essential permissions (dashboard:view, masters:read, etc.)
+- Grant essential permissions (crm:dashboard:panel:view, crm:reference:data:read, etc.)
 
 ### To Apply:
 ```sql
@@ -35,18 +35,18 @@ Based on your console logs, I've identified and resolved these critical issues:
 
 ### Changes Made:
 - **Enhanced `authService.ts`**: Added fallback permission logic
-- **Updated role permissions**: Added `dashboard:view` to Manager and Engineer roles
+- **Updated role permissions**: Added `crm:dashboard:panel:view` to Manager and Engineer roles
 - **Improved permission checking**: Better error handling and fallback permissions
 
 ### Role Permissions Updated:
-- **Manager**: Now has `dashboard:view`, `masters:read`, `user_management:read`
-- **Engineer**: Now has `dashboard:view`, `masters:read`
+- **Manager**: Now has `crm:dashboard:panel:view`, `crm:reference:data:read`, `crm:user:record:read`
+- **Engineer**: Now has `crm:dashboard:panel:view`, `crm:reference:data:read`
 - **Admin**: Already had all necessary permissions
 
 ### Permission Fallback Logic:
 ```typescript
 // If user has 'read' permission, they get dashboard access
-if (permission === 'dashboard:view' && ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(userRole)) {
+if (permission === 'crm:dashboard:panel:view' && ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(userRole)) {
   return true; // Grant dashboard access
 }
 ```

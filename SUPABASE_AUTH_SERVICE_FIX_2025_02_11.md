@@ -100,7 +100,7 @@ public getAuthService(): IAuthService {
   - `manage_dashboard`
   - `manage_masters`
   - `manage_user_management`
-  - `manage_users`, `manage_roles`, `manage_permissions`, etc.
+  - `crm:user:record:update`, `crm:role:record:update`, `manage_permissions`, etc.
 
 ---
 

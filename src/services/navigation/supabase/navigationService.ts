@@ -136,7 +136,7 @@ class SupabaseNavigationService {
 
   /**
    * Create a new navigation item
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async createNavigationItem(item: Partial<NavigationItem>): Promise<NavigationItem> {
     try {
@@ -201,7 +201,7 @@ class SupabaseNavigationService {
 
   /**
    * Update a navigation item
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async updateNavigationItem(id: string, updates: Partial<NavigationItem>): Promise<NavigationItem> {
     try {
@@ -261,7 +261,7 @@ class SupabaseNavigationService {
 
   /**
    * Delete a navigation item (soft delete by setting is_active=false)
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async deleteNavigationItem(id: string): Promise<void> {
     try {

@@ -8,25 +8,25 @@
 
 ### 1. Legacy `manage_*` Format (168+ references)
 ```
-manage_customers, manage_sales, manage_users, manage_roles, manage_tickets,
-manage_contracts, manage_products, manage_complaints, manage_job_works,
-manage_settings, manage_companies, manage_tenants, etc.
+crm:customer:record:update, crm:sales:deal:update, crm:user:record:update, crm:role:record:update, manage_tickets,
+manage_contracts, manage_products, crm:support:complaint:update, manage_job_works,
+crm:system:config:manage, manage_companies, crm:platform:tenant:manage, etc.
 ```
 
 ### 2. New `{resource}:{action}` Format (89+ references)
 ```
-customers:read, customers:create, customers:update, customers:delete,
-sales:create, sales:read, sales:update, sales:delete,
-tickets:read, tickets:create, tickets:update, tickets:delete,
-products:read, products:create, products:update, products:delete,
-contracts:read, contracts:create, contracts:update, contracts:delete
+crm:customer:record:read, crm:customer:record:create, crm:customer:record:update, crm:customer:record:delete,
+crm:sales:deal:create, crm:sales:deal:read, crm:sales:deal:update, crm:sales:deal:delete,
+crm:support:ticket:read, crm:support:ticket:create, crm:support:ticket:update, crm:support:ticket:delete,
+crm:product:record:read, crm:product:record:create, crm:product:record:update, crm:product:record:delete,
+crm:contract:record:read, crm:contract:record:create, crm:contract:record:update, crm:contract:record:delete
 ```
 
 ### 3. Mixed Module-Specific Formats
 ```
-super_user:manage_users, super_user:manage_tenants, super_user:view_audit_logs
+crm:platform:user:manage, crm:platform:tenant:manage, crm:platform:audit:view
 user:list, user:create, user:edit, user:delete
-product_sales:create, product_sales:manage_invoices, product_sales:view_analytics
+crm:product-sale:record:create, product_sales:manage_invoices, product_sales:crm:analytics:insight:view
 ```
 
 ## Target Standard: `{resource}:{action}` Format
@@ -36,45 +36,45 @@ product_sales:create, product_sales:manage_invoices, product_sales:view_analytic
 - `action`: Specific action (read, create, update, delete, export, import, etc.)
 
 **Examples**:
-- `customers:read`, `customers:create`, `customers:update`, `customers:delete`
-- `sales:read`, `sales:create`, `sales:update`, `sales:delete`
-- `users:read`, `users:create`, `users:update`, `users:delete`
-- `tickets:read`, `tickets:create`, `tickets:update`, `tickets:delete`
-- `products:read`, `products:create`, `products:update`, `products:delete`
-- `contracts:read`, `contracts:create`, `contracts:update`, `contracts:delete`
+- `crm:customer:record:read`, `crm:customer:record:create`, `crm:customer:record:update`, `crm:customer:record:delete`
+- `crm:sales:deal:read`, `crm:sales:deal:create`, `crm:sales:deal:update`, `crm:sales:deal:delete`
+- `crm:user:record:read`, `crm:user:record:create`, `crm:user:record:update`, `crm:user:record:delete`
+- `crm:support:ticket:read`, `crm:support:ticket:create`, `crm:support:ticket:update`, `crm:support:ticket:delete`
+- `crm:product:record:read`, `crm:product:record:create`, `crm:product:record:update`, `crm:product:record:delete`
+- `crm:contract:record:read`, `crm:contract:record:create`, `crm:contract:record:update`, `crm:contract:record:delete`
 
 ## Comprehensive Mapping: Legacy → New Format
 
 ### Module Permissions
 | Legacy Format | New Format |
 |---------------|------------|
-| `manage_customers` | `customers:read` (general access) |
-| `manage_sales` | `sales:read` (general access) |
-| `manage_tickets` | `tickets:read` (general access) |
-| `manage_contracts` | `contracts:read` (general access) |
-| `manage_products` | `products:read` (general access) |
-| `manage_complaints` | `complaints:read` (general access) |
-| `manage_job_works` | `jobworks:read` (general access) |
-| `manage_product_sales` | `product_sales:read` (general access) |
-| `manage_service_contracts` | `service_contracts:read` (general access) |
+| `crm:customer:record:update` | `crm:customer:record:read` (general access) |
+| `crm:sales:deal:update` | `crm:sales:deal:read` (general access) |
+| `manage_tickets` | `crm:support:ticket:read` (general access) |
+| `manage_contracts` | `crm:contract:record:read` (general access) |
+| `manage_products` | `crm:product:record:read` (general access) |
+| `crm:support:complaint:update` | `crm:support:complaint:read` (general access) |
+| `manage_job_works` | `crm:project:record:read` (general access) |
+| `crm:product-sale:record:update` | `crm:product-sale:record:read` (general access) |
+| `crm:contract:service:update` | `crm:contract:service:read` (general access) |
 
 ### Administrative Permissions
 | Legacy Format | New Format |
 |---------------|------------|
-| `manage_users` | `users:read` (general access) |
-| `manage_roles` | `roles:read` (general access) |
-| `manage_settings` | `settings:read` (general access) |
-| `manage_companies` | `companies:read` (general access) |
-| `view_analytics` | `analytics:view` |
-| `view_dashboard` | `dashboard:view` |
+| `crm:user:record:update` | `crm:user:record:read` (general access) |
+| `crm:role:record:update` | `crm:role:record:read` (general access) |
+| `crm:system:config:manage` | `crm:system:config:read` (general access) |
+| `manage_companies` | `crm:company:record:read` (general access) |
+| `crm:analytics:insight:view` | `crm:analytics:insight:view` |
+| `view_dashboard` | `crm:dashboard:panel:view` |
 
 ### System Permissions
 | Legacy Format | New Format |
 |---------------|------------|
 | `super_admin` | `system:admin` |
-| `manage_tenants` | `tenants:manage` |
+| `crm:platform:tenant:manage` | `crm:platform:tenant:manage` |
 | `system_monitoring` | `system:monitor` |
-| `platform_admin` | `platform:admin` |
+| `crm:platform:control:admin` | `platform:admin` |
 
 ## Implementation Strategy
 

@@ -48,18 +48,9 @@ export function isSuperAdmin(user?: User | null): boolean {
  * - name = 'super_admin' (fallback check, but prefer database flags)
  */
 export function isPlatformRole(role: Role): boolean {
-  // Primary check: system role with no tenant (platform-level)
-  if (role.is_system_role === true && !role.tenant_id) {
-    return true;
-  }
-  
-  // Secondary check: explicit super_admin role name (for backward compatibility)
-  // This should be removed once all roles are properly flagged in database
-  if (role.name === 'super_admin' && role.is_system_role === true) {
-    return true;
-  }
-  
-  return false;
+  // ✅ Database-driven: Only use database flags, no hardcoded role names
+  // Platform roles are identified by: is_system_role = true AND tenant_id IS NULL
+  return role.is_system_role === true && !role.tenant_id;
 }
 
 /**
@@ -70,15 +61,32 @@ export function isPlatformRole(role: Role): boolean {
  * - is_system_permission = true
  */
 export function isPlatformPermission(permission: Permission): boolean {
-  // Primary check: system category
+  // ✅ FIX: Only filter out permissions with category='system' (platform-level permissions)
+  // is_system_permission=true means the permission is system-defined (built-in), 
+  // but tenant admins can still see and assign these to roles
+  // Only category='system' permissions are truly platform-level and should be hidden from tenant admins
+  
+  // Primary check: system category (these are always platform permissions)
   if (permission.category === PERMISSION_CATEGORIES.SYSTEM) {
     return true;
   }
   
-  // Secondary check: system permission flag
-  if (permission.is_system_permission === true) {
+  // Check for platform-level permission names (super admin only)
+  // These are platform control permissions that should be hidden from tenant admins
+  const platformPermissionNames = [
+    'crm:platform:control:admin',
+    'super_admin',
+    'crm:platform:tenant:manage',
+    'system_monitoring',
+    'crm:system:platform:admin'
+  ];
+  if (platformPermissionNames.some(name => permission.name === name || permission.name.startsWith('platform:'))) {
     return true;
   }
+  
+  // ✅ FIX: is_system_permission=true alone does NOT mean platform permission
+  // It just means the permission is system-defined (built-in), but tenant admins can use it
+  // Only category='system' permissions are filtered out
   
   return false;
 }
@@ -244,10 +252,9 @@ export function canModifyRole(role: Partial<Role>, user?: User | null): boolean 
     return false;
   }
   
-  // Cannot create/modify super_admin role
-  if (role.name === 'super_admin') {
-    return false;
-  }
+  // ❌ REMOVED: Cannot create/modify super_admin role - violates database-driven principle
+  // Instead, prevent modification of any system role (is_system_role = true)
+  // This allows database-driven control without hardcoded role names
   
   // Must belong to user's tenant
   if (user.tenantId && role.tenant_id && role.tenant_id !== user.tenantId) {
@@ -412,5 +419,117 @@ export function shouldShowOrganizationSection(user?: User | null): boolean {
   // ✅ Database-driven: Uses isSuperAdmin which checks database flags, not hardcoded role names
   // Only super admins can see organization/tenant selection sections
   return isSuperAdmin(user);
+}
+
+/**
+ * ⚠️ SECURITY: Check if user can access element permissions
+ *
+ * **Security Rule**: Users can only access element permissions for their tenant.
+ * Super admins can access all element permissions.
+ *
+ * @param elementPermission - Element permission object
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @returns true if user can access the element permission, false otherwise
+ */
+export function canAccessElementPermission(
+  elementPermission: { tenantId: string },
+  user?: User | null
+): boolean {
+  if (!user) {
+    user = authService.getCurrentUser();
+  }
+
+  if (!user) {
+    return false;
+  }
+
+  const userIsSuperAdmin = isSuperAdmin(user);
+
+  // Super admins can access any element permission
+  if (userIsSuperAdmin) {
+    return true;
+  }
+
+  // Tenant users can only access element permissions for their tenant
+  return user.tenantId === elementPermission.tenantId;
+}
+
+/**
+ * ⚠️ SECURITY: Filter element permissions by tenant
+ *
+ * **Security Rule**: Automatically filter element permissions based on user's tenant access.
+ * Super admins see all, tenant users see only their tenant's permissions.
+ *
+ * @param elementPermissions - Array of element permissions to filter
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @returns Filtered array of element permissions
+ */
+export function filterElementPermissionsByTenant(
+  elementPermissions: Array<{ tenantId: string }>,
+  user?: User | null
+): Array<{ tenantId: string }> {
+  if (!user) {
+    user = authService.getCurrentUser();
+  }
+
+  if (!user) {
+    return [];
+  }
+
+  const userIsSuperAdmin = isSuperAdmin(user);
+
+  // Super admins see everything
+  if (userIsSuperAdmin) {
+    return elementPermissions;
+  }
+
+  // Filter by tenant
+  if (user.tenantId) {
+    return elementPermissions.filter(perm => perm.tenantId === user.tenantId);
+  }
+
+  return [];
+}
+
+/**
+ * ⚠️ SECURITY: Get tenant-scoped query filters for element permissions
+ *
+ * Returns Supabase query modifiers for element permissions based on user's tenant isolation level.
+ *
+ * @param user - Current user (optional, will fetch from authService if not provided)
+ * @returns Query filter functions for element permissions
+ */
+export function getElementPermissionQueryFilters(user?: User | null) {
+  if (!user) {
+    user = authService.getCurrentUser();
+  }
+
+  if (!user) {
+    return {
+      filterFn: (query: any) => query.eq('id', '00000000-0000-0000-0000-000000000000'), // Return nothing
+    };
+  }
+
+  const userIsSuperAdmin = isSuperAdmin(user);
+  const userTenantId = user.tenantId;
+
+  if (userIsSuperAdmin) {
+    // Super admins: No filtering
+    return {
+      filterFn: (query: any) => query,
+    };
+  }
+
+  if (userTenantId) {
+    // Tenant users: Filter by tenant_id
+    return {
+      filterFn: (query: any) => query.eq('tenant_id', userTenantId),
+    };
+  }
+
+  // User with no tenant: return nothing
+  return {
+    filterFn: (query: any) => query.eq('id', '00000000-0000-0000-0000-000000000000'),
+  };
 }
 

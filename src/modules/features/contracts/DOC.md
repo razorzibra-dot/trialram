@@ -259,9 +259,9 @@ The Contracts module has been refactored to match the Customers module pattern:
 
 The module respects the following permissions:
 - `contracts:view` - View contracts
-- `contracts:create` - Create new contracts
-- `contracts:update` - Edit and approve contracts
-- `contracts:delete` - Delete contracts
+- `crm:contract:record:create` - Create new contracts
+- `crm:contract:record:update` - Edit and approve contracts
+- `crm:contract:record:delete` - Delete contracts
 - `contracts:export` - Export contracts
 
 ## Integration Points

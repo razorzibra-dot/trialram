@@ -183,10 +183,10 @@ Comprehensive audit of all seeded data for **Tenants, Users, Roles, and Permissi
    - view_dashboard
 
 ✅ Customer Management (5 permissions)
-   - view_customers, create_customers, edit_customers, delete_customers, manage_customers
+   - view_customers, create_customers, edit_customers, delete_customers, crm:customer:record:update
 
 ✅ Sales Management (4 permissions)
-   - view_sales, create_sales, edit_sales, manage_sales
+   - view_sales, create_sales, edit_sales, crm:sales:deal:update
 
 ✅ Tickets Management (4 permissions)
    - view_tickets, create_tickets, edit_tickets, manage_tickets
@@ -195,22 +195,22 @@ Comprehensive audit of all seeded data for **Tenants, Users, Roles, and Permissi
    - view_contracts, create_contracts, edit_contracts, manage_contracts
 
 ✅ Service Contracts (2 permissions)
-   - view_service_contracts, manage_service_contracts
+   - view_service_contracts, crm:contract:service:update
 
 ✅ Product Management (2 permissions)
    - view_products, manage_products
 
 ✅ Product Sales (2 permissions)
-   - view_product_sales, manage_product_sales
+   - view_product_sales, crm:product-sale:record:update
 
 ✅ Complaints Management (2 permissions)
-   - view_complaints, manage_complaints
+   - view_complaints, crm:support:complaint:update
 
 ✅ Job Works (2 permissions)
    - view_job_works, manage_job_works
 
 ✅ Administrative (6 permissions)
-   - manage_users, manage_roles, view_reports, export_data, manage_settings, manage_companies
+   - crm:user:record:update, crm:role:record:update, view_reports, export_data, crm:system:config:manage, manage_companies
 ```
 
 ### 3.5 ⚠️ Issue Found: Duplicate Role Names
@@ -680,7 +680,7 @@ OPTION A (Keep as is):
 
 OPTION B (Differentiate):
 - Super Administrator: Full 24 permissions
-- Administrator: Remove sensitive admin permissions (e.g., manage_roles, manage_users)
+- Administrator: Remove sensitive admin permissions (e.g., crm:role:record:update, crm:user:record:update)
 - This creates clearer separation between levels
 ```
 

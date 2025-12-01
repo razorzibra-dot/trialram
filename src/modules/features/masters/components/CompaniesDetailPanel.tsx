@@ -86,7 +86,7 @@ export const CompaniesDetailPanel: React.FC<CompaniesDetailPanelProps> = ({
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Company Details</span>
-          {hasPermission('companies:update') && (
+          {hasPermission('crm:company:record:update') && (
             <Button
               type="primary"
               size="small"

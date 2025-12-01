@@ -32,11 +32,11 @@ This checklist tracks the implementation of 4 critical fixes to the RBAC system 
 
 ### Fix #1: Standardize Permission Naming Convention ⏱️ 4 hours
 **Current State**: Permissions named inconsistently across modules
-- `customers:read` (core hooks)
-- `manage_customers` (RBAC service)
+- `crm:customer:record:read` (core hooks)
+- `crm:customer:record:update` (RBAC service)
 - `user:list` (user-management)
 
-**Target Format**: `{resource}:{action}` (e.g., `customers:read`, `users:create`, `sales:update`)
+**Target Format**: `{resource}:{action}` (e.g., `crm:customer:record:read`, `crm:user:record:create`, `crm:sales:deal:update`)
 
 **Impact**: Permission checks may fail silently, inconsistent audit logging, maintenance difficulty
 **Status**: Not Started
@@ -52,7 +52,7 @@ This checklist tracks the implementation of 4 critical fixes to the RBAC system 
 - [ ] **fix1-4**: Update database permissions seed data - rename all permissions to new format
 
 #### Phase 4: Update Components & Hooks
-- [ ] **fix1-5**: Update all permission checks in components - change from `manage_customers` to `customers:read` format
+- [ ] **fix1-5**: Update all permission checks in components - change from `crm:customer:record:update` to `crm:customer:record:read` format
 - [ ] **fix1-6**: Update usePermission hook - ensure it expects correct permission format
 - [ ] **fix1-7**: Update role templates - rename permissions to `{resource}:{action}` format
 

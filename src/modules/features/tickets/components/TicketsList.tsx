@@ -42,6 +42,8 @@ import {
 import { useTicketStore } from '../store/ticketStore';
 import { useTickets, useDeleteTicket, useBulkTickets, useExportTickets } from '../hooks/useTickets';
 import { useAuth } from '@/contexts/AuthContext';
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 interface TicketsListProps {
   onCreateTicket?: () => void;
@@ -55,6 +57,14 @@ export const TicketsList: React.FC<TicketsListProps> = ({
   onViewTicket,
 }) => {
   const { hasPermission } = useAuth();
+
+  // Element-level permissions for support tickets
+  const canViewTickets = usePermission('crm:support:ticket:list:view', 'accessible');
+  const canCreateTickets = usePermission('crm:support:ticket:list:button.create', 'visible');
+  const canExportTickets = usePermission('crm:support:ticket:list:button.export', 'visible');
+  const canBulkDeleteTickets = usePermission('crm:support:ticket:list:button.bulkdelete', 'visible');
+  const canSelectTickets = usePermission('crm:support:ticket:list:selection', 'enabled');
+  const canFilterTickets = usePermission('crm:support:ticket:list:filters', 'visible');
   const {
     tickets,
     isLoading,
@@ -119,19 +129,14 @@ export const TicketsList: React.FC<TicketsListProps> = ({
   };
 
   const handleDeleteTicket = async (ticket: Ticket) => {
-    if (!hasPermission('delete')) {
-      alert('You do not have permission to delete tickets');
-      return;
-    }
-
     if (confirm(`Are you sure you want to delete "${ticket.title}"?`)) {
       deleteTicket.mutate(ticket.id);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (!hasPermission('delete')) {
-      alert('You do not have permission to delete tickets');
+    if (!canBulkDeleteTickets) {
+      alert('You do not have permission to bulk delete tickets');
       return;
     }
 
@@ -141,6 +146,10 @@ export const TicketsList: React.FC<TicketsListProps> = ({
   };
 
   const handleExport = () => {
+    if (!canExportTickets) {
+      alert('You do not have permission to export tickets');
+      return;
+    }
     exportTickets.mutate('csv');
   };
 
@@ -218,36 +227,41 @@ export const TicketsList: React.FC<TicketsListProps> = ({
               <Eye className="h-4 w-4 mr-2" />
               View Details
             </DropdownMenuItem>
-            {hasPermission('write') && (
+            <PermissionControlled
+              elementPath={`crm:support:ticket.${ticket.id}:button.edit`}
+              action="visible"
+            >
               <DropdownMenuItem onClick={() => onEditTicket?.(ticket)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Ticket
               </DropdownMenuItem>
-            )}
-            {hasPermission('delete') && (
-              <DropdownMenuItem 
+            </PermissionControlled>
+            <PermissionControlled
+              elementPath={`crm:support:ticket.${ticket.id}:button.delete`}
+              action="visible"
+            >
+              <DropdownMenuItem
                 onClick={() => handleDeleteTicket(ticket)}
                 className="text-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Ticket
               </DropdownMenuItem>
-            )}
+            </PermissionControlled>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
   ];
 
-  const bulkActions = [
+  const bulkActions = canBulkDeleteTickets ? [
     {
       label: 'Delete Selected',
       action: handleBulkDelete,
       variant: 'destructive' as const,
       icon: Trash2,
-      permission: 'delete',
     },
-  ];
+  ] : [];
 
   return (
     <div className="space-y-4">
@@ -260,23 +274,27 @@ export const TicketsList: React.FC<TicketsListProps> = ({
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={exportTickets.isPending}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          {canFilterTickets && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+          )}
+          {canExportTickets && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={exportTickets.isPending}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -286,7 +304,7 @@ export const TicketsList: React.FC<TicketsListProps> = ({
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          {hasPermission('write') && (
+          {canCreateTickets && (
             <Button onClick={onCreateTicket}>
               <Plus className="h-4 w-4 mr-2" />
               New Ticket
@@ -296,7 +314,7 @@ export const TicketsList: React.FC<TicketsListProps> = ({
       </div>
 
       {/* Filters */}
-      {showFilters && (
+      {showFilters && canFilterTickets && (
         <div className="bg-gray-50 p-4 rounded-lg space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -356,17 +374,15 @@ export const TicketsList: React.FC<TicketsListProps> = ({
           total: pagination?.totalCount || 0,
           totalPages: pagination?.totalPages || 0,
         }}
-        selection={{
-          selectedIds: selectedTickets,
-          onSelectionChange: setSelectedTickets,
-          onSelectAll: selectAllTickets,
-          onClearSelection: clearSelection,
-        }}
+        selection={canSelectTickets ? {
+          selectedRowKeys: selectedTickets,
+          onChange: (keys: string[]) => setSelectedTickets(keys),
+        } : undefined}
         bulkActions={bulkActions}
         emptyState={{
           title: 'No tickets found',
           description: 'Get started by creating your first support ticket',
-          action: hasPermission('write') ? (
+          action: canCreateTickets ? (
             <Button onClick={onCreateTicket}>
               <Plus className="h-4 w-4 mr-2" />
               Create Ticket

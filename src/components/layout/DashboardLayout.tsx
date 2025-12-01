@@ -135,7 +135,7 @@ const DashboardLayout = () => {
 
     // Operations section
     const operationsItems = [
-      canAccessProductSales && { name: 'Product Sales', href: '/tenant/product-sales', icon: Package, permission: 'manage_sales' },
+      canAccessProductSales && { name: 'Product Sales', href: '/tenant/product-sales', icon: Package, permission: 'crm:sales:deal:update' },
       canAccessContracts && { name: 'Contracts', href: '/tenant/contracts', icon: FileText, permission: 'manage_contracts' },
       canAccessServiceContracts && { name: 'Service Contracts', href: '/tenant/service-contracts', icon: Shield, permission: 'manage_contracts' },
       canAccessTickets && { name: 'Tickets', href: '/tenant/tickets', icon: MessageSquare, permission: 'read' },
@@ -155,10 +155,10 @@ const DashboardLayout = () => {
       navigationSections.push({
         title: "Administration",
         items: [
-          { name: 'User Management', href: '/tenant/users/list', icon: Users, permission: 'manage_users' },
-          { name: 'Role Management', href: '/tenant/users/roles', icon: Shield, permission: 'manage_roles' },
-          { name: 'Permission Matrix', href: '/tenant/users/permissions', icon: Settings, permission: 'manage_roles' },
-          { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'manage_users' },
+          { name: 'User Management', href: '/tenant/users/list', icon: Users, permission: 'crm:user:record:update' },
+          { name: 'Role Management', href: '/tenant/users/roles', icon: Shield, permission: 'crm:role:record:update' },
+          { name: 'Permission Matrix', href: '/tenant/users/permissions', icon: Settings, permission: 'crm:role:record:update' },
+          { name: 'PDF Templates', href: '/tenant/configuration/pdf-templates', icon: FileText, permission: 'crm:user:record:update' },
           { name: 'Company Master', href: '/tenant/masters/companies', icon: Building, permission: 'manage_companies' },
           { name: 'Product Master', href: '/tenant/masters/products', icon: Package, permission: 'manage_products' },
         ].filter(item => hasPermission(item.permission))
@@ -166,11 +166,11 @@ const DashboardLayout = () => {
     }
 
     // Settings section (NOT shown to super admins)
-    if (hasPermission('manage_users')) {
+    if (hasPermission('crm:user:record:update')) {
       navigationSections.push({
         title: "Settings",
         items: [
-          { name: 'Configuration', href: '/tenant/configuration/tenant', icon: Settings, permission: 'manage_users' },
+          { name: 'Configuration', href: '/tenant/configuration/tenant', icon: Settings, permission: 'crm:user:record:update' },
           { name: 'Notifications', href: '/tenant/notifications', icon: Bell, permission: 'read' },
         ].filter(item => hasPermission(item.permission))
       });

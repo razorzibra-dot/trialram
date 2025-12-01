@@ -231,7 +231,7 @@ class PreDeploymentValidator {
       permissions?.forEach((perm: any) => {
         // Check format: should be resource:action or core permissions
         const isValidFormat = perm.name.includes(':') || 
-                             ['read', 'write', 'delete', 'platform_admin', 'super_admin', 'system_monitoring'].includes(perm.name);
+                             ['read', 'write', 'delete', 'crm:platform:control:admin', 'super_admin', 'system_monitoring'].includes(perm.name);
         
         if (!isValidFormat) {
           invalidPermissions++;

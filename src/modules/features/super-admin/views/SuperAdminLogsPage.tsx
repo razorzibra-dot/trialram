@@ -66,7 +66,7 @@ const SuperAdminLogsPage: React.FC = () => {
   const [filterMode, setFilterMode] = useState<'all' | 'active' | 'ended'>('all');
 
   // Permission check
-  if (!hasPermission('super_user:view_audit_logs')) {
+  if (!hasPermission('crm:platform:audit:view')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

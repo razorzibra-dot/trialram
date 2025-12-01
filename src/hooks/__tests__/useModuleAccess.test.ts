@@ -529,7 +529,7 @@ describe('useAccessibleModules Hook', () => {
     } as any);
 
     mockAuthService.hasPermission.mockImplementation((perm: string) => {
-      return perm === 'manage_customers' || perm === 'manage_sales';
+      return perm === 'crm:customer:record:update' || perm === 'crm:sales:deal:update';
     });
 
     const { result } = renderHookWithQueryClient(() => useAccessibleModules());

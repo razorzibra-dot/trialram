@@ -44,8 +44,9 @@ class SupabaseRBACService {
 
     if (error) {
       console.error('[RBAC] Error fetching permissions:', error);
-      // Return default permissions as fallback
-      return this.getDefaultPermissions();
+      // ❌ REMOVED: No hardcoded fallback permissions - application must handle database unavailability
+      // The system should be 100% database-driven with no hardcoded fallbacks
+      throw new Error(`Failed to fetch permissions from database: ${error.message}`);
     }
 
     if (!data) {
@@ -54,7 +55,37 @@ class SupabaseRBACService {
 
     // Use systematic tenant isolation utility to filter permissions
     const { filterFn } = getPermissionQueryFilters(currentUser);
+    
+    // Log before filtering
+    const categoryCounts = data.reduce((acc, perm) => {
+      const cat = perm.category || 'unknown';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const systemPermCount = data.filter(p => p.is_system_permission === true).length;
+    
+    console.log('[RBAC] Permissions before filtering:', {
+      total: data.length,
+      byCategory: categoryCounts,
+      systemPermissions: systemPermCount,
+      userRole: currentUser?.role,
+      userIsSuperAdmin: currentUser?.isSuperAdmin
+    });
+    
     const filteredData = filterFn(data);
+    
+    // Log after filtering
+    const filteredCategoryCounts = filteredData.reduce((acc, perm) => {
+      const cat = perm.category || 'unknown';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log('[RBAC] Permissions after filtering:', {
+      total: filteredData.length,
+      byCategory: filteredCategoryCounts,
+      filteredOut: data.length - filteredData.length
+    });
 
     // ✅ Map database rows to Permission interface (snake_case → camelCase)
     const mappedPermissions: Permission[] = filteredData.map(perm => ({
@@ -650,19 +681,37 @@ class SupabaseRBACService {
 
     try {
       // Get IP address using the new async method
-      const ipAddress = await this.getClientIp();
+      let ipAddress = await this.getClientIp();
+      
+      // Validate IP address - INET type only accepts valid IP addresses
+      // If IP is not valid (e.g., "client-unknown", "detection-failed"), use NULL
+      const isValidIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(ipAddress) || 
+                        /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(ipAddress); // IPv4 or IPv6
+      
+      if (!isValidIP) {
+        console.warn('[RBAC] Invalid IP address detected, using NULL:', ipAddress);
+        ipAddress = null as any; // Set to null for INET type
+      }
+      
+      // Map resource to table_name for audit_logs schema
+      const tableName = resource || 'unknown';
+      
+      // Get tenant_id - use currentUser.tenantId or fallback to null
+      // The RLS policy will handle tenant isolation
+      const tenantId = currentUser.tenantId || null;
       
       await supabase
         .from(this.auditLogsTable)
         .insert({
           user_id: currentUser.id,
           action,
-          resource,
-          resource_id: resourceId,
-          details: details || {},
-          ip_address: ipAddress,
+          table_name: tableName,  // Use table_name instead of resource
+          record_id: resourceId || null,  // Use record_id instead of resource_id
+          old_values: null,  // Store details in old_values for now (can be enhanced later)
+          new_values: details || null,  // Store details in new_values
+          ip_address: ipAddress,  // Will be NULL if invalid IP
           user_agent: navigator.userAgent,
-          tenant_id: currentUser.tenantId  // Fixed: use camelCase tenantId from User object
+          tenant_id: tenantId  // Use tenantId with fallback to null
         });
     } catch (err) {
       console.error('[RBAC] Error logging action:', err);
@@ -863,12 +912,12 @@ class SupabaseRBACService {
 
   /**
    * Map action string to required permission
-   * Converts action format like "product_sales:create" to "products:create"
+   * Converts action format like "crm:product-sale:record:create" to "crm:product:record:create"
    * Updated to use {resource}:{action} format instead of manage_resource
    */
   private mapActionToPermission(action: string): string | null {
     // Action format: "resource(:or_subresource):operation"
-    // e.g., "product_sales:create" -> "products:create"
+    // e.g., "crm:product-sale:record:create" -> "crm:product:record:create"
     const parts = action.split(':');
     if (parts.length < 2) return null;
     
@@ -987,90 +1036,313 @@ class SupabaseRBACService {
   }
 
   /**
-   * Get default permissions as fallback
+   * Get element permissions for a tenant
+   * @param tenantId - Optional tenant ID filter
+   * @returns Promise<ElementPermission[]> - Array of element permissions
    */
-  private getDefaultPermissions(): Permission[] {
-    return [
-      // Core permissions
-      { id: 'read', name: 'Read', description: 'View and read data', category: 'core', resource: '*', action: 'read' },
-      { id: 'write', name: 'Write', description: 'Create and edit data', category: 'core', resource: '*', action: 'write' },
-      { id: 'delete', name: 'Delete', description: 'Delete data', category: 'core', resource: '*', action: 'delete' },
+  async getElementPermissions(tenantId?: string): Promise<Permission[]> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) return [];
 
-      // Module permissions using {resource}:{action} format
-      { id: 'customers:read', name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
-      { id: 'customers:create', name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
-      { id: 'customers:update', name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
-      { id: 'customers:delete', name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
+    const userTenantId = tenantId || currentUser.tenantId;
+    const userIsSuperAdmin = isSuperAdmin(currentUser);
 
-      { id: 'sales:read', name: 'View Sales', description: 'View sales processes and deals', category: 'module', resource: 'sales', action: 'read' },
-      { id: 'sales:create', name: 'Create Sales', description: 'Create new sales records', category: 'module', resource: 'sales', action: 'create' },
-      { id: 'sales:update', name: 'Update Sales', description: 'Edit sales information', category: 'module', resource: 'sales', action: 'update' },
-      { id: 'sales:delete', name: 'Delete Sales', description: 'Remove sales records', category: 'module', resource: 'sales', action: 'delete' },
+    let query = supabase
+      .from('element_permissions')
+      .select('*')
+      .order('element_path', { ascending: true });
 
-      { id: 'tickets:read', name: 'View Tickets', description: 'View support tickets and issues', category: 'module', resource: 'tickets', action: 'read' },
-      { id: 'tickets:create', name: 'Create Tickets', description: 'Create new support tickets', category: 'module', resource: 'tickets', action: 'create' },
-      { id: 'tickets:update', name: 'Update Tickets', description: 'Edit ticket information', category: 'module', resource: 'tickets', action: 'update' },
-      { id: 'tickets:delete', name: 'Delete Tickets', description: 'Remove ticket records', category: 'module', resource: 'tickets', action: 'delete' },
+    // Apply tenant filtering
+    if (!userIsSuperAdmin && userTenantId) {
+      query = query.eq('tenant_id', userTenantId);
+    }
 
-      { id: 'complaints:read', name: 'View Complaints', description: 'View customer complaints', category: 'module', resource: 'complaints', action: 'read' },
-      { id: 'complaints:create', name: 'Create Complaints', description: 'Create complaint records', category: 'module', resource: 'complaints', action: 'create' },
-      { id: 'complaints:update', name: 'Update Complaints', description: 'Edit complaint information', category: 'module', resource: 'complaints', action: 'update' },
-      { id: 'complaints:delete', name: 'Delete Complaints', description: 'Remove complaint records', category: 'module', resource: 'complaints', action: 'delete' },
+    const { data, error } = await query;
 
-      { id: 'contracts:read', name: 'View Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'contracts', action: 'read' },
-      { id: 'contracts:create', name: 'Create Contracts', description: 'Create new contracts', category: 'module', resource: 'contracts', action: 'create' },
-      { id: 'contracts:update', name: 'Update Contracts', description: 'Edit contract information', category: 'module', resource: 'contracts', action: 'update' },
-      { id: 'contracts:delete', name: 'Delete Contracts', description: 'Remove contract records', category: 'module', resource: 'contracts', action: 'delete' },
+    if (error) {
+      console.error('[RBAC] Error fetching element permissions:', error);
+      return [];
+    }
 
-      { id: 'products:read', name: 'View Products', description: 'View product catalog and inventory', category: 'module', resource: 'products', action: 'read' },
-      { id: 'products:create', name: 'Create Products', description: 'Create new product records', category: 'module', resource: 'products', action: 'create' },
-      { id: 'products:update', name: 'Update Products', description: 'Edit product information', category: 'module', resource: 'products', action: 'update' },
-      { id: 'products:delete', name: 'Delete Products', description: 'Remove product records', category: 'module', resource: 'products', action: 'delete' },
+    // Map database rows to Permission interface (snake_case → camelCase)
+    const mappedPermissions: Permission[] = (data || []).map(row => ({
+      id: row.id,
+      name: `element:${row.element_path}:${row.required_role_level}`,
+      description: `Element permission for ${row.element_path}`,
+      category: 'module',
+      resource: row.element_path.split(':')[0],
+      action: `${row.element_path.split(':').slice(1).join(':')}:${row.required_role_level}`,
+      is_system_permission: false,
+      scope: row.conditions || {},
+      elementPath: row.element_path
+    }));
 
-      // Additional module permissions using {resource}:{action} format
-      { id: 'product_sales:read', name: 'View Product Sales', description: 'View product sales transactions', category: 'module', resource: 'product_sales', action: 'read' },
-      { id: 'product_sales:create', name: 'Create Product Sales', description: 'Create new product sales records', category: 'module', resource: 'product_sales', action: 'create' },
-      { id: 'product_sales:update', name: 'Update Product Sales', description: 'Edit product sales information', category: 'module', resource: 'product_sales', action: 'update' },
-      { id: 'product_sales:delete', name: 'Delete Product Sales', description: 'Remove product sales records', category: 'module', resource: 'product_sales', action: 'delete' },
-
-      { id: 'jobworks:read', name: 'View Job Works', description: 'View job work orders and tasks', category: 'module', resource: 'jobworks', action: 'read' },
-      { id: 'jobworks:create', name: 'Create Job Works', description: 'Create new job work orders', category: 'module', resource: 'jobworks', action: 'create' },
-      { id: 'jobworks:update', name: 'Update Job Works', description: 'Edit job work information', category: 'module', resource: 'jobworks', action: 'update' },
-      { id: 'jobworks:delete', name: 'Delete Job Works', description: 'Remove job work records', category: 'module', resource: 'jobworks', action: 'delete' },
-
-      { id: 'service_contracts:read', name: 'View Service Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'read' },
-      { id: 'service_contracts:create', name: 'Create Service Contracts', description: 'Create new service contracts', category: 'module', resource: 'service_contracts', action: 'create' },
-      { id: 'service_contracts:update', name: 'Update Service Contracts', description: 'Edit service contract information', category: 'module', resource: 'service_contracts', action: 'update' },
-      { id: 'service_contracts:delete', name: 'Delete Service Contracts', description: 'Remove service contract records', category: 'module', resource: 'service_contracts', action: 'delete' },
-
-      { id: 'dashboard:view', name: 'View Dashboard', description: 'Access tenant dashboard and analytics', category: 'module', resource: 'dashboard', action: 'view' },
-      { id: 'masters:read', name: 'View Masters', description: 'Access master data and configuration', category: 'module', resource: 'masters', action: 'read' },
-      { id: 'user_management:read', name: 'View User Management', description: 'Access user and role management interface', category: 'module', resource: 'user_management', action: 'read' },
-
-      // Administrative permissions using {resource}:{action} format
-      { id: 'users:read', name: 'View Users', description: 'View user accounts and access', category: 'administrative', resource: 'users', action: 'read' },
-      { id: 'users:create', name: 'Create Users', description: 'Create new user accounts', category: 'administrative', resource: 'users', action: 'create' },
-      { id: 'users:update', name: 'Update Users', description: 'Edit user accounts', category: 'administrative', resource: 'users', action: 'update' },
-      { id: 'users:delete', name: 'Delete Users', description: 'Remove user accounts', category: 'administrative', resource: 'users', action: 'delete' },
-
-      { id: 'roles:read', name: 'View Roles', description: 'View roles and permissions', category: 'administrative', resource: 'roles', action: 'read' },
-      { id: 'roles:create', name: 'Create Roles', description: 'Create new roles', category: 'administrative', resource: 'roles', action: 'create' },
-      { id: 'roles:update', name: 'Update Roles', description: 'Edit roles and permissions', category: 'administrative', resource: 'roles', action: 'update' },
-      { id: 'roles:delete', name: 'Delete Roles', description: 'Remove roles', category: 'administrative', resource: 'roles', action: 'delete' },
-
-      { id: 'analytics:view', name: 'View Analytics', description: 'Access analytics and reports', category: 'administrative', resource: 'analytics', action: 'view' },
-      { id: 'settings:read', name: 'View Settings', description: 'Configure system settings', category: 'administrative', resource: 'settings', action: 'read' },
-      { id: 'settings:update', name: 'Update Settings', description: 'Update system settings', category: 'administrative', resource: 'settings', action: 'update' },
-      { id: 'companies:read', name: 'View Companies', description: 'View company information', category: 'administrative', resource: 'companies', action: 'read' },
-      { id: 'companies:update', name: 'Update Companies', description: 'Edit company information', category: 'administrative', resource: 'companies', action: 'update' },
-
-      // System permissions using {resource}:{action} format
-      { id: 'platform:admin', name: 'Platform Admin', description: 'Platform administration access', category: 'system', resource: 'platform', action: 'admin' },
-      { id: 'system:admin', name: 'Super Admin', description: 'Full system administration', category: 'system', resource: 'system', action: 'admin' },
-      { id: 'tenants:manage', name: 'Manage Tenants', description: 'Manage tenant accounts', category: 'system', resource: 'tenants', action: 'manage' },
-      { id: 'system:monitor', name: 'System Monitoring', description: 'Monitor system health and performance', category: 'system', resource: 'system', action: 'monitor' }
-    ];
+    console.log('[RBAC] Element permissions fetched:', mappedPermissions.length);
+    return mappedPermissions;
   }
+
+  /**
+   * Create element permission
+   * @param elementData - Element permission data
+   * @returns Promise<Permission> - Created permission
+   */
+  async createElementPermission(elementData: {
+    elementPath: string;
+    requiredRoleLevel: 'read' | 'write' | 'admin';
+    conditions?: Record<string, any>;
+    tenantId: string;
+  }): Promise<Permission> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // Security check
+    if (!canAccessRole({ is_system_role: false, tenant_id: elementData.tenantId } as Role, currentUser)) {
+      throw new Error('Access denied: Cannot create element permissions for this tenant');
+    }
+
+    const { data, error } = await supabase
+      .from('element_permissions')
+      .insert({
+        element_path: elementData.elementPath,
+        required_role_level: elementData.requiredRoleLevel,
+        conditions: elementData.conditions || {},
+        tenant_id: elementData.tenantId
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[RBAC] Error creating element permission:', error);
+      throw new Error(`Failed to create element permission: ${error.message}`);
+    }
+
+    // Log the action
+    await this.logAction('element_permission_created', 'element_permission', data.id, {
+      element_path: elementData.elementPath,
+      required_role_level: elementData.requiredRoleLevel
+    });
+
+    // Return as Permission interface
+    return {
+      id: data.id,
+      name: `element:${data.element_path}:${data.required_role_level}`,
+      description: `Element permission for ${data.element_path}`,
+      category: 'module',
+      resource: data.element_path.split(':')[0],
+      action: `${data.element_path.split(':').slice(1).join(':')}:${data.required_role_level}`,
+      is_system_permission: false,
+      scope: data.conditions || {},
+      elementPath: data.element_path
+    };
+  }
+
+  /**
+   * Update element permission
+   * @param permissionId - Permission ID to update
+   * @param updates - Update data
+   * @returns Promise<Permission> - Updated permission
+   */
+  async updateElementPermission(
+    permissionId: string,
+    updates: Partial<{
+      elementPath: string;
+      requiredRoleLevel: 'read' | 'write' | 'admin';
+      conditions: Record<string, any>;
+    }>
+  ): Promise<Permission> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // Get existing permission
+    const { data: existing, error: fetchError } = await supabase
+      .from('element_permissions')
+      .select('*')
+      .eq('id', permissionId)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new Error('Element permission not found');
+    }
+
+    // Security check
+    if (!canAccessRole({ is_system_role: false, tenant_id: existing.tenant_id } as Role, currentUser)) {
+      throw new Error('Access denied: Cannot modify element permissions for this tenant');
+    }
+
+    const updateData: any = {};
+    if (updates.elementPath) updateData.element_path = updates.elementPath;
+    if (updates.requiredRoleLevel) updateData.required_role_level = updates.requiredRoleLevel;
+    if (updates.conditions) updateData.conditions = updates.conditions;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('element_permissions')
+      .update(updateData)
+      .eq('id', permissionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[RBAC] Error updating element permission:', error);
+      throw new Error(`Failed to update element permission: ${error.message}`);
+    }
+
+    // Log the action
+    await this.logAction('element_permission_updated', 'element_permission', permissionId, updates);
+
+    // Return as Permission interface
+    return {
+      id: data.id,
+      name: `element:${data.element_path}:${data.required_role_level}`,
+      description: `Element permission for ${data.element_path}`,
+      category: 'module',
+      resource: data.element_path.split(':')[0],
+      action: `${data.element_path.split(':').slice(1).join(':')}:${data.required_role_level}`,
+      is_system_permission: false,
+      scope: data.conditions || {},
+      elementPath: data.element_path
+    };
+  }
+
+  /**
+   * Delete element permission
+   * @param permissionId - Permission ID to delete
+   */
+  async deleteElementPermission(permissionId: string): Promise<void> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // Get existing permission for security check
+    const { data: existing, error: fetchError } = await supabase
+      .from('element_permissions')
+      .select('tenant_id, element_path')
+      .eq('id', permissionId)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new Error('Element permission not found');
+    }
+
+    // Security check
+    if (!canAccessRole({ is_system_role: false, tenant_id: existing.tenant_id } as Role, currentUser)) {
+      throw new Error('Access denied: Cannot delete element permissions for this tenant');
+    }
+
+    const { error } = await supabase
+      .from('element_permissions')
+      .delete()
+      .eq('id', permissionId);
+
+    if (error) {
+      console.error('[RBAC] Error deleting element permission:', error);
+      throw new Error(`Failed to delete element permission: ${error.message}`);
+    }
+
+    // Log the action
+    await this.logAction('element_permission_deleted', 'element_permission', permissionId, {
+      element_path: existing.element_path
+    });
+  }
+
+  /**
+   * Get permission overrides for user
+   * @param userId - User ID to get overrides for
+   * @returns Promise<PermissionOverride[]> - Array of permission overrides
+   */
+  async getPermissionOverrides(userId: string): Promise<any[]> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) return [];
+
+    // Security check - users can only see their own overrides, admins can see all
+    if (!isSuperAdmin(currentUser) && currentUser.id !== userId) {
+      throw new Error('Access denied: Cannot view permission overrides for other users');
+    }
+
+    const { data, error } = await supabase
+      .from('permission_overrides')
+      .select(`
+        *,
+        permissions (
+          id,
+          name,
+          description
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('tenant_id', currentUser.tenantId || null)
+      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString());
+
+    if (error) {
+      console.error('[RBAC] Error fetching permission overrides:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Create permission override
+   * @param overrideData - Override data
+   * @returns Promise<any> - Created override
+   */
+  async createPermissionOverride(overrideData: {
+    userId: string;
+    permissionId: string;
+    resourceType: 'record' | 'field' | 'element';
+    resourceId?: string;
+    overrideType: 'grant' | 'deny';
+    conditions?: Record<string, any>;
+    expiresAt?: string;
+  }): Promise<any> {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+
+    // Security check - only admins can create overrides
+    if (!isSuperAdmin(currentUser) && !canAccessRole({ is_system_role: false, tenant_id: currentUser.tenantId } as Role, currentUser)) {
+      throw new Error('Access denied: Only administrators can create permission overrides');
+    }
+
+    const { data, error } = await supabase
+      .from('permission_overrides')
+      .insert({
+        user_id: overrideData.userId,
+        permission_id: overrideData.permissionId,
+        resource_type: overrideData.resourceType,
+        resource_id: overrideData.resourceId,
+        override_type: overrideData.overrideType,
+        conditions: overrideData.conditions || {},
+        expires_at: overrideData.expiresAt,
+        tenant_id: currentUser.tenantId,
+        created_by: currentUser.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[RBAC] Error creating permission override:', error);
+      throw new Error(`Failed to create permission override: ${error.message}`);
+    }
+
+    // Log the action
+    await this.logAction('permission_override_created', 'permission_override', data.id, {
+      user_id: overrideData.userId,
+      permission_id: overrideData.permissionId,
+      override_type: overrideData.overrideType
+    });
+
+    return data;
+  }
+
+  // ❌ REMOVED: getDefaultPermissions() method - violates database-driven principle
+  // The system must be 100% database-driven with no hardcoded fallbacks
 }
 
 export const supabaseRbacService = new SupabaseRBACService();

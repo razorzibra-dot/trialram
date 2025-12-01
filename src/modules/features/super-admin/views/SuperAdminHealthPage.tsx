@@ -74,7 +74,7 @@ const SuperAdminHealthPage: React.FC = () => {
   ]);
 
   // Permission check
-  if (!hasPermission('super_user:view_analytics')) {
+  if (!hasPermission('crm:platform:crm:analytics:insight:view')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

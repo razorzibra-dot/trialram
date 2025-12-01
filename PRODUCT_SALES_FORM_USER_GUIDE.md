@@ -386,7 +386,7 @@ Improvements:
 **Solution**:
 - You don't have permission to create/edit sales
 - Contact your system administrator
-- Request the "manage_product_sales" permission
+- Request the "crm:product-sale:record:update" permission
 
 ## FAQ
 

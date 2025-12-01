@@ -9,9 +9,9 @@
 
 INSERT INTO permissions (id, name, description, category, created_at)
 VALUES 
-  (gen_random_uuid(), 'dashboard:view', 'Access tenant dashboard and analytics', 'navigation', NOW()),
-  (gen_random_uuid(), 'masters:read', 'Access master data and configuration', 'navigation', NOW()),
-  (gen_random_uuid(), 'user_management:read', 'Access user and role management interface', 'navigation', NOW())
+  (gen_random_uuid(), 'crm:dashboard:panel:view', 'Access tenant dashboard and analytics', 'navigation', NOW()),
+  (gen_random_uuid(), 'crm:reference:data:read', 'Access master data and configuration', 'navigation', NOW()),
+  (gen_random_uuid(), 'crm:user:record:read', 'Access user and role management interface', 'navigation', NOW())
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================

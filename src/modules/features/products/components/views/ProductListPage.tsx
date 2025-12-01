@@ -326,7 +326,7 @@ const ProductListPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('products:update') && (
+          {hasPermission('crm:product:record:update') && (
             <Button
               type="link"
               size="small"
@@ -336,7 +336,7 @@ const ProductListPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('products:delete') && (
+          {hasPermission('crm:product:record:delete') && (
             <Popconfirm
               title="Delete Product"
               description={`Are you sure you want to delete "${record.name}"?`}
@@ -442,7 +442,7 @@ const ProductListPage: React.FC = () => {
                   Compare ({selectedProducts.length})
                 </Button>
               )}
-              {hasPermission('products:create') && (
+              {hasPermission('crm:product:record:create') && (
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                   Add Product
                 </Button>

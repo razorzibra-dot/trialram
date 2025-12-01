@@ -242,7 +242,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
             <Input
               placeholder="e.g., Equipment malfunction in production line"
               size="large"
-              prefix={<AlertCircleOutlined />}
+              prefix={<ExclamationCircleOutlined />}
               allowClear
             />
           </Form.Item>

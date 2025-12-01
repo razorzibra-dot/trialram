@@ -75,7 +75,7 @@ const SuperAdminTenantsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid'); // Grid or Table view
 
   // Permission check
-  if (!hasPermission('super_user:manage_tenants')) {
+  if (!hasPermission('crm:platform:tenant:manage')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

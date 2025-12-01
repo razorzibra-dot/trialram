@@ -284,7 +284,7 @@ export const CompaniesPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('companies:update') && (
+          {hasPermission('crm:company:record:update') && (
             <Button
               type="link"
               size="small"
@@ -294,7 +294,7 @@ export const CompaniesPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('companies:delete') && (
+          {hasPermission('crm:company:record:delete') && (
             <Popconfirm
               title="Delete Company"
               description={`Are you sure you want to delete "${record.name}"?`}
@@ -336,7 +336,7 @@ export const CompaniesPage: React.FC = () => {
           >
             Refresh
           </Button>,
-          hasPermission('companies:create') && (
+          hasPermission('crm:company:record:create') && (
             <AntUpload
               key="import"
               accept=".csv"
@@ -348,7 +348,7 @@ export const CompaniesPage: React.FC = () => {
               </Button>
             </AntUpload>
           ),
-          hasPermission('companies:create') && (
+          hasPermission('crm:company:record:create') && (
             <Button
               key="create"
               type="primary"
@@ -455,7 +455,7 @@ export const CompaniesPage: React.FC = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description="No companies found"
                 >
-                  {hasPermission('companies:create') && (
+                  {hasPermission('crm:company:record:create') && (
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                       Add Your First Company
                     </Button>

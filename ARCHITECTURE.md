@@ -580,17 +580,17 @@ The system implements a comprehensive **Role-Based Access Control (RBAC)** archi
 ```sql
 -- Old permission names
 INSERT INTO permissions (name, description) VALUES
-  ('manage_users', 'Manage users'),
-  ('manage_roles', 'Manage roles'),
-  ('manage_customers', 'Manage customers');
+  ('crm:user:record:update', 'Manage users'),
+  ('crm:role:record:update', 'Manage roles'),
+  ('crm:customer:record:update', 'Manage customers');
 ```
 
 #### New Format (Post-Nov 2025)
 ```sql
 -- New {resource}:{action} format
 INSERT INTO permissions (name, description, resource, action) VALUES
-  ('users:manage', 'Manage users', 'users', 'manage'),
-  ('roles:manage', 'Manage roles', 'roles', 'manage'),
+  ('crm:user:record:update', 'Manage users', 'users', 'manage'),
+  ('crm:role:permission:assign', 'Manage roles', 'roles', 'manage'),
   ('customers:manage', 'Manage customers', 'customers', 'manage');
 ```
 
@@ -683,11 +683,11 @@ interface RBACService {
 
 ```sql
 -- BEFORE (Broken)
-INSERT INTO permissions (name) VALUES ('manage_users');
+INSERT INTO permissions (name) VALUES ('crm:user:record:update');
 
 -- AFTER (Fixed)
 INSERT INTO permissions (name, resource, action) VALUES 
-('users:manage', 'users', 'manage');
+('crm:user:record:update', 'users', 'manage');
 ```
 
 #### 12.5.2 Role Permissions Mapping
@@ -703,8 +703,8 @@ CROSS JOIN permissions p
 WHERE r.name = 'admin'
   AND p.name IN (
     'read', 'write', 'delete',
-    'users:read', 'users:create', 'users:update', 'users:delete',
-    'customers:read', 'customers:create', 'customers:update', 'customers:delete'
+    'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete',
+    'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete'
     -- ... etc
   );
 ```
@@ -758,28 +758,28 @@ LEFT JOIN tenants t ON ur.tenant_id = t.id;
 3. **NO Hardcoded Role Checks**: Never use `if (user.role === 'admin')` to grant permissions. Role checks should only be for UI display or logging.
 4. **NO Static Permission Maps**: Never create `ROLE_PERMISSIONS: Record<UserRole, Permission[]>` in application code. These belong only in database seed data.
 5. **Fallback Permissions**: Fallback systems should only be used when database is unavailable, with warnings logged.
-6. **Permission Format**: Use `{resource}:{action}` format (e.g., `users:update`, `users:manage`, `customers:read`).
+6. **Permission Format**: Use `{resource}:{action}` format (e.g., `crm:user:record:update`, `crm:user:record:update`, `crm:customer:record:read`).
 
 **Correct vs Incorrect Patterns:**
 
 ```typescript
 // ✅ CORRECT: Use dynamic permissions from database
-const canEdit = authService.hasPermission('users:update') || 
-                authService.hasPermission('users:manage');
+const canEdit = authService.hasPermission('crm:user:record:update') || 
+                authService.hasPermission('crm:user:record:update');
 
 // ❌ WRONG: Hardcoded role check
 if (user.role === 'admin') return true;
 
 // ❌ WRONG: Hardcoded permission map
-const ROLE_PERMISSIONS = { 'admin': ['users:update', ...] };
-if (ROLE_PERMISSIONS[user.role]?.includes('users:update')) return true;
+const ROLE_PERMISSIONS = { 'admin': ['crm:user:record:update', ...] };
+if (ROLE_PERMISSIONS[user.role]?.includes('crm:user:record:update')) return true;
 ```
 
 **Permission Loading Flow:**
 1. User logs in → `authService.login()` fetches user from `users` table
 2. Role resolution → `user_roles` → `roles` table to get role name
 3. Permission fetching → `role_permissions` → `permissions` table
-4. Permissions attached → `user.permissions = ['users:manage', 'customers:read', ...]`
+4. Permissions attached → `user.permissions = ['crm:user:record:update', 'crm:customer:record:read', ...]`
 5. Permission checks → `authService.hasPermission()` checks `user.permissions` array
 
 **Why This Architecture:**
@@ -918,7 +918,7 @@ const roleMap = { 'admin': 'Administrator' };
 if (role.name === 'super_admin') return false;
 
 // ❌ WRONG: Hardcoded permission check
-if (['super_admin', 'platform_admin'].includes(perm.name)) return false;
+if (['super_admin', 'crm:platform:control:admin'].includes(perm.name)) return false;
 
 // ❌ WRONG: Hardcoded role validation
 if (!['admin', 'manager'].includes(userRole)) throw new Error('Invalid role');
@@ -940,7 +940,7 @@ switch (role) {
 
 // ✅ ACCEPTABLE: Feature-to-permission mapping (not role mapping)
 const featurePermissions = {
-  customer_management: ['customers:read'], // Maps features to permissions (DB-driven)
+  customer_management: ['crm:customer:record:read'], // Maps features to permissions (DB-driven)
 };
 
 // ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (documented as fallback)
@@ -1033,9 +1033,9 @@ GROUP BY u.email, u.tenant_id;
 **Key Changes**:
 ```sql
 -- Legacy format → New format
-'manage_users' → 'users:manage'
-'manage_roles' → 'roles:manage'
-'manage_customers' → 'customers:manage'
+'crm:user:record:update' → 'crm:user:record:update'
+'crm:role:record:update' → 'crm:role:permission:assign'
+'crm:customer:record:update' → 'customers:manage'
 -- ... etc for all 34 permissions
 ```
 

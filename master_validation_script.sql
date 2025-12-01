@@ -216,13 +216,13 @@ BEGIN
     SELECT COUNT(*) INTO new_format_count
     FROM permissions
     WHERE name LIKE '%:%' 
-    OR name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+    OR name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
     
     SELECT COUNT(*) INTO legacy_format_count
     FROM permissions
     WHERE name LIKE 'manage_%' 
     OR name LIKE '%_manage'
-    AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+    AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
     
     RAISE NOTICE 'Permission format breakdown:';
     RAISE NOTICE '  - New format (resource:action): % permissions', new_format_count;

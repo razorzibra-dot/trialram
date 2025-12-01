@@ -223,9 +223,9 @@ Example:
 ```typescript
 // Future enhancement
 const actionPermissionMap = {
-  'product_sales:create': ['write', 'manage_product_sales'],
-  'product_sales:edit': ['write', 'manage_product_sales'],
-  'product_sales:delete': ['delete', 'manage_product_sales'],
+  'crm:product-sale:record:create': ['write', 'crm:product-sale:record:update'],
+  'product_sales:edit': ['write', 'crm:product-sale:record:update'],
+  'crm:product-sale:record:delete': ['delete', 'crm:product-sale:record:update'],
   'product_sales:approve': ['approve_product_sales'],
 };
 

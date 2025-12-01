@@ -84,7 +84,7 @@ const SuperAdminDashboardPage: React.FC = () => {
     console.log('🔍 [SuperAdminDashboard] Auth State:', {
       userRole: user?.role,
       isSuperAdmin: user?.isSuperAdmin,
-      hasPermission: hasPermission('super_admin:view_analytics'),
+      hasPermission: hasPermission('super_admin:crm:analytics:insight:view'),
       userId: user?.id,
       email: user?.email,
     });
@@ -98,10 +98,10 @@ const SuperAdminDashboardPage: React.FC = () => {
 
   // Permission check - show access denied if not authorized
   // ⚠️ DIAGNOSTIC MODE: Temporarily showing debug info
-  const hasAccess = hasPermission('super_admin:view_analytics');
+  const hasAccess = hasPermission('super_admin:crm:analytics:insight:view');
   
   if (!hasAccess) {
-    console.warn('❌ [SuperAdminDashboard] Permission denied for super_admin:view_analytics', {
+    console.warn('❌ [SuperAdminDashboard] Permission denied for super_admin:crm:analytics:insight:view', {
       userRole: user?.role,
       isSuperAdmin: user?.isSuperAdmin,
       userId: user?.id,

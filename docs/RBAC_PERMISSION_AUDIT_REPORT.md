@@ -11,11 +11,11 @@ Comprehensive audit of all permission references in the codebase that need to be
 **Status**: ❌ Contains legacy permissions  
 **Lines**: 16-35 (Permission definitions)  
 **Required Updates**:
-- `manage_customers` → `customers:read`, `customers:create`, `customers:update`
-- `manage_sales` → `sales:read`, `sales:create`, `sales:update`  
-- `manage_tickets` → `tickets:read`, `tickets:create`, `tickets:update`
-- `manage_users` → `users:read`, `users:create`, `users:update`, `users:delete`
-- `manage_roles` → `roles:read`, `roles:create`, `roles:update`, `roles:delete`
+- `crm:customer:record:update` → `crm:customer:record:read`, `crm:customer:record:create`, `crm:customer:record:update`
+- `crm:sales:deal:update` → `crm:sales:deal:read`, `crm:sales:deal:create`, `crm:sales:deal:update`  
+- `manage_tickets` → `crm:support:ticket:read`, `crm:support:ticket:create`, `crm:support:ticket:update`
+- `crm:user:record:update` → `crm:user:record:read`, `crm:user:record:create`, `crm:user:record:update`, `crm:user:record:delete`
+- `crm:role:record:update` → `crm:role:record:read`, `crm:role:record:create`, `crm:role:record:update`, `crm:role:record:delete`
 
 #### 2. Supabase RBAC Service (`src/services/rbac/supabase/rbacService.ts`)
 **Status**: ❌ Contains legacy permissions  
@@ -36,9 +36,9 @@ Comprehensive audit of all permission references in the codebase that need to be
 **Status**: ❌ Uses legacy permissions  
 **Lines**: 46-135  
 **Required Updates**:
-- `manage_customers` → `customers:read`
-- `manage_sales` → `sales:read`
-- `manage_users` → `users:read`
+- `crm:customer:record:update` → `crm:customer:record:read`
+- `crm:sales:deal:update` → `crm:sales:deal:read`
+- `crm:user:record:update` → `crm:user:record:read`
 
 #### 5. Hook Implementations
 **Files**:
@@ -65,26 +65,26 @@ Comprehensive audit of all permission references in the codebase that need to be
 ### Core Resources
 | Legacy Format | New Standard Format | Usage Context |
 |---------------|---------------------|---------------|
-| `manage_customers` | `customers:read`, `customers:create`, `customers:update`, `customers:delete` | Customer module operations |
-| `manage_sales` | `sales:read`, `sales:create`, `sales:update`, `sales:delete` | Sales module operations |
-| `manage_tickets` | `tickets:read`, `tickets:create`, `tickets:update`, `tickets:delete` | Support ticket operations |
-| `manage_users` | `users:read`, `users:create`, `users:update`, `users:delete` | User management operations |
-| `manage_roles` | `roles:read`, `roles:create`, `roles:update`, `roles:delete` | Role management operations |
+| `crm:customer:record:update` | `crm:customer:record:read`, `crm:customer:record:create`, `crm:customer:record:update`, `crm:customer:record:delete` | Customer module operations |
+| `crm:sales:deal:update` | `crm:sales:deal:read`, `crm:sales:deal:create`, `crm:sales:deal:update`, `crm:sales:deal:delete` | Sales module operations |
+| `manage_tickets` | `crm:support:ticket:read`, `crm:support:ticket:create`, `crm:support:ticket:update`, `crm:support:ticket:delete` | Support ticket operations |
+| `crm:user:record:update` | `crm:user:record:read`, `crm:user:record:create`, `crm:user:record:update`, `crm:user:record:delete` | User management operations |
+| `crm:role:record:update` | `crm:role:record:read`, `crm:role:record:create`, `crm:role:record:update`, `crm:role:record:delete` | Role management operations |
 
 ### Specialized Resources
 | Legacy Format | New Standard Format | Usage Context |
 |---------------|---------------------|---------------|
-| `manage_complaints` | `complaints:read`, `complaints:create`, `complaints:update` | Customer complaints |
-| `manage_contracts` | `contracts:read`, `contracts:create`, `contracts:update`, `contracts:delete` | Contract management |
-| `manage_products` | `products:read`, `products:create`, `products:update`, `products:delete` | Product catalog |
+| `crm:support:complaint:update` | `crm:support:complaint:read`, `crm:support:complaint:create`, `crm:support:complaint:update` | Customer complaints |
+| `manage_contracts` | `crm:contract:record:read`, `crm:contract:record:create`, `crm:contract:record:update`, `crm:contract:record:delete` | Contract management |
+| `manage_products` | `crm:product:record:read`, `crm:product:record:create`, `crm:product:record:update`, `crm:product:record:delete` | Product catalog |
 | `manage_job_works` | `job_works:read`, `job_works:create`, `job_works:update` | Job work orders |
 
 ### Administrative Resources
 | Legacy Format | New Standard Format | Usage Context |
 |---------------|---------------------|---------------|
-| `manage_settings` | `settings:read`, `settings:update` | System configuration |
-| `view_analytics` | `analytics:read` | Reports and analytics |
-| `manage_tenants` | `tenants:read`, `tenants:create`, `tenants:update` | Multi-tenant management |
+| `crm:system:config:manage` | `crm:system:config:read`, `crm:system:config:manage` | System configuration |
+| `crm:analytics:insight:view` | `analytics:read` | Reports and analytics |
+| `crm:platform:tenant:manage` | `tenants:read`, `tenants:create`, `tenants:update` | Multi-tenant management |
 
 ## Impact Analysis
 

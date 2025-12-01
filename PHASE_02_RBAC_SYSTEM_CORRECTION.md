@@ -207,26 +207,26 @@
   - [ ] `delete` - Delete data (global access)
 
 - [ ] **2.2.1.3** Create/validate module permissions
-  - [ ] `manage_customers` - Full customer management
-  - [ ] `manage_sales` - Sales process management
+  - [ ] `crm:customer:record:update` - Full customer management
+  - [ ] `crm:sales:deal:update` - Sales process management
   - [ ] `manage_tickets` - Support ticket management
   - [ ] `manage_products` - Product catalog management
   - [ ] `manage_contracts` - Contract lifecycle management
-  - [ ] `manage_service_contracts` - Service contract management
-  - [ ] `manage_complaints` - Complaint handling
-  - [ ] `manage_product_sales` - Product sales operations
+  - [ ] `crm:contract:service:update` - Service contract management
+  - [ ] `crm:support:complaint:update` - Complaint handling
+  - [ ] `crm:product-sale:record:update` - Product sales operations
   - [ ] `manage_job_works` - Job work operations
 
 - [ ] **2.2.1.4** Create/validate administrative permissions
-  - [ ] `manage_users` - User account management
-  - [ ] `manage_roles` - Role and permission management
-  - [ ] `view_analytics` - Analytics and reporting access
-  - [ ] `manage_settings` - System configuration
+  - [ ] `crm:user:record:update` - User account management
+  - [ ] `crm:role:record:update` - Role and permission management
+  - [ ] `crm:analytics:insight:view` - Analytics and reporting access
+  - [ ] `crm:system:config:manage` - System configuration
   - [ ] `view_audit_logs` - Audit log access
 
 - [ ] **2.2.1.5** Create/validate system permissions
   - [ ] `super_admin` - Platform administrator (super_admin role only)
-  - [ ] `manage_tenants` - Tenant management (super_admin only)
+  - [ ] `crm:platform:tenant:manage` - Tenant management (super_admin only)
   - [ ] `view_all_tenants` - Cross-tenant visibility (super_admin only)
 
 ### 2.2.2 Role-Permission Matrix Implementation

@@ -114,7 +114,7 @@ supabase db reset
 -- Check permission format
 SELECT name FROM permissions WHERE name LIKE '%manage%' LIMIT 10;
 
--- Verify new format: users:manage, roles:manage, etc.
+-- Verify new format: crm:user:record:update, crm:role:permission:assign, etc.
 SELECT name FROM permissions WHERE name LIKE '%:%' OR name IN ('read', 'write', 'delete');
 ```
 

@@ -431,10 +431,10 @@ interface SalesFilters {
 ```typescript
 Required Permissions:
 - sales:view - View sales/deals
-- sales:create - Create new deals
-- sales:update - Edit deals
-- sales:update_stage - Change deal stage
-- sales:delete - Delete deals
+- crm:sales:deal:create - Create new deals
+- crm:sales:deal:update - Edit deals
+- crm:sales:deal:update_stage - Change deal stage
+- crm:sales:deal:delete - Delete deals
 - sales:export - Export data
 ```
 

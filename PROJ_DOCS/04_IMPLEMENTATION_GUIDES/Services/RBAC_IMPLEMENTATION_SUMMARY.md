@@ -58,13 +58,13 @@ super_admin (Level 6) - Full system access
 | read | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | write | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| manage_customers | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| manage_sales | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| crm:customer:record:update | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| crm:sales:deal:update | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | manage_tickets | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| manage_users | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| manage_roles | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| platform_admin | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| manage_tenants | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| crm:user:record:update | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| crm:role:record:update | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| crm:platform:control:admin | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| crm:platform:tenant:manage | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ### Portal Access Matrix
 
@@ -131,8 +131,8 @@ if (hasRole('admin') || hasRole('super_admin')) {
   navigationSections.push({
     title: "Administration",
     items: [
-      { name: 'User Management', permission: 'manage_users' },
-      { name: 'Role Management', permission: 'manage_roles' },
+      { name: 'User Management', permission: 'crm:user:record:update' },
+      { name: 'Role Management', permission: 'crm:role:record:update' },
       // ... other admin items
     ]
   });

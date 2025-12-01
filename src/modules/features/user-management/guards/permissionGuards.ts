@@ -20,30 +20,30 @@ import { isSuperAdmin } from '@/utils/tenantIsolation';
  */
 export enum UserPermission {
   // List and View Permissions
-  USER_LIST = 'users:read',
+  USER_LIST = 'crm:user:record:read',
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- View uses same scope as list
-  USER_VIEW = 'users:read',
+  USER_VIEW = 'crm:user:record:read',
   
   // Create and Edit Permissions
-  USER_CREATE = 'users:create',
-  USER_EDIT = 'users:update',
+  USER_CREATE = 'crm:user:record:create',
+  USER_EDIT = 'crm:user:record:update',
   
   // Admin Permissions
-  USER_DELETE = 'users:delete',
+  USER_DELETE = 'crm:user:record:delete',
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Reset password leverages update scope
-  USER_RESET_PASSWORD = 'users:update',
-  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Role management maps to roles:update
-  USER_MANAGE_ROLES = 'roles:update',
+  USER_RESET_PASSWORD = 'crm:user:record:update',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Role management maps to crm:role:record:update
+  USER_MANAGE_ROLES = 'crm:role:record:update',
   
   // System Permissions
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Same scope as USER_MANAGE_ROLES
-  ROLE_MANAGE = 'roles:update',
+  ROLE_MANAGE = 'crm:role:record:update',
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Same scope as ROLE_MANAGE
-  PERMISSION_MANAGE = 'roles:update',
+  PERMISSION_MANAGE = 'crm:role:record:update',
   
   // Tenant Admin
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- Tenant view uses read scope
-  TENANT_USERS = 'users:read',
+  TENANT_USERS = 'crm:user:record:read',
 }
 
 /**
@@ -121,13 +121,13 @@ export function getPermissionGuard(userRole: UserRole): PermissionGuardResult {
   
   // Test each permission check individually
   const check1 = authService.hasPermission(UserPermission.USER_EDIT);
-  const check2 = authService.hasPermission('users:update');
-  const check3 = authService.hasPermission('users:manage');
+  const check2 = authService.hasPermission('crm:user:record:update');
+  const check3 = authService.hasPermission('crm:user:record:update');
   
   console.log('[getPermissionGuard] Individual permission checks:', {
-    'UserPermission.USER_EDIT (users:update)': check1,
-    'users:update (string)': check2,
-    'users:manage (string)': check3
+    'UserPermission.USER_EDIT (crm:user:record:update)': check1,
+    'crm:user:record:update (string)': check2,
+    'crm:user:record:update (string)': check3
   });
   
   const canEditCheck = check1 || check2 || check3;
@@ -136,21 +136,21 @@ export function getPermissionGuard(userRole: UserRole): PermissionGuardResult {
   
   return {
     hasPermission: authService.hasPermission(UserPermission.USER_LIST) || 
-                   authService.hasPermission('users:manage'),
+                   authService.hasPermission('crm:user:record:update'),
     canCreate: authService.hasPermission(UserPermission.USER_CREATE) || 
-               authService.hasPermission('users:manage'),
+               authService.hasPermission('crm:user:record:update'),
     canEdit: canEditCheck,
     canDelete: authService.hasPermission(UserPermission.USER_DELETE) || 
-               authService.hasPermission('users:manage'),
+               authService.hasPermission('crm:user:record:update'),
     canManageRoles: authService.hasPermission(UserPermission.USER_MANAGE_ROLES) || 
-                    authService.hasPermission('roles:update') || 
-                    authService.hasPermission('roles:manage'),
+                    authService.hasPermission('crm:role:record:update') || 
+                    authService.hasPermission('crm:role:permission:assign'),
     canResetPassword: authService.hasPermission(UserPermission.USER_RESET_PASSWORD) || 
-                     authService.hasPermission('users:update') || 
-                     authService.hasPermission('users:manage'),
+                     authService.hasPermission('crm:user:record:update') || 
+                     authService.hasPermission('crm:user:record:update'),
     canViewList: authService.hasPermission(UserPermission.USER_LIST) || 
-                 authService.hasPermission('users:read') || 
-                 authService.hasPermission('users:manage'),
+                 authService.hasPermission('crm:user:record:read') || 
+                 authService.hasPermission('crm:user:record:update'),
   };
 }
 
@@ -186,19 +186,19 @@ export function getRolePermissions(userRole: UserRole): UserPermission[] {
   const userPerms = user.permissions.filter(p => 
     p.startsWith('users:') || 
     p.startsWith('roles:') || 
-    p === 'user_management:read'
+    p === 'crm:user:record:read'
   );
   
   // Map database permission names to UserPermission enum values
   const permissionMap: Record<string, UserPermission> = {
-    'users:read': UserPermission.USER_LIST,
-    'users:create': UserPermission.USER_CREATE,
-    'users:update': UserPermission.USER_EDIT,
-    'users:delete': UserPermission.USER_DELETE,
-    'users:manage': UserPermission.USER_EDIT, // manage includes all user operations
-    'roles:update': UserPermission.USER_MANAGE_ROLES,
-    'roles:manage': UserPermission.USER_MANAGE_ROLES,
-    'user_management:read': UserPermission.USER_LIST,
+    'crm:user:record:read': UserPermission.USER_LIST,
+    'crm:user:record:create': UserPermission.USER_CREATE,
+    'crm:user:record:update': UserPermission.USER_EDIT,
+    'crm:user:record:delete': UserPermission.USER_DELETE,
+    'crm:user:record:update': UserPermission.USER_EDIT, // manage includes all user operations
+    'crm:role:record:update': UserPermission.USER_MANAGE_ROLES,
+    'crm:role:permission:assign': UserPermission.USER_MANAGE_ROLES,
+    'crm:user:record:read': UserPermission.USER_LIST,
   };
   
   const mappedPerms = userPerms
@@ -213,9 +213,9 @@ export function getRolePermissions(userRole: UserRole): UserPermission[] {
  * Check if user can perform action on target user
  * ⚠️ DATABASE-DRIVEN: Uses permission checks instead of hardcoded role checks
  * Rules:
- * - Users with 'users:manage' permission can manage users in their tenant (cannot delete other admins)
- * - Users with 'users:update' permission can edit users in their tenant
- * - Users with 'users:read' permission can view users in their tenant
+ * - Users with 'crm:user:record:update' permission can manage users in their tenant (cannot delete other admins)
+ * - Users with 'crm:user:record:update' permission can edit users in their tenant
+ * - Users with 'crm:user:record:read' permission can view users in their tenant
  * - Tenant isolation is enforced (same tenant required)
  *
  * @param currentUserRole Actor's role (for logging/fallback only)
@@ -244,7 +244,7 @@ export function canPerformUserAction(
   }
 
   // Check for manage permission (grants all user management actions)
-  const hasManagePermission = authService.hasPermission('users:manage');
+  const hasManagePermission = authService.hasPermission('crm:user:record:update');
   if (hasManagePermission) {
     // Cannot delete other admins (to prevent lockout)
     // ✅ Database-driven: Check if target role is admin using database lookup
@@ -260,15 +260,15 @@ export function canPerformUserAction(
   }
 
   // Check for specific action permissions
-  if (action === 'create' && authService.hasPermission('users:create')) {
+  if (action === 'create' && authService.hasPermission('crm:user:record:create')) {
     return true;
   }
 
-  if (action === 'edit' && authService.hasPermission('users:update')) {
+  if (action === 'edit' && authService.hasPermission('crm:user:record:update')) {
     return true;
   }
 
-  if (action === 'delete' && authService.hasPermission('users:delete')) {
+  if (action === 'delete' && authService.hasPermission('crm:user:record:delete')) {
     // Cannot delete other admins even with delete permission
     // ✅ Database-driven: Check if target role is admin (same check as above)
     const isTargetAdmin = targetUserRole === 'admin';
@@ -278,7 +278,7 @@ export function canPerformUserAction(
     return true;
   }
 
-  if (action === 'reset_password' && authService.hasPermission('users:update')) {
+  if (action === 'reset_password' && authService.hasPermission('crm:user:record:update')) {
     return true;
   }
 

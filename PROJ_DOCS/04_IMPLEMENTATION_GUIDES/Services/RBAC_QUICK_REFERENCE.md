@@ -49,9 +49,9 @@ Password: password123
 
 ### Step 3: Verify Access
 ✅ **Should See These Modules**:
-- Service Contracts (manage_service_contracts permission)
-- Product Sales (manage_product_sales permission)  
-- Complaints (manage_complaints permission)
+- Service Contracts (crm:contract:service:update permission)
+- Product Sales (crm:product-sale:record:update permission)  
+- Complaints (crm:support:complaint:update permission)
 
 ✅ **Should NOT See Data From**:
 - Tech Solutions tenant
@@ -78,7 +78,7 @@ await authService.hasPermissionAsync('manage_contracts')
 ### Get All User Permissions
 ```typescript
 await authService.getCurrentUserPermissions()
-// Returns: ['manage_contracts', 'manage_customers', ...]
+// Returns: ['manage_contracts', 'crm:customer:record:update', ...]
 ```
 
 ### Get User's Tenant
@@ -170,8 +170,8 @@ console.log({
 ### Test Permission Checks
 ```javascript
 // In browser console
-authService.hasPermission('manage_service_contracts')  // true
-authService.hasPermission('manage_users')              // true
+authService.hasPermission('crm:contract:service:update')  // true
+authService.hasPermission('crm:user:record:update')              // true
 authService.hasPermission('random_permission')         // false
 
 // Test async

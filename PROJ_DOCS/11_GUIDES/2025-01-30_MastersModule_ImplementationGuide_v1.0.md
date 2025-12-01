@@ -1134,7 +1134,7 @@ const validatedData = productSchema.parse(inputData);
 ### Authorization Checks
 ```typescript
 // ✅ CORRECT: Permission-based access
-const canEditProducts = usePermission('masters:edit');
+const canEditProducts = usePermission('crm:reference:data:manage');
 
 if (!canEditProducts) {
   throw new Error('Insufficient permissions');

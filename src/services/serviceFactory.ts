@@ -77,6 +77,8 @@ import { mockPurchaseOrderService } from './purchaseorder/mockPurchaseOrderServi
 import { supabasePurchaseOrderService } from './purchaseorder/supabase/purchaseOrderService';
 import { mockNavigationService } from './navigation/mockNavigationService';
 import { supabaseNavigationService } from './navigation/supabase/navigationService';
+import { elementPermissionService as elementPermissionServiceImpl } from './rbac/elementPermissionService';
+import { dynamicPermissionManager } from './rbac/dynamicPermissionManager';
 
 // Service Registry Entry Interface
 interface ServiceRegistryEntry {
@@ -198,6 +200,14 @@ class ServiceFactory {
         mock: mockRbacService,
         supabase: supabaseRbacService,
         description: 'Role-based access control'
+      },
+      elementpermission: {
+        special: () => elementPermissionServiceImpl,
+        description: 'Element-level permission evaluation and management'
+      },
+      dynamicpermission: {
+        special: () => dynamicPermissionManager,
+        description: 'Dynamic permission evaluation with business rules and context'
       },
       uinotification: {
         mock: mockUINotificationService,
@@ -440,6 +450,8 @@ export const dealsService = createServiceProxy('deals');
 export const salesActivityService = createServiceProxy('salesactivities');
 export const opportunityService = createServiceProxy('opportunities');
 export const purchaseOrderService = createServiceProxy('purchaseorder');
+export const elementPermissionService = createServiceProxy('elementpermission');
+export const dynamicPermissionService = createServiceProxy('dynamicpermission');
 
 // Backward compatibility aliases
 export const auditDashboardService = auditService;

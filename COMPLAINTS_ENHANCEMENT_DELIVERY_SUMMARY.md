@@ -290,7 +290,7 @@ const SUGGESTED_TAGS = [
 // Parent component checks permissions
 const { hasPermission } = useAuth();
 
-if (!hasPermission('complaints:create')) {
+if (!hasPermission('crm:support:complaint:create')) {
   return <Empty description="Not authorized" />;
 }
 

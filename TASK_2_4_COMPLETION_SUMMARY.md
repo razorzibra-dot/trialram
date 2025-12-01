@@ -402,8 +402,8 @@ Build Status: ✅ No errors
 - **Tenant Modules**: `customers`, `sales`, `contracts`, `service-contracts`, `products`, `product-sales`, `tickets`, `complaints`, `job-works`, `notifications`, `reports`, `settings`
 
 ### Permission Formats
-- `manage_customers` - Full management access
-- `customers:read` - Read-only access
+- `crm:customer:record:update` - Full management access
+- `crm:customer:record:read` - Read-only access
 - `read` - Generic read access
 
 ---

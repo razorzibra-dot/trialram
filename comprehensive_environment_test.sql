@@ -259,7 +259,7 @@ BEGIN
     SELECT COUNT(*) INTO total_permissions FROM permissions;
     SELECT COUNT(*) INTO correct_format_count
     FROM permissions
-    WHERE name LIKE '%:%' OR name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+    WHERE name LIKE '%:%' OR name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
     
     incorrect_format_count := total_permissions - correct_format_count;
     

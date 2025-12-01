@@ -93,7 +93,7 @@ psql -h [host] -U [user] -d [database] -f supabase/seed.sql
 -- Verify permissions inserted
 SELECT COUNT(*) as permission_count 
 FROM permissions 
-WHERE name IN ('users:manage', 'roles:manage', 'customers:manage');
+WHERE name IN ('crm:user:record:update', 'crm:role:permission:assign', 'customers:manage');
 
 -- Verify test users created
 SELECT email, status, tenant_id 
@@ -157,7 +157,7 @@ SELECT 'Permission Format Check' as test,
        CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END as status
 FROM permissions 
 WHERE name NOT LIKE '%:%' 
-  AND name NOT IN ('read', 'write', 'delete', 'platform_admin', 'super_admin');
+  AND name NOT IN ('read', 'write', 'delete', 'crm:platform:control:admin', 'super_admin');
 ```
 
 ### **Checkpoint 2: Role Permissions Mapping**

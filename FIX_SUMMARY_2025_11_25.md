@@ -26,7 +26,7 @@ All critical issues have been identified and resolved. The application is now fu
 ### ✅ Issue 2: Permission Mismatch - Dashboard Access Denied
 **File:** `src/services/auth/supabase/authService.ts`
 
-**Root Cause:** Database stores `dashboard:view` permission, but code checks for `dashboard:read` - mismatch causes permission denial.
+**Root Cause:** Database stores `crm:dashboard:panel:view` permission, but code checks for `dashboard:read` - mismatch causes permission denial.
 
 **Solution:** Implemented permission synonym fallback in `hasPermission()` method:
 - Accept both `:view` and `:read` variants as equivalent
@@ -177,7 +177,7 @@ References public.tenants (with SET search_path = public)
    - Undefined arrays protected with defensive checks
 
 2. **Permission Mismatch Fix**
-   - Dashboard accessible to users with `dashboard:view` permission
+   - Dashboard accessible to users with `crm:dashboard:panel:view` permission
    - Permission checks support both `:view` and `:read` syntax
 
 3. **Schema Relationships Fix**

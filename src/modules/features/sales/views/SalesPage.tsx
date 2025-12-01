@@ -286,12 +286,12 @@ export const SalesPage: React.FC = () => {
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>
             View
           </Button>
-          {hasPermission('sales:update') && (
+          {hasPermission('crm:sales:deal:update') && (
             <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
               Edit
             </Button>
           )}
-          {hasPermission('sales:delete') && (
+          {hasPermission('crm:sales:deal:delete') && (
             <Popconfirm
               title="Delete Deal"
               description={`Are you sure you want to delete "${record.title}"?`}
@@ -330,7 +330,7 @@ export const SalesPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
-            {hasPermission('sales:create') && (
+            {hasPermission('crm:sales:deal:create') && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                 New Deal
               </Button>

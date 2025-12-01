@@ -99,13 +99,13 @@ FROM permissions;
 -- Test 1.3.2: Verify specific permissions exist
 SELECT 
     'SPECIFIC_PERMISSION_CHECK' as test_name,
-    'users:manage' as permission_name,
-    CASE WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'users:manage') THEN 'EXISTS' ELSE 'MISSING' END as status
+    'crm:user:record:update' as permission_name,
+    CASE WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'crm:user:record:update') THEN 'EXISTS' ELSE 'MISSING' END as status
 UNION ALL
 SELECT 
     'SPECIFIC_PERMISSION_CHECK' as test_name,
-    'roles:manage' as permission_name,
-    CASE WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'roles:manage') THEN 'EXISTS' ELSE 'MISSING' END as status
+    'crm:role:permission:assign' as permission_name,
+    CASE WHEN EXISTS(SELECT 1 FROM permissions WHERE name = 'crm:role:permission:assign') THEN 'EXISTS' ELSE 'MISSING' END as status
 UNION ALL
 SELECT 
     'SPECIFIC_PERMISSION_CHECK' as test_name,

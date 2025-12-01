@@ -75,8 +75,8 @@ export class RBACTester {
       // Test 3: Super admin has all permissions
       const permissions = [
         'read', 'write', 'delete',
-        'manage_customers', 'manage_sales', 'manage_tickets',
-        'manage_users', 'manage_roles', 'platform_admin'
+        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        'crm:user:record:update', 'crm:role:record:update', 'crm:platform:control:admin'
       ];
       
       const permissionResults = permissions.map(perm => ({
@@ -115,9 +115,9 @@ export class RBACTester {
       });
 
       // Test 6: User management capabilities
-      const canManageUsers = authService.hasPermission('manage_users');
-      const canManageRoles = authService.hasPermission('manage_roles');
-      const canManageTenants = authService.hasPermission('manage_tenants');
+      const canManageUsers = authService.hasPermission('crm:user:record:update');
+      const canManageRoles = authService.hasPermission('crm:role:record:update');
+      const canManageTenants = authService.hasPermission('crm:platform:tenant:manage');
       
       suite.results.push({
         testName: 'Management Capabilities',
@@ -179,8 +179,8 @@ export class RBACTester {
       // Test 2: Admin permissions
       const adminPermissions = [
         'read', 'write', 'delete',
-        'manage_customers', 'manage_sales', 'manage_tickets',
-        'manage_users', 'manage_roles'
+        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        'crm:user:record:update', 'crm:role:record:update'
       ];
       
       const adminPermissionResults = adminPermissions.map(perm => ({
@@ -199,8 +199,8 @@ export class RBACTester {
       });
 
       // Test 3: No super admin permissions
-      const noSuperAdminPermissions = !authService.hasPermission('platform_admin') && 
-                                     !authService.hasPermission('manage_tenants');
+      const noSuperAdminPermissions = !authService.hasPermission('crm:platform:control:admin') && 
+                                     !authService.hasPermission('crm:platform:tenant:manage');
       
       suite.results.push({
         testName: 'No Super Admin Permissions',
@@ -260,8 +260,8 @@ export class RBACTester {
       });
 
       // Test manager permissions
-      const managerPermissions = ['read', 'write', 'manage_customers', 'manage_sales'];
-      const restrictedPermissions = ['delete', 'manage_users', 'manage_roles'];
+      const managerPermissions = ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update'];
+      const restrictedPermissions = ['delete', 'crm:user:record:update', 'crm:role:record:update'];
       
       const hasManagerPerms = managerPermissions.every(perm => authService.hasPermission(perm));
       const lacksRestrictedPerms = restrictedPermissions.every(perm => !authService.hasPermission(perm));

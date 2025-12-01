@@ -7,14 +7,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Button, 
-  Table, 
-  Tag, 
-  Space, 
+import {
+  Row,
+  Col,
+  Card,
+  Button,
+  Table,
+  Tag,
+  Space,
   Spin,
   Alert,
   Modal,
@@ -30,6 +30,8 @@ import {
   type ColumnsType,
   type RangePickerProps
 } from 'antd';
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+import { usePermission } from '@/hooks/useElementPermissions';
 import { 
   PlusOutlined,
   ReloadOutlined,
@@ -67,14 +69,21 @@ import {
 
 export const UsersPage: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { 
-    canCreate: canCreateUsers, 
-    canEdit: canEditUsers, 
-    canDelete: canDeleteUsers, 
+  const {
+    canCreate: canCreateUsers,
+    canEdit: canEditUsers,
+    canDelete: canDeleteUsers,
     canResetPassword: canResetPasswords,
     canManageUsers,
     isLoading: permLoading
   } = usePermissions();
+
+  // Element-level permissions for user management (with fallback to record-level)
+  const canViewUsers = usePermission('crm:user:list:view', 'accessible') || canCreateUsers;
+  const canCreateUser = usePermission('crm:user:list:button.create', 'visible') || canCreateUsers;
+  const canExportUsers = usePermission('crm:user:list:button.export', 'visible') || canCreateUsers;
+  const canFilterUsers = usePermission('crm:user:list:filters', 'visible') || canCreateUsers;
+  const canRefreshUsers = usePermission('crm:user:list:button.refresh', 'visible') || canCreateUsers;
 
   // Hooks for data fetching
   const { users, loading, refetch } = useUsers();
@@ -282,40 +291,6 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  // Action menu items - using granular permission checks
-  const getActionMenu = (user: UserDTO): MenuProps['items'] => [
-    {
-      key: 'view',
-      label: 'View Profile',
-      onClick: () => handleView(user)
-    },
-    {
-      key: 'edit',
-      label: 'Edit User',
-      icon: <EditOutlined />,
-      onClick: () => handleEdit(user),
-      disabled: !canEditUsers
-    },
-    {
-      key: 'reset',
-      label: 'Reset Password',
-      icon: <LockOutlined />,
-      onClick: () => handleResetPassword(user.id),
-      disabled: !canResetPasswords
-    },
-    {
-      type: 'divider'
-    },
-    {
-      key: 'delete',
-      label: 'Delete User',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => handleDelete(user.id),
-      disabled: !canDeleteUsers
-    }
-  ];
-
   // Table columns
   const columns: ColumnsType<UserDTO> = [
     {
@@ -419,23 +394,16 @@ export const UsersPage: React.FC = () => {
       fixed: 'right',
       width: 100,
       render: (_, record) => (
-        <Space>
-          {canEditUsers && (
-            <Tooltip title="Edit">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
-          )}
-          {(canDeleteUsers || canResetPasswords) && (
-            <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
-              <Button type="text" size="small" icon={<MoreOutlined />} />
-            </Dropdown>
-          )}
-        </Space>
+        <UserActionButtons
+          user={record}
+          canEditUsers={canEditUsers}
+          canDeleteUsers={canDeleteUsers}
+          canResetPasswords={canResetPasswords}
+          handleEdit={handleEdit}
+          handleView={handleView}
+          handleDelete={handleDelete}
+          handleResetPassword={handleResetPassword}
+        />
       )
     }
   ];
@@ -505,20 +473,24 @@ export const UsersPage: React.FC = () => {
         extra={
           canCreateUsers ? (
             <Space>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => refetch()}
-              >
-                Refresh
-              </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreate}
-                disabled={!canCreateUsers}
-              >
-                Create User
-              </Button>
+              {canRefreshUsers && (
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => refetch()}
+                >
+                  Refresh
+                </Button>
+              )}
+              {canCreateUser && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreate}
+                  disabled={!canCreateUsers}
+                >
+                  Create User
+                </Button>
+              )}
             </Space>
           ) : null
         }
@@ -577,8 +549,9 @@ export const UsersPage: React.FC = () => {
           }
         >
           {/* Filter Controls */}
-          <div style={{ marginBottom: 16, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
-            <Space wrap>
+          {canFilterUsers && (
+            <div style={{ marginBottom: 16, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+              <Space wrap>
               <Select
                 placeholder="Filter by Role"
                 style={{ width: 150 }}
@@ -623,6 +596,7 @@ export const UsersPage: React.FC = () => {
               )}
             </Space>
           </div>
+          )}
         </Card>
 
         {/* Users Table */}
@@ -682,3 +656,101 @@ export const UsersPage: React.FC = () => {
 };
 
 export default UsersPage;
+
+interface UserActionButtonsProps {
+  user: UserDTO;
+  canEditUsers: boolean;
+  canDeleteUsers: boolean;
+  canResetPasswords: boolean;
+  handleEdit: (user: UserDTO) => void;
+  handleView: (user: UserDTO) => void;
+  handleDelete: (userId: string) => void;
+  handleResetPassword: (userId: string) => void;
+}
+
+const UserActionButtons: React.FC<UserActionButtonsProps> = ({
+  user,
+  canEditUsers,
+  canDeleteUsers,
+  canResetPasswords,
+  handleEdit,
+  handleView,
+  handleDelete,
+  handleResetPassword
+}) => {
+  // Use element permissions with fallback to record-level permissions
+  // If element-level permission is true, use it; otherwise fall back to record-level permission
+  const elementEditPermission = usePermission(`crm:user.${user.id}:button.edit`, 'visible');
+  const elementResetPermission = usePermission(`crm:user.${user.id}:button.resetpassword`, 'visible');
+  const elementDeletePermission = usePermission(`crm:user.${user.id}:button.delete`, 'visible');
+  
+  // Element-level permission takes precedence if true, otherwise fall back to record-level
+  const canEditButton = elementEditPermission || canEditUsers;
+  const canResetButton = elementResetPermission || canResetPasswords;
+  const canDeleteButton = elementDeletePermission || canDeleteUsers;
+
+  const menuItems: MenuProps['items'] = [
+    {
+      key: 'view',
+      label: 'View Profile',
+      onClick: () => handleView(user),
+    },
+  ];
+
+  if (canEditButton) {
+    menuItems.push({
+      key: 'edit',
+      label: 'Edit User',
+      icon: <EditOutlined />,
+      onClick: () => handleEdit(user),
+      disabled: !canEditUsers,
+    });
+  }
+
+  if (canResetButton) {
+    menuItems.push({
+      key: 'reset',
+      label: 'Reset Password',
+      icon: <LockOutlined />,
+      onClick: () => handleResetPassword(user.id),
+      disabled: !canResetPasswords,
+    });
+  }
+
+  if (canDeleteButton) {
+    if (menuItems.length > 0) {
+      menuItems.push({ type: 'divider' });
+    }
+    menuItems.push({
+      key: 'delete',
+      label: 'Delete User',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: () => handleDelete(user.id),
+      disabled: !canDeleteUsers,
+    });
+  }
+
+  const hasMenuActions = menuItems.length > 1 || Boolean(menuItems.find((item) => item.key !== 'view'));
+
+  return (
+    <Space>
+      {canEditUsers && (
+        <Tooltip title="Edit">
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(user)}
+            disabled={!canEditButton}
+          />
+        </Tooltip>
+      )}
+      {hasMenuActions && (
+        <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+          <Button type="text" size="small" icon={<MoreOutlined />} />
+        </Dropdown>
+      )}
+    </Space>
+  );
+};

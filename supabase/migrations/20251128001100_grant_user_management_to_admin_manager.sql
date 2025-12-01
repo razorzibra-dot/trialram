@@ -9,7 +9,7 @@
 -- ✅ Uses normalized role names: 'admin' and 'manager' (not 'Administrator' and 'Manager')
 --
 -- This migration is idempotent and safe to run multiple times. It will:
--- 1. Create granular permissions if they don't exist (users:read, users:create, users:update, users:delete)
+-- 1. Create granular permissions if they don't exist (crm:user:record:read, crm:user:record:create, crm:user:record:update, crm:user:record:delete)
 -- 2. Assign all user management permissions to admin role
 -- 3. Assign all user management permissions to manager role
 --
@@ -19,13 +19,14 @@
 -- First, ensure granular user management permissions exist
 -- These are needed for fine-grained permission checks in the application
 -- ⚠️ These permissions are checked by authService.hasPermission() and must exist
+-- ✅ Updated to use crm: permission format for consistency
 
 INSERT INTO permissions (name, description, category, resource, action, is_system_permission)
 VALUES
-  ('users:read', 'Read user information', 'module', 'users', 'read', false),
-  ('users:create', 'Create new users', 'module', 'users', 'create', false),
-  ('users:update', 'Update user information', 'module', 'users', 'update', false),
-  ('users:delete', 'Delete users', 'module', 'users', 'delete', false)
+  ('crm:user:record:read', 'Read user information', 'administrative', 'user', 'record:read', true),
+  ('crm:user:record:create', 'Create new users', 'administrative', 'user', 'record:create', true),
+  ('crm:user:record:update', 'Update user information', 'administrative', 'user', 'record:update', true),
+  ('crm:user:record:delete', 'Delete users', 'administrative', 'user', 'record:delete', true)
 ON CONFLICT (name) DO NOTHING;
 
 -- Grant all user management permissions to admin role
@@ -36,12 +37,10 @@ FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'admin'
   AND p.name IN (
-    'users:read',
-    'users:create',
-    'users:update',
-    'users:delete',
-    'users:manage',
-    'user_management:read'
+    'crm:user:record:read',
+    'crm:user:record:create',
+    'crm:user:record:update',
+    'crm:user:record:delete'
   )
   AND NOT EXISTS (
     SELECT 1 FROM role_permissions rp
@@ -56,12 +55,10 @@ FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'manager'
   AND p.name IN (
-    'users:read',
-    'users:create',
-    'users:update',
-    'users:delete',
-    'users:manage',
-    'user_management:read'
+    'crm:user:record:read',
+    'crm:user:record:create',
+    'crm:user:record:update',
+    'crm:user:record:delete'
   )
   AND NOT EXISTS (
     SELECT 1 FROM role_permissions rp
@@ -79,15 +76,15 @@ BEGIN
   JOIN roles r ON rp.role_id = r.id
   JOIN permissions p ON rp.permission_id = p.id
   WHERE r.name = 'admin'
-    AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
-  
+    AND p.name IN ('crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete');
+
   SELECT COUNT(*) INTO manager_count
   FROM role_permissions rp
   JOIN roles r ON rp.role_id = r.id
   JOIN permissions p ON rp.permission_id = p.id
   WHERE r.name = 'manager'
-    AND p.name IN ('users:read', 'users:create', 'users:update', 'users:delete', 'users:manage', 'user_management:read');
-  
+    AND p.name IN ('crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete');
+
   RAISE NOTICE 'admin role now has % user management permissions', admin_count;
   RAISE NOTICE 'manager role now has % user management permissions', manager_count;
 END $$;

@@ -73,8 +73,8 @@ const names = getAccessibleModuleNames(user);
 - admin-panel
 
 ✅ CAN ACCESS (with RBAC):
-- customers (if has manage_customers, customers:read, or read)
-- sales (if has manage_sales, sales:read, or read)
+- customers (if has crm:customer:record:update, crm:customer:record:read, or read)
+- sales (if has crm:sales:deal:update, crm:sales:deal:read, or read)
 - [other tenant modules...]
 ```
 
@@ -84,11 +84,11 @@ const names = getAccessibleModuleNames(user);
 
 | Permission | Module | Access |
 |-----------|--------|--------|
-| `manage_customers` | customers | ✅ Full |
-| `customers:read` | customers | ✅ Read |
+| `crm:customer:record:update` | customers | ✅ Full |
+| `crm:customer:record:read` | customers | ✅ Read |
 | `read` | customers | ✅ Read |
-| `manage_sales` | sales | ✅ Full |
-| `sales:read` | sales | ✅ Read |
+| `crm:sales:deal:update` | sales | ✅ Full |
+| `crm:sales:deal:read` | sales | ✅ Read |
 | (none) | customers | ❌ Denied |
 
 ---

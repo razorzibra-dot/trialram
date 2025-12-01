@@ -129,8 +129,8 @@ canUserAccessModule(superAdmin, 'admin-panel');     // ✅ true
 canUserAccessModule(regularUser, 'customers');
 
 // Supports three permission formats:
-// 1. manage_customers (full resource management)
-// 2. customers:read (read-only access)
+// 1. crm:customer:record:update (full resource management)
+// 2. crm:customer:record:read (read-only access)
 // 3. read (generic read permission)
 ```
 

@@ -18,12 +18,12 @@ import { rbacService as factoryRbacService } from '@/services/serviceFactory';
  * These must exist in the RBAC system
  */
 export const SUPER_USER_PERMISSIONS = {
-  MANAGE_SUPER_USERS: 'super_user:manage_users',
-  MANAGE_TENANTS: 'super_user:manage_tenants',
+  MANAGE_SUPER_USERS: 'crm:platform:user:manage',
+  MANAGE_TENANTS: 'crm:platform:tenant:manage',
   IMPERSONATE_USERS: 'super_user:impersonate_users',
-  VIEW_AUDIT_LOGS: 'super_user:view_audit_logs',
-  MANAGE_CONFIG: 'super_user:manage_config',
-  VIEW_ANALYTICS: 'super_user:view_analytics',
+  VIEW_AUDIT_LOGS: 'crm:platform:audit:view',
+  MANAGE_CONFIG: 'crm:platform:config:manage',
+  VIEW_ANALYTICS: 'crm:platform:crm:analytics:insight:view',
   MANAGE_PERMISSIONS: 'super_user:manage_permissions',
 } as const;
 

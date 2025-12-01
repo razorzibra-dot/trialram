@@ -246,14 +246,14 @@ export const ProductsList: React.FC<ProductsListProps> = ({
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              {hasPermission('products:update') && (
+              {hasPermission('crm:product:record:update') && (
                 <DropdownMenuItem onClick={() => onEdit?.(product)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {hasPermission('products:update') && (
+              {hasPermission('crm:product:record:update') && (
                 <>
                   <DropdownMenuItem 
                     onClick={() => handleStatusChange(product, 'active')}
@@ -288,7 +288,7 @@ export const ProductsList: React.FC<ProductsListProps> = ({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {hasPermission('products:delete') && (
+              {hasPermission('crm:product:record:delete') && (
                 <DropdownMenuItem 
                   onClick={() => handleDelete(product)}
                   className="text-red-600"
@@ -308,22 +308,22 @@ export const ProductsList: React.FC<ProductsListProps> = ({
     {
       label: 'Set Active',
       action: () => handleBulkStatusUpdate('active'),
-      permission: 'products:update',
+      permission: 'crm:product:record:update',
     },
     {
       label: 'Set Inactive',
       action: () => handleBulkStatusUpdate('inactive'),
-      permission: 'products:update',
+      permission: 'crm:product:record:update',
     },
     {
       label: 'Discontinue',
       action: () => handleBulkStatusUpdate('discontinued'),
-      permission: 'products:update',
+      permission: 'crm:product:record:update',
     },
     {
       label: 'Delete Selected',
       action: handleBulkDelete,
-      permission: 'products:delete',
+      permission: 'crm:product:record:delete',
       variant: 'destructive' as const,
     },
   ];

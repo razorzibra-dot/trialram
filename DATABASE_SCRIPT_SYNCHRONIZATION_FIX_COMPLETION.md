@@ -24,7 +24,7 @@ SELECT
   p_old.id as old_permission_id
 FROM permissions p_old
 JOIN permissions p_new ON p_new.name = CASE 
-  WHEN p_old.name = 'manage_users' THEN 'users:manage'
+  WHEN p_old.name = 'crm:user:record:update' THEN 'crm:user:record:update'
   -- ... (mapping for all legacy permissions)
 END;
 
@@ -68,8 +68,8 @@ WHERE role_permissions.permission_id = mapping.old_permission_id;
 
 **Verified Permissions Format:**
 ```sql
-('users:manage', 'Manage users', 'users', 'manage'),
-('roles:manage', 'Manage roles', 'roles', 'manage'),
+('crm:user:record:update', 'Manage users', 'users', 'manage'),
+('crm:role:permission:assign', 'Manage roles', 'roles', 'manage'),
 ('customers:manage', 'Manage customers', 'customers', 'manage'),
 -- ... (all 34 permissions verified)
 ```

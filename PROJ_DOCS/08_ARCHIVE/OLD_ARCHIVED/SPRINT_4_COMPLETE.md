@@ -26,7 +26,7 @@
 - ✅ Form validation (email, phone regex, required fields)
 - ✅ Role-based icons (Crown/Admin, Safety/Manager, User/Viewer)
 - ✅ Action dropdown menu (Edit, Reset Password, Delete)
-- ✅ Permission-based rendering (manage_users)
+- ✅ Permission-based rendering (crm:user:record:update)
 - ✅ Tenant integration and filtering
 - ✅ Status management (Active, Inactive, Suspended)
 - ✅ 4 StatCards (Total Users, Active Users, Administrators, Suspended)
@@ -60,7 +60,7 @@
 - ✅ Role duplication feature
 - ✅ Role details view modal
 - ✅ Action dropdown menu (Edit, Duplicate, View Details, Delete)
-- ✅ Permission-based rendering (manage_roles)
+- ✅ Permission-based rendering (crm:role:record:update)
 - ✅ System role indicators (Lock/Unlock icons)
 - ✅ 4 StatCards (Total Roles, System Roles, Custom Roles, Permissions)
 - ✅ Search functionality

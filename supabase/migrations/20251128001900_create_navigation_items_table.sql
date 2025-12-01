@@ -76,7 +76,7 @@ CREATE POLICY "admins_insert_navigation_items" ON navigation_items
         JOIN role_permissions rp ON r.id = rp.role_id
         JOIN permissions p ON rp.permission_id = p.id
         WHERE ur.user_id = auth.uid()
-          AND (p.name = 'navigation:manage' OR p.name = 'settings:manage')
+          AND (p.name = 'navigation:manage' OR p.name = 'crm:system:config:manage')
       )
     )
   );
@@ -98,7 +98,7 @@ CREATE POLICY "admins_update_navigation_items" ON navigation_items
         JOIN role_permissions rp ON r.id = rp.role_id
         JOIN permissions p ON rp.permission_id = p.id
         WHERE ur.user_id = auth.uid()
-          AND (p.name = 'navigation:manage' OR p.name = 'settings:manage')
+          AND (p.name = 'navigation:manage' OR p.name = 'crm:system:config:manage')
       )
     )
   )
@@ -115,7 +115,7 @@ CREATE POLICY "admins_update_navigation_items" ON navigation_items
         JOIN role_permissions rp ON r.id = rp.role_id
         JOIN permissions p ON rp.permission_id = p.id
         WHERE ur.user_id = auth.uid()
-          AND (p.name = 'navigation:manage' OR p.name = 'settings:manage')
+          AND (p.name = 'navigation:manage' OR p.name = 'crm:system:config:manage')
       )
     )
   );
@@ -137,7 +137,7 @@ CREATE POLICY "admins_delete_navigation_items" ON navigation_items
         JOIN role_permissions rp ON r.id = rp.role_id
         JOIN permissions p ON rp.permission_id = p.id
         WHERE ur.user_id = auth.uid()
-          AND (p.name = 'navigation:manage' OR p.name = 'settings:manage')
+          AND (p.name = 'navigation:manage' OR p.name = 'crm:system:config:manage')
       )
     )
   );

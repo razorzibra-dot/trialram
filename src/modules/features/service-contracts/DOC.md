@@ -218,9 +218,9 @@ interface ServiceContractFilter {
 ```typescript
 // Required Permissions
 - service-contracts:view       // View contracts
-- service-contracts:create     // Create contracts
+- service-crm:contract:record:create     // Create contracts
 - service-contracts:edit       // Edit contracts
-- service-contracts:delete     // Delete contracts
+- service-crm:contract:record:delete     // Delete contracts
 - service-contracts:renew      // Renew contracts
 
 // Role-Based Access

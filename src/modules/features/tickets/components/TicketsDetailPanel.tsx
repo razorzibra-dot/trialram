@@ -200,7 +200,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Ticket Details</span>
-          {hasPermission('tickets:update') && (
+          {hasPermission('crm:support:ticket:update') && (
             <Button
               type="primary"
               size="small"
@@ -413,7 +413,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
           </div>
 
           {/* Add Comment */}
-          {hasPermission('tickets:create') && (
+          {hasPermission('crm:support:ticket:create') && (
             <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Input.TextArea
@@ -450,7 +450,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
               <PaperClipOutlined style={{ marginRight: 8 }} />
               Attachments ({attachments.length})
             </h3>
-            {hasPermission('tickets:create') && (
+            {hasPermission('crm:support:ticket:create') && (
               <div>
                 <input
                   ref={fileInputRef}
@@ -510,7 +510,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
                           loading={downloadAttachment.isPending}
                           title="Download"
                         />
-                        {hasPermission('tickets:delete') && (
+                        {hasPermission('crm:support:ticket:delete') && (
                           <Button
                             type="text"
                             size="small"

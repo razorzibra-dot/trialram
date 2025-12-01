@@ -11,7 +11,7 @@
 -- 1. CREATE SECURITY DEFINER FUNCTIONS (REUSE EXISTING IF AVAILABLE)
 -- ============================================================================
 
--- Function to check if current user has roles:manage permission
+-- Function to check if current user has crm:role:permission:assign permission
 -- ✅ Database-driven: Checks actual permissions from database, not hardcoded roles
 CREATE OR REPLACE FUNCTION has_roles_manage_permission_safe()
 RETURNS boolean
@@ -27,7 +27,7 @@ AS $$
     JOIN role_permissions rp ON r.id = rp.role_id
     JOIN permissions p ON rp.permission_id = p.id
     WHERE ur.user_id = auth.uid()
-      AND (p.name = 'roles:manage' OR p.name = 'roles:admin')
+      AND (p.name = 'crm:role:permission:assign' OR p.name = 'roles:admin')
   );
 $$;
 
@@ -99,7 +99,7 @@ CREATE POLICY "role_permissions_insert_policy" ON role_permissions
     -- Super admins can assign permissions to any role
     is_current_user_super_admin_safe()
     OR
-    -- ✅ Database-driven: Users with roles:manage permission can assign permissions to roles in their tenant
+    -- ✅ Database-driven: Users with crm:role:permission:assign permission can assign permissions to roles in their tenant
     (
       has_roles_manage_permission_safe()
       AND get_role_tenant_id_safe(role_id) = get_current_user_tenant_id_safe()
@@ -114,7 +114,7 @@ CREATE POLICY "role_permissions_update_policy" ON role_permissions
     -- Super admins can update any role permission
     is_current_user_super_admin_safe()
     OR
-    -- ✅ Database-driven: Users with roles:manage permission can update permissions for roles in their tenant
+    -- ✅ Database-driven: Users with crm:role:permission:assign permission can update permissions for roles in their tenant
     (
       has_roles_manage_permission_safe()
       AND get_role_tenant_id_safe(role_id) = get_current_user_tenant_id_safe()
@@ -139,7 +139,7 @@ CREATE POLICY "role_permissions_delete_policy" ON role_permissions
     -- Super admins can delete any role permission
     is_current_user_super_admin_safe()
     OR
-    -- ✅ Database-driven: Users with roles:manage permission can delete permissions from roles in their tenant
+    -- ✅ Database-driven: Users with crm:role:permission:assign permission can delete permissions from roles in their tenant
     (
       has_roles_manage_permission_safe()
       AND get_role_tenant_id_safe(role_id) = get_current_user_tenant_id_safe()
@@ -154,7 +154,7 @@ CREATE POLICY "role_permissions_delete_policy" ON role_permissions
 -- - Created SECURITY DEFINER functions to avoid infinite recursion
 -- - Dropped all existing restrictive policies
 -- - Created separate policies for SELECT, INSERT, UPDATE, DELETE
--- - INSERT/UPDATE/DELETE policies check for roles:manage permission (database-driven)
+-- - INSERT/UPDATE/DELETE policies check for crm:role:permission:assign permission (database-driven)
 -- - Super admins can manage permissions for any role
 -- - Regular admins can manage permissions for roles in their tenant
 -- - All policies use SECURITY DEFINER functions (no recursion)

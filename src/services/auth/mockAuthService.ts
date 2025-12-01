@@ -281,139 +281,139 @@ class MockAuthService {
     delete: 'Delete data',
     
     // Module permissions using {resource}:{action} format
-    'customers:read': 'View customer data and relationships',
-    'customers:create': 'Create new customer records',
-    'customers:update': 'Edit customer information',
-    'customers:delete': 'Remove customer records',
+    'crm:customer:record:read': 'View customer data and relationships',
+    'crm:customer:record:create': 'Create new customer records',
+    'crm:customer:record:update': 'Edit customer information',
+    'crm:customer:record:delete': 'Remove customer records',
     
-    'sales:read': 'View sales processes and deals',
-    'sales:create': 'Create new sales records',
-    'sales:update': 'Edit sales information',
-    'sales:delete': 'Remove sales records',
+    'crm:sales:deal:read': 'View sales processes and deals',
+    'crm:sales:deal:create': 'Create new sales records',
+    'crm:sales:deal:update': 'Edit sales information',
+    'crm:sales:deal:delete': 'Remove sales records',
     
-    'tickets:read': 'View support tickets and issues',
-    'tickets:create': 'Create new support tickets',
-    'tickets:update': 'Edit ticket information',
-    'tickets:delete': 'Remove ticket records',
+    'crm:support:ticket:read': 'View support tickets and issues',
+    'crm:support:ticket:create': 'Create new support tickets',
+    'crm:support:ticket:update': 'Edit ticket information',
+    'crm:support:ticket:delete': 'Remove ticket records',
     
-    'complaints:read': 'View customer complaints',
-    'complaints:create': 'Create complaint records',
-    'complaints:update': 'Edit complaint information',
-    'complaints:delete': 'Remove complaint records',
+    'crm:support:complaint:read': 'View customer complaints',
+    'crm:support:complaint:create': 'Create complaint records',
+    'crm:support:complaint:update': 'Edit complaint information',
+    'crm:support:complaint:delete': 'Remove complaint records',
     
-    'contracts:read': 'View service contracts and agreements',
-    'contracts:create': 'Create new contracts',
-    'contracts:update': 'Edit contract information',
-    'contracts:delete': 'Remove contract records',
+    'crm:contract:record:read': 'View service contracts and agreements',
+    'crm:contract:record:create': 'Create new contracts',
+    'crm:contract:record:update': 'Edit contract information',
+    'crm:contract:record:delete': 'Remove contract records',
     
-    'service_contracts:read': 'View service contracts and agreements',
-    'service_contracts:create': 'Create new service contracts',
-    'service_contracts:update': 'Edit service contract information',
-    'service_contracts:delete': 'Remove service contract records',
+    'crm:contract:service:read': 'View service contracts and agreements',
+    'crm:contract:service:create': 'Create new service contracts',
+    'crm:contract:service:update': 'Edit service contract information',
+    'crm:contract:service:delete': 'Remove service contract records',
     
-    'products:read': 'View product catalog and inventory',
-    'products:create': 'Create new product records',
-    'products:update': 'Edit product information',
-    'products:delete': 'Remove product records',
+    'crm:product:record:read': 'View product catalog and inventory',
+    'crm:product:record:create': 'Create new product records',
+    'crm:product:record:update': 'Edit product information',
+    'crm:product:record:delete': 'Remove product records',
     
-    'product_sales:read': 'View product sales transactions',
-    'product_sales:create': 'Create new product sales records',
-    'product_sales:update': 'Edit product sales information',
-    'product_sales:delete': 'Remove product sales records',
+    'crm:product-sale:record:read': 'View product sales transactions',
+    'crm:product-sale:record:create': 'Create new product sales records',
+    'crm:product-sale:record:update': 'Edit product sales information',
+    'crm:product-sale:record:delete': 'Remove product sales records',
     
-    'jobworks:read': 'View job work orders and tasks',
-    'jobworks:create': 'Create new job work orders',
-    'jobworks:update': 'Edit job work information',
-    'jobworks:delete': 'Remove job work records',
+    'crm:project:record:read': 'View job work orders and tasks',
+    'crm:project:record:create': 'Create new job work orders',
+    'crm:project:record:update': 'Edit job work information',
+    'crm:project:record:delete': 'Remove job work records',
     
-    'dashboard:view': 'Access tenant dashboard and analytics',
-    'masters:read': 'Access master data and configuration',
-    'user_management:read': 'Access user and role management interface',
+    'crm:dashboard:panel:view': 'Access tenant dashboard and analytics',
+    'crm:reference:data:read': 'Access master data and configuration',
+    'crm:user:record:read': 'Access user and role management interface',
     
     // Administrative permissions using {resource}:{action} format
-    'users:read': 'View user accounts and access',
-    'users:create': 'Create new user accounts',
-    'users:update': 'Edit user accounts',
-    'users:delete': 'Remove user accounts',
+    'crm:user:record:read': 'View user accounts and access',
+    'crm:user:record:create': 'Create new user accounts',
+    'crm:user:record:update': 'Edit user accounts',
+    'crm:user:record:delete': 'Remove user accounts',
     
-    'roles:read': 'View roles and permissions',
-    'roles:create': 'Create new roles',
-    'roles:update': 'Edit roles and permissions',
-    'roles:delete': 'Remove roles',
+    'crm:role:record:read': 'View roles and permissions',
+    'crm:role:record:create': 'Create new roles',
+    'crm:role:record:update': 'Edit roles and permissions',
+    'crm:role:record:delete': 'Remove roles',
     
-    'analytics:view': 'Access analytics and reports',
-    'settings:read': 'Configure system settings',
-    'settings:update': 'Update system settings',
-    'companies:read': 'View company information',
-    'companies:update': 'Edit company information',
+    'crm:analytics:insight:view': 'Access analytics and reports',
+    'crm:system:config:read': 'Configure system settings',
+    'crm:system:config:manage': 'Update system settings',
+    'crm:company:record:read': 'View company information',
+    'crm:company:record:update': 'Edit company information',
     
     // System permissions using {resource}:{action} format
     'platform:admin': 'Platform administration access',
     'system:admin': 'Full system administration',
-    'tenants:manage': 'Manage tenant accounts',
+    'crm:platform:tenant:manage': 'Manage tenant accounts',
     'system:monitor': 'Monitor system health and performance'
   };
 
   private rolePermissions = {
     super_admin: [
       'read', 'write', 'delete',
-      'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-      'sales:read', 'sales:create', 'sales:update', 'sales:delete',
-      'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete',
-      'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete',
-      'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete',
-      'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete',
-      'products:read', 'products:create', 'products:update', 'products:delete',
-      'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete',
-      'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete',
-      'dashboard:view', 'masters:read', 'user_management:read',
-      'users:read', 'users:create', 'users:update', 'users:delete',
-      'roles:read', 'roles:create', 'roles:update', 'roles:delete',
-      'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update',
-      'platform:admin', 'system:admin', 'tenants:manage', 'system:monitor'
+      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete',
+      'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete',
+      'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete',
+      'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete',
+      'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete',
+      'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete',
+      'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete',
+      'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:product-sale:record:delete',
+      'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete',
+      'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read',
+      'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete',
+      'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete',
+      'crm:analytics:insight:view', 'crm:system:config:read', 'crm:system:config:manage', 'crm:company:record:read', 'crm:company:record:update',
+      'platform:admin', 'system:admin', 'crm:platform:tenant:manage', 'system:monitor'
     ],
     admin: [
       'read', 'write', 'delete',
-      'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-      'sales:read', 'sales:create', 'sales:update', 'sales:delete',
-      'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete',
-      'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete',
-      'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete',
-      'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete',
-      'products:read', 'products:create', 'products:update', 'products:delete',
-      'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete',
-      'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete',
-      'dashboard:view', 'masters:read', 'user_management:read',
-      'users:read', 'users:create', 'users:update', 'users:delete',
-      'roles:read', 'roles:create', 'roles:update', 'roles:delete',
-      'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update'
+      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete',
+      'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete',
+      'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete',
+      'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete',
+      'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete',
+      'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete',
+      'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete',
+      'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:product-sale:record:delete',
+      'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete',
+      'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read',
+      'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete',
+      'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete',
+      'crm:analytics:insight:view', 'crm:system:config:read', 'crm:system:config:manage', 'crm:company:record:read', 'crm:company:record:update'
     ],
     manager: [
       'read', 'write',
-      'customers:read', 'customers:create', 'customers:update',
-      'sales:read', 'sales:create', 'sales:update',
-      'tickets:read', 'tickets:create', 'tickets:update',
-      'complaints:read', 'complaints:create', 'complaints:update',
-      'contracts:read', 'contracts:create', 'contracts:update',
-      'service_contracts:read', 'service_contracts:create', 'service_contracts:update',
-      'products:read', 'products:create', 'products:update',
-      'product_sales:read', 'product_sales:create', 'product_sales:update',
-      'dashboard:view', 'masters:read', 'user_management:read',
-      'analytics:view'
+      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+      'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update',
+      'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
+      'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update',
+      'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update',
+      'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update',
+      'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update',
+      'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update',
+      'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read',
+      'crm:analytics:insight:view'
     ],
     agent: [
       'read', 'write',
-      'customers:read', 'customers:create', 'customers:update',
-      'tickets:read', 'tickets:create', 'tickets:update',
-      'complaints:read', 'complaints:create', 'complaints:update'
+      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+      'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
+      'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update'
     ],
     engineer: [
       'read', 'write',
-      'products:read', 'products:create', 'products:update',
-      'product_sales:read', 'product_sales:create', 'product_sales:update',
-      'jobworks:read', 'jobworks:create', 'jobworks:update',
-      'tickets:read', 'tickets:create', 'tickets:update',
-      'dashboard:view', 'masters:read'
+      'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update',
+      'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update',
+      'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update',
+      'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
+      'crm:dashboard:panel:view', 'crm:reference:data:read'
     ],
     customer: [
       'read'
@@ -572,28 +572,28 @@ class MockAuthService {
     }
 
     // ⭐ ENHANCEMENT: Provide fallback permissions for common navigation permissions
-    // If user has any role that should have dashboard access, grant dashboard:view
-    if (permission === 'dashboard:view' && ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(userRole)) {
-      console.log(`[hasPermission] Granting fallback dashboard:view permission to ${userRole}`);
+    // If user has any role that should have dashboard access, grant crm:dashboard:panel:view
+    if (permission === 'crm:dashboard:panel:view' && ['admin', 'manager', 'agent', 'engineer', 'customer'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback crm:dashboard:panel:view permission to ${userRole}`);
       return true;
     }
 
-    // Grant masters:read to roles that need it
-    if (permission === 'masters:read' && ['admin', 'manager', 'engineer'].includes(userRole)) {
-      console.log(`[hasPermission] Granting fallback masters:read permission to ${userRole}`);
+    // Grant crm:reference:data:read to roles that need it
+    if (permission === 'crm:reference:data:read' && ['admin', 'manager', 'engineer'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback crm:reference:data:read permission to ${userRole}`);
       return true;
     }
 
-    // Grant user_management:read to admin and manager roles
-    if (permission === 'user_management:read' && ['admin', 'manager'].includes(userRole)) {
-      console.log(`[hasPermission] Granting fallback user_management:read permission to ${userRole}`);
+    // Grant crm:user:record:read to admin and manager roles
+    if (permission === 'crm:user:record:read' && ['admin', 'manager'].includes(userRole)) {
+      console.log(`[hasPermission] Granting fallback crm:user:record:read permission to ${userRole}`);
       return true;
     }
 
     // ⭐ COMPATIBILITY: Check for old-style permissions as fallbacks
     const permissionMappings: Record<string, string[]> = {
-      'dashboard:view': ['read', 'write'], // Any user with read access gets dashboard
-      'masters:read': ['read'],            // Users with read get masters access
+      'crm:dashboard:panel:view': ['read', 'write'], // Any user with read access gets dashboard
+      'crm:reference:data:read': ['read'],            // Users with read get masters access
     };
 
     const mappedPermissions = permissionMappings[permission];

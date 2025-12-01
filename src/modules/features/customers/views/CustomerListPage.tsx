@@ -126,7 +126,7 @@ const CustomerListPage: React.FC = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (!hasPermission('customers:delete')) {
+    if (!hasPermission('crm:customer:record:delete')) {
       message.error('You do not have permission to delete customers');
       return;
     }
@@ -193,7 +193,7 @@ const CustomerListPage: React.FC = () => {
 
   // Export handler
   const handleExport = async () => {
-    if (!hasPermission('customers:read')) {
+    if (!hasPermission('crm:customer:record:read')) {
       message.error('You do not have permission to export customers');
       return;
     }
@@ -242,7 +242,7 @@ const CustomerListPage: React.FC = () => {
       return;
     }
 
-    if (!hasPermission('customers:create')) {
+    if (!hasPermission('crm:customer:record:create')) {
       message.error('You do not have permission to import customers');
       return;
     }
@@ -427,7 +427,7 @@ const CustomerListPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('customers:update') && (
+          {hasPermission('crm:customer:record:update') && (
             <Button
               type="link"
               size="small"
@@ -437,7 +437,7 @@ const CustomerListPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('customers:delete') && (
+          {hasPermission('crm:customer:record:delete') && (
             <Popconfirm
               title="Delete Customer"
               description={`Are you sure you want to delete "${record.company_name}"?`}
@@ -477,17 +477,17 @@ const CustomerListPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
-            {hasPermission('customers:read') && (
+            {hasPermission('crm:customer:record:read') && (
               <Button icon={<DownloadOutlined />} onClick={() => setIsExportModalVisible(true)}>
                 Export
               </Button>
             )}
-            {hasPermission('customers:create') && (
+            {hasPermission('crm:customer:record:create') && (
               <Button icon={<UploadOutlined />} onClick={() => setIsImportModalVisible(true)}>
                 Import
               </Button>
             )}
-            {hasPermission('customers:create') && (
+            {hasPermission('crm:customer:record:create') && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                 Add Customer
               </Button>
@@ -644,7 +644,7 @@ const CustomerListPage: React.FC = () => {
                     icon={<DeleteFilled />}
                     onClick={handleBulkDelete}
                     loading={isBulkDeleting}
-                    disabled={!hasPermission('customers:delete')}
+                    disabled={!hasPermission('crm:customer:record:delete')}
                   >
                     Delete Selected
                   </Button>

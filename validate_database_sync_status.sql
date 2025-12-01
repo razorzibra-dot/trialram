@@ -20,7 +20,7 @@
 SELECT 
     COUNT(*) as total_permissions,
     COUNT(CASE WHEN name LIKE '%:%' THEN 1 END) as resource_action_format,
-    COUNT(CASE WHEN name NOT LIKE '%:%' AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'platform_admin', 'system_monitoring', 'view_audit_logs', 'export_data', 'view_financials', 'bulk_operations', 'advanced_search', 'api_access') THEN 1 END) as old_format
+    COUNT(CASE WHEN name NOT LIKE '%:%' AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin', 'system_monitoring', 'view_audit_logs', 'export_data', 'view_financials', 'bulk_operations', 'advanced_search', 'api_access') THEN 1 END) as old_format
 FROM permissions;
 
 \echo ''

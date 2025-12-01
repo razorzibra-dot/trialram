@@ -496,7 +496,7 @@ describe('RoleManagementPage Component', () => {
   });
 
   describe('Permission Checks', () => {
-    it('should check manage_roles permission', () => {
+    it('should check crm:role:record:update permission', () => {
       renderComponent();
 
       expect(useAuth).toHaveBeenCalled();

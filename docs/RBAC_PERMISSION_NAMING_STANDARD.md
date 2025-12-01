@@ -7,11 +7,11 @@ This document establishes the standard permission naming convention for the RBAC
 **Target Format**: `{resource}:{action}`
 
 ### Examples
-- `customers:read` - View customer data
-- `customers:create` - Create new customers
-- `customers:update` - Edit customer information
-- `customers:delete` - Delete customer records
-- `users:create` - Create new users
+- `crm:customer:record:read` - View customer data
+- `crm:customer:record:create` - Create new customers
+- `crm:customer:record:update` - Edit customer information
+- `crm:customer:record:delete` - Delete customer records
+- `crm:user:record:create` - Create new users
 - `sales:approve` - Approve sales
 - `products:export` - Export product data
 
@@ -60,11 +60,11 @@ This document establishes the standard permission naming convention for the RBAC
 
 | Legacy Format | New Standard Format | Notes |
 |---------------|---------------------|-------|
-| `manage_customers` | `customers:read` | For view operations |
-| `manage_customers` | `customers:create` | For create operations |
-| `manage_customers` | `customers:update` | For update operations |
-| `user:list` | `users:read` | Standardized |
-| `manage_users` | `users:create` | Context-specific |
+| `crm:customer:record:update` | `crm:customer:record:read` | For view operations |
+| `crm:customer:record:update` | `crm:customer:record:create` | For create operations |
+| `crm:customer:record:update` | `crm:customer:record:update` | For update operations |
+| `user:list` | `crm:user:record:read` | Standardized |
+| `crm:user:record:update` | `crm:user:record:create` | Context-specific |
 | `view_audit` | `audit:view` | More specific |
 
 ## Implementation Checklist

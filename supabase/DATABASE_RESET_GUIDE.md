@@ -40,6 +40,12 @@ That's it! This single command will:
 7. **Add performance indexes**
 8. **Validate the setup**
 
+### Complaints Schema Assurance
+
+- Migration `20251130000001_restore_complaints_schema.sql` now runs automatically after the consolidated reset.
+- It normalizes the `complaints` table, recreates the `complaints_with_details` view, and reapplies RLS for complaint comments.
+- No extra manual steps are required—`supabase db reset` alone keeps the complaints module aligned with the TypeScript service and UI layers.
+
 ### Test the Setup
 
 ```sql
@@ -92,7 +98,7 @@ The consolidated script creates **15 core tables** with proper relationships:
 - **Resource Protection**: INSERT/UPDATE/DELETE policies for all tables
 
 #### Permission System
-- **Resource:Action Format**: `customers:manage`, `sales:read`
+- **Resource:Action Format**: `customers:manage`, `crm:sales:deal:read`
 - **Hierarchical Permissions**: Core permissions cascade to modules
 - **Role-Based Access**: Admin, Manager, Engineer, User, Customer roles
 - **System Permissions**: Super admin and platform admin privileges

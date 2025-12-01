@@ -351,26 +351,26 @@ INSERT INTO tenants (id, name, domain, subscription_plan, status) VALUES
 
 -- Insert Permissions
 INSERT INTO permissions (name, description, category, resource, action) VALUES
-('dashboard:view', 'Access tenant dashboard and analytics', 'navigation', 'dashboard', 'view'),
-('masters:read', 'Access master data and configuration', 'navigation', 'masters', 'read'),
-('user_management:read', 'Access user and role management interface', 'navigation', 'users', 'read'),
-('companies:read', 'View companies data', 'core', 'companies', 'read'),
+('crm:dashboard:panel:view', 'Access tenant dashboard and analytics', 'navigation', 'dashboard', 'view'),
+('crm:reference:data:read', 'Access master data and configuration', 'navigation', 'masters', 'read'),
+('crm:user:record:read', 'Access user and role management interface', 'navigation', 'users', 'read'),
+('crm:company:record:read', 'View companies data', 'core', 'companies', 'read'),
 ('companies:write', 'Create and update companies', 'core', 'companies', 'write'),
-('companies:delete', 'Delete companies', 'core', 'companies', 'delete'),
-('products:read', 'View products data', 'core', 'products', 'read'),
+('crm:company:record:delete', 'Delete companies', 'core', 'companies', 'delete'),
+('crm:product:record:read', 'View products data', 'core', 'products', 'read'),
 ('products:write', 'Create and update products', 'core', 'products', 'write'),
-('products:delete', 'Delete products', 'core', 'products', 'delete'),
-('customers:read', 'View customers data', 'core', 'customers', 'read'),
+('crm:product:record:delete', 'Delete products', 'core', 'products', 'delete'),
+('crm:customer:record:read', 'View customers data', 'core', 'customers', 'read'),
 ('customers:write', 'Create and update customers', 'core', 'customers', 'write'),
-('customers:delete', 'Delete customers', 'core', 'customers', 'delete'),
-('sales:read', 'View sales data', 'core', 'sales', 'read'),
+('crm:customer:record:delete', 'Delete customers', 'core', 'customers', 'delete'),
+('crm:sales:deal:read', 'View sales data', 'core', 'sales', 'read'),
 ('sales:write', 'Create and update sales', 'core', 'sales', 'write'),
-('sales:delete', 'Delete sales', 'core', 'sales', 'delete'),
-('contracts:read', 'View contracts data', 'core', 'contracts', 'read'),
+('crm:sales:deal:delete', 'Delete sales', 'core', 'sales', 'delete'),
+('crm:contract:record:read', 'View contracts data', 'core', 'contracts', 'read'),
 ('contracts:write', 'Create and update contracts', 'core', 'contracts', 'write'),
-('contracts:delete', 'Delete contracts', 'core', 'contracts', 'delete'),
+('crm:contract:record:delete', 'Delete contracts', 'core', 'contracts', 'delete'),
 ('reports:export', 'Export data and reports', 'core', 'reports', 'export'),
-('settings:manage', 'Manage system settings', 'system', 'settings', 'manage');
+('crm:system:config:manage', 'Manage system settings', 'system', 'settings', 'manage');
 
 -- Insert Roles (per tenant)
 INSERT INTO roles (name, description, tenant_id, is_system_role) VALUES
@@ -396,17 +396,17 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r
 CROSS JOIN permissions p
 WHERE 
-    (r.name = 'Administrator' AND p.name IN ('dashboard:view', 'masters:read', 'user_management:read', 'companies:read', 'companies:write', 'companies:delete', 'products:read', 'products:write', 'products:delete', 'customers:read', 'customers:write', 'customers:delete', 'sales:read', 'sales:write', 'sales:delete', 'contracts:read', 'contracts:write', 'contracts:delete', 'reports:export'))
+    (r.name = 'Administrator' AND p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'crm:company:record:read', 'companies:write', 'crm:company:record:delete', 'crm:product:record:read', 'products:write', 'crm:product:record:delete', 'crm:customer:record:read', 'customers:write', 'crm:customer:record:delete', 'crm:sales:deal:read', 'sales:write', 'crm:sales:deal:delete', 'crm:contract:record:read', 'contracts:write', 'crm:contract:record:delete', 'reports:export'))
     OR 
-    (r.name = 'Manager' AND p.name IN ('dashboard:view', 'masters:read', 'companies:read', 'companies:write', 'products:read', 'products:write', 'customers:read', 'customers:write', 'sales:read', 'sales:write', 'contracts:read', 'contracts:write', 'reports:export'))
+    (r.name = 'Manager' AND p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:company:record:read', 'companies:write', 'crm:product:record:read', 'products:write', 'crm:customer:record:read', 'customers:write', 'crm:sales:deal:read', 'sales:write', 'crm:contract:record:read', 'contracts:write', 'reports:export'))
     OR 
-    (r.name = 'Engineer' AND p.name IN ('dashboard:view', 'masters:read', 'companies:read', 'products:read', 'products:write', 'customers:read', 'sales:read', 'sales:write', 'contracts:read'))
+    (r.name = 'Engineer' AND p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:company:record:read', 'crm:product:record:read', 'products:write', 'crm:customer:record:read', 'crm:sales:deal:read', 'sales:write', 'crm:contract:record:read'))
     OR 
-    (r.name = 'User' AND p.name IN ('masters:read', 'companies:read', 'products:read', 'customers:read', 'sales:read', 'contracts:read'))
+    (r.name = 'User' AND p.name IN ('crm:reference:data:read', 'crm:company:record:read', 'crm:product:record:read', 'crm:customer:record:read', 'crm:sales:deal:read', 'crm:contract:record:read'))
     OR 
-    (r.name = 'Customer' AND p.name IN ('companies:read', 'products:read'))
+    (r.name = 'Customer' AND p.name IN ('crm:company:record:read', 'crm:product:record:read'))
     OR 
-    (r.name = 'super_admin' AND p.name IN ('dashboard:view', 'masters:read', 'user_management:read', 'companies:read', 'companies:write', 'companies:delete', 'products:read', 'products:write', 'products:delete', 'customers:read', 'customers:write', 'customers:delete', 'sales:read', 'sales:write', 'sales:delete', 'contracts:read', 'contracts:write', 'contracts:delete', 'reports:export', 'settings:manage'));
+    (r.name = 'super_admin' AND p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'crm:company:record:read', 'companies:write', 'crm:company:record:delete', 'crm:product:record:read', 'products:write', 'crm:product:record:delete', 'crm:customer:record:read', 'customers:write', 'crm:customer:record:delete', 'crm:sales:deal:read', 'sales:write', 'crm:sales:deal:delete', 'crm:contract:record:read', 'contracts:write', 'crm:contract:record:delete', 'reports:export', 'crm:system:config:manage'));
 
 -- Insert Test Users (these will be synced with auth.users)
 INSERT INTO users (id, email, name, first_name, last_name, status, tenant_id, is_super_admin, department, position) VALUES

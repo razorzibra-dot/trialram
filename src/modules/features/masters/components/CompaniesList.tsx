@@ -242,14 +242,14 @@ export const CompaniesList: React.FC<CompaniesListProps> = ({
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              {hasPermission('companies:update') && (
+              {hasPermission('crm:company:record:update') && (
                 <DropdownMenuItem onClick={() => onEdit?.(company)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {hasPermission('companies:update') && (
+              {hasPermission('crm:company:record:update') && (
                 <>
                   <DropdownMenuItem 
                     onClick={() => handleStatusChange(company, 'active')}
@@ -272,7 +272,7 @@ export const CompaniesList: React.FC<CompaniesListProps> = ({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {hasPermission('companies:delete') && (
+              {hasPermission('crm:company:record:delete') && (
                 <DropdownMenuItem 
                   onClick={() => handleDelete(company)}
                   className="text-red-600"
@@ -292,22 +292,22 @@ export const CompaniesList: React.FC<CompaniesListProps> = ({
     {
       label: 'Set Active',
       action: () => handleBulkStatusUpdate('active'),
-      permission: 'companies:update',
+      permission: 'crm:company:record:update',
     },
     {
       label: 'Set Inactive',
       action: () => handleBulkStatusUpdate('inactive'),
-      permission: 'companies:update',
+      permission: 'crm:company:record:update',
     },
     {
       label: 'Set Prospect',
       action: () => handleBulkStatusUpdate('prospect'),
-      permission: 'companies:update',
+      permission: 'crm:company:record:update',
     },
     {
       label: 'Delete Selected',
       action: handleBulkDelete,
-      permission: 'companies:delete',
+      permission: 'crm:company:record:delete',
       variant: 'destructive' as const,
     },
   ];

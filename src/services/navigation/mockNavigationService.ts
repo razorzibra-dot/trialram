@@ -25,7 +25,7 @@ class MockNavigationService {
 
   /**
    * Create a new navigation item
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async createNavigationItem(item: Partial<NavigationItem>): Promise<NavigationItem> {
     return supabaseNavigationService.createNavigationItem(item);
@@ -33,7 +33,7 @@ class MockNavigationService {
 
   /**
    * Update a navigation item
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async updateNavigationItem(id: string, updates: Partial<NavigationItem>): Promise<NavigationItem> {
     return supabaseNavigationService.updateNavigationItem(id, updates);
@@ -41,7 +41,7 @@ class MockNavigationService {
 
   /**
    * Delete a navigation item (soft delete)
-   * ✅ Requires navigation:manage or settings:manage permission
+   * ✅ Requires navigation:manage or crm:system:config:manage permission
    */
   async deleteNavigationItem(id: string): Promise<void> {
     return supabaseNavigationService.deleteNavigationItem(id);

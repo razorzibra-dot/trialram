@@ -15,6 +15,7 @@ import { supabase } from '@/services/supabase/client';
 import backendConfig, { isSupabaseConfigured } from '@/config/backendConfig';
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 import { validateTenantAccess } from '@/utils/tenantValidation';
+import { doesPermissionGrant, normalizePermissionToken } from '@/utils/permissionMatcher';
 
 class SupabaseAuthService {
   private tokenKey = 'crm_auth_token';
@@ -60,7 +61,10 @@ class SupabaseAuthService {
         if (appUser && !userError) {
           const { data: roleData } = await supabase
             .from('user_roles')
-            .select('role_id, roles(id, name)')
+            .select(`
+              role_id,
+              roles!user_roles_role_id_fkey(id, name)
+            `)
             .eq('user_id', supaUser.id)
             .limit(1);
           if (roleData && roleData.length > 0) {
@@ -155,23 +159,45 @@ class SupabaseAuthService {
 
       console.log('[SUPABASE_AUTH] Using mock-style authentication (Supabase auth skipped)');
 
-      // Validate credentials against seeded users (same as mock service)
-      const seededUsers = [
-        { email: 'admin@acme.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
-        { email: 'manager@acme.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
-        { email: 'engineer@acme.com', role: 'engineer', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
-        { email: 'user@acme.com', role: 'user', tenantId: '550e8400-e29b-41d4-a716-446655440001' },
-        { email: 'admin@techsolutions.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
-        { email: 'manager@techsolutions.com', role: 'manager', tenantId: '550e8400-e29b-41d4-a716-446655440002' },
-        { email: 'admin@globaltrading.com', role: 'admin', tenantId: '550e8400-e29b-41d4-a716-446655440003' },
-        { email: 'superadmin@platform.com', role: 'super_admin', tenantId: null },
-        { email: 'superadmin2@platform.com', role: 'super_admin', tenantId: null },
-        { email: 'superadmin3@platform.com', role: 'super_admin', tenantId: null }
-      ];
+      // ❌ REMOVED: Hardcoded user arrays violate database-driven principle
+      // For mock authentication, we should fetch users from database instead
+      // This ensures consistency and allows dynamic user/role management
 
-      const userData = seededUsers.find(u => u.email === credentials.email);
-      if (!userData || credentials.password !== 'password123') {
+      let userData: { email: string; role: string; tenantId: string | null } | null = null;
+
+      // Try to authenticate against database users first
+      try {
+        const { data: dbUser, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', credentials.email)
+          .single();
+
+        if (userError || !dbUser) {
+          throw new Error('Invalid credentials');
+        }
+
+        // For mock auth, accept any password (simplified for development)
+        // In production, this should use proper password hashing
+        if (credentials.password !== 'password123') {
+          throw new Error('Invalid credentials');
+        }
+
+        // Use database user data
+        userData = {
+          email: dbUser.email,
+          role: dbUser.role || 'user',
+          tenantId: dbUser.tenant_id
+        };
+
+        console.log('[SUPABASE_AUTH] Mock auth successful for:', userData.email);
+      } catch (dbError) {
+        console.warn('[SUPABASE_AUTH] Database authentication failed, using fallback:', dbError);
         throw new Error('Invalid credentials');
+      }
+
+      if (!userData) {
+        throw new Error('Authentication failed');
       }
 
       console.log('[SUPABASE_AUTH] Mock auth successful for:', userData.email);
@@ -195,7 +221,10 @@ class SupabaseAuthService {
           // Get user's role
           const { data: roleData } = await supabase
             .from('user_roles')
-            .select('role_id, roles(id, name)')
+            .select(`
+              role_id,
+              roles!user_roles_role_id_fkey(id, name)
+            `)
             .eq('user_id', dbUser.id)
             .limit(1);
 
@@ -397,7 +426,10 @@ class SupabaseAuthService {
                   // Get user's role and permissions
                   const { data: roleData } = await supabase
                     .from('user_roles')
-                    .select('role_id, roles(id, name)')
+                    .select(`
+                      role_id,
+                      roles!user_roles_role_id_fkey(id, name)
+                    `)
                     .eq('user_id', dbUser.id)
                     .limit(1);
 
@@ -468,7 +500,10 @@ class SupabaseAuthService {
 
       const { data: roleData } = await supabase
         .from('user_roles')
-        .select('role_id, roles(id, name)')
+        .select(`
+          role_id,
+          roles!user_roles_role_id_fkey(id, name)
+        `)
         .eq('user_id', data.session.user.id)
         .limit(1);
 
@@ -597,66 +632,31 @@ class SupabaseAuthService {
       return true;
     }
 
-    const normalize = (perm?: string) => (perm || '').replace(/-/g, '_');
+    const userPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+    const normalizedUserPermissions = userPermissions
+      .map((perm) => normalizePermissionToken(perm))
+      .filter(Boolean);
+    const normalizedPermission = normalizePermissionToken(permission);
 
-    // Use dynamically-loaded permissions attached to user (derived from DB role_permissions)
-    const userPermissions = (user.permissions && Array.isArray(user.permissions)) ? user.permissions : [];
-    const normalizedUserPermissions = userPermissions.map((perm) => normalize(perm));
-    const normalizedPermission = normalize(permission);
+    console.log(
+      `[hasPermission] 🔍 Checking permission "${permission}" (normalized: "${normalizedPermission}") for user role "${user.role}". User permissions:`,
+      userPermissions,
+    );
 
-    console.log(`[hasPermission] 🔍 Checking permission "${permission}" (normalized: "${normalizedPermission}") for user role "${user.role}". User permissions:`, userPermissions);
-    console.log(`[hasPermission] 📋 Normalized user permissions:`, normalizedUserPermissions);
+    const granted = normalizedUserPermissions.some((userPerm) =>
+      doesPermissionGrant(userPerm, normalizedPermission),
+    );
 
-    const hasNormalizedPermission = (perm: string) => normalizedUserPermissions.includes(normalize(perm));
-
-    // Direct match (supports hyphen/underscore variants)
-    if (hasNormalizedPermission(permission)) {
-      console.log(`[hasPermission] ✅ Direct match found for "${permission}"`);
+    if (granted) {
+      console.log(`[hasPermission] ✅ Permission granted for "${permission}" via canonical comparison`);
       return true;
     }
 
-    // Handle resource/action combinations and synonyms
-    if (normalizedPermission.includes(':')) {
-      const [resource, action] = normalizedPermission.split(':');
-      const hasResourceManage = normalizedUserPermissions.some(
-        p => p === `${resource}:manage` || p === `${resource}:admin`
-      );
-      if (hasResourceManage) {
-        console.log(`[hasPermission] Granting via '${resource}:manage' super permission`);
-        return true;
-      }
-
-      if (action === 'read' && hasNormalizedPermission(`${resource}:view`)) {
-        console.log(`[hasPermission] Granting via ':view' synonym for resource "${resource}"`);
-        return true;
-      }
-      if (action === 'view' && hasNormalizedPermission(`${resource}:read`)) {
-        console.log(`[hasPermission] Granting via ':read' synonym for resource "${resource}"`);
-        return true;
-      }
-    }
-
-    // Support legacy/manage_* checks: 'manage_users' -> any permission that starts with 'users:'
-    if (normalizedPermission.startsWith('manage_')) {
-      const resource = normalizedPermission.replace(/^manage_/, '');
-      if (normalizedUserPermissions.some((p) => p.startsWith(`${resource}:`))) {
-        console.log(`[hasPermission] Granting via manage_* fallback for resource "${resource}"`);
-        return true;
-      }
-    }
-
-    // Support short-form checks like 'read', 'write', 'delete' by checking resource-scoped permissions
-    if (normalizedPermission === 'read') {
-      if (normalizedUserPermissions.some((p) => p.endsWith(':read') || p.endsWith(':view') || p === 'read')) return true;
-    }
-    if (normalizedPermission === 'write') {
-      if (normalizedUserPermissions.some((p) => p.endsWith(':create') || p.endsWith(':update') || p === 'write')) return true;
-    }
-    if (normalizedPermission === 'delete') {
-      if (normalizedUserPermissions.some((p) => p.endsWith(':delete') || p === 'delete')) return true;
-    }
-
-    console.warn(`[hasPermission] No matching permission found for "${permission}". User role: "${user.role}", User permissions: ${JSON.stringify(userPermissions)}`);
+    console.warn(
+      `[hasPermission] No matching permission found for "${permission}". User role: "${user.role}", User permissions: ${JSON.stringify(
+        userPermissions,
+      )}`,
+    );
     return false;
   }
 

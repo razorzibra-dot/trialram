@@ -86,16 +86,16 @@ This document describes the comprehensive RBAC implementation for the PDS-CRM ap
 
 #### Permissions Table (34 permissions)
 - **Dashboard**: `view_dashboard`
-- **Customers**: `view_customers`, `create_customers`, `edit_customers`, `delete_customers`, `manage_customers`
-- **Sales**: `view_sales`, `create_sales`, `edit_sales`, `manage_sales`
+- **Customers**: `view_customers`, `create_customers`, `edit_customers`, `delete_customers`, `crm:customer:record:update`
+- **Sales**: `view_sales`, `create_sales`, `edit_sales`, `crm:sales:deal:update`
 - **Tickets**: `view_tickets`, `create_tickets`, `edit_tickets`, `manage_tickets`
 - **Contracts**: `view_contracts`, `create_contracts`, `edit_contracts`, `manage_contracts`
-- **Service Contracts**: `view_service_contracts`, `manage_service_contracts`
+- **Service Contracts**: `view_service_contracts`, `crm:contract:service:update`
 - **Products**: `view_products`, `manage_products`
-- **Product Sales**: `view_product_sales`, `manage_product_sales`
-- **Complaints**: `view_complaints`, `manage_complaints`
+- **Product Sales**: `view_product_sales`, `crm:product-sale:record:update`
+- **Complaints**: `view_complaints`, `crm:support:complaint:update`
 - **Job Works**: `view_job_works`, `manage_job_works`
-- **Admin**: `manage_users`, `manage_roles`, `view_reports`, `export_data`, `manage_settings`, `manage_companies`
+- **Admin**: `crm:user:record:update`, `crm:role:record:update`, `view_reports`, `export_data`, `crm:system:config:manage`, `manage_companies`
 
 #### Roles Table (7 roles across 3 tenants)
 Each tenant (Acme, Tech Solutions, Global Trading) has:
@@ -175,10 +175,10 @@ private enforceAdminTenantIsolation(): void
 ```
 ADMIN (Acme Corporation)
 ├─ All module permissions (manage_*)
-├─ User management (manage_users, manage_roles)
+├─ User management (crm:user:record:update, crm:role:record:update)
 ├─ Reports & analytics (view_reports)
 ├─ Data export (export_data)
-└─ Settings (manage_settings, manage_companies)
+└─ Settings (crm:system:config:manage, manage_companies)
 
 MANAGER (Acme Corporation)
 ├─ Dashboard (view_dashboard)
@@ -250,9 +250,9 @@ Password: password123
 Expected Result:
 ✅ User logs in successfully
 ✅ Tenant ID: 550e8400-e29b-41d4-a716-446655440001 (Acme)
-✅ Can access Service Contracts (manage_service_contracts permission)
-✅ Can access Product Sales (manage_product_sales permission)
-✅ Can access Complaints (manage_complaints permission)
+✅ Can access Service Contracts (crm:contract:service:update permission)
+✅ Can access Product Sales (crm:product-sale:record:update permission)
+✅ Can access Complaints (crm:support:complaint:update permission)
 ✅ CANNOT see data from Tech Solutions or Global Trading tenants
 ```
 
@@ -266,7 +266,7 @@ Expected Result:
 // In React component
 const { hasPermission, tenant } = useAuth();
 
-if (!hasPermission('manage_service_contracts')) {
+if (!hasPermission('crm:contract:service:update')) {
   return <AccessDenied />;
 }
 
@@ -506,7 +506,7 @@ CREATE TABLE user_roles (
 ## Troubleshooting
 
 ### Admin Can't See Service Contracts
-1. Check: Is admin role mapped to `manage_service_contracts` permission?
+1. Check: Is admin role mapped to `crm:contract:service:update` permission?
    ```sql
    SELECT rp.* FROM role_permissions rp
    JOIN roles r ON r.id = rp.role_id

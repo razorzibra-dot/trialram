@@ -48,7 +48,7 @@ SELECT
 FROM permissions p
 WHERE p.name IN (
     'read', 'write', 'delete',
-    'users:manage', 'roles:manage', 'customers:manage',
+    'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage',
     -- ... all permission names
 )
 ON CONFLICT (role_id, permission_id) DO NOTHING;

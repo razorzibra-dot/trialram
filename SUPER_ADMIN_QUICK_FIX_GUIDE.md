@@ -153,7 +153,7 @@ If you're stuck, provide:
 
 ## 🎯 Why This Happens
 
-The permission check (`hasPermission('super_admin:view_analytics')`) happens BEFORE queries run. If the check fails:
+The permission check (`hasPermission('super_admin:crm:analytics:insight:view')`) happens BEFORE queries run. If the check fails:
 
 ```javascript
 ❌ Check fails → Component shows "Access Denied" → Queries never execute

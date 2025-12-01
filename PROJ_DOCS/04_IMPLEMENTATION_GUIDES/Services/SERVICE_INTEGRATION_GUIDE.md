@@ -103,7 +103,7 @@ const loginUser = async (email: string, password: string) => {
 };
 
 // Check permissions
-const hasPermission = authService.hasPermission('manage_customers');
+const hasPermission = authService.hasPermission('crm:customer:record:update');
 
 // Get current user
 const currentUser = authService.getCurrentUser();

@@ -21,7 +21,7 @@
 
 ---
 
-## Issue #2: Permission Mismatch - "dashboard:read" vs "dashboard:view"
+## Issue #2: Permission Mismatch - "dashboard:read" vs "crm:dashboard:panel:view"
 
 ### ✅ Verified Fixes in Code
 - **File:** `src/services/auth/supabase/authService.ts`

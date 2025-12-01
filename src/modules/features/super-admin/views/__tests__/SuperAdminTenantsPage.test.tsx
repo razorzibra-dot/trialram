@@ -171,7 +171,7 @@ describe('SuperAdminTenantsPage Component', () => {
 
       renderComponent();
 
-      expect(hasPermissionMock).toHaveBeenCalledWith('super_user:manage_tenants');
+      expect(hasPermissionMock).toHaveBeenCalledWith('crm:platform:tenant:manage');
     });
   });
 

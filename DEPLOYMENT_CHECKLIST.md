@@ -107,11 +107,11 @@
 - [x] Session restoration works
 
 ### Permissions Verified
-- [x] dashboard:view ✓
-- [x] masters:read ✓
-- [x] user_management:read ✓
-- [x] users:manage ✓
-- [x] roles:manage ✓
+- [x] crm:dashboard:panel:view ✓
+- [x] crm:reference:data:read ✓
+- [x] crm:user:record:read ✓
+- [x] crm:user:record:update ✓
+- [x] crm:role:permission:assign ✓
 - [x] customers:manage ✓
 - [x] sales:manage ✓
 - [x] contracts:manage ✓
@@ -122,13 +122,13 @@
 - [x] complaints:manage ✓
 - [x] companies:manage ✓
 - [x] reports:manage ✓
-- [x] settings:manage ✓
+- [x] crm:system:config:manage ✓
 - [x] export_data ✓
 - [x] view_audit_logs ✓
 - [x] read, write, delete (legacy) ✓
 
 ### Navigation Items
-- [x] Dashboard visible (dashboard:view)
+- [x] Dashboard visible (crm:dashboard:panel:view)
 - [x] Customers visible (customers:manage)
 - [x] Sales visible (sales:manage)
 - [x] Contracts visible (contracts:manage)
@@ -136,10 +136,10 @@
 - [x] Support Tickets visible (tickets:manage)
 - [x] Complaints visible (complaints:manage)
 - [x] Job Works visible (job_works:manage)
-- [x] **Masters visible** (masters:read) - Companies, Products
-- [x] **User Management visible** (users:manage) - Users, Roles, Permissions
-- [x] **Configuration visible** (settings:manage) - Tenant Settings, PDF Templates
-- [x] Notifications visible (settings:manage)
+- [x] **Masters visible** (crm:reference:data:read) - Companies, Products
+- [x] **User Management visible** (crm:user:record:update) - Users, Roles, Permissions
+- [x] **Configuration visible** (crm:system:config:manage) - Tenant Settings, PDF Templates
+- [x] Notifications visible (crm:system:config:manage)
 - [x] Audit Logs visible (view_audit_logs)
 
 ### Test Scripts

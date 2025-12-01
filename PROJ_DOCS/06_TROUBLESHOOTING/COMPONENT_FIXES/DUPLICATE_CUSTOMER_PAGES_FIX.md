@@ -21,7 +21,7 @@ Upon investigation, I found there were indeed two separate customer-related page
 
 ### ✅ **1. Removed Duplicate Navigation Entry**
 **File**: `src/components/layout/DashboardLayout.tsx`
-- **Removed**: `{ name: 'Customer Master', href: '/tenant/masters/customers', icon: Users, permission: 'manage_customers' }`
+- **Removed**: `{ name: 'Customer Master', href: '/tenant/masters/customers', icon: Users, permission: 'crm:customer:record:update' }`
 - **Kept**: `{ name: 'Customers', href: '/tenant/customers', icon: Users, permission: 'read' }` (in Core section)
 
 ### ✅ **2. Removed Duplicate Route**

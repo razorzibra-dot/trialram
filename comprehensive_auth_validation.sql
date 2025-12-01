@@ -58,11 +58,11 @@ SELECT
   p.name as permission_name,
   p.description as permission_description,
   CASE 
-    WHEN p.name IN ('dashboard:view', 'masters:read', 'user_management:read') THEN '✅ CRITICAL PERMISSION EXISTS'
+    WHEN p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read') THEN '✅ CRITICAL PERMISSION EXISTS'
     ELSE '✅ PERMISSION EXISTS'
   END as status
 FROM permissions p
-WHERE p.name IN ('dashboard:view', 'masters:read', 'user_management:read', 'read', 'write', 'delete')
+WHERE p.name IN ('crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'read', 'write', 'delete')
 ORDER BY p.name;
 
 -- Test 2.2: Test role permission assignments for dashboard access
@@ -70,9 +70,9 @@ SELECT
   'DASHBOARD PERMISSION TEST' as test_section,
   r.name as role_name,
   COUNT(rp.permission_id) as total_permissions,
-  COUNT(CASE WHEN p.name = 'dashboard:view' THEN 1 END) as has_dashboard_view,
+  COUNT(CASE WHEN p.name = 'crm:dashboard:panel:view' THEN 1 END) as has_dashboard_view,
   CASE 
-    WHEN COUNT(CASE WHEN p.name = 'dashboard:view' THEN 1 END) > 0 THEN '✅ HAS DASHBOARD ACCESS'
+    WHEN COUNT(CASE WHEN p.name = 'crm:dashboard:panel:view' THEN 1 END) > 0 THEN '✅ HAS DASHBOARD ACCESS'
     ELSE '❌ MISSING DASHBOARD ACCESS'
   END as dashboard_status
 FROM roles r
@@ -88,15 +88,15 @@ SELECT
   r.name as role_name,
   array_agg(DISTINCT p.name ORDER BY p.name) as all_permissions,
   CASE 
-    WHEN 'dashboard:view' = ANY(array_agg(p.name)) THEN '✅'
+    WHEN 'crm:dashboard:panel:view' = ANY(array_agg(p.name)) THEN '✅'
     ELSE '❌'
   END as dashboard_ok,
   CASE 
-    WHEN 'masters:read' = ANY(array_agg(p.name)) THEN '✅'
+    WHEN 'crm:reference:data:read' = ANY(array_agg(p.name)) THEN '✅'
     ELSE '❌'
   END as masters_ok,
   CASE 
-    WHEN 'user_management:read' = ANY(array_agg(p.name)) THEN '✅'
+    WHEN 'crm:user:record:read' = ANY(array_agg(p.name)) THEN '✅'
     ELSE '❌'
   END as user_mgmt_ok
 FROM roles r
@@ -181,7 +181,7 @@ BEGIN
     AND NOT EXISTS (
       SELECT 1 FROM role_permissions rp 
       JOIN permissions p ON rp.permission_id = p.id 
-      WHERE rp.role_id = r.id AND p.name = 'dashboard:view'
+      WHERE rp.role_id = r.id AND p.name = 'crm:dashboard:panel:view'
     );
   
   -- Count role assignment issues

@@ -136,8 +136,8 @@ Route                Access   Reason
 ### **Regular User (with permissions)**
 ```
 Route                        Access   Reason
-/tenant/customers           ✅ ALLOWED Has manage_customers permission
-/tenant/sales               ✅ ALLOWED Has sales:read permission
+/tenant/customers           ✅ ALLOWED Has crm:customer:record:update permission
+/tenant/sales               ✅ ALLOWED Has crm:sales:deal:read permission
 /tenant/products            ❌ DENIED No products permission
 /super-admin/dashboard      ❌ DENIED Regular users blocked
 ```

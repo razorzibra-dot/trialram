@@ -19,6 +19,9 @@ import dayjs from 'dayjs';
 import { useCreateDeal, useUpdateDeal, useDealStages } from '../hooks/useSales';
 import { useService } from '@/modules/core/hooks/useService';
 import { CustomerService } from '@/modules/features/customers/services/customerService';
+import { PermissionField } from '@/components/forms/PermissionField';
+import { PermissionSection } from '@/components/layout/PermissionSection';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 // Product Service Interface
 interface ProductServiceInterface {
@@ -83,6 +86,17 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
   const productService = useService<ProductServiceInterface>('productService');
 
   const isEditMode = !!deal;
+
+  // Element-level permissions for sales deal form
+  const canEditDealOverview = usePermission('crm:sales:deal:form:section.overview', 'accessible');
+  const canEditCustomerInfo = usePermission('crm:sales:deal:form:section.customer', 'accessible');
+  const canEditFinancialInfo = usePermission('crm:sales:deal:form:section.financial', 'accessible');
+  const canEditProducts = usePermission('crm:sales:deal:form:section.products', 'accessible');
+  const canEditPipeline = usePermission('crm:sales:deal:form:section.pipeline', 'accessible');
+  const canEditCampaign = usePermission('crm:sales:deal:form:section.campaign', 'accessible');
+  const canEditNotes = usePermission('crm:sales:deal:form:section.notes', 'accessible');
+  const canSaveDeal = usePermission('crm:sales:deal:form:button.save', 'enabled');
+  const canAddProducts = usePermission('crm:sales:deal:form:button.addproduct', 'enabled');
 
   // Load customers and products
   useEffect(() => {
@@ -344,13 +358,15 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
       footer={
         <Space style={{ float: 'right', width: '100%', justifyContent: 'flex-end' }}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button
-            type="primary"
-            onClick={handleSubmit}
-            loading={createDeal.isPending || updateDeal.isPending}
-          >
-            {isEditMode ? 'Update Deal' : 'Create Deal'}
-          </Button>
+          {canSaveDeal && (
+            <Button
+              type="primary"
+              onClick={handleSubmit}
+              loading={createDeal.isPending || updateDeal.isPending}
+            >
+              {isEditMode ? 'Update Deal' : 'Create Deal'}
+            </Button>
+          )}
         </Space>
       }
     >
@@ -361,30 +377,41 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
         autoComplete="off"
       >
         {/* 🎯 Deal Title Section */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <FileTextOutlined style={iconStyle} />
-            Deal Overview
-          </div>
-          <Row gutter={16}>
-            <Col xs={24}>
-              <Form.Item
-                label="Deal Title"
-                name="title"
-                rules={[
-                  { required: true, message: 'Deal title is required' },
-                  { min: 3, message: 'Deal title must be at least 3 characters' },
-                  { max: 255, message: 'Deal title cannot exceed 255 characters' }
-                ]}
-              >
-                <Input 
-                  size="large"
-                  placeholder="e.g., Enterprise SaaS Implementation - Acme Corp"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
+        <PermissionSection
+          elementPath="crm:sales:deal:form:section.overview"
+          title="Deal Overview"
+          icon={<FileTextOutlined style={{ fontSize: 16, color: '#0ea5e9' }} />}
+        >
+          <Card style={sectionCardStyle}>
+            <div style={sectionHeaderStyle}>
+              <FileTextOutlined style={iconStyle} />
+              Deal Overview
+            </div>
+            <Row gutter={16}>
+              <Col xs={24}>
+                <PermissionField
+                  elementPath="crm:sales:deal:form:field.title"
+                  fieldName="title"
+                >
+                  <Form.Item
+                    label="Deal Title"
+                    name="title"
+                    rules={[
+                      { required: true, message: 'Deal title is required' },
+                      { min: 3, message: 'Deal title must be at least 3 characters' },
+                      { max: 255, message: 'Deal title cannot exceed 255 characters' }
+                    ]}
+                  >
+                    <Input
+                      size="large"
+                      placeholder="e.g., Enterprise SaaS Implementation - Acme Corp"
+                    />
+                  </Form.Item>
+                </PermissionField>
+              </Col>
+            </Row>
+          </Card>
+        </PermissionSection>
 
         {/* 👥 Customer Information */}
         <Card style={sectionCardStyle}>
@@ -564,14 +591,16 @@ export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
                   </Select.Option>
                 ))}
               </Select>
-              <Button
-                type="primary"
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={handleAddProduct}
-              >
-                Add
-              </Button>
+              {canAddProducts && (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddProduct}
+                >
+                  Add
+                </Button>
+              )}
             </div>
           </div>
 

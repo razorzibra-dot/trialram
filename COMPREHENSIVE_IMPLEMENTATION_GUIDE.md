@@ -1436,8 +1436,8 @@ INSERT INTO permissions (name, description, resource, action, category) VALUES
 ('users.delete', 'Delete users', 'users', 'delete', 'core'),
 ('customers.read', 'View customers', 'customers', 'read', 'core'),
 ('customers.create', 'Create customers', 'customers', 'create', 'core'),
-('customers.update', 'Update customers', 'customers', 'update', 'core'),
-('customers.delete', 'Delete customers', 'customers', 'delete', 'core'),
+('crm:customer:record:update', 'Update customers', 'customers', 'update', 'core'),
+('crm:customer:record:delete', 'Delete customers', 'customers', 'delete', 'core'),
 ('sales.read', 'View sales', 'sales', 'read', 'core'),
 ('sales.create', 'Create sales', 'sales', 'create', 'core'),
 ('sales.update', 'Update sales', 'sales', 'update', 'core'),
@@ -1455,21 +1455,21 @@ INSERT INTO permissions (name, description, resource, action, category) VALUES
 INSERT INTO roles (name, description, is_system_role, permissions) VALUES
 ('admin', 'Administrator with full access', true, '[
     "users.read", "users.create", "users.update", "users.delete",
-    "customers.read", "customers.create", "customers.update", "customers.delete",
+    "customers.read", "customers.create", "crm:customer:record:update", "crm:customer:record:delete",
     "sales.read", "sales.create", "sales.update", "sales.delete",
     "tickets.read", "tickets.create", "tickets.update", "tickets.delete",
     "contracts.read", "contracts.create", "contracts.update", "contracts.delete"
 ]'::jsonb),
 ('manager', 'Manager with departmental access', true, '[
     "users.read", "users.update",
-    "customers.read", "customers.create", "customers.update",
+    "customers.read", "customers.create", "crm:customer:record:update",
     "sales.read", "sales.create", "sales.update",
     "tickets.read", "tickets.create", "tickets.update",
     "contracts.read", "contracts.create", "contracts.update"
 ]'::jsonb),
 ('user', 'Standard user with limited access', true, '[
     "users.read",
-    "customers.read", "customers.create", "customers.update",
+    "customers.read", "customers.create", "crm:customer:record:update",
     "sales.read", "sales.create", "sales.update",
     "tickets.read", "tickets.create", "tickets.update",
     "contracts.read"

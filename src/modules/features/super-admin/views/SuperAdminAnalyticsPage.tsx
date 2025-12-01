@@ -60,7 +60,7 @@ const SuperAdminAnalyticsPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   // Permission check
-  if (!hasPermission('super_user:view_analytics')) {
+  if (!hasPermission('crm:platform:crm:analytics:insight:view')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

@@ -25,7 +25,7 @@ export const usePermission = () => {
 
   /**
    * Check if user has a specific permission
-   * @param permission - Permission string (e.g., 'customers:read', 'sales:create')
+   * @param permission - Permission string (e.g., 'crm:customer:record:read', 'crm:sales:deal:create')
    * @returns boolean indicating if user has the permission
    */
   const checkPermission = useCallback((permission: string): boolean => {
@@ -57,35 +57,35 @@ export const usePermission = () => {
     // Features are application concepts, permissions are database-driven.
     // If new permissions are added to database, they can be mapped here.
     const featurePermissions: Record<string, string[]> = {
-      customer_management: ['customers:read'],
-      customer_creation: ['customers:create'],
-      customer_editing: ['customers:update'],
-      customer_deletion: ['customers:delete'],
+      customer_management: ['crm:customer:record:read'],
+      customer_creation: ['crm:customer:record:create'],
+      customer_editing: ['crm:customer:record:update'],
+      customer_deletion: ['crm:customer:record:delete'],
 
-      sales_pipeline: ['sales:read'],
-      sales_creation: ['sales:create'],
-      sales_editing: ['sales:update'],
-      sales_deletion: ['sales:delete'],
+      sales_pipeline: ['crm:sales:deal:read'],
+      sales_creation: ['crm:sales:deal:create'],
+      sales_editing: ['crm:sales:deal:update'],
+      sales_deletion: ['crm:sales:deal:delete'],
 
-      ticket_management: ['tickets:read'],
-      ticket_creation: ['tickets:create'],
-      ticket_assignment: ['tickets:update'],
-      ticket_escalation: ['tickets:update'],
+      ticket_management: ['crm:support:ticket:read'],
+      ticket_creation: ['crm:support:ticket:create'],
+      ticket_assignment: ['crm:support:ticket:update'],
+      ticket_escalation: ['crm:support:ticket:update'],
 
-      product_catalog: ['products:read'],
-      product_management: ['products:update'],
-      inventory_management: ['products:update'],
+      product_catalog: ['crm:product:record:read'],
+      product_management: ['crm:product:record:update'],
+      inventory_management: ['crm:product:record:update'],
 
-      contract_management: ['contracts:read'],
-      contract_creation: ['contracts:create'],
-      contract_approval: ['contracts:update'],
+      contract_management: ['crm:contract:record:read'],
+      contract_creation: ['crm:contract:record:create'],
+      contract_approval: ['crm:contract:record:update'],
 
-      user_management: ['users:read'],
-      role_management: ['roles:read'],
+      user_management: ['crm:user:record:read'],
+      role_management: ['crm:role:record:read'],
       audit_logs: ['audit:read'],
 
       notifications: ['notifications:read'],
-      system_settings: ['settings:read'],
+      system_settings: ['crm:system:config:read'],
     };
 
     const requiredPermissions = featurePermissions[feature];
@@ -194,7 +194,7 @@ export const usePermission = () => {
   /**
    * Check if user can manage another user (role hierarchy)
    * ⚠️ NOTE: For security checks, use permission-based checks instead:
-   * return authService.hasPermission('users:manage');
+   * return authService.hasPermission('crm:user:record:update');
    * 
    * This hierarchy check is for UI/hierarchy comparison ONLY.
    * 

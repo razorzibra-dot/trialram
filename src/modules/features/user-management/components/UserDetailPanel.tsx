@@ -169,7 +169,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
       open={open}
       width={600}
       footer={
-        hasPermission('manage_users') && (
+        hasPermission('crm:user:record:update') && (
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={onClose}>Close</Button>
             {onEdit && (

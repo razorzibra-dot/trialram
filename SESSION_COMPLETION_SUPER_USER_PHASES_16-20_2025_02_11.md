@@ -62,7 +62,7 @@ This CODE_ONLY session completed **Phases 16-20** of the Super User Module, adva
 - ✅ 3 role templates created (Super Admin, Limited Super User, Auditor)
 - ✅ Permission validation functions working
 - ✅ All permission guards operational
-- **Permissions**: super_user:manage_users, manage_tenants, impersonate_users, view_audit_logs, manage_config, view_analytics, manage_permissions
+- **Permissions**: crm:platform:user:manage, crm:platform:tenant:manage, impersonate_users, view_audit_logs, manage_config, crm:analytics:insight:view, manage_permissions
 
 #### 16.3 Tenant Service Sync ✅
 - ✅ Tenant statistics table integrated

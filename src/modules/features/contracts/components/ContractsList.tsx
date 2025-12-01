@@ -350,14 +350,14 @@ export const ContractsList: React.FC<ContractsListProps> = ({
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              {hasPermission('contracts:update') && (
+              {hasPermission('crm:contract:record:update') && (
                 <DropdownMenuItem onClick={() => onEdit?.(contract)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {hasPermission('contracts:update') && (
+              {hasPermission('crm:contract:record:update') && (
                 <>
                   {contract.status === 'pending_approval' && (
                     <DropdownMenuItem onClick={() => handleApprove(contract)}>
@@ -380,7 +380,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {hasPermission('contracts:delete') && (
+              {hasPermission('crm:contract:record:delete') && (
                 <DropdownMenuItem 
                   onClick={() => handleDelete(contract)}
                   className="text-red-600"
@@ -403,7 +403,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
         // Bulk activate implementation
         console.log('Bulk activate contracts');
       },
-      permission: 'contracts:update',
+      permission: 'crm:contract:record:update',
     },
     {
       label: 'Terminate',
@@ -411,7 +411,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
         // Bulk terminate implementation
         console.log('Bulk terminate contracts');
       },
-      permission: 'contracts:update',
+      permission: 'crm:contract:record:update',
     },
   ];
 

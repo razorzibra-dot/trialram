@@ -103,7 +103,7 @@ Users experiencing "Access Denied" errors should now:
 
 ### Permission Hierarchy (from `permissionGuards.ts`)
 - **super-admin**: All permissions
-- **admin**: Most permissions including manage_users, manage_roles
+- **admin**: Most permissions including crm:user:record:update, crm:role:record:update
 - **manager**: Limited permissions
 - **user**: Minimal permissions
 - **guest**: No permissions (default for unauthenticated users)

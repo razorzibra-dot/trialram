@@ -100,7 +100,7 @@ SELECT
     action,
     CASE 
         WHEN name LIKE '%:%' THEN 'resource:action'
-        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin') THEN 'simple'
+        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin') THEN 'simple'
         ELSE 'legacy'
     END as format_type,
     is_system_permission,
@@ -113,7 +113,7 @@ SELECT
     'PERMISSION_FORMAT_ANALYSIS' as report_type,
     CASE 
         WHEN name LIKE '%:%' THEN 'resource:action'
-        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin') THEN 'simple'
+        WHEN name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin') THEN 'simple'
         ELSE 'legacy'
     END as format_type,
     COUNT(*) as count

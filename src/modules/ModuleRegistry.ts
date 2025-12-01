@@ -10,6 +10,7 @@
 
 import { FeatureModule, User } from '@/modules/core/types';
 import { authService } from '@/services';
+import { MODULE_PERMISSION_MAP } from '@/constants/modulePermissionMap';
 
 /**
  * Super-admin only modules
@@ -355,12 +356,18 @@ export class ModuleRegistry {
 
       // Check RBAC for tenant modules
       if (this.isTenantModule(normalizedModuleName)) {
-        // Check if user has permission for this module
-        const hasPermission = authService.hasPermission(`manage_${normalizedModuleName}`)
-          || authService.hasPermission(`${normalizedModuleName}:read`)
-          || authService.hasPermission('read');
+        const requiredPermission = MODULE_PERMISSION_MAP[normalizedModuleName];
 
-        console.log(`[ModuleRegistry.canUserAccessModule] Regular user RBAC check for '${normalizedModuleName}': ${hasPermission}`);
+        if (!requiredPermission) {
+          console.warn(`[ModuleRegistry.canUserAccessModule] Missing permission mapping for '${normalizedModuleName}'`);
+          return false;
+        }
+
+        const hasPermission = authService.hasPermission(requiredPermission);
+
+        console.log(
+          `[ModuleRegistry.canUserAccessModule] Regular user RBAC check for '${normalizedModuleName}': ${hasPermission} (required=${requiredPermission})`,
+        );
         return hasPermission;
       }
 

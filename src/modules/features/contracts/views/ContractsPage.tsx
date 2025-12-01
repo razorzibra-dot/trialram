@@ -216,7 +216,7 @@ const ContractsPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('contracts:update') && (
+          {hasPermission('crm:contract:record:update') && (
             <Button
               type="link"
               size="small"
@@ -226,7 +226,7 @@ const ContractsPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('contracts:delete') && (
+          {hasPermission('crm:contract:record:delete') && (
             <Popconfirm
               title="Delete Contract"
               description={`Are you sure you want to delete "${record.title}"?`}
@@ -266,7 +266,7 @@ const ContractsPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
-            {hasPermission('contracts:create') && (
+            {hasPermission('crm:contract:record:create') && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                 New Contract
               </Button>

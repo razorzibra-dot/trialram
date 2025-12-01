@@ -7,7 +7,7 @@
 2. **THEN run seed.sql**
 
 ### Why This Order Matters:
-- Migration `20251122000002_update_permissions_to_resource_action_format.sql` converts legacy permission names (`manage_users`) to granular format (`users:read`, `users:create`, etc.)
+- Migration `20251122000002_update_permissions_to_resource_action_format.sql` converts legacy permission names (`crm:user:record:update`) to granular format (`crm:user:record:read`, `crm:user:record:create`, etc.)
 - Seed.sql contains legacy permission names that the migration will convert
 - Running seed.sql BEFORE the migration will cause conflicts and failures
 
@@ -34,7 +34,7 @@ FROM permissions
 WHERE name LIKE '%:%' 
 ORDER BY name;
 ```
-Expected: Permissions in `{resource}:{action}` format (e.g., `users:read`, `customers:create`)
+Expected: Permissions in `{resource}:{action}` format (e.g., `crm:user:record:read`, `crm:customer:record:create`)
 
 ### 2. Verify Role Permissions
 ```sql

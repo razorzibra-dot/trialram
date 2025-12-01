@@ -150,7 +150,7 @@ describe('Authentication Service Validation', () => {
     it('should cache user permissions after first load', () => {
       const permissionCache = new Map<string, Set<string>>();
       const userId = 'user-123';
-      const permissions = new Set(['read', 'write', 'manage_customers']);
+      const permissions = new Set(['read', 'write', 'crm:customer:record:update']);
 
       permissionCache.set(userId, permissions);
 

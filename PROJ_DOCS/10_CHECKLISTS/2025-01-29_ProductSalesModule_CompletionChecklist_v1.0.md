@@ -693,9 +693,9 @@ Create modal with:
 ```typescript
 // Permissions required:
 - [ ] product-sales:view - See sales
-- [ ] product-sales:create - Create new sales
+- [ ] product-crm:sales:deal:create - Create new sales
 - [ ] product-sales:edit - Edit sales
-- [ ] product-sales:delete - Delete sales
+- [ ] product-crm:sales:deal:delete - Delete sales
 - [ ] product-sales:ship - Mark as shipped
 - [ ] product-sales:invoice - Generate invoices
 - [ ] product-sales:bulk-delete - Bulk delete

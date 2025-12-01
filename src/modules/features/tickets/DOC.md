@@ -210,9 +210,9 @@ const tickets = await factoryTicketService.getTickets(filters);
 ```typescript
 // Required Permissions
 - tickets:view       // View tickets
-- tickets:create     // Create new tickets
+- crm:support:ticket:create     // Create new tickets
 - tickets:edit       // Edit existing tickets
-- tickets:delete     // Delete tickets
+- crm:support:ticket:delete     // Delete tickets
 - tickets:assign     // Assign to team members
 - tickets:resolve    // Resolve/close tickets
 

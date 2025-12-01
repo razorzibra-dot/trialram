@@ -115,8 +115,8 @@ describe('ModuleRegistry - Access Control', () => {
       beforeEach(() => {
         // Mock authService.hasPermission for regular user tests
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          // Simulate user having manage_customers and customers:read permissions
-          return ['manage_customers', 'customers:read'].includes(permission);
+          // Simulate user having crm:customer:record:update and crm:customer:record:read permissions
+          return ['crm:customer:record:update', 'crm:customer:record:read'].includes(permission);
         });
       });
 
@@ -137,7 +137,7 @@ describe('ModuleRegistry - Access Control', () => {
 
       it('should allow regular user with only read permission', () => {
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          return permission === 'customers:read' || permission === 'read';
+          return permission === 'crm:customer:record:read' || permission === 'read';
         });
         const canAccess = registry.canUserAccessModule(regularUser, 'customers');
         expect(canAccess).toBe(true);
@@ -151,7 +151,7 @@ describe('ModuleRegistry - Access Control', () => {
 
       it('should handle case-insensitive module names for regular user', () => {
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          return ['manage_customers', 'customers:read'].includes(permission.toLowerCase());
+          return ['crm:customer:record:update', 'crm:customer:record:read'].includes(permission.toLowerCase());
         });
         const canAccess1 = registry.canUserAccessModule(regularUser, 'CUSTOMERS');
         const canAccess2 = registry.canUserAccessModule(regularUser, 'Customers');
@@ -227,7 +227,7 @@ describe('ModuleRegistry - Access Control', () => {
       beforeEach(() => {
         // Regular user has access to customers and sales
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          const allowedPermissions = ['manage_customers', 'customers:read', 'manage_sales', 'sales:read'];
+          const allowedPermissions = ['crm:customer:record:update', 'crm:customer:record:read', 'crm:sales:deal:update', 'crm:sales:deal:read'];
           return allowedPermissions.includes(permission);
         });
       });
@@ -300,7 +300,7 @@ describe('ModuleRegistry - Access Control', () => {
   describe('getAccessibleModuleNames', () => {
     beforeEach(() => {
       (authService.hasPermission as any).mockImplementation((permission: string) => {
-        return ['manage_customers', 'customers:read'].includes(permission);
+        return ['crm:customer:record:update', 'crm:customer:record:read'].includes(permission);
       });
     });
 
@@ -335,7 +335,7 @@ describe('ModuleRegistry - Access Control', () => {
   describe('Module Helper Functions', () => {
     beforeEach(() => {
       (authService.hasPermission as any).mockImplementation((permission: string) => {
-        return ['manage_customers', 'customers:read'].includes(permission);
+        return ['crm:customer:record:update', 'crm:customer:record:read'].includes(permission);
       });
     });
 
@@ -364,7 +364,7 @@ describe('ModuleRegistry - Access Control', () => {
     describe('manage_* format', () => {
       it('should grant access with manage_module permission', () => {
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          return permission === 'manage_customers';
+          return permission === 'crm:customer:record:update';
         });
         const canAccess = registry.canUserAccessModule(regularUser, 'customers');
         expect(canAccess).toBe(true);
@@ -374,7 +374,7 @@ describe('ModuleRegistry - Access Control', () => {
     describe('*:read format', () => {
       it('should grant access with module:read permission', () => {
         (authService.hasPermission as any).mockImplementation((permission: string) => {
-          return permission === 'customers:read';
+          return permission === 'crm:customer:record:read';
         });
         const canAccess = registry.canUserAccessModule(regularUser, 'customers');
         expect(canAccess).toBe(true);
@@ -409,7 +409,7 @@ describe('ModuleRegistry - Access Control', () => {
 
     it('should handle mixed case module names consistently', () => {
       (authService.hasPermission as any).mockImplementation((permission: string) => {
-        return permission.toLowerCase() === 'manage_customers' || permission.toLowerCase() === 'customers:read';
+        return permission.toLowerCase() === 'crm:customer:record:update' || permission.toLowerCase() === 'crm:customer:record:read';
       });
 
       const canAccess1 = registry.canUserAccessModule(regularUser, 'customers');

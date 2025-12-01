@@ -5,20 +5,20 @@
 
 export const PRODUCT_SALES_PERMISSIONS = {
   // Read permissions
-  READ: 'product_sales:read',
+  READ: 'crm:product-sale:record:read',
   LIST: 'product_sales:list',
   VIEW: 'product_sales:view',
   
   // Create permissions
-  CREATE: 'product_sales:create',
+  CREATE: 'crm:product-sale:record:create',
   IMPORT: 'product_sales:import',
   
   // Update permissions
-  UPDATE: 'product_sales:update',
+  UPDATE: 'crm:product-sale:record:update',
   EDIT: 'product_sales:edit',
   
   // Delete permissions
-  DELETE: 'product_sales:delete',
+  DELETE: 'crm:product-sale:record:delete',
   BULK_DELETE: 'product_sales:bulk_delete',
   
   // Export permissions
@@ -27,7 +27,7 @@ export const PRODUCT_SALES_PERMISSIONS = {
   // Special permissions
   MANAGE_INVOICES: 'product_sales:manage_invoices',
   MANAGE_WARRANTY: 'product_sales:manage_warranty',
-  VIEW_ANALYTICS: 'product_sales:view_analytics',
+  VIEW_ANALYTICS: 'product_sales:crm:analytics:insight:view',
   APPROVE: 'product_sales:approve',
   REJECT: 'product_sales:reject',
 } as const;

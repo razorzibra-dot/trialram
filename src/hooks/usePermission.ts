@@ -12,12 +12,12 @@ import { useMemo } from 'react';
 /**
  * Hook for checking a specific permission
  *
- * @param permission - The permission string to check (e.g., 'customers:read', 'sales:create')
+ * @param permission - The permission string to check (e.g., 'crm:customer:record:read', 'crm:sales:deal:create')
  * @returns boolean indicating if the current user has the permission
  *
  * @example
- * const canReadCustomers = usePermission('customers:read');
- * const canCreateSales = usePermission('sales:create');
+ * const canReadCustomers = usePermission('crm:customer:record:read');
+ * const canCreateSales = usePermission('crm:sales:deal:create');
  */
 export const usePermission = (permission: string): boolean => {
   const { hasPermission } = useAuth();
@@ -183,8 +183,8 @@ export const usePermissionGate = () => {
  *
  * @example
  * const { canReadCustomers, canCreateSales } = usePermissions([
- *   'customers:read',
- *   'sales:create'
+ *   'crm:customer:record:read',
+ *   'crm:sales:deal:create'
  * ]);
  */
 export const usePermissions = (permissions: string[]) => {
@@ -209,8 +209,8 @@ export const usePermissions = (permissions: string[]) => {
  *
  * @example
  * const features = useFeatureAccess({
- *   customerManagement: ['customers:read', 'customers:create'],
- *   salesPipeline: ['sales:read', 'sales:update'],
+ *   customerManagement: ['crm:customer:record:read', 'crm:customer:record:create'],
+ *   salesPipeline: ['crm:sales:deal:read', 'crm:sales:deal:update'],
  *   adminPanel: ['admin:access']
  * });
  *

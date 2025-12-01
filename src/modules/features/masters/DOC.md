@@ -257,9 +257,9 @@ interface CompanyFilter {
 ```typescript
 // Required Permissions
 - masters:view         // View products and companies
-- masters:create       // Create new master data
-- masters:edit         // Edit existing data
-- masters:delete       // Delete master data
+- crm:reference:data:manage       // Create new master data
+- crm:reference:data:manage         // Edit existing data
+- crm:reference:data:manage       // Delete master data
 - masters:import       // Bulk import data
 
 // Role-Based Access

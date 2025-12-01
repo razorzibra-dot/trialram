@@ -148,7 +148,7 @@ Get user permissions.
 ```json
 {
   "success": true,
-  "data": ["read", "write", "delete", "manage_customers"]
+  "data": ["read", "write", "delete", "crm:customer:record:update"]
 }
 ```
 

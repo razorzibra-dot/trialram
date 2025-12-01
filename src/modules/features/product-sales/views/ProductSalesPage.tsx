@@ -456,7 +456,7 @@ export const ProductSalesPage: React.FC = () => {
                 onClick={() => handleViewSale(record)}
               />
             </Tooltip>
-            {hasPermission('manage_product_sales') && (
+            {hasPermission('crm:product-sale:record:update') && (
               <Tooltip title="Edit">
                 <Button
                   type="text"
@@ -474,7 +474,7 @@ export const ProductSalesPage: React.FC = () => {
                 />
               </Tooltip>
             )}
-            {hasPermission('manage_product_sales') && (
+            {hasPermission('crm:product-sale:record:update') && (
               <Popconfirm
                 title="Delete Product Sale"
                 description={`Are you sure you want to delete sale ${record.sale_number}? This action cannot be undone.`}
@@ -504,7 +504,7 @@ export const ProductSalesPage: React.FC = () => {
     return applyColumnConfig(baseColumns, columnConfig);
   }, [baseColumns, columnConfig]);
 
-  if (!hasPermission('manage_product_sales')) {
+  if (!hasPermission('crm:product-sale:record:update')) {
     return (
       <>
         <div style={{ padding: 24 }}>
@@ -554,7 +554,7 @@ export const ProductSalesPage: React.FC = () => {
             >
               Refresh
             </Button>
-            {hasPermission('manage_product_sales') && (
+            {hasPermission('crm:product-sale:record:update') && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -757,7 +757,7 @@ export const ProductSalesPage: React.FC = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description="No product sales found"
                     >
-                      {hasPermission('manage_product_sales') && (
+                      {hasPermission('crm:product-sale:record:update') && (
                         <Button
                           type="primary"
                           icon={<PlusOutlined />}

@@ -435,14 +435,14 @@ const { data: customer, isLoading, error, refetch } = useCustomer(id);
 ## Permission-Based Features
 
 ### CustomerDetailPage
-- **Edit Button:** Requires `customers.update` permission
-- **Delete Button:** Requires `customers.delete` permission
+- **Edit Button:** Requires `crm:customer:record:update` permission
+- **Delete Button:** Requires `crm:customer:record:delete` permission
 
 ### CustomerCreatePage
 - **Page Access:** Requires `customers.create` permission (route guard)
 
 ### CustomerEditPage
-- **Page Access:** Requires `customers.update` permission (route guard)
+- **Page Access:** Requires `crm:customer:record:update` permission (route guard)
 
 ---
 

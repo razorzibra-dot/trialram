@@ -419,7 +419,7 @@ const [selectedSale, setSelectedSale] = useState<ProductSale | null>(null);
 ### Pattern 1: Customers
 ```typescript
 const { hasPermission } = useAuth();
-if (!hasPermission('customers:delete')) {
+if (!hasPermission('crm:customer:record:delete')) {
   message.error('You do not have permission to delete customers');
   return;
 }
@@ -428,14 +428,14 @@ if (!hasPermission('customers:delete')) {
 ### Pattern 2: Product Sales
 ```typescript
 const { hasPermission } = useAuth();
-if (!hasPermission('product_sales:update')) {
+if (!hasPermission('crm:product-sale:record:update')) {
   // Permission check
 }
 ```
 
 ### Pattern 3: Sales
 ```typescript
-{hasPermission('sales:create') && (
+{hasPermission('crm:sales:deal:create') && (
   <Button type="primary" onClick={handleCreate}>
     New Deal
   </Button>

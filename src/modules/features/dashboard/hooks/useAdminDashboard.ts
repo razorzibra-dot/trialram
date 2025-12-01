@@ -4,7 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useService } from '@/modules/core/hooks/useService';
+import { auditService } from '@/services/serviceFactory';
 import { useTenantContext } from '@/hooks/useTenantContext';
 import { STATS_QUERY_CONFIG, LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 
@@ -23,7 +23,6 @@ export const adminDashboardKeys = {
 export const useAdminDashboardStats = () => {
   const userService = useService<any>('userService');
   const tenantService = useService<any>('tenantService');
-  const auditService = useService<any>('auditService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({

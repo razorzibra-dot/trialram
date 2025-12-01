@@ -10,7 +10,7 @@ describe('Custom Role Support', () => {
         name: 'Sales Manager',
         description: 'Manages sales team and operations',
         tenant_id: 'tenant-123',
-        permissions: ['read', 'write', 'manage_sales', 'manage_customers'],
+        permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
         is_system_role: false, // Custom role
       };
 
@@ -83,7 +83,7 @@ describe('Custom Role Support', () => {
       const template = {
         id: 'template-123',
         name: 'Sales Template',
-        permissions: ['read', 'write', 'manage_sales', 'manage_customers'],
+        permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
       };
 
       const customRole = {
@@ -97,7 +97,7 @@ describe('Custom Role Support', () => {
     });
 
     it('should allow customizing permissions after inheritance', () => {
-      const basePermissions = ['read', 'write', 'manage_sales'];
+      const basePermissions = ['read', 'write', 'crm:sales:deal:update'];
       const customRole = {
         name: 'Custom Sales Role',
         permissions: [...basePermissions, 'manage_contracts'], // Add custom permission
@@ -106,12 +106,12 @@ describe('Custom Role Support', () => {
 
       expect(customRole.permissions).toContain('read');
       expect(customRole.permissions).toContain('write');
-      expect(customRole.permissions).toContain('manage_sales');
+      expect(customRole.permissions).toContain('crm:sales:deal:update');
       expect(customRole.permissions).toContain('manage_contracts'); // Custom addition
     });
 
     it('should allow removing permissions from inherited set', () => {
-      const basePermissions = ['read', 'write', 'delete', 'manage_sales'];
+      const basePermissions = ['read', 'write', 'delete', 'crm:sales:deal:update'];
       const customRole = {
         name: 'Read-Only Sales Role',
         permissions: basePermissions.filter(p => p !== 'delete' && p !== 'write'), // Remove delete and write
@@ -119,7 +119,7 @@ describe('Custom Role Support', () => {
       };
 
       expect(customRole.permissions).toContain('read');
-      expect(customRole.permissions).toContain('manage_sales');
+      expect(customRole.permissions).toContain('crm:sales:deal:update');
       expect(customRole.permissions).not.toContain('delete');
       expect(customRole.permissions).not.toContain('write');
     });
@@ -137,11 +137,11 @@ describe('Custom Role Support', () => {
     it('should validate inherited permissions exist in system', () => {
       const systemPermissions = [
         'read', 'write', 'delete',
-        'manage_customers', 'manage_sales', 'manage_tickets',
-        'manage_users', 'manage_roles',
+        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        'crm:user:record:update', 'crm:role:record:update',
       ];
 
-      const inheritedPermissions = ['read', 'write', 'manage_sales', 'invalid_permission'];
+      const inheritedPermissions = ['read', 'write', 'crm:sales:deal:update', 'invalid_permission'];
 
       const validPermissions = inheritedPermissions.filter(p => systemPermissions.includes(p));
       const invalidPermissions = inheritedPermissions.filter(p => !systemPermissions.includes(p));
@@ -216,28 +216,28 @@ describe('Custom Role Support', () => {
     });
 
     it('should respect security boundaries in permission assignment', () => {
-      const adminPermissions = ['read', 'write', 'delete', 'manage_users', 'manage_roles'];
-      const systemPermissions = ['platform_admin', 'super_admin', 'manage_tenants'];
+      const adminPermissions = ['read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update'];
+      const systemPermissions = ['crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage'];
 
       // Custom roles should not be able to assign system-level permissions
-      const customRolePermissions = ['read', 'write', 'manage_customers', 'platform_admin'];
+      const customRolePermissions = ['read', 'write', 'crm:customer:record:update', 'crm:platform:control:admin'];
 
       const hasSystemPermissions = customRolePermissions.some(p => systemPermissions.includes(p));
       
       // In production, this should be blocked
       // For validation, we check that system permissions are identified
       expect(hasSystemPermissions).toBe(true);
-      expect(systemPermissions).toContain('platform_admin');
+      expect(systemPermissions).toContain('crm:platform:control:admin');
     });
 
     it('should maintain role hierarchy constraints', () => {
       // Custom roles cannot exceed the permissions of the creating admin
       const adminRole = {
-        permissions: ['read', 'write', 'manage_customers', 'manage_sales'],
+        permissions: ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update'],
       };
 
       const customRole = {
-        permissions: ['read', 'write', 'manage_customers', 'manage_sales', 'manage_users'], // Exceeds admin
+        permissions: ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'crm:user:record:update'], // Exceeds admin
       };
 
       // Custom role should not have permissions the admin doesn't have
@@ -258,7 +258,7 @@ describe('Custom Role Support', () => {
         permissions: [
           'read',
           'write',
-          'manage_product_sales',
+          'crm:product-sale:record:update',
           'manage_contracts',
         ],
         is_system_role: false,
@@ -273,11 +273,11 @@ describe('Custom Role Support', () => {
       const departmentRoles = [
         {
           name: 'Sales Department Manager',
-          permissions: ['read', 'write', 'manage_sales', 'manage_customers'],
+          permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
         },
         {
           name: 'Support Department Manager',
-          permissions: ['read', 'write', 'manage_tickets', 'manage_complaints'],
+          permissions: ['read', 'write', 'manage_tickets', 'crm:support:complaint:update'],
         },
         {
           name: 'Engineering Department Manager',
@@ -313,7 +313,7 @@ describe('Custom Role Support', () => {
         {
           name: 'Sales Representative',
           category: 'business',
-          permissions: ['read', 'write', 'manage_sales', 'manage_customers'],
+          permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
         },
         {
           name: 'Support Agent',
@@ -323,7 +323,7 @@ describe('Custom Role Support', () => {
         {
           name: 'Account Manager',
           category: 'administrative',
-          permissions: ['read', 'write', 'manage_customers', 'manage_contracts', 'view_analytics'],
+          permissions: ['read', 'write', 'crm:customer:record:update', 'manage_contracts', 'crm:analytics:insight:view'],
         },
       ];
 
@@ -338,7 +338,7 @@ describe('Custom Role Support', () => {
       const customRole = {
         id: 'role-123',
         name: 'Sales Manager',
-        permissions: ['read', 'write', 'manage_sales'],
+        permissions: ['read', 'write', 'crm:sales:deal:update'],
         is_system_role: false,
       };
 
@@ -348,7 +348,7 @@ describe('Custom Role Support', () => {
         permissions: [...customRole.permissions, 'manage_contracts'],
       };
 
-      expect(updatedRole.permissions).toContain('manage_sales');
+      expect(updatedRole.permissions).toContain('crm:sales:deal:update');
       expect(updatedRole.permissions).toContain('manage_contracts');
       expect(updatedRole.is_system_role).toBe(false);
     });
@@ -397,7 +397,7 @@ describe('Custom Role Support', () => {
     it('should validate custom roles work with permission checks', () => {
       const customRole = {
         id: 'custom-role-123',
-        permissions: ['read', 'manage_customers'],
+        permissions: ['read', 'crm:customer:record:update'],
       };
 
       const user = {
@@ -407,7 +407,7 @@ describe('Custom Role Support', () => {
 
       // User should have permissions from custom role
       const hasPermission = user.roles.some(role => 
-        role.permissions.includes('manage_customers')
+        role.permissions.includes('crm:customer:record:update')
       );
 
       expect(hasPermission).toBe(true);

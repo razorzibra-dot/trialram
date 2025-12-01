@@ -189,7 +189,7 @@ npx ts-node scripts/seed-auth-users.ts
 SELECT name, resource, action 
 FROM permissions 
 WHERE name NOT LIKE '%:%' 
-AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'platform_admin', 'system_monitoring', 'view_audit_logs', 'export_data', 'view_financials', 'bulk_operations', 'advanced_search', 'api_access');
+AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin', 'system_monitoring', 'view_audit_logs', 'export_data', 'view_financials', 'bulk_operations', 'advanced_search', 'api_access');
 
 -- Should return 0 rows
 ```

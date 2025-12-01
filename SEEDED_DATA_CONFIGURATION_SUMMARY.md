@@ -172,13 +172,13 @@ Level 1: Default (Customer/Viewer)
 - ✅ create_customers
 - ✅ edit_customers
 - ✅ delete_customers
-- ✅ manage_customers
+- ✅ crm:customer:record:update
 
 ### Sales Management (4)
 - ✅ view_sales
 - ✅ create_sales
 - ✅ edit_sales
-- ✅ manage_sales
+- ✅ crm:sales:deal:update
 
 ### Ticket Management (4)
 - ✅ view_tickets
@@ -194,7 +194,7 @@ Level 1: Default (Customer/Viewer)
 
 ### Service Contracts (2)
 - ✅ view_service_contracts
-- ✅ manage_service_contracts
+- ✅ crm:contract:service:update
 
 ### Product Management (2)
 - ✅ view_products
@@ -202,22 +202,22 @@ Level 1: Default (Customer/Viewer)
 
 ### Product Sales (2)
 - ✅ view_product_sales
-- ✅ manage_product_sales
+- ✅ crm:product-sale:record:update
 
 ### Complaints Management (2)
 - ✅ view_complaints
-- ✅ manage_complaints
+- ✅ crm:support:complaint:update
 
 ### Job Works (2)
 - ✅ view_job_works
 - ✅ manage_job_works
 
 ### Administrative (6)
-- ✅ manage_users
-- ✅ manage_roles
+- ✅ crm:user:record:update
+- ✅ crm:role:record:update
 - ✅ view_reports
 - ✅ export_data
-- ✅ manage_settings
+- ✅ crm:system:config:manage
 - ✅ manage_companies
 
 ---

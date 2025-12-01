@@ -56,7 +56,7 @@ const mockUser = {
   role: 'admin',
   isSuperAdmin: false,
   tenantId: 'tenant-1',
-  permissions: ['manage_customers', 'manage_sales', 'manage_tickets'],
+  permissions: ['crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets'],
 };
 
 const mockCustomer = {

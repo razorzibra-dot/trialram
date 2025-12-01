@@ -704,12 +704,12 @@ All 8 page components have been fully implemented with:
 
 - [x] **Permission structure verified** ✅
   - [x] All 7 super user permissions defined:
-    - [x] `super_user:manage_users`
-    - [x] `super_user:manage_tenants`
+    - [x] `crm:platform:user:manage`
+    - [x] `crm:platform:tenant:manage`
     - [x] `super_user:impersonate_users`
-    - [x] `super_user:view_audit_logs`
-    - [x] `super_user:manage_config`
-    - [x] `super_user:view_analytics`
+    - [x] `crm:platform:audit:view`
+    - [x] `crm:platform:config:manage`
+    - [x] `crm:platform:crm:analytics:insight:view`
     - [x] `super_user:manage_permissions`
   - [x] Permissions exported in `SUPER_USER_PERMISSIONS` constant
 
@@ -1372,7 +1372,7 @@ All testing requirements have been implemented:
 ### 16.2 RBAC Sync ✅
 
 - [x] **Verify RBAC Permissions**:
-  - [x] All super user permission keys defined (7 permissions: manage_users, manage_tenants, impersonate_users, view_audit_logs, manage_config, view_analytics, manage_permissions)
+  - [x] All super user permission keys defined (7 permissions: crm:user:record:update, crm:platform:tenant:manage, impersonate_users, view_audit_logs, manage_config, crm:analytics:insight:view, manage_permissions)
   - [x] Super User role created in RBAC (3 role templates: Super Admin, Limited Super User, Auditor)
   - [x] Permissions assigned to role (createSuperUserRoleTemplates function)
   - [x] Permission guards working (validatePermission, validatePermissions functions)
@@ -1383,12 +1383,12 @@ All testing requirements have been implemented:
   - [x] Non-super user → Can't access super admin pages (PermissionGuard component)
 
 **Permissions Defined**:
-- super_user:manage_users
-- super_user:manage_tenants
+- crm:platform:user:manage
+- crm:platform:tenant:manage
 - super_user:impersonate_users
-- super_user:view_audit_logs
-- super_user:manage_config
-- super_user:view_analytics
+- crm:platform:audit:view
+- crm:platform:config:manage
+- crm:platform:crm:analytics:insight:view
 - super_user:manage_permissions
 
 ### 16.3 Tenant Service Sync ✅
@@ -1620,9 +1620,9 @@ All testing requirements have been implemented:
 
 - [x] **Permission denial**:
   - [x] Unauthorized access → Error message shown (PermissionGuard component + toast notification)
-  - [x] User without super_user:manage_users → Cannot create super users ✅
+  - [x] User without crm:platform:user:manage → Cannot create super users ✅
   - [x] User without super_user:impersonate_users → Cannot start impersonation ✅
-  - [x] User without super_user:manage_config → Cannot modify configs ✅
+  - [x] User without crm:platform:config:manage → Cannot modify configs ✅
 
 - [x] **Invalid data**:
   - [x] Form validation errors displayed (Zod schemas catch invalid input before submission)

@@ -103,7 +103,7 @@ export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Product Details</span>
-          {hasPermission('products:update') && (
+          {hasPermission('crm:product:record:update') && (
             <Button
               type="primary"
               size="small"

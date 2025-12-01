@@ -1,6 +1,6 @@
 ---
 title: RBAC Permission "Create Product Sales" Bug Fix
-description: Fix for "Permission Denied" error when creating product sales despite user having manage_product_sales role
+description: Fix for "Permission Denied" error when creating product sales despite user having crm:product-sale:record:update role
 date: 2025-01-29
 author: AI Agent
 version: 2.0.0
@@ -108,8 +108,8 @@ setPermissions({
 
 ### After the Fix
 1. Hook calls `canCreateProductSale(tenantId)` directly
-2. This calls RBAC service with `product_sales:create` action
-3. RBAC service maps to `manage_product_sales` permission
+2. This calls RBAC service with `crm:product-sale:record:create` action
+3. RBAC service maps to `crm:product-sale:record:update` permission
 4. RBAC service queries database: user has this role with this permission
 5. Returns `{ allowed: true }`
 6. Hook sets `canCreate: true`
@@ -140,7 +140,7 @@ npm run dev
 
 ### Step 5: Test the Fix
 
-1. **Log in** with a user who has the `manage_product_sales` permission
+1. **Log in** with a user who has the `crm:product-sale:record:update` permission
    - Example: `admin@acme.com` (Super Administrator role)
    - Example: `manager@acme.com` (Manager role)
 
@@ -195,9 +195,9 @@ interface PermissionResult {
 ### Permission Mapping
 
 ```
-Action: product_sales:create
+Action: crm:product-sale:record:create
   ↓ Maps to ↓
-Permission: manage_product_sales
+Permission: crm:product-sale:record:update
   ↓ Checked in ↓
 User's Roles (from user_roles join roles)
   ↓ Result ↓
@@ -220,17 +220,17 @@ WHERE u.email = 'admin@acme.com';
 -- Expected result:
 -- email: admin@acme.com
 -- name: Super Administrator (or similar)
--- permissions: ["manage_product_sales", ...]
+-- permissions: ["crm:product-sale:record:update", ...]
 ```
 
 ### Console Verification (After Fix)
 When you load the Product Sales form with the fixed code, you should see in browser console:
 ```
-[validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:create"
-[validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:view"
-[validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:edit"
-[validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:delete"
-[validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:view_details"
+[validateRolePermissions] User has permission "crm:product-sale:record:update" for action "crm:product-sale:record:create"
+[validateRolePermissions] User has permission "crm:product-sale:record:update" for action "product_sales:view"
+[validateRolePermissions] User has permission "crm:product-sale:record:update" for action "product_sales:edit"
+[validateRolePermissions] User has permission "crm:product-sale:record:update" for action "crm:product-sale:record:delete"
+[validateRolePermissions] User has permission "crm:product-sale:record:update" for action "product_sales:view_details"
 ```
 
 ---

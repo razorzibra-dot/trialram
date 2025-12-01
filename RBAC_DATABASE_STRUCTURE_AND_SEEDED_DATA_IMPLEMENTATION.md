@@ -101,16 +101,16 @@ CREATE INDEX idx_permissions_category ON permissions(category);
 
 **Current Permissions (31 total)**: System-wide permissions organized by resource
 - **Dashboard**: view_dashboard (1)
-- **Customers**: view_customers, create_customers, edit_customers, delete_customers, manage_customers (5)
-- **Sales**: view_sales, create_sales, edit_sales, manage_sales (4)
+- **Customers**: view_customers, create_customers, edit_customers, delete_customers, crm:customer:record:update (5)
+- **Sales**: view_sales, create_sales, edit_sales, crm:sales:deal:update (4)
 - **Tickets**: view_tickets, create_tickets, edit_tickets, manage_tickets (4)
 - **Contracts**: view_contracts, create_contracts, edit_contracts, manage_contracts (4)
-- **Service Contracts**: view_service_contracts, manage_service_contracts (2)
+- **Service Contracts**: view_service_contracts, crm:contract:service:update (2)
 - **Products**: view_products, manage_products (2)
-- **Product Sales**: view_product_sales, manage_product_sales (2)
-- **Complaints**: view_complaints, manage_complaints (2)
+- **Product Sales**: view_product_sales, crm:product-sale:record:update (2)
+- **Complaints**: view_complaints, crm:support:complaint:update (2)
 - **Job Works**: view_job_works, manage_job_works (2)
-- **Administrative**: manage_users, manage_roles, view_reports, export_data, manage_settings, manage_companies (6)
+- **Administrative**: crm:user:record:update, crm:role:record:update, view_reports, export_data, crm:system:config:manage, manage_companies (6)
 
 ---
 
@@ -748,7 +748,7 @@ Metrics per tenant: active_users, total_contracts, total_sales, total_transactio
 │  │ Operation Permission Check:                         │   │
 │  │ - Get user roles: SELECT FROM user_roles            │   │
 │  │ - Get role permissions: SELECT FROM role_permissions│   │
-│  │ - Check permission: Is 'manage_customers' allowed?  │   │
+│  │ - Check permission: Is 'crm:customer:record:update' allowed?  │   │
 │  └──────────────────────────────────────────────────────┘   │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Granted permissions

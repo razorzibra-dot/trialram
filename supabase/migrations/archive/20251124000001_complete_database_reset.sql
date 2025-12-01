@@ -664,13 +664,13 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('delete', 'Delete access', 'core', '*', 'delete', true),
 
 -- Navigation permissions
-('dashboard:view', 'Access tenant dashboard and analytics', 'navigation', 'dashboard', 'view'),
-('masters:read', 'Access master data and configuration', 'navigation', 'masters', 'read'),
-('user_management:read', 'Access user and role management interface', 'navigation', 'users', 'read'),
+('crm:dashboard:panel:view', 'Access tenant dashboard and analytics', 'navigation', 'dashboard', 'view'),
+('crm:reference:data:read', 'Access master data and configuration', 'navigation', 'masters', 'read'),
+('crm:user:record:read', 'Access user and role management interface', 'navigation', 'users', 'read'),
 
 -- Module management permissions
-('users:manage', 'Manage users', 'module', 'users', 'manage'),
-('roles:manage', 'Manage roles', 'module', 'roles', 'manage'),
+('crm:user:record:update', 'Manage users', 'module', 'users', 'manage'),
+('crm:role:permission:assign', 'Manage roles', 'module', 'roles', 'manage'),
 ('customers:manage', 'Manage customers', 'module', 'customers', 'manage'),
 ('sales:manage', 'Manage sales', 'module', 'sales', 'manage'),
 ('contracts:manage', 'Manage contracts', 'module', 'contracts', 'manage'),
@@ -681,16 +681,16 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('complaints:manage', 'Manage complaints', 'module', 'complaints', 'manage'),
 ('companies:manage', 'Manage companies', 'module', 'companies', 'manage'),
 ('reports:manage', 'Access reports and analytics', 'module', 'reports', 'manage'),
-('settings:manage', 'Manage system settings', 'module', 'settings', 'manage'),
+('crm:system:config:manage', 'Manage system settings', 'module', 'settings', 'manage'),
 
 -- Action-specific permissions
 ('export_data', 'Export data and reports', 'module', 'data', 'export'),
 ('view_audit_logs', 'View audit logs', 'module', 'audit', 'read'),
 
 -- System permissions
-('platform_admin', 'Platform administration', 'system', 'platform', 'admin'),
+('crm:platform:control:admin', 'Platform administration', 'system', 'platform', 'admin'),
 ('super_admin', 'Full system administration', 'system', 'system', 'admin'),
-('tenants:manage', 'Manage tenants', 'system', 'tenants', 'manage'),
+('crm:platform:tenant:manage', 'Manage tenants', 'system', 'tenants', 'manage'),
 ('system_monitoring', 'System monitoring', 'system', 'system', 'monitor')
 
 ON CONFLICT (name) DO NOTHING;
@@ -730,16 +730,16 @@ CROSS JOIN permissions p
 WHERE 
     -- Administrator role gets all permissions
     (r.name = 'Administrator' AND p.name IN (
-        'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:manage', 'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
+        'read', 'write', 'delete', 'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read',
+        'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage', 'contracts:manage',
         'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
-        'complaints:manage', 'companies:manage', 'reports:manage', 'settings:manage',
+        'complaints:manage', 'companies:manage', 'reports:manage', 'crm:system:config:manage',
         'export_data', 'view_audit_logs'
     ))
     OR 
     -- Manager role gets most permissions except user management
     (r.name = 'Manager' AND p.name IN (
-        'read', 'write', 'dashboard:view', 'masters:read',
+        'read', 'write', 'crm:dashboard:panel:view', 'crm:reference:data:read',
         'customers:manage', 'sales:manage', 'contracts:manage',
         'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
         'complaints:manage', 'companies:manage', 'reports:manage',
@@ -748,14 +748,14 @@ WHERE
     OR 
     -- Engineer role gets technical permissions
     (r.name = 'Engineer' AND p.name IN (
-        'read', 'write', 'dashboard:view', 'masters:read',
+        'read', 'write', 'crm:dashboard:panel:view', 'crm:reference:data:read',
         'products:manage', 'job_works:manage', 'tickets:manage',
         'companies:manage', 'export_data', 'view_audit_logs'
     ))
     OR 
     -- User role gets basic permissions
     (r.name = 'User' AND p.name IN (
-        'read', 'write', 'masters:read', 'customers:manage', 'companies:manage'
+        'read', 'write', 'crm:reference:data:read', 'customers:manage', 'companies:manage'
     ))
     OR 
     -- Customer role gets limited permissions
@@ -763,12 +763,12 @@ WHERE
     OR 
     -- Super admin gets everything
     (r.name = 'super_admin' AND p.name IN (
-        'read', 'write', 'delete', 'dashboard:view', 'masters:read', 'user_management:read',
-        'users:manage', 'roles:manage', 'customers:manage', 'sales:manage', 'contracts:manage',
+        'read', 'write', 'delete', 'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read',
+        'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage', 'contracts:manage',
         'service_contracts:manage', 'products:manage', 'job_works:manage', 'tickets:manage',
-        'complaints:manage', 'companies:manage', 'reports:manage', 'settings:manage',
-        'export_data', 'view_audit_logs', 'platform_admin', 'super_admin', 
-        'tenants:manage', 'system_monitoring'
+        'complaints:manage', 'companies:manage', 'reports:manage', 'crm:system:config:manage',
+        'export_data', 'view_audit_logs', 'crm:platform:control:admin', 'super_admin', 
+        'crm:platform:tenant:manage', 'system_monitoring'
     ))
 
 ON CONFLICT (role_id, permission_id) DO NOTHING;

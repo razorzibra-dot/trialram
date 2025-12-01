@@ -34,14 +34,14 @@ BEGIN
     SELECT COUNT(*) INTO new_format_count
     FROM permissions
     WHERE name LIKE '%:%' 
-    OR name IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+    OR name IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
     
-    -- Count legacy format permissions (manage_users, etc.)
+    -- Count legacy format permissions (crm:user:record:update, etc.)
     SELECT COUNT(*) INTO legacy_format_count
     FROM permissions
     WHERE name LIKE 'manage_%' 
     OR name LIKE '%_manage'
-    AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'platform_admin');
+    AND name NOT IN ('read', 'write', 'delete', 'super_admin', 'crm:platform:control:admin');
     
     RAISE NOTICE 'Permission format breakdown:';
     RAISE NOTICE '  - New format (resource:action): % permissions', new_format_count;
@@ -71,11 +71,11 @@ BEGIN
         SELECT name, resource, action 
         FROM permissions 
         WHERE name IN (
-            'users:manage', 'roles:manage', 'customers:manage', 
+            'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 
             'sales:manage', 'contracts:manage', 'products:manage',
             'tickets:manage', 'complaints:manage', 'dashboard:manage',
-            'settings:manage', 'companies:manage', 'tenants:manage',
-            'super_admin', 'platform_admin'
+            'crm:system:config:manage', 'companies:manage', 'crm:platform:tenant:manage',
+            'super_admin', 'crm:platform:control:admin'
         )
     LOOP
         RAISE NOTICE '✅ Critical permission exists: % (%)', permission_record.name, permission_record.resource;
@@ -83,11 +83,11 @@ BEGIN
     
     -- Check for missing critical permissions
     FOR permission_record IN 
-        SELECT 'users:manage' as name, 'users' as resource, 'manage' as action
-        UNION ALL SELECT 'roles:manage', 'roles', 'manage'
+        SELECT 'crm:user:record:update' as name, 'users' as resource, 'manage' as action
+        UNION ALL SELECT 'crm:role:permission:assign', 'roles', 'manage'
         UNION ALL SELECT 'customers:manage', 'customers', 'manage'
         UNION ALL SELECT 'super_admin', 'system', 'admin'
-        UNION ALL SELECT 'platform_admin', 'platform', 'admin'
+        UNION ALL SELECT 'crm:platform:control:admin', 'platform', 'admin'
     LOOP
         IF NOT EXISTS (
             SELECT 1 FROM permissions 

@@ -36,6 +36,9 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { Customer } from '@/types/crm';
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+import { PermissionSection } from '@/components/layout/PermissionSection';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 interface CustomerDetailPanelProps {
   visible: boolean;
@@ -153,15 +156,30 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
-export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
+export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = (props) => {
+  if (!props.customer) {
+    return null;
+  }
+
+  return <CustomerDetailPanelContent {...props} customer={props.customer} />;
+};
+
+const CustomerDetailPanelContent: React.FC<
+  Omit<CustomerDetailPanelProps, 'customer'> & { customer: Customer }
+> = ({
   visible,
   customer,
   onClose,
   onEdit,
 }) => {
-  if (!customer) {
-    return null;
-  }
+
+  // Element-level permissions
+  const canEditCustomer = usePermission(`crm:contacts:record.${customer.id}:button.edit`, 'visible');
+  const canViewBasicInfo = usePermission('crm:contacts:detail:section.basic', 'accessible');
+  const canViewBusinessInfo = usePermission('crm:contacts:detail:section.business', 'accessible');
+  const canViewAddressInfo = usePermission('crm:contacts:detail:section.address', 'accessible');
+  const canViewFinancialInfo = usePermission('crm:contacts:detail:section.financial', 'accessible');
+  const canViewNotes = usePermission('crm:contacts:detail:section.notes', 'accessible');
 
   const statusInfo = statusConfig[customer.status as keyof typeof statusConfig] || statusConfig.prospect;
   const daysAsCustomer = getDaysAsCustomer(customer.created_at);
@@ -190,14 +208,16 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
           >
             Close
           </Button>
-          <Button
-            type="primary"
-            size="large"
-            icon={<EditOutlined />}
-            onClick={onEdit}
-          >
-            Edit Customer
-          </Button>
+          {canEditCustomer && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<EditOutlined />}
+              onClick={onEdit}
+            >
+              Edit Customer
+            </Button>
+          )}
         </div>
       }
     >
@@ -351,13 +371,13 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
         </Card>
 
         {/* 📄 Basic Information */}
-        <Card style={sectionStyles.card} variant="borderless">
-          <div style={sectionStyles.header}>
-            <FileTextOutlined style={sectionStyles.headerIcon} />
-            <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
-          </div>
-
-          <Descriptions column={1} size="small">
+        <PermissionSection
+          elementPath="crm:contacts:detail:section.basic"
+          title="Basic Information"
+          icon={<FileTextOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />}
+        >
+          <Card style={sectionStyles.card} variant="borderless">
+            <Descriptions column={1} size="small">
             <Descriptions.Item
               label={<span style={{ fontWeight: 600, color: '#374151' }}>Company Name</span>}
             >
@@ -405,7 +425,8 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               )}
             </Descriptions.Item>
           </Descriptions>
-        </Card>
+          </Card>
+        </PermissionSection>
 
         {/* 🏢 Business Information */}
         <Card style={sectionStyles.card} variant="borderless">

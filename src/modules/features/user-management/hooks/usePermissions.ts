@@ -7,9 +7,11 @@
  * if (permissions.canCreate) show create button
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/serviceFactory';
+import { useCurrentUser, useCurrentTenant } from '@/hooks';
+import { supabase } from '@/services/supabase/client';
 import {
   getPermissionGuard,
   canPerformUserAction,
@@ -21,28 +23,40 @@ import {
 /**
  * Hook return type for permission checks
  */
-export interface UsePermissionsReturn extends PermissionGuardResult {
+export interface UsePermissionsReturn {
   /** Can perform action on target user */
   canPerformAction: (
     targetUserRole: string,
     targetUserTenantId: string,
     action: 'create' | 'edit' | 'delete' | 'reset_password'
   ) => boolean;
-  
+
   /** Check single permission */
   hasPermission: (permission: UserPermission) => boolean;
-  
+
   /** Current user role */
   userRole: string;
-  
+
   /** Current user tenant ID */
   userTenantId: string;
-  
+
   /** Loading state - true while auth is loading user data */
   isLoading: boolean;
-  
+
   /** Can manage users (view, create, or edit) */
   canManageUsers: boolean;
+
+  /** Permission guard results */
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canManageRoles: boolean;
+  canResetPassword: boolean;
+  canViewList: boolean;
+  canCreateUsers: boolean;
+  canEditUsers: boolean;
+  canDeleteUsers: boolean;
+  canViewUsers: boolean;
 }
 
 /**
@@ -51,7 +65,8 @@ export interface UsePermissionsReturn extends PermissionGuardResult {
  */
 export function usePermissions(): UsePermissionsReturn {
   const auth = useAuth();
-  const currentUser = auth?.user;
+  const currentUser = useCurrentUser();
+  const currentTenant = useCurrentTenant();
   const userRole = currentUser?.role || 'guest';
   const userTenantId = currentUser?.tenantId || '';
 
@@ -64,6 +79,90 @@ export function usePermissions(): UsePermissionsReturn {
     return getPermissionGuard(userRole as any);
   }, [userRole, userPermissions]);
 
+  // Also check element permissions for UI controls using direct database queries
+  const [elementPermissions, setElementPermissions] = useState({
+    canCreateUser: false,
+    canEditUsers: false,
+    canDeleteUsers: false,
+    canViewUsers: false,
+  });
+
+  useEffect(() => {
+    const checkElementPermissions = async () => {
+      if (!currentUser || !currentTenant) {
+        setElementPermissions({
+          canCreateUser: false,
+          canEditUsers: false,
+          canDeleteUsers: false,
+          canViewUsers: false,
+        });
+        return;
+      }
+
+      try {
+        // Simple direct query to check user permissions
+        const { data: permissions, error } = await supabase
+          .from('user_roles')
+          .select(`
+            roles!user_roles_role_id_fkey(
+              role_permissions(
+                permissions(name)
+              )
+            )
+          `)
+          .eq('user_id', currentUser.id)
+          .eq('tenant_id', currentUser.tenantId || null);
+
+        if (error) {
+          console.error('[usePermissions] Error fetching permissions:', error);
+          setElementPermissions({
+            canCreateUser: false,
+            canEditUsers: false,
+            canDeleteUsers: false,
+            canViewUsers: false,
+          });
+          return;
+        }
+
+        // Extract permission names from the nested structure
+        const permissionNames: string[] = [];
+        permissions?.forEach((userRole: any) => {
+          userRole.roles?.role_permissions?.forEach((rp: any) => {
+            if (rp.permissions?.name) {
+              permissionNames.push(rp.permissions.name);
+            }
+          });
+        });
+
+        setElementPermissions({
+          canViewUsers: permissionNames.includes('crm:user:list:view:accessible'),
+          canCreateUser: permissionNames.includes('crm:user:list:button.create:visible'),
+          canEditUsers: permissionNames.includes('crm:user:record:update'),
+          canDeleteUsers: permissionNames.includes('crm:user:record:delete'),
+        });
+
+        console.log('[usePermissions] Element permissions loaded:', {
+          totalPermissions: permissionNames.length,
+          permissionNames: permissionNames.filter(p => p.startsWith('crm:user')),
+          canViewUsers: permissionNames.includes('crm:user:list:view:accessible'),
+          canCreateUser: permissionNames.includes('crm:user:list:button.create:visible'),
+          canEditUsers: permissionNames.includes('crm:user:record:update'),
+          canDeleteUsers: permissionNames.includes('crm:user:record:delete'),
+        });
+      } catch (error) {
+        console.error('[usePermissions] Error checking element permissions:', error);
+        setElementPermissions({
+          canCreateUser: false,
+          canEditUsers: false,
+          canDeleteUsers: false,
+          canViewUsers: false,
+        });
+      }
+    };
+
+    checkElementPermissions();
+  }, [currentUser?.id, currentTenant?.id]);
+
   const canPerformActionFn = useMemo(
     () => (
       targetUserRole: string,
@@ -72,9 +171,9 @@ export function usePermissions(): UsePermissionsReturn {
     ) => {
       // Check if user has permission for this action via database permissions
       // Super admins should have all permissions in database, not hardcoded bypass
-      const hasManagePermission = authService.hasPermission('users:manage');
+      const hasManagePermission = authService.hasPermission('crm:user:record:update');
       if (hasManagePermission) {
-        // Users with users:manage can perform all actions (except delete other admins)
+        // Users with crm:user:record:update can perform all actions (except delete other admins)
         if (action === 'delete' && targetUserRole === 'admin') {
           return false; // Prevent lockout
         }
@@ -112,10 +211,13 @@ export function usePermissions(): UsePermissionsReturn {
         userTenantId,
         isLoading: auth?.isLoading || false,
         canManageUsers: permissionGuard.canViewList || permissionGuard.canCreate || permissionGuard.canEdit,
+        // Override with element permissions for UI controls
+        canCreateUsers: elementPermissions.canCreateUser || permissionGuard.canCreate,
+        canEditUsers: elementPermissions.canEditUsers || permissionGuard.canEdit,
+        canDeleteUsers: elementPermissions.canDeleteUsers || permissionGuard.canDelete,
+        canViewList: elementPermissions.canViewUsers || permissionGuard.canViewList,
+        canViewUsers: elementPermissions.canViewUsers || permissionGuard.canViewList,
         // Backward compatibility aliases
-        canCreateUsers: permissionGuard.canCreate,
-        canEditUsers: permissionGuard.canEdit,
-        canDeleteUsers: permissionGuard.canDelete,
         canResetPasswords: permissionGuard.canResetPassword,
       };
       console.log('[usePermissions] ✅ Returning permission result:', {
@@ -124,11 +226,12 @@ export function usePermissions(): UsePermissionsReturn {
         canEditUsers: res.canEditUsers,
         canDelete: res.canDelete,
         canViewList: res.canViewList,
-        permissionGuardCanEdit: permissionGuard.canEdit
+        permissionGuardCanEdit: permissionGuard.canEdit,
+        elementPermissions
       });
       return res;
     },
-    [permissionGuard, canPerformActionFn, hasPermissionFn, userRole, userTenantId, auth?.isLoading]
+    [permissionGuard, canPerformActionFn, hasPermissionFn, userRole, userTenantId, auth?.isLoading, elementPermissions]
   );
   
   return result;

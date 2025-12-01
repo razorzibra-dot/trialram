@@ -119,14 +119,14 @@ class PermissionConsistencyChecker {
         }
 
         // Check 2: Core permissions should not have colon
-        const corePermissions = ['read', 'write', 'delete', 'platform_admin', 'super_admin', 'system_monitoring'];
+        const corePermissions = ['read', 'write', 'delete', 'crm:platform:control:admin', 'super_admin', 'system_monitoring'];
         if (corePermissions.includes(name) && name.includes(':')) {
           formatViolations++;
           violations.push(`Core permission ${name} should not contain colon`);
         }
 
         // Check 3: Module permissions should have resource:action format
-        const modulePermissions = ['users:manage', 'customers:manage', 'sales:manage', 'contracts:manage'];
+        const modulePermissions = ['crm:user:record:update', 'customers:manage', 'sales:manage', 'contracts:manage'];
         if (modulePermissions.some(mp => name.startsWith(mp.split(':')[0] + ':')) && !name.includes(':')) {
           formatViolations++;
           violations.push(`Module permission ${name} should use resource:action format`);
@@ -317,7 +317,7 @@ class PermissionConsistencyChecker {
 
         // Check super admin consistency
         if (user.is_super_admin) {
-          const expectedSuperPermissions = ['super_admin', 'platform_admin'];
+          const expectedSuperPermissions = ['super_admin', 'crm:platform:control:admin'];
           const missingSuperPerms = expectedSuperPermissions.filter(perm => !userPermissions.has(perm));
           
           if (missingSuperPerms.length > 0) {
@@ -372,7 +372,7 @@ class PermissionConsistencyChecker {
         const tenantId = role.tenant_id;
 
         // Check for inappropriate global permissions in tenant roles
-        const globalPermissions = ['super_admin', 'platform_admin', 'system_monitoring'];
+        const globalPermissions = ['super_admin', 'crm:platform:control:admin', 'system_monitoring'];
         const inappropriatePerms = rolePermissions.filter((perm: string) => 
           globalPermissions.includes(perm)
         );

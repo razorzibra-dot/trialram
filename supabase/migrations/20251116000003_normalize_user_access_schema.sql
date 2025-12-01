@@ -62,7 +62,7 @@ SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Administrator'
-  AND p.name IN ('read', 'write', 'delete', 'manage_users', 'manage_roles', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets', 'manage_complaints', 'manage_dashboard', 'manage_settings', 'manage_companies');
+  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies');
 
 -- Insert role_permissions for Manager role
 INSERT INTO role_permissions (role_id, permission_id)
@@ -70,7 +70,7 @@ SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Manager'
-  AND p.name IN ('read', 'write', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_dashboard');
+  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'manage_dashboard');
 
 -- Insert role_permissions for User role
 INSERT INTO role_permissions (role_id, permission_id)
@@ -78,7 +78,7 @@ SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'User'
-  AND p.name IN ('read', 'write', 'manage_customers', 'manage_tickets');
+  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'manage_tickets');
 
 -- Insert role_permissions for Engineer role
 INSERT INTO role_permissions (role_id, permission_id)
@@ -102,7 +102,7 @@ SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'super_admin'
-  AND p.name IN ('read', 'write', 'delete', 'manage_users', 'manage_roles', 'manage_customers', 'manage_sales', 'manage_contracts', 'manage_service_contracts', 'manage_products', 'manage_product_sales', 'manage_job_works', 'manage_tickets', 'manage_complaints', 'manage_dashboard', 'manage_settings', 'manage_companies', 'platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring');
+  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies', 'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring');
 
 -- ============================================================================
 -- 5. DROP ALL OLD RLS POLICIES THAT DEPEND ON USERS.ROLE

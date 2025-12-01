@@ -23,7 +23,7 @@ Successfully completed all database script synchronization fixes, ensuring prope
 ### 1.1 Permission Format Fix ✅
 - **Status**: COMPLETED
 - **Action**: Verified permission format in `supabase/seed.sql` lines 14-48
-- **Result**: All permissions using correct format: `users:manage`, `roles:manage`, etc.
+- **Result**: All permissions using correct format: `crm:user:record:update`, `crm:role:permission:assign`, etc.
 - **Validation**: ✅ 34 permission entries confirmed in new format
 
 ### 1.2 Role Permissions Mapping ✅
@@ -98,7 +98,7 @@ Successfully completed all database script synchronization fixes, ensuring prope
 - **Permission System**: 
   - New format: 56 permissions (`resource:action`)
   - Legacy format: 29 permissions (backward compatibility)
-  - Core permissions: 5 (`read`, `write`, `delete`, `super_admin`, `platform_admin`)
+  - Core permissions: 5 (`read`, `write`, `delete`, `super_admin`, `crm:platform:control:admin`)
 
 ### RBAC System Status
 - **Role-Permission Mappings**: 158 active assignments

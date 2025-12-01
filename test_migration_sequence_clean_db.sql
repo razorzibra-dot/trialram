@@ -103,28 +103,28 @@ BEGIN
     ('read', 'Read access', 'core', '*', 'read', true),
     ('write', 'Write access', 'core', '*', 'write', true),
     ('delete', 'Delete access', 'core', '*', 'delete', true),
-    ('users:manage', 'Manage users', 'module', 'users', 'manage', false),
-    ('roles:manage', 'Manage roles', 'module', 'roles', 'manage', false),
+    ('crm:user:record:update', 'Manage users', 'module', 'users', 'manage', false),
+    ('crm:role:permission:assign', 'Manage roles', 'module', 'roles', 'manage', false),
     ('customers:manage', 'Manage customers', 'module', 'customers', 'manage', false),
     ('sales:manage', 'Manage sales', 'module', 'sales', 'manage', false),
     ('contracts:manage', 'Manage contracts', 'module', 'contracts', 'manage', false),
     ('service_contracts:manage', 'Manage service contracts', 'module', 'service_contracts', 'manage', false),
     ('products:manage', 'Manage products', 'module', 'products', 'manage', false),
     ('dashboard:manage', 'Access dashboard', 'module', 'dashboard', 'manage', false),
-    ('settings:manage', 'Manage settings', 'module', 'settings', 'manage', false),
+    ('crm:system:config:manage', 'Manage settings', 'module', 'settings', 'manage', false),
     ('companies:manage', 'Manage companies', 'module', 'companies', 'manage', false),
-    ('platform_admin', 'Platform administration', 'system', 'platform', 'admin', true),
+    ('crm:platform:control:admin', 'Platform administration', 'system', 'platform', 'admin', true),
     ('super_admin', 'Full system administration', 'system', 'system', 'admin', true),
-    ('tenants:manage', 'Manage tenants', 'system', 'tenants', 'manage', true),
+    ('crm:platform:tenant:manage', 'Manage tenants', 'system', 'tenants', 'manage', true),
     ('system_monitoring', 'System monitoring', 'system', 'system', 'monitor', true)
     ON CONFLICT (name) DO NOTHING;
     
     -- Verify permissions were created
     SELECT COUNT(*) INTO permission_count FROM permissions WHERE name IN (
-        'read', 'write', 'delete', 'users:manage', 'roles:manage', 'customers:manage',
+        'read', 'write', 'delete', 'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage',
         'sales:manage', 'contracts:manage', 'service_contracts:manage', 'products:manage',
-        'dashboard:manage', 'settings:manage', 'companies:manage', 'platform_admin',
-        'super_admin', 'tenants:manage', 'system_monitoring'
+        'dashboard:manage', 'crm:system:config:manage', 'companies:manage', 'crm:platform:control:admin',
+        'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
     );
     
     IF permission_count < 17 THEN
@@ -135,9 +135,9 @@ BEGIN
     
     -- Test 2: Create test roles
     INSERT INTO roles (id, name, description, tenant_id, is_system_role, permissions, created_by) VALUES
-    ('10000000-0000-0000-0000-000000000001'::UUID, 'Administrator', 'Full administrative access', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '["read", "write", "users:manage"]'::jsonb, NULL),
+    ('10000000-0000-0000-0000-000000000001'::UUID, 'Administrator', 'Full administrative access', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '["read", "write", "crm:user:record:update"]'::jsonb, NULL),
     ('10000000-0000-0000-0000-000000000002'::UUID, 'Manager', 'Business operations manager', '550e8400-e29b-41d4-a716-446655440001'::UUID, true, '["read", "write", "customers:manage"]'::jsonb, NULL),
-    ('20000000-0000-0000-0000-000000000001'::UUID, 'super_admin', 'Super Administrator', NULL, true, '["super_admin", "platform_admin"]'::jsonb, NULL)
+    ('20000000-0000-0000-0000-000000000001'::UUID, 'super_admin', 'Super Administrator', NULL, true, '["super_admin", "crm:platform:control:admin"]'::jsonb, NULL)
     ON CONFLICT (name, tenant_id) DO NOTHING;
     
     -- Test 3: Create test users
@@ -155,7 +155,7 @@ BEGIN
     FROM roles r
     CROSS JOIN permissions p
     WHERE r.name = 'Administrator'
-      AND p.name IN ('read', 'write', 'users:manage')
+      AND p.name IN ('read', 'write', 'crm:user:record:update')
     ON CONFLICT (role_id, permission_id) DO NOTHING;
     
     -- Test 5: Create super admin role permissions
@@ -167,7 +167,7 @@ BEGIN
     FROM roles r
     CROSS JOIN permissions p
     WHERE r.name = 'super_admin'
-      AND p.name IN ('super_admin', 'platform_admin')
+      AND p.name IN ('super_admin', 'crm:platform:control:admin')
     ON CONFLICT (role_id, permission_id) DO NOTHING;
     
     -- Verify role permissions were created
@@ -332,10 +332,10 @@ DELETE FROM roles WHERE id IN (
     '20000000-0000-0000-0000-000000000001'::UUID
 );
 DELETE FROM permissions WHERE name IN (
-    'read', 'write', 'delete', 'users:manage', 'roles:manage', 'customers:manage',
+    'read', 'write', 'delete', 'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage',
     'sales:manage', 'contracts:manage', 'service_contracts:manage', 'products:manage',
-    'dashboard:manage', 'settings:manage', 'companies:manage', 'platform_admin',
-    'super_admin', 'tenants:manage', 'system_monitoring'
+    'dashboard:manage', 'crm:system:config:manage', 'companies:manage', 'crm:platform:control:admin',
+    'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 );
 
 -- ============================================================================

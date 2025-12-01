@@ -210,7 +210,7 @@ const JobWorksPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('jobworks:update') && (
+          {hasPermission('crm:project:record:update') && (
             <Button
               type="link"
               size="small"
@@ -220,7 +220,7 @@ const JobWorksPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('jobworks:delete') && (
+          {hasPermission('crm:project:record:delete') && (
             <Popconfirm
               title="Delete Job Work"
               description={`Are you sure you want to delete "${record.title}"?`}
@@ -260,7 +260,7 @@ const JobWorksPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
-            {hasPermission('jobworks:create') && (
+            {hasPermission('crm:project:record:create') && (
               <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateJobWork}>
                 New Job Work
               </Button>

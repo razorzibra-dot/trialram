@@ -14,12 +14,12 @@ UPDATE permissions SET
   category = CASE
     WHEN name IN ('read', 'write', 'delete') THEN 'core'
     WHEN name LIKE 'manage_%' THEN 'module'
-    WHEN name IN ('manage_users', 'manage_roles', 'view_analytics', 'manage_settings', 'manage_companies') THEN 'administrative'
-    WHEN name IN ('platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring') THEN 'system'
+    WHEN name IN ('crm:user:record:update', 'crm:role:record:update', 'crm:analytics:insight:view', 'crm:system:config:manage', 'manage_companies') THEN 'administrative'
+    WHEN name IN ('crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring') THEN 'system'
     ELSE 'core'
   END,
   is_system_permission = CASE
-    WHEN name IN ('platform_admin', 'super_admin', 'manage_tenants', 'system_monitoring') THEN TRUE
+    WHEN name IN ('crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring') THEN TRUE
     ELSE FALSE
   END;
 

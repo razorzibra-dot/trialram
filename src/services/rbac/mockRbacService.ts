@@ -13,76 +13,76 @@ class MockRBACService {
     { id: 'delete', name: 'Delete', description: 'Delete data', category: 'core', resource: '*', action: 'delete' },
     
     // Module permissions - ALL using {resource}:{action} format
-    { id: 'customers:read', name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
-    { id: 'customers:create', name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
-    { id: 'customers:update', name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
-    { id: 'customers:delete', name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
+    { id: 'crm:customer:record:read', name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
+    { id: 'crm:customer:record:create', name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
+    { id: 'crm:customer:record:update', name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
+    { id: 'crm:customer:record:delete', name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
     
-    { id: 'sales:read', name: 'View Sales', description: 'View sales processes and deals', category: 'module', resource: 'sales', action: 'read' },
-    { id: 'sales:create', name: 'Create Sales', description: 'Create new sales records', category: 'module', resource: 'sales', action: 'create' },
-    { id: 'sales:update', name: 'Update Sales', description: 'Edit sales information', category: 'module', resource: 'sales', action: 'update' },
-    { id: 'sales:delete', name: 'Delete Sales', description: 'Remove sales records', category: 'module', resource: 'sales', action: 'delete' },
+    { id: 'crm:sales:deal:read', name: 'View Sales', description: 'View sales processes and deals', category: 'module', resource: 'sales', action: 'read' },
+    { id: 'crm:sales:deal:create', name: 'Create Sales', description: 'Create new sales records', category: 'module', resource: 'sales', action: 'create' },
+    { id: 'crm:sales:deal:update', name: 'Update Sales', description: 'Edit sales information', category: 'module', resource: 'sales', action: 'update' },
+    { id: 'crm:sales:deal:delete', name: 'Delete Sales', description: 'Remove sales records', category: 'module', resource: 'sales', action: 'delete' },
     
-    { id: 'tickets:read', name: 'View Tickets', description: 'View support tickets and issues', category: 'module', resource: 'tickets', action: 'read' },
-    { id: 'tickets:create', name: 'Create Tickets', description: 'Create new support tickets', category: 'module', resource: 'tickets', action: 'create' },
-    { id: 'tickets:update', name: 'Update Tickets', description: 'Edit ticket information', category: 'module', resource: 'tickets', action: 'update' },
-    { id: 'tickets:delete', name: 'Delete Tickets', description: 'Remove ticket records', category: 'module', resource: 'tickets', action: 'delete' },
+    { id: 'crm:support:ticket:read', name: 'View Tickets', description: 'View support tickets and issues', category: 'module', resource: 'tickets', action: 'read' },
+    { id: 'crm:support:ticket:create', name: 'Create Tickets', description: 'Create new support tickets', category: 'module', resource: 'tickets', action: 'create' },
+    { id: 'crm:support:ticket:update', name: 'Update Tickets', description: 'Edit ticket information', category: 'module', resource: 'tickets', action: 'update' },
+    { id: 'crm:support:ticket:delete', name: 'Delete Tickets', description: 'Remove ticket records', category: 'module', resource: 'tickets', action: 'delete' },
     
-    { id: 'complaints:read', name: 'View Complaints', description: 'View customer complaints', category: 'module', resource: 'complaints', action: 'read' },
-    { id: 'complaints:create', name: 'Create Complaints', description: 'Create complaint records', category: 'module', resource: 'complaints', action: 'create' },
-    { id: 'complaints:update', name: 'Update Complaints', description: 'Edit complaint information', category: 'module', resource: 'complaints', action: 'update' },
-    { id: 'complaints:delete', name: 'Delete Complaints', description: 'Remove complaint records', category: 'module', resource: 'complaints', action: 'delete' },
+    { id: 'crm:support:complaint:read', name: 'View Complaints', description: 'View customer complaints', category: 'module', resource: 'complaints', action: 'read' },
+    { id: 'crm:support:complaint:create', name: 'Create Complaints', description: 'Create complaint records', category: 'module', resource: 'complaints', action: 'create' },
+    { id: 'crm:support:complaint:update', name: 'Update Complaints', description: 'Edit complaint information', category: 'module', resource: 'complaints', action: 'update' },
+    { id: 'crm:support:complaint:delete', name: 'Delete Complaints', description: 'Remove complaint records', category: 'module', resource: 'complaints', action: 'delete' },
     
-    { id: 'contracts:read', name: 'View Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'contracts', action: 'read' },
-    { id: 'contracts:create', name: 'Create Contracts', description: 'Create new contracts', category: 'module', resource: 'contracts', action: 'create' },
-    { id: 'contracts:update', name: 'Update Contracts', description: 'Edit contract information', category: 'module', resource: 'contracts', action: 'update' },
-    { id: 'contracts:delete', name: 'Delete Contracts', description: 'Remove contract records', category: 'module', resource: 'contracts', action: 'delete' },
+    { id: 'crm:contract:record:read', name: 'View Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'contracts', action: 'read' },
+    { id: 'crm:contract:record:create', name: 'Create Contracts', description: 'Create new contracts', category: 'module', resource: 'contracts', action: 'create' },
+    { id: 'crm:contract:record:update', name: 'Update Contracts', description: 'Edit contract information', category: 'module', resource: 'contracts', action: 'update' },
+    { id: 'crm:contract:record:delete', name: 'Delete Contracts', description: 'Remove contract records', category: 'module', resource: 'contracts', action: 'delete' },
     
-    { id: 'products:read', name: 'View Products', description: 'View product catalog and inventory', category: 'module', resource: 'products', action: 'read' },
-    { id: 'products:create', name: 'Create Products', description: 'Create new product records', category: 'module', resource: 'products', action: 'create' },
-    { id: 'products:update', name: 'Update Products', description: 'Edit product information', category: 'module', resource: 'products', action: 'update' },
-    { id: 'products:delete', name: 'Delete Products', description: 'Remove product records', category: 'module', resource: 'products', action: 'delete' },
+    { id: 'crm:product:record:read', name: 'View Products', description: 'View product catalog and inventory', category: 'module', resource: 'products', action: 'read' },
+    { id: 'crm:product:record:create', name: 'Create Products', description: 'Create new product records', category: 'module', resource: 'products', action: 'create' },
+    { id: 'crm:product:record:update', name: 'Update Products', description: 'Edit product information', category: 'module', resource: 'products', action: 'update' },
+    { id: 'crm:product:record:delete', name: 'Delete Products', description: 'Remove product records', category: 'module', resource: 'products', action: 'delete' },
 
-    { id: 'product_sales:read', name: 'View Product Sales', description: 'View product sales transactions', category: 'module', resource: 'product_sales', action: 'read' },
-    { id: 'product_sales:create', name: 'Create Product Sales', description: 'Create new product sales records', category: 'module', resource: 'product_sales', action: 'create' },
-    { id: 'product_sales:update', name: 'Update Product Sales', description: 'Edit product sales information', category: 'module', resource: 'product_sales', action: 'update' },
-    { id: 'product_sales:delete', name: 'Delete Product Sales', description: 'Remove product sales records', category: 'module', resource: 'product_sales', action: 'delete' },
+    { id: 'crm:product-sale:record:read', name: 'View Product Sales', description: 'View product sales transactions', category: 'module', resource: 'product_sales', action: 'read' },
+    { id: 'crm:product-sale:record:create', name: 'Create Product Sales', description: 'Create new product sales records', category: 'module', resource: 'product_sales', action: 'create' },
+    { id: 'crm:product-sale:record:update', name: 'Update Product Sales', description: 'Edit product sales information', category: 'module', resource: 'product_sales', action: 'update' },
+    { id: 'crm:product-sale:record:delete', name: 'Delete Product Sales', description: 'Remove product sales records', category: 'module', resource: 'product_sales', action: 'delete' },
     
-    { id: 'jobworks:read', name: 'View Job Works', description: 'View job work orders and tasks', category: 'module', resource: 'jobworks', action: 'read' },
-    { id: 'jobworks:create', name: 'Create Job Works', description: 'Create new job work orders', category: 'module', resource: 'jobworks', action: 'create' },
-    { id: 'jobworks:update', name: 'Update Job Works', description: 'Edit job work information', category: 'module', resource: 'jobworks', action: 'update' },
-    { id: 'jobworks:delete', name: 'Delete Job Works', description: 'Remove job work records', category: 'module', resource: 'jobworks', action: 'delete' },
+    { id: 'crm:project:record:read', name: 'View Job Works', description: 'View job work orders and tasks', category: 'module', resource: 'jobworks', action: 'read' },
+    { id: 'crm:project:record:create', name: 'Create Job Works', description: 'Create new job work orders', category: 'module', resource: 'jobworks', action: 'create' },
+    { id: 'crm:project:record:update', name: 'Update Job Works', description: 'Edit job work information', category: 'module', resource: 'jobworks', action: 'update' },
+    { id: 'crm:project:record:delete', name: 'Delete Job Works', description: 'Remove job work records', category: 'module', resource: 'jobworks', action: 'delete' },
 
-    { id: 'service_contracts:read', name: 'View Service Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'read' },
-    { id: 'service_contracts:create', name: 'Create Service Contracts', description: 'Create new service contracts', category: 'module', resource: 'service_contracts', action: 'create' },
-    { id: 'service_contracts:update', name: 'Update Service Contracts', description: 'Edit service contract information', category: 'module', resource: 'service_contracts', action: 'update' },
-    { id: 'service_contracts:delete', name: 'Delete Service Contracts', description: 'Remove service contract records', category: 'module', resource: 'service_contracts', action: 'delete' },
+    { id: 'crm:contract:service:read', name: 'View Service Contracts', description: 'View service contracts and agreements', category: 'module', resource: 'service_contracts', action: 'read' },
+    { id: 'crm:contract:service:create', name: 'Create Service Contracts', description: 'Create new service contracts', category: 'module', resource: 'service_contracts', action: 'create' },
+    { id: 'crm:contract:service:update', name: 'Update Service Contracts', description: 'Edit service contract information', category: 'module', resource: 'service_contracts', action: 'update' },
+    { id: 'crm:contract:service:delete', name: 'Delete Service Contracts', description: 'Remove service contract records', category: 'module', resource: 'service_contracts', action: 'delete' },
 
-    { id: 'dashboard:view', name: 'View Dashboard', description: 'Access tenant dashboard and analytics', category: 'module', resource: 'dashboard', action: 'view' },
-    { id: 'masters:read', name: 'View Masters', description: 'Access master data and configuration', category: 'module', resource: 'masters', action: 'read' },
-    { id: 'user_management:read', name: 'View User Management', description: 'Access user and role management interface', category: 'module', resource: 'user_management', action: 'read' },
+    { id: 'crm:dashboard:panel:view', name: 'View Dashboard', description: 'Access tenant dashboard and analytics', category: 'module', resource: 'dashboard', action: 'view' },
+    { id: 'crm:reference:data:read', name: 'View Masters', description: 'Access master data and configuration', category: 'module', resource: 'masters', action: 'read' },
+    { id: 'crm:user:record:read', name: 'View User Management', description: 'Access user and role management interface', category: 'module', resource: 'user_management', action: 'read' },
     
     // Administrative permissions - ALL using {resource}:{action} format
-    { id: 'users:read', name: 'View Users', description: 'View user accounts and access', category: 'administrative', resource: 'users', action: 'read' },
-    { id: 'users:create', name: 'Create Users', description: 'Create new user accounts', category: 'administrative', resource: 'users', action: 'create' },
-    { id: 'users:update', name: 'Update Users', description: 'Edit user accounts', category: 'administrative', resource: 'users', action: 'update' },
-    { id: 'users:delete', name: 'Delete Users', description: 'Remove user accounts', category: 'administrative', resource: 'users', action: 'delete' },
+    { id: 'crm:user:record:read', name: 'View Users', description: 'View user accounts and access', category: 'administrative', resource: 'users', action: 'read' },
+    { id: 'crm:user:record:create', name: 'Create Users', description: 'Create new user accounts', category: 'administrative', resource: 'users', action: 'create' },
+    { id: 'crm:user:record:update', name: 'Update Users', description: 'Edit user accounts', category: 'administrative', resource: 'users', action: 'update' },
+    { id: 'crm:user:record:delete', name: 'Delete Users', description: 'Remove user accounts', category: 'administrative', resource: 'users', action: 'delete' },
     
-    { id: 'roles:read', name: 'View Roles', description: 'View roles and permissions', category: 'administrative', resource: 'roles', action: 'read' },
-    { id: 'roles:create', name: 'Create Roles', description: 'Create new roles', category: 'administrative', resource: 'roles', action: 'create' },
-    { id: 'roles:update', name: 'Update Roles', description: 'Edit roles and permissions', category: 'administrative', resource: 'roles', action: 'update' },
-    { id: 'roles:delete', name: 'Delete Roles', description: 'Remove roles', category: 'administrative', resource: 'roles', action: 'delete' },
+    { id: 'crm:role:record:read', name: 'View Roles', description: 'View roles and permissions', category: 'administrative', resource: 'roles', action: 'read' },
+    { id: 'crm:role:record:create', name: 'Create Roles', description: 'Create new roles', category: 'administrative', resource: 'roles', action: 'create' },
+    { id: 'crm:role:record:update', name: 'Update Roles', description: 'Edit roles and permissions', category: 'administrative', resource: 'roles', action: 'update' },
+    { id: 'crm:role:record:delete', name: 'Delete Roles', description: 'Remove roles', category: 'administrative', resource: 'roles', action: 'delete' },
     
-    { id: 'analytics:view', name: 'View Analytics', description: 'Access analytics and reports', category: 'administrative', resource: 'analytics', action: 'view' },
-    { id: 'settings:read', name: 'View Settings', description: 'Configure system settings', category: 'administrative', resource: 'settings', action: 'read' },
-    { id: 'settings:update', name: 'Update Settings', description: 'Update system settings', category: 'administrative', resource: 'settings', action: 'update' },
-    { id: 'companies:read', name: 'View Companies', description: 'View company information', category: 'administrative', resource: 'companies', action: 'read' },
-    { id: 'companies:update', name: 'Update Companies', description: 'Edit company information', category: 'administrative', resource: 'companies', action: 'update' },
+    { id: 'crm:analytics:insight:view', name: 'View Analytics', description: 'Access analytics and reports', category: 'administrative', resource: 'analytics', action: 'view' },
+    { id: 'crm:system:config:read', name: 'View Settings', description: 'Configure system settings', category: 'administrative', resource: 'settings', action: 'read' },
+    { id: 'crm:system:config:manage', name: 'Update Settings', description: 'Update system settings', category: 'administrative', resource: 'settings', action: 'update' },
+    { id: 'crm:company:record:read', name: 'View Companies', description: 'View company information', category: 'administrative', resource: 'companies', action: 'read' },
+    { id: 'crm:company:record:update', name: 'Update Companies', description: 'Edit company information', category: 'administrative', resource: 'companies', action: 'update' },
     
     // System permissions - ALL using {resource}:{action} format
     { id: 'platform:admin', name: 'Platform Admin', description: 'Platform administration access', category: 'system', resource: 'platform', action: 'admin' },
     { id: 'system:admin', name: 'Super Admin', description: 'Full system administration', category: 'system', resource: 'system', action: 'admin' },
-    { id: 'tenants:manage', name: 'Manage Tenants', description: 'Manage tenant accounts', category: 'system', resource: 'tenants', action: 'manage' },
+    { id: 'crm:platform:tenant:manage', name: 'Manage Tenants', description: 'Manage tenant accounts', category: 'system', resource: 'tenants', action: 'manage' },
     { id: 'system:monitor', name: 'System Monitoring', description: 'Monitor system health and performance', category: 'system', resource: 'system', action: 'monitor' }
   ];
 
@@ -93,7 +93,7 @@ class MockRBACService {
       name: 'Administrator',
       description: 'Tenant administrator with full tenant permissions',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'delete', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete', 'complaints:read', 'complaints:create', 'complaints:update', 'complaints:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'contracts:delete', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'service_contracts:delete', 'products:read', 'products:create', 'products:update', 'products:delete', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'product_sales:delete', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'jobworks:delete', 'dashboard:view', 'masters:read', 'user_management:read', 'users:read', 'users:create', 'users:update', 'users:delete', 'roles:read', 'roles:create', 'roles:update', 'roles:delete', 'analytics:view', 'settings:read', 'settings:update', 'companies:read', 'companies:update'],
+      permissions: ['read', 'write', 'delete', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:product-sale:record:delete', 'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete', 'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete', 'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete', 'crm:analytics:insight:view', 'crm:system:config:read', 'crm:system:config:manage', 'crm:company:record:read', 'crm:company:record:update'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -103,7 +103,7 @@ class MockRBACService {
       name: 'Manager',
       description: 'Business operations manager with analytics access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'sales:read', 'sales:create', 'sales:update', 'tickets:read', 'tickets:create', 'tickets:update', 'complaints:read', 'complaints:create', 'complaints:update', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view'],
+      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -113,7 +113,7 @@ class MockRBACService {
       name: 'User',
       description: 'Standard user with basic operations',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'tickets:read', 'tickets:create', 'tickets:update', 'complaints:read', 'complaints:create'],
+      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -123,7 +123,7 @@ class MockRBACService {
       name: 'Engineer',
       description: 'Technical engineer with product and job work access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'tickets:read', 'tickets:create', 'tickets:update'],
+      permissions: ['read', 'write', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -146,7 +146,7 @@ class MockRBACService {
       id: 'business_admin',
       name: 'Business Administrator',
       description: 'Complete business operations management',
-      permissions: ['read', 'write', 'delete', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view', 'companies:read', 'companies:update'],
+      permissions: ['read', 'write', 'delete', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view', 'crm:company:record:read', 'crm:company:record:update'],
       is_default: true,
       category: 'business'
     },
@@ -154,7 +154,7 @@ class MockRBACService {
       id: 'sales_manager',
       name: 'Sales Manager',
       description: 'Sales operations and customer management',
-      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'sales:read', 'sales:create', 'sales:update', 'sales:delete', 'contracts:read', 'contracts:create', 'contracts:update', 'service_contracts:read', 'service_contracts:create', 'service_contracts:update', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'analytics:view'],
+      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
       is_default: true,
       category: 'business'
     },
@@ -162,7 +162,7 @@ class MockRBACService {
       id: 'support_agent',
       name: 'Support Agent',
       description: 'Customer support and ticket management',
-      permissions: ['read', 'write', 'customers:read', 'customers:create', 'customers:update', 'tickets:read', 'tickets:create', 'tickets:update', 'tickets:delete', 'complaints:read', 'complaints:create', 'complaints:update'],
+      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update'],
       is_default: true,
       category: 'business'
     },
@@ -170,7 +170,7 @@ class MockRBACService {
       id: 'technical_lead',
       name: 'Technical Lead',
       description: 'Technical operations and product management',
-      permissions: ['read', 'write', 'products:read', 'products:create', 'products:update', 'product_sales:read', 'product_sales:create', 'product_sales:update', 'jobworks:read', 'jobworks:create', 'jobworks:update', 'tickets:read', 'tickets:create', 'tickets:update'],
+      permissions: ['read', 'write', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update'],
       is_default: true,
       category: 'technical'
     },
@@ -178,7 +178,7 @@ class MockRBACService {
       id: 'system_admin',
       name: 'System Administrator',
       description: 'System administration and user management',
-      permissions: ['read', 'write', 'delete', 'users:read', 'users:create', 'users:update', 'users:delete', 'roles:read', 'roles:create', 'roles:update', 'roles:delete', 'settings:read', 'settings:update'],
+      permissions: ['read', 'write', 'delete', 'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete', 'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete', 'crm:system:config:read', 'crm:system:config:manage'],
       is_default: true,
       category: 'administrative'
     }
@@ -204,7 +204,7 @@ class MockRBACService {
       action: 'permission_granted',
       resource: 'role',
       resource_id: 'custom_role_1',
-      details: { permission: 'analytics:view', granted_by: 'admin_techcorp_1' },
+      details: { permission: 'crm:analytics:insight:view', granted_by: 'admin_techcorp_1' },
       ip_address: this.getClientIp(),
       user_agent: 'Mozilla/5.0 (macOS; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       tenant_id: 'techcorp',
@@ -450,7 +450,7 @@ class MockRBACService {
       
       // Map action to required permission
       // Actions follow pattern: "resource:operation" or "resource_subresource:operation"
-      // e.g., "product_sales:create" -> "products:create"
+      // e.g., "crm:product-sale:record:create" -> "crm:product:record:create"
       const permissionRequired = this.mapActionToPermission(action);
       
       if (!permissionRequired) {
@@ -485,12 +485,12 @@ class MockRBACService {
 
   /**
    * Map action string to required permission
-   * Converts action format like "product_sales:create" to "products:create"
+   * Converts action format like "crm:product-sale:record:create" to "crm:product:record:create"
    * Updated to use {resource}:{action} format instead of manage_resource
    */
   private mapActionToPermission(action: string): string | null {
     // Action format: "resource(:or_subresource):operation"
-    // e.g., "product_sales:create" -> "products:create"
+    // e.g., "crm:product-sale:record:create" -> "crm:product:record:create"
     const parts = action.split(':');
     if (parts.length < 2) return null;
     

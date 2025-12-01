@@ -3,7 +3,7 @@
  * Comprehensive role management with permission assignment and templates
  * ✅ Uses granular RBAC permission checks (Phase 3.1)
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -80,6 +80,7 @@ export const RoleManagementPage: React.FC = () => {
   // State
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [expandedPermissions, setExpandedPermissions] = useState<Permission[]>([]); // Expanded permissions for edit modal
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -92,14 +93,66 @@ export const RoleManagementPage: React.FC = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Load data
-   
   useEffect(() => {
     loadData();
   }, []);
 
+  // ✅ FIX: Ensure permissions are loaded when modal opens for create
+  // This ensures permissions are available when creating a new role
+  // Use a ref to prevent infinite loops
+  const permissionsLoadAttemptedRef = useRef(false);
+  
+  useEffect(() => {
+    if (isModalVisible && !editingRole && permissions.length === 0 && !loading && !permissionsLoadAttemptedRef.current) {
+      // If modal is open for create and permissions aren't loaded, reload them
+      console.log('[RoleManagement] Permissions not loaded, reloading...');
+      permissionsLoadAttemptedRef.current = true;
+      loadData().finally(() => {
+        permissionsLoadAttemptedRef.current = false;
+      });
+    }
+    // Reset ref when modal closes
+    if (!isModalVisible) {
+      permissionsLoadAttemptedRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalVisible, editingRole, permissions.length]);
+
+  // ✅ FIX: Update selectedPermissions when editingRole changes and modal opens
+  // This ensures permissions are properly loaded when the edit modal opens
+  // Note: handleEdit now fetches permissions directly, so this is mainly a safety check
+  useEffect(() => {
+    if (isModalVisible && editingRole && selectedPermissions.length === 0) {
+      // If permissions weren't loaded by handleEdit, try to use role.permissions as fallback
+      const rolePermissions = editingRole.permissions ?? [];
+      if (rolePermissions.length > 0) {
+        const availablePermissionIds = permissions.map(p => p.id);
+        const validPermissions = rolePermissions.filter(permId => 
+          availablePermissionIds.includes(permId)
+        );
+        
+        if (validPermissions.length > 0) {
+          console.log('[RoleManagement] useEffect: Setting permissions from role object:', validPermissions);
+          setSelectedPermissions(validPermissions);
+          // Only set form fields after a small delay to ensure Form component is mounted
+          setTimeout(() => {
+            try {
+              form.setFieldsValue({
+                permissions: validPermissions
+              });
+            } catch (error) {
+              console.warn('[RoleManagement] Form not ready, skipping setFieldsValue:', error);
+            }
+          }, 0);
+        }
+      }
+    }
+  }, [isModalVisible, editingRole, permissions, form, selectedPermissions]);
+
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('[RoleManagement] Starting to load data...');
       const [rolesData, permissionsData, templatesData] = await Promise.all([
         rbacService.getRoles(),
         rbacService.getPermissions(),
@@ -108,9 +161,26 @@ export const RoleManagementPage: React.FC = () => {
       setRoles(rolesData);
       setPermissions(permissionsData);
       setRoleTemplates(templatesData);
+      console.log('[RoleManagement] ✅ Data loaded successfully:', {
+        roles: rolesData.length,
+        permissions: permissionsData.length,
+        templates: templatesData.length,
+        permissionCategories: [...new Set(permissionsData.map(p => p.category))],
+        samplePermissions: permissionsData.slice(0, 5).map(p => ({ id: p.id, name: p.name, category: p.category }))
+      });
+      
+      if (permissionsData.length === 0) {
+        console.warn('[RoleManagement] ⚠️ No permissions loaded! This might be due to tenant isolation filtering.');
+        message.warning('No permissions available. You may not have access to view permissions.');
+      }
     } catch (error) {
-      message.error('Failed to load data');
-      console.error('Error loading data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      message.error(`Failed to load data: ${errorMessage}`);
+      console.error('[RoleManagement] ❌ Error loading data:', error);
+      // Set empty arrays to prevent undefined errors
+      setRoles([]);
+      setPermissions([]);
+      setRoleTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -118,10 +188,47 @@ export const RoleManagementPage: React.FC = () => {
 
   // Handle create role
   const handleCreate = () => {
+    console.log('[RoleManagement] Creating new role:', {
+      currentPermissionsCount: permissions.length,
+      loading,
+      permissions: permissions.slice(0, 3).map(p => p.name)
+    });
+    
     setEditingRole(null);
     setSelectedPermissions([]);
-    form.resetFields();
-    setIsModalVisible(true);
+    setExpandedPermissions([]); // Clear expanded permissions when creating new role
+    
+    // If permissions aren't loaded, load them first before opening modal
+    if (permissions.length === 0 && !loading) {
+      console.log('[RoleManagement] Permissions not loaded, loading before opening modal...');
+      loadData().then(() => {
+        // Open modal after permissions are loaded
+        setIsModalVisible(true);
+        // Reset form after a small delay to ensure Form component is mounted
+        setTimeout(() => {
+          try {
+            form.resetFields();
+          } catch (error) {
+            console.warn('[RoleManagement] Form not ready yet, will reset on next render');
+          }
+        }, 100);
+      }).catch((error) => {
+        console.error('[RoleManagement] Failed to load permissions:', error);
+        // Still open modal even if permissions fail to load
+        setIsModalVisible(true);
+      });
+    } else {
+      // Permissions already loaded, open modal immediately
+      setIsModalVisible(true);
+      // Reset form after a small delay to ensure Form component is mounted
+      setTimeout(() => {
+        try {
+          form.resetFields();
+        } catch (error) {
+          console.warn('[RoleManagement] Form not ready yet, will reset on next render');
+        }
+      }, 100);
+    }
   };
 
   // Handle create from template
@@ -132,21 +239,156 @@ export const RoleManagementPage: React.FC = () => {
   };
 
   // Handle edit role
-  const handleEdit = (role: Role) => {
+  const handleEdit = async (role: Role) => {
     setEditingRole(role);
-    // ✅ FIX: Filter permissions to only include those that exist in current permissions list
-    // This prevents "Tree missing keys" warnings when permissions are filtered by tenant isolation
-    const availablePermissionIds = permissions.map(p => p.id);
-    const validPermissions = (role.permissions ?? []).filter(permId => 
-      availablePermissionIds.includes(permId)
-    );
-    setSelectedPermissions(validPermissions);
-    form.setFieldsValue({
-      name: role.name,
-      description: role.description,
-      permissions: validPermissions
-    });
-    setIsModalVisible(true);
+    
+    // ✅ DATABASE-DRIVEN: Fetch role permissions directly from database for this specific role
+    // This ensures permissions are loaded even if they're filtered by tenant isolation in the list view
+    try {
+      setLoading(true);
+      
+      // Import supabase client and utilities
+      const { supabase } = await import('@/services/supabase/client');
+      const { isSuperAdmin } = await import('@/utils/tenantIsolation');
+      
+      // Fetch permissions directly from role_permissions table for this specific role
+      const { data: rolePermissionsData, error: rolePermissionsError } = await supabase
+        .from('role_permissions')
+        .select('permission_id')
+        .eq('role_id', role.id);
+      
+      if (rolePermissionsError) {
+        console.error('[RoleManagement] Error fetching role permissions:', rolePermissionsError);
+        throw rolePermissionsError;
+      }
+      
+      // Extract permission IDs from the query result
+      const rolePermissions = (rolePermissionsData || []).map((rp: any) => rp.permission_id).filter(Boolean);
+      
+      // ✅ FIX: Fetch ALL permissions that match the role's tenant context (not just user-visible ones)
+      // This allows us to see and manage all permissions the role has, even if they're platform permissions
+      let availablePermissionsForRole = permissions;
+      
+      // If user is super admin, fetch all permissions (no tenant filtering)
+      if (isSuperAdmin(currentUser)) {
+        // Super admin: fetch all permissions (no tenant filtering)
+        const { data: allPermissionsData, error: allPermsError } = await supabase
+          .from('permissions')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (!allPermsError && allPermissionsData) {
+          availablePermissionsForRole = allPermissionsData.map((perm: any) => ({
+            id: perm.id,
+            name: perm.name,
+            description: perm.description || '',
+            category: perm.category as 'core' | 'module' | 'administrative' | 'system',
+            resource: perm.resource || '',
+            action: perm.action || '',
+            is_system_permission: perm.is_system_permission || false
+          }));
+        }
+      } else if (role.tenant_id && currentUser?.tenantId === role.tenant_id) {
+        // Tenant admin editing role from their tenant: fetch all permissions
+        // Permissions are global (no tenant_id column), but we filter by is_system_permission
+        // Include system permissions if they're already assigned to the role (for display)
+        const { data: allPermsData, error: allPermsError } = await supabase
+          .from('permissions')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (allPermsError) {
+          console.error('[RoleManagement] Error fetching permissions:', allPermsError);
+        } else if (allPermsData) {
+          // Filter out system permissions (tenant admins shouldn't see them)
+          // But keep them if they're already assigned to the role (for display purposes)
+          const { filterPermissionsByTenant } = await import('@/utils/tenantIsolation');
+          const filteredPerms = filterPermissionsByTenant(allPermsData, currentUser);
+          
+          // Add back any role permissions that were filtered out (so they're visible in tree)
+          const rolePermIds = new Set(rolePermissions);
+          const filteredPermIds = new Set(filteredPerms.map((p: any) => p.id));
+          const missingRolePerms = allPermsData.filter((p: any) => 
+            rolePermIds.has(p.id) && !filteredPermIds.has(p.id)
+          );
+          
+          availablePermissionsForRole = [...filteredPerms, ...missingRolePerms].map((perm: any) => ({
+            id: perm.id,
+            name: perm.name,
+            description: perm.description || '',
+            category: perm.category as 'core' | 'module' | 'administrative' | 'system',
+            resource: perm.resource || '',
+            action: perm.action || '',
+            is_system_permission: perm.is_system_permission || false
+          }));
+        }
+      }
+      // Otherwise, use the existing permissions list (already filtered by tenant)
+      
+      console.log('[RoleManagement] Loading role for edit:', {
+        roleId: role.id,
+        roleName: role.name,
+        roleTenantId: role.tenant_id,
+        rolePermissionsCount: rolePermissions.length,
+        rolePermissions,
+        availablePermissionsCount: availablePermissionsForRole.length,
+        userIsSuperAdmin: isSuperAdmin(currentUser)
+      });
+      
+      // Filter to only include permissions that exist in the available permissions list
+      // This prevents "Tree missing keys" warnings while preserving all valid permissions
+      const availablePermissionIds = availablePermissionsForRole.map(p => p.id);
+      const validPermissions = rolePermissions.filter((permId: string) => 
+        availablePermissionIds.includes(permId)
+      );
+      
+      // If some permissions are not in the available list, log a warning (but don't show message)
+      if (validPermissions.length < rolePermissions.length) {
+        const missingPermissions = rolePermissions.filter((p: string) => !availablePermissionIds.includes(p));
+        console.warn('[RoleManagement] Some role permissions are not in the available permissions list:', {
+          roleId: role.id,
+          roleName: role.name,
+          missingCount: missingPermissions.length,
+          missingPermissions
+        });
+      }
+      
+      console.log('[RoleManagement] Setting permissions for edit:', {
+        validPermissions,
+        validPermissionsCount: validPermissions.length,
+        totalRolePermissions: rolePermissions.length
+      });
+      
+      setSelectedPermissions(validPermissions);
+      form.setFieldsValue({
+        name: role.name,
+        description: role.description,
+        permissions: validPermissions
+      });
+      
+      // Store expanded permissions for this edit session
+      // This ensures the Tree component can display all role permissions
+      setExpandedPermissions(availablePermissionsForRole);
+      
+      // Only open modal after permissions are loaded
+      setIsModalVisible(true);
+    } catch (error) {
+      console.error('[RoleManagement] Error loading role permissions:', error);
+      message.error('Failed to load role permissions. Please try again.');
+      // Fallback to role.permissions if fetch fails
+      const fallbackPermissions = role.permissions ?? [];
+      setSelectedPermissions(fallbackPermissions);
+      form.setFieldsValue({
+        name: role.name,
+        description: role.description,
+        permissions: fallbackPermissions
+      });
+      setIsModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle delete role
@@ -235,7 +477,22 @@ export const RoleManagementPage: React.FC = () => {
   };
 
   // Group permissions by category
-  const groupedPermissions = permissions.reduce((acc, permission) => {
+  // Use expandedPermissions when editing (to show all role permissions), otherwise use regular permissions
+  // Ensure we always have permissions to display (use regular permissions if expandedPermissions is empty)
+  const permissionsForTree = (isModalVisible && editingRole && expandedPermissions.length > 0) 
+    ? expandedPermissions 
+    : (permissions.length > 0 ? permissions : []);
+  
+  console.log('[RoleManagement] Building permission tree:', {
+    isModalVisible,
+    editingRole: editingRole?.name,
+    expandedPermissionsCount: expandedPermissions.length,
+    permissionsCount: permissions.length,
+    permissionsForTreeCount: permissionsForTree.length,
+    permissionsSample: permissions.slice(0, 3).map(p => ({ id: p.id, name: p.name, category: p.category }))
+  });
+  
+  const groupedPermissions = permissionsForTree.reduce((acc, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
     }
@@ -257,6 +514,12 @@ export const RoleManagementPage: React.FC = () => {
       key: p.id
     }))
   }));
+  
+  console.log('[RoleManagement] Permission tree data:', {
+    categories: Object.keys(groupedPermissions),
+    totalNodes: permissionTreeData.length,
+    totalPermissions: permissionTreeData.reduce((sum, cat) => sum + (cat.children?.length || 0), 0)
+  });
 
   // Action menu items
   const getActionMenu = (role: Role): MenuProps['items'] => [
@@ -581,6 +844,7 @@ export const RoleManagementPage: React.FC = () => {
           setIsModalVisible(false);
           form.resetFields();
           setSelectedPermissions([]);
+          setExpandedPermissions([]); // Clear expanded permissions when modal closes
         }}
         footer={null}
         width={800}
@@ -626,29 +890,58 @@ export const RoleManagementPage: React.FC = () => {
             required
           >
             <Card style={{ maxHeight: 400, overflow: 'auto' }}>
-              <Tree
-                checkable
-                defaultExpandAll
-                // ✅ FIX: Filter checkedKeys to only include keys that exist in treeData
-                // This prevents "Tree missing keys" warnings
-                checkedKeys={selectedPermissions.filter(key => {
-                  // Check if key exists in treeData (either as a permission ID or category)
-                  const existsInTree = permissionTreeData.some(category => 
-                    category.key === key || 
-                    (category.children || []).some(child => child.key === key)
-                  );
-                  return existsInTree;
-                })}
-                onCheck={(checkedKeys) => {
-                  const keys = checkedKeys as string[];
-                  // Filter out category keys, only keep permission IDs
-                  const permissionIds = keys.filter(key =>
-                    permissions.some(p => p.id === key)
-                  );
-                  setSelectedPermissions(permissionIds);
-                }}
-                treeData={permissionTreeData}
-              />
+              {permissionTreeData.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center' }}>
+                  {loading ? (
+                    <div style={{ padding: 50, textAlign: 'center' }}>
+                      <Spin size="large" />
+                      <div style={{ marginTop: 16 }}>Loading permissions...</div>
+                    </div>
+                  ) : (
+                    <Empty
+                      description="No permissions available"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    >
+                      <Button
+                        type="primary"
+                        icon={<ReloadOutlined />}
+                        onClick={loadData}
+                      >
+                        Reload Permissions
+                      </Button>
+                    </Empty>
+                  )}
+                </div>
+              ) : (
+                <Tree
+                  key={editingRole?.id || 'new-role'} // Force re-render when editing different role
+                  checkable
+                  defaultExpandAll
+                  // ✅ FIX: Filter checkedKeys to only include keys that exist in treeData
+                  // This prevents "Tree missing keys" warnings
+                  checkedKeys={selectedPermissions.filter(key => {
+                    // Check if key exists in treeData (either as a permission ID or category)
+                    const existsInTree = permissionTreeData.some(category => 
+                      category.key === key || 
+                      (category.children || []).some(child => child.key === key)
+                    );
+                    return existsInTree;
+                  })}
+                  onCheck={(checkedKeys) => {
+                    const keys = checkedKeys as string[];
+                    // Filter out category keys, only keep permission IDs
+                    // Use expandedPermissions when editing, otherwise use regular permissions
+                    const permissionsToCheck = (isModalVisible && editingRole && expandedPermissions.length > 0)
+                      ? expandedPermissions
+                      : permissions;
+                    const permissionIds = keys.filter(key =>
+                      permissionsToCheck.some(p => p.id === key)
+                    );
+                    setSelectedPermissions(permissionIds);
+                  }}
+                  treeData={permissionTreeData}
+                />
+              )}
             </Card>
             <div style={{ marginTop: 8, color: '#7A8691' }}>
               Selected: {selectedPermissions.length} permissions
@@ -669,9 +962,14 @@ export const RoleManagementPage: React.FC = () => {
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={submitting}
+                loading={submitting || loading}
                 icon={editingRole ? <EditOutlined /> : <PlusOutlined />}
-                disabled={selectedPermissions.length === 0}
+                disabled={
+                  !canManageRoles || 
+                  submitting || 
+                  loading ||
+                  (!editingRole && selectedPermissions.length === 0)
+                }
               >
                 {editingRole ? 'Update Role' : 'Create Role'}
               </Button>

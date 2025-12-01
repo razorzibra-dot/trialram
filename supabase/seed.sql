@@ -13,76 +13,117 @@
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
--- Insert default permissions
-INSERT INTO permissions (name, description, resource, action, category) VALUES
--- User permissions
-('users.read', 'View users', 'users', 'read', 'core'),
-('users.create', 'Create users', 'users', 'create', 'core'),
-('users.update', 'Update users', 'users', 'update', 'core'),
-('users.delete', 'Delete users', 'users', 'delete', 'core'),
+-- Insert default permissions with atomic CRM permission tokens
+INSERT INTO permissions (name, description, resource, action, category, is_system_permission) VALUES
+-- Contact Management (Customers)
+('crm:customer:record:read', 'View customer records', 'contact', 'record:read', 'module', true),
+('crm:customer:record:create', 'Create customer records', 'contact', 'record:create', 'module', true),
+('crm:customer:record:update', 'Update customer records', 'contact', 'record:update', 'module', true),
+('crm:customer:record:delete', 'Delete customer records', 'contact', 'record:delete', 'module', true),
+('crm:customer:record:field.email:update', 'Update customer email field', 'contact', 'record:field.email:update', 'module', true),
 
--- Customer permissions
-('customers.read', 'View customers', 'customers', 'read', 'core'),
-('customers.create', 'Create customers', 'customers', 'create', 'core'),
-('customers.update', 'Update customers', 'customers', 'update', 'core'),
-('customers.delete', 'Delete customers', 'customers', 'delete', 'core'),
+-- Deal Management (Sales)
+('crm:deal:record:read', 'View deal records', 'deal', 'record:read', 'module', true),
+('crm:deal:record:create', 'Create deal records', 'deal', 'record:create', 'module', true),
+('crm:deal:record:update', 'Update deal records', 'deal', 'record:update', 'module', true),
+('crm:deal:record:delete', 'Delete deal records', 'deal', 'record:delete', 'module', true),
+('crm:deal:pipeline:move', 'Move deals in pipeline', 'deal', 'pipeline:move', 'module', true),
 
--- Sales permissions
-('sales.read', 'View sales', 'sales', 'read', 'core'),
-('sales.create', 'Create sales', 'sales', 'create', 'core'),
-('sales.update', 'Update sales', 'sales', 'update', 'core'),
-('sales.delete', 'Delete sales', 'sales', 'delete', 'core'),
+-- Support System (Tickets)
+('crm:support:ticket:read', 'View support tickets', 'support', 'ticket:read', 'module', true),
+('crm:support:ticket:create', 'Create support tickets', 'support', 'ticket:create', 'module', true),
+('crm:support:ticket:update', 'Update support tickets', 'support', 'ticket:update', 'module', true),
+('crm:support:ticket:delete', 'Delete support tickets', 'support', 'ticket:delete', 'module', true),
 
--- Ticket permissions
-('tickets.read', 'View tickets', 'tickets', 'read', 'core'),
-('tickets.create', 'Create tickets', 'tickets', 'create', 'core'),
-('tickets.update', 'Update tickets', 'tickets', 'update', 'core'),
-('tickets.delete', 'Delete tickets', 'tickets', 'delete', 'core'),
+-- Complaints Management
+('crm:support:complaint:read', 'View complaints', 'support', 'complaint:read', 'module', true),
+('crm:support:complaint:create', 'Create complaints', 'support', 'complaint:create', 'module', true),
+('crm:support:complaint:update', 'Update complaints', 'support', 'complaint:update', 'module', true),
+('crm:support:complaint:delete', 'Delete complaints', 'support', 'complaint:delete', 'module', true),
 
--- Contract permissions
-('contracts.read', 'View contracts', 'contracts', 'read', 'core'),
-('contracts.create', 'Create contracts', 'contracts', 'create', 'core'),
-('contracts.update', 'Update contracts', 'contracts', 'update', 'core'),
-('contracts.delete', 'Delete contracts', 'contracts', 'delete', 'core'),
+-- Contract Management
+('crm:contract:record:read', 'View contract records', 'contract', 'record:read', 'module', true),
+('crm:contract:record:create', 'Create contract records', 'contract', 'record:create', 'module', true),
+('crm:contract:record:update', 'Update contract records', 'contract', 'record:update', 'module', true),
+('crm:contract:record:delete', 'Delete contract records', 'contract', 'record:delete', 'module', true),
 
--- Audit permissions
-('audit.read', 'View audit logs', 'audit', 'read', 'core'),
+-- Service Contract Management
+('crm:contract:service:read', 'View service contracts', 'contract', 'service:read', 'module', true),
+('crm:contract:service:create', 'Create service contracts', 'contract', 'service:create', 'module', true),
+('crm:contract:service:update', 'Update service contracts', 'contract', 'service:update', 'module', true),
+('crm:contract:service:delete', 'Delete service contracts', 'contract', 'service:delete', 'module', true),
 
--- Tenant permissions
-('tenants.read', 'View tenants', 'tenants', 'read', 'admin'),
-('tenants.create', 'Create tenants', 'tenants', 'create', 'admin'),
-('tenants.update', 'Update tenants', 'tenants', 'update', 'admin'),
-('tenants.delete', 'Delete tenants', 'tenants', 'delete', 'admin'),
+-- Product Management
+('crm:product:record:read', 'View product records', 'product', 'record:read', 'module', true),
+('crm:product:record:create', 'Create product records', 'product', 'record:create', 'module', true),
+('crm:product:record:update', 'Update product records', 'product', 'record:update', 'module', true),
+('crm:product:record:delete', 'Delete product records', 'product', 'record:delete', 'module', true),
 
--- Role permissions
-('roles.read', 'View roles', 'roles', 'read', 'admin'),
-('roles.create', 'Create roles', 'roles', 'create', 'admin'),
-('roles.update', 'Update roles', 'roles', 'update', 'admin'),
-('roles.delete', 'Delete roles', 'roles', 'delete', 'admin'),
+-- Job Work Management
+('crm:job:work:read', 'View job work records', 'job', 'work:read', 'module', true),
+('crm:job:work:create', 'Create job work records', 'job', 'work:create', 'module', true),
+('crm:job:work:update', 'Update job work records', 'job', 'work:update', 'module', true),
+('crm:job:work:delete', 'Delete job work records', 'job', 'work:delete', 'module', true),
 
--- Permission permissions
-('permissions.read', 'View permissions', 'permissions', 'read', 'admin'),
-('permissions.create', 'Create permissions', 'permissions', 'create', 'admin'),
-('permissions.update', 'Update permissions', 'permissions', 'update', 'admin'),
-('permissions.delete', 'Delete permissions', 'permissions', 'delete', 'admin')
+-- User Management
+('crm:user:record:read', 'View user records', 'user', 'record:read', 'administrative', true),
+('crm:user:record:create', 'Create user records', 'user', 'record:create', 'administrative', true),
+('crm:user:record:update', 'Update user records', 'user', 'record:update', 'administrative', true),
+('crm:user:record:delete', 'Delete user records', 'user', 'record:delete', 'administrative', true),
+
+-- Role Management
+('crm:role:record:read', 'View role records', 'role', 'record:read', 'administrative', true),
+('crm:role:record:create', 'Create role records', 'role', 'record:create', 'administrative', true),
+('crm:role:record:update', 'Update role records', 'role', 'record:update', 'administrative', true),
+('crm:role:record:delete', 'Delete role records', 'role', 'record:delete', 'administrative', true),
+
+-- Permission Management
+('crm:permission:record:read', 'View permission records', 'permission', 'record:read', 'administrative', true),
+('crm:permission:record:create', 'Create permission records', 'permission', 'record:create', 'administrative', true),
+('crm:permission:record:update', 'Update permission records', 'permission', 'record:update', 'administrative', true),
+('crm:permission:record:delete', 'Delete permission records', 'permission', 'record:delete', 'administrative', true),
+
+-- Tenant Management
+('crm:tenant:record:read', 'View tenant records', 'tenant', 'record:read', 'system', true),
+('crm:tenant:record:create', 'Create tenant records', 'tenant', 'record:create', 'system', true),
+('crm:tenant:record:update', 'Update tenant records', 'tenant', 'record:update', 'system', true),
+('crm:tenant:record:delete', 'Delete tenant records', 'tenant', 'record:delete', 'system', true),
+
+-- Company Management
+('crm:company:record:read', 'View company records', 'company', 'record:read', 'module', true),
+('crm:company:record:create', 'Create company records', 'company', 'record:create', 'module', true),
+('crm:company:record:update', 'Update company records', 'company', 'record:update', 'module', true),
+('crm:company:record:delete', 'Delete company records', 'company', 'record:delete', 'module', true),
+
+-- Audit & Compliance
+('crm:audit:log:read', 'View audit logs', 'audit', 'log:read', 'system', true),
+('crm:audit:log:export', 'Export audit logs', 'audit', 'log:export', 'system', true),
+
+-- Dashboard & Analytics
+('crm:dashboard:panel:view', 'Access dashboard and analytics', 'dashboard', 'view', 'module', true),
+('crm:report:record:view', 'View reports', 'report', 'view', 'module', true),
+('crm:analytics:insight:view', 'Access analytics', 'analytics', 'view', 'module', true),
+
+-- System Administration
+('crm:system:platform:admin', 'System administration', 'system', 'admin', 'system', true),
+('crm:platform:control:admin', 'Platform administration', 'platform', 'admin', 'system', true),
+('crm:system:config:manage', 'Manage system settings', 'settings', 'manage', 'system', true),
+
+-- Data Operations
+('crm:data:export', 'Export data and reports', 'data', 'export', 'module', true),
+('crm:data:import', 'Import data', 'data', 'import', 'module', true),
+
+-- Notification Management
+('crm:notification:channel:manage', 'Manage notifications', 'notification', 'manage', 'module', true),
+
+-- Masters/Reference Data
+('crm:master:data:read', 'View master/reference data', 'master', 'data:read', 'module', true),
+('crm:master:data:manage', 'Manage master/reference data', 'master', 'data:manage', 'administrative', true)
 ON CONFLICT (name) DO NOTHING;
 -- Insert default roles for each tenant
 -- ✅ Normalized role names to match UserRole enum exactly (no mapping needed)
-INSERT INTO roles (name, description, tenant_id, is_system_role) VALUES
--- System roles (tenant_id will be set when tenant is created)
-('super_admin', 'Super administrator with full system access', NULL, true),
-('admin', 'Administrator with full tenant access', NULL, true),
-('manager', 'Manager with departmental access', NULL, true),
-('user', 'Standard user with limited access', NULL, true),
-('engineer', 'Engineer with technical access', NULL, true),
-('customer', 'Customer with read-only access', NULL, true),
-('sales_rep', 'Sales representative', NULL, true),
-('support_agent', 'Support agent', NULL, true),
-('contract_manager', 'Contract manager', NULL, true)
-ON CONFLICT DO NOTHING;
--- Tenants already seeded by isolated reset migration
-
--- Roles already seeded by isolated reset migration
+-- FRS-compliant roles are seeded by the database reset migration (20251126000001_isolated_reset.sql)
+-- No additional roles needed here
 
 -- Insert sample users (public.users) — password stored in auth.users
 -- Ensure matching auth user exists for public user (FK: users.id -> auth.users.id)
@@ -128,9 +169,140 @@ INSERT INTO auth.users (
 	NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
+-- Insert auth users for testing
+INSERT INTO auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change_token_current,
+  email_change,
+  reauthentication_token,
+  phone_change,
+  phone_change_token,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+) VALUES
+-- Super Admin
+(
+  '00000000-0000-0000-0000-000000000000'::uuid,
+  '550e8400-e29b-41d4-a716-446655440010'::uuid,
+  'authenticated',
+  'authenticated',
+  'superadmin@crm.com',
+  crypt('password123', gen_salt('bf', 8)),
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  NOW(),
+  '{"provider": "email", "providers": ["email"]}'::jsonb,
+  '{"name": "Super Admin"}'::jsonb,
+  NOW(),
+  NOW()
+),
+-- Acme Admin
+(
+  '00000000-0000-0000-0000-000000000000'::uuid,
+  '6e084750-4e35-468c-9903-5b5ab9d14af4'::uuid,
+  'authenticated',
+  'authenticated',
+  'admin@acme.com',
+  crypt('password123', gen_salt('bf', 8)),
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  NOW(),
+  '{"provider": "email", "providers": ["email"]}'::jsonb,
+  '{"name": "Admin User"}'::jsonb,
+  NOW(),
+  NOW()
+),
+-- Acme Sales Manager
+(
+  '00000000-0000-0000-0000-000000000000'::uuid,
+  '2707509b-57e8-4c84-a6fe-267eaa724223'::uuid,
+  'authenticated',
+  'authenticated',
+  'manager@acme.com',
+  crypt('password123', gen_salt('bf', 8)),
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  NOW(),
+  '{"provider": "email", "providers": ["email"]}'::jsonb,
+  '{"name": "Sales Manager"}'::jsonb,
+  NOW(),
+  NOW()
+),
+-- Acme Sales Rep
+(
+  '00000000-0000-0000-0000-000000000000'::uuid,
+  '27ff37b5-ef55-4e34-9951-42f35a1b2506'::uuid,
+  'authenticated',
+  'authenticated',
+  'engineer@acme.com',
+  crypt('password123', gen_salt('bf', 8)),
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  NOW(),
+  '{"provider": "email", "providers": ["email"]}'::jsonb,
+  '{"name": "Sales Rep"}'::jsonb,
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert public users
 INSERT INTO users (id, email, name, first_name, last_name, tenant_id, is_super_admin, status) VALUES
-('550e8400-e29b-41d4-a716-446655440010', 'superadmin@crm.com', 'Super Admin', 'Super', 'Admin', NULL, true, 'active')
+('550e8400-e29b-41d4-a716-446655440010', 'superadmin@crm.com', 'Super Admin', 'Super', 'Admin', NULL, true, 'active'),
+('6e084750-4e35-468c-9903-5b5ab9d14af4', 'admin@acme.com', 'Admin User', 'Admin', 'User', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false, 'active'),
+('2707509b-57e8-4c84-a6fe-267eaa724223', 'manager@acme.com', 'Sales Manager', 'Sales', 'Manager', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false, 'active'),
+('27ff37b5-ef55-4e34-9951-42f35a1b2506', 'engineer@acme.com', 'Sales Rep', 'Sales', 'Rep', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', false, 'active')
 ON CONFLICT (email) DO NOTHING;
+
+-- Assign users to roles (FRS-compliant roles created by migrations)
+INSERT INTO user_roles (user_id, role_id, assigned_by)
+SELECT
+  u.id,
+  r.id,
+  '550e8400-e29b-41d4-a716-446655440010'
+FROM users u
+CROSS JOIN roles r
+WHERE
+  (u.email = 'superadmin@crm.com' AND r.name = 'super_admin' AND r.is_system_role = true) OR
+  (u.email = 'admin@acme.com' AND r.name = 'tenant_admin' AND r.tenant_id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11') OR
+  (u.email = 'manager@acme.com' AND r.name = 'sales_manager' AND r.tenant_id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11') OR
+  (u.email = 'engineer@acme.com' AND r.name = 'sales_representative' AND r.tenant_id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
+ON CONFLICT DO NOTHING;
 -- Insert sample companies
 INSERT INTO companies (name, registration_number, address, city, state, country, phone, email, tenant_id) VALUES
 ('Demo Manufacturing Inc', 'REG001', '123 Industrial Ave', 'Detroit', 'MI', 'USA', '+1-313-555-0100', 'contact@demomfg.com', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
@@ -290,10 +462,10 @@ INSERT INTO tickets (customer_id, title, description, category, priority, status
 ((SELECT id FROM customers WHERE email = 'carol.williams@example.com' LIMIT 1), 'Billing Discrepancy', 'Invoice amount does not match agreed pricing', 'billing', 'high', 'resolved', NULL, 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO complaints (customer_id, title, description, complaint_type, severity, status, assigned_to, tenant_id) VALUES
-((SELECT id FROM customers WHERE email = 'alice.johnson@example.com' LIMIT 1), 'Poor Installation Quality', 'Installation team was unprofessional and left mess', 'service_quality', 'medium', 'open', NULL, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
-((SELECT id FROM customers WHERE email = 'bob.smith@example.com' LIMIT 1), 'Delayed Delivery', 'Service package delivery was 2 weeks late', 'delivery', 'low', 'in_progress', NULL, 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22'),
-((SELECT id FROM customers WHERE email = 'carol.williams@example.com' LIMIT 1), 'Product Defect', 'Tool kit arrived with missing components', 'product_quality', 'high', 'resolved', NULL, 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33')
+INSERT INTO complaints (customer_id, title, description, type, priority, status, assigned_engineer_id, tenant_id) VALUES
+((SELECT id FROM customers WHERE email = 'alice.johnson@example.com' LIMIT 1), 'Poor Installation Quality', 'Installation team was unprofessional and left mess', 'breakdown', 'medium', 'new', NULL, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
+((SELECT id FROM customers WHERE email = 'bob.smith@example.com' LIMIT 1), 'Delayed Delivery', 'Service package delivery was 2 weeks late', 'preventive', 'low', 'in_progress', NULL, 'b1ffc999-9c0b-4ef8-bb6d-6bb9bd380a22'),
+((SELECT id FROM customers WHERE email = 'carol.williams@example.com' LIMIT 1), 'Product Defect', 'Tool kit arrived with missing components', 'optimize', 'high', 'closed', NULL, 'c2eed999-9c0b-4ef8-bb6d-6bb9bd380a33')
 ON CONFLICT DO NOTHING;
 
 -- Insert sample notifications

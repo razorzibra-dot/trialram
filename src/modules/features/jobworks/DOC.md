@@ -236,9 +236,9 @@ const jobWorks = await factoryJobWorkService.getJobWorks(filters);
 ```typescript
 // Required Permissions
 - jobworks:view       // View job works
-- jobworks:create     // Create new job works
+- crm:project:record:create     // Create new job works
 - jobworks:edit       // Edit existing job works
-- jobworks:delete     // Delete job works
+- crm:project:record:delete     // Delete job works
 - jobworks:assign     // Assign to team members
 - jobworks:complete   // Mark as completed
 

@@ -180,7 +180,7 @@ const SuperAdminUsersPage: React.FC = () => {
   };
 
   // Permission check - render conditional content instead of early return
-  const hasPermission_check = hasPermission('super_user:manage_users');
+  const hasPermission_check = hasPermission('crm:platform:user:manage');
 
   if (!hasPermission_check) {
     return (

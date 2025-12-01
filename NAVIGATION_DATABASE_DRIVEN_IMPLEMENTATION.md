@@ -95,7 +95,7 @@ CREATE TABLE navigation_items (
 ### RLS Policies
 
 - **SELECT**: Users can see items for their tenant or system items
-- **INSERT/UPDATE/DELETE**: Requires `navigation:manage` or `settings:manage` permission
+- **INSERT/UPDATE/DELETE**: Requires `navigation:manage` or `crm:system:config:manage` permission
 - Super admins can manage all items
 
 ---

@@ -1006,7 +1006,7 @@ async create(tenantId: string, data: CreateProductSaleDTO) {
   // 2. Check permission
   await rbacService.validatePermission(
     user.id,
-    'product_sales:create'  // ✅ Module-specific permission
+    'crm:product-sale:record:create'  // ✅ Module-specific permission
   );
   
   // 3. If no permission, throws 403 Forbidden

@@ -41,7 +41,7 @@ const CustomerAnalyticsPage: React.FC = () => {
   const { data: behavior, isLoading: behaviorLoading } = useCustomerBehaviorAnalytics();
 
   // Check permissions
-  if (!hasPermission('customers:view')) {
+  if (!hasPermission('crm:customer:record:read')) {
     return (
       <div style={{ textAlign: 'center', padding: 48 }}>
         <AlertTriangle size={48} style={{ color: '#faad14', marginBottom: 16 }} />

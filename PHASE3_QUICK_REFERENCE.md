@@ -20,7 +20,7 @@ enum UserPermission {
   USER_EDIT = 'user:edit',
   USER_DELETE = 'user:delete',
   USER_RESET_PASSWORD = 'user:reset_password',
-  USER_MANAGE_ROLES = 'user:manage_roles',
+  USER_MANAGE_ROLES = 'user:crm:role:record:update',
   ROLE_MANAGE = 'role:manage',
   PERMISSION_MANAGE = 'permission:manage',
   TENANT_USERS = 'tenant:users'

@@ -243,7 +243,7 @@ export const TicketsPage: React.FC = () => {
             onClick={() => handleViewClick(record)}
             title="View"
           />
-          {hasPermission('tickets:update') && (
+          {hasPermission('crm:support:ticket:update') && (
             <Button
               type="text"
               size="small"
@@ -252,7 +252,7 @@ export const TicketsPage: React.FC = () => {
               title="Edit"
             />
           )}
-          {hasPermission('tickets:delete') && (
+          {hasPermission('crm:support:ticket:delete') && (
             <Popconfirm
               title="Delete ticket?"
               description={`Are you sure you want to delete "${record.title}"?`}
@@ -281,7 +281,7 @@ export const TicketsPage: React.FC = () => {
           ],
         }}
         extra={
-          hasPermission('tickets:create') && (
+          hasPermission('crm:support:ticket:create') && (
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateClick}>
               New Ticket
             </Button>

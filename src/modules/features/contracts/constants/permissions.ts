@@ -5,20 +5,20 @@
 
 export const CONTRACTS_PERMISSIONS = {
   // Read permissions
-  READ: 'contracts:read',
+  READ: 'crm:contract:record:read',
   LIST: 'contracts:list',
   VIEW: 'contracts:view',
   
   // Create permissions
-  CREATE: 'contracts:create',
+  CREATE: 'crm:contract:record:create',
   IMPORT: 'contracts:import',
   
   // Update permissions
-  UPDATE: 'contracts:update',
+  UPDATE: 'crm:contract:record:update',
   EDIT: 'contracts:edit',
   
   // Delete permissions
-  DELETE: 'contracts:delete',
+  DELETE: 'crm:contract:record:delete',
   BULK_DELETE: 'contracts:bulk_delete',
   
   // Export permissions
@@ -27,7 +27,7 @@ export const CONTRACTS_PERMISSIONS = {
   // Special permissions
   MANAGE_TERMS: 'contracts:manage_terms',
   MANAGE_RENEWALS: 'contracts:manage_renewals',
-  VIEW_ANALYTICS: 'contracts:view_analytics',
+  VIEW_ANALYTICS: 'contracts:crm:analytics:insight:view',
   APPROVE: 'contracts:approve',
   SIGN: 'contracts:sign',
   TERMINATE: 'contracts:terminate',

@@ -13,8 +13,8 @@ After comprehensive analysis of the database scripts, migration files, and seedi
 **Issue**: The seed.sql file uses legacy permission names that are deleted by migration `20251122000002_update_permissions_to_resource_action_format.sql`
 
 **Details**:
-- **Seed.sql** (lines 14-48): Contains legacy permissions like `manage_users`, `manage_roles`, `manage_customers`, etc.
-- **Migration 20251122000002**: Deletes these legacy permissions and replaces with new format `{resource}:{action}` like `users:read`, `roles:create`, etc.
+- **Seed.sql** (lines 14-48): Contains legacy permissions like `crm:user:record:update`, `crm:role:record:update`, `crm:customer:record:update`, etc.
+- **Migration 20251122000002**: Deletes these legacy permissions and replaces with new format `{resource}:{action}` like `crm:user:record:read`, `crm:role:record:create`, etc.
 
 **Impact**: 
 - Database seeding will fail after migration runs
@@ -78,16 +78,16 @@ After comprehensive analysis of the database scripts, migration files, and seedi
 **Current (Lines 14-48)**:
 ```sql
 INSERT INTO permissions (id, name, description, resource, action) VALUES
-  ('00000000-0000-0000-0000-000000000103'::UUID, 'manage_users', 'Manage users', 'users', 'manage'),
-  ('00000000-0000-0000-0000-000000000104'::UUID, 'manage_roles', 'Manage roles', 'roles', 'manage'),
+  ('00000000-0000-0000-0000-000000000103'::UUID, 'crm:user:record:update', 'Manage users', 'users', 'manage'),
+  ('00000000-0000-0000-0000-000000000104'::UUID, 'crm:role:record:update', 'Manage roles', 'roles', 'manage'),
   -- ... etc
 ```
 
 **Should Be**:
 ```sql
 INSERT INTO permissions (id, name, description, resource, action) VALUES
-  ('00000000-0000-0000-0000-000000000103'::UUID, 'users:manage', 'Manage users', 'users', 'manage'),
-  ('00000000-0000-0000-0000-000000000104'::UUID, 'roles:manage', 'Manage roles', 'roles', 'manage'),
+  ('00000000-0000-0000-0000-000000000103'::UUID, 'crm:user:record:update', 'Manage users', 'users', 'manage'),
+  ('00000000-0000-0000-0000-000000000104'::UUID, 'crm:role:permission:assign', 'Manage roles', 'roles', 'manage'),
   -- ... etc
 ```
 

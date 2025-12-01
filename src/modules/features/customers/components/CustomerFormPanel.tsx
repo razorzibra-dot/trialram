@@ -43,6 +43,9 @@ import { useCustomerStatus } from '../hooks/useCustomerStatus';
 import { useCustomerTypes } from '../hooks/useCustomerTypes';
 import { useLeadSource } from '../hooks/useLeadSource';
 import { useLeadRating } from '../hooks/useLeadRating';
+import { PermissionField } from '@/components/forms/PermissionField';
+import { PermissionSection } from '@/components/layout/PermissionSection';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 interface CustomerFormPanelProps {
   visible: boolean;
@@ -102,6 +105,15 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
 
   const isEditMode = !!customer;
   const isLoadingDropdowns = industriesLoading || sizesLoading || usersLoading || statusesLoading || typesLoading || sourcesLoading || ratingsLoading;
+
+  // Element-level permissions for form sections and fields
+  const canEditBasicInfo = usePermission('crm:contacts:form:section.basic', 'accessible');
+  const canEditBusinessInfo = usePermission('crm:contacts:form:section.business', 'accessible');
+  const canEditAddressInfo = usePermission('crm:contacts:form:section.address', 'accessible');
+  const canEditFinancialInfo = usePermission('crm:contacts:form:section.financial', 'accessible');
+  const canEditLeadInfo = usePermission('crm:contacts:form:section.lead', 'accessible');
+  const canEditNotes = usePermission('crm:contacts:form:section.notes', 'accessible');
+  const canSaveForm = usePermission('crm:contacts:form:button.save', 'enabled');
 
   useEffect(() => {
     if (visible && customer) {
@@ -174,15 +186,17 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           >
             Cancel
           </Button>
-          <Button
-            type="primary"
-            size="large"
-            icon={<SaveOutlined />}
-            loading={loading}
-            onClick={handleSubmit}
-          >
-            {isEditMode ? 'Update Customer' : 'Create Customer'}
-          </Button>
+          {canSaveForm && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<SaveOutlined />}
+              loading={loading}
+              onClick={handleSubmit}
+            >
+              {isEditMode ? 'Update Customer' : 'Create Customer'}
+            </Button>
+          )}
         </div>
       }
     >
@@ -194,48 +208,63 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
         style={{ padding: '0 24px 24px 24px' }}
       >
         {/* 📄 Basic Information */}
-        <Card style={sectionStyles.card} variant="borderless">
-          <div style={sectionStyles.header}>
-            <FileTextOutlined style={sectionStyles.headerIcon} />
-            <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
-          </div>
+        <PermissionSection
+          elementPath="crm:contacts:form:section.basic"
+          title="Basic Information"
+          icon={<FileTextOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />}
+        >
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <FileTextOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Company Name"
-                name="company_name"
-                rules={[
-                  { required: true, message: 'Company name is required' },
-                  { min: 2, message: 'Company name must be at least 2 characters' },
-                ]}
-              >
-                <Input
-                  size="large"
-                  placeholder="e.g., Acme Corporation"
-                  allowClear
-                  prefix={<ShoppingOutlined style={{ color: '#6b7280' }} />}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Status"
-                name="status"
-                initialValue="active"
-                rules={[{ required: true, message: 'Please select status' }]}
-                tooltip="Status of the customer relationship"
-              >
-                <Select size="large" placeholder="Select status" loading={statusesLoading} disabled={statusesLoading}>
-                  {statuses.map((status) => (
-                    <Select.Option key={status.id} value={status.key}>
-                      {status.metadata?.emoji} {status.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <PermissionField
+                  elementPath="crm:contacts:form:field.company_name"
+                  fieldName="company_name"
+                >
+                  <Form.Item
+                    label="Company Name"
+                    name="company_name"
+                    rules={[
+                      { required: true, message: 'Company name is required' },
+                      { min: 2, message: 'Company name must be at least 2 characters' },
+                    ]}
+                  >
+                    <Input
+                      size="large"
+                      placeholder="e.g., Acme Corporation"
+                      allowClear
+                      prefix={<ShoppingOutlined style={{ color: '#6b7280' }} />}
+                    />
+                  </Form.Item>
+                </PermissionField>
+              </Col>
+              <Col xs={24} sm={12}>
+                <PermissionField
+                  elementPath="crm:contacts:form:field.status"
+                  fieldName="status"
+                >
+                  <Form.Item
+                    label="Status"
+                    name="status"
+                    initialValue="active"
+                    rules={[{ required: true, message: 'Please select status' }]}
+                    tooltip="Status of the customer relationship"
+                  >
+                    <Select size="large" placeholder="Select status" loading={statusesLoading} disabled={statusesLoading}>
+                      {statuses.map((status) => (
+                        <Select.Option key={status.id} value={status.key}>
+                          {status.metadata?.emoji} {status.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </PermissionField>
+              </Col>
+            </Row>
 
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -330,7 +359,8 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
               </Form.Item>
             </Col>
           </Row>
-        </Card>
+          </Card>
+        </PermissionSection>
 
         {/* 🏢 Business Information */}
         <Card style={sectionStyles.card} variant="borderless">

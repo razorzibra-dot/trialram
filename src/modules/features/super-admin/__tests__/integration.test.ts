@@ -215,13 +215,13 @@ describe('Super User Module Integration Tests', () => {
         const permissionCheck = {
           userId: 'su-1',
           requiredPermissions: [
-            'super_user:manage_users',
-            'super_user:manage_tenants',
+            'crm:platform:user:manage',
+            'crm:platform:tenant:manage',
           ],
           userPermissions: [
-            'super_user:manage_users',
-            'super_user:manage_tenants',
-            'super_user:view_audit_logs',
+            'crm:platform:user:manage',
+            'crm:platform:tenant:manage',
+            'crm:platform:audit:view',
           ],
           operationAllowed: true,
         };
@@ -248,12 +248,12 @@ describe('Super User Module Integration Tests', () => {
         const roleTemplate = {
           name: 'Super Admin',
           permissions: [
-            'super_user:manage_users',
-            'super_user:manage_tenants',
+            'crm:platform:user:manage',
+            'crm:platform:tenant:manage',
             'super_user:impersonate_users',
-            'super_user:view_audit_logs',
-            'super_user:manage_config',
-            'super_user:view_analytics',
+            'crm:platform:audit:view',
+            'crm:platform:config:manage',
+            'crm:platform:crm:analytics:insight:view',
             'super_user:manage_permissions',
           ],
           appliedToUser: 'user-456',
@@ -501,7 +501,7 @@ describe('Super User Module Integration Tests', () => {
       const errorScenario = {
         operation: 'grant_tenant_access',
         userId: 'limited-super-user',
-        requiredPermission: 'super_user:manage_tenants',
+        requiredPermission: 'crm:platform:tenant:manage',
         error: 'Permission denied',
         statusCode: 403,
       };

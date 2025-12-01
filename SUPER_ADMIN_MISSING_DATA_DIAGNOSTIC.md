@@ -6,7 +6,7 @@ Super Admin pages show "Access Denied" or no data loads - permission check fails
 ## Root Cause
 Permission check at line 89 of `SuperAdminDashboardPage.tsx`:
 ```typescript
-if (!hasPermission('super_admin:view_analytics')) {
+if (!hasPermission('super_admin:crm:analytics:insight:view')) {
   return <Alert message="Access Denied" />;  // ← Queries blocked!
 }
 ```
@@ -76,7 +76,7 @@ WHERE id = 'YOUR_SUPER_ADMIN_USER_ID';
 ```
 Component renders
   ↓
-Calls: hasPermission('super_admin:view_analytics')
+Calls: hasPermission('super_admin:crm:analytics:insight:view')
   ↓
 AuthContext calls: authService.hasPermission()
   ↓
@@ -109,7 +109,7 @@ If you just want to test, temporarily remove the permission check:
 ```typescript
 // ⚠️ TEMPORARY TEST ONLY - Remove permission check
 // Original code commented out:
-// if (!hasPermission('super_admin:view_analytics')) {
+// if (!hasPermission('super_admin:crm:analytics:insight:view')) {
 //   return <Alert message="Access Denied" ... />
 // }
 

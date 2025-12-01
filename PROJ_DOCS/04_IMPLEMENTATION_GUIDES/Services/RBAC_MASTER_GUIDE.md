@@ -260,9 +260,9 @@ SELECT id, 'customers.create', 'customers', 'create', 'Create customers' FROM te
 UNION ALL
 SELECT id, 'customers.read', 'customers', 'read', 'View customers' FROM tenants
 UNION ALL
-SELECT id, 'customers.update', 'customers', 'update', 'Edit customers' FROM tenants
+SELECT id, 'crm:customer:record:update', 'customers', 'update', 'Edit customers' FROM tenants
 UNION ALL
-SELECT id, 'customers.delete', 'customers', 'delete', 'Delete customers' FROM tenants
+SELECT id, 'crm:customer:record:delete', 'customers', 'delete', 'Delete customers' FROM tenants
 -- ... more permissions for each resource
 
 -- Assign permissions to Admin role

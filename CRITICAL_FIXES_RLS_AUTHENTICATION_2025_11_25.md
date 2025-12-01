@@ -116,7 +116,7 @@ After fixes applied, tested user `admin@acme.com` login:
    - complaints:manage
    - contracts:manage
    - customers:manage
-   - dashboard:view ← Explicitly included
+   - crm:dashboard:panel:view ← Explicitly included
    - ... and 15 more
 ```
 
@@ -213,7 +213,7 @@ Access denied to module: dashboard
 [SUPABASE_AUTH] Fetched role permissions: [
   "audit:read",
   "companies:manage",
-  "dashboard:view",
+  "crm:dashboard:panel:view",
   ... (21 total)
 ]
 ✅ User can access dashboard and all authorized modules

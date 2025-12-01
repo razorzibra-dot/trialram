@@ -687,9 +687,9 @@ The Sales module is 85% complete and took similar approach:
 ```
 Product Sales Permissions:
 - product-sales:view       (View sales)
-- product-sales:create     (Create sales)
+- product-crm:sales:deal:create     (Create sales)
 - product-sales:edit       (Edit sales)
-- product-sales:delete     (Delete sales)
+- product-crm:sales:deal:delete     (Delete sales)
 - product-sales:ship       (Mark as shipped)
 - product-sales:invoice    (Generate invoices)
 - product-sales:bulk-delete (Bulk delete)

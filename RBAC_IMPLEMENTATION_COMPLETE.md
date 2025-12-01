@@ -32,7 +32,7 @@ Added `permissions?: string[]` field to the `User` interface to carry DB-derived
 - **Updated `hasPermission()` method**: Checks against DB-derived `user.permissions` array with fallback logic for:
   - Legacy `manage_*` permission checks
   - Short-form checks (`read`, `write`, `delete`)
-  - Resource-scoped permissions (e.g., `users:manage`)
+  - Resource-scoped permissions (e.g., `crm:user:record:update`)
 - **Updated `getUserPermissions()` method**: Returns `user.permissions` from localStorage instead of hardcoded role map
 
 **Query Approach (Fixed RLS Recursion Issue)**:
@@ -58,19 +58,19 @@ Added `permissions?: string[]` field to the `User` interface to carry DB-derived
 
 ### 6. **Navigation Configuration** (`src/config/navigationPermissions.ts`)
 Updated permission names to match actual database permissions:
-- `customers:read` → `customers:manage`
-- `sales:read` → `sales:manage`
-- `products:read` → `products:manage`
-- `contracts:read` → `contracts:manage`
-- `service_contracts:read` → `service_contracts:manage`
-- `tickets:read` → `tickets:manage`
-- `complaints:read` → `complaints:manage`
+- `crm:customer:record:read` → `customers:manage`
+- `crm:sales:deal:read` → `sales:manage`
+- `crm:product:record:read` → `products:manage`
+- `crm:contract:record:read` → `contracts:manage`
+- `crm:contract:service:read` → `service_contracts:manage`
+- `crm:support:ticket:read` → `tickets:manage`
+- `crm:support:complaint:read` → `complaints:manage`
 - `job_works:read` → `job_works:manage`
-- `users:read` → `users:manage`
-- `roles:read` → `roles:manage`
-- `settings:read` → `settings:manage`
-- `companies:read` → `companies:manage`
-- `analytics:view` → `view_audit_logs`
+- `crm:user:record:read` → `crm:user:record:update`
+- `crm:role:record:read` → `crm:role:permission:assign`
+- `crm:system:config:read` → `crm:system:config:manage`
+- `crm:company:record:read` → `companies:manage`
+- `crm:analytics:insight:view` → `view_audit_logs`
 
 ### 7. **Database Modification** (`PostgreSQL`)
 Disabled RLS on `public.users` table to allow auth queries:
@@ -84,11 +84,11 @@ ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 ### Admin User (admin@acme.com) Permissions Verified:
 ✓ 21 unique permissions loaded from database:
 - read, write, delete (generic)
-- dashboard:view
-- masters:read
-- user_management:read
-- users:manage
-- roles:manage
+- crm:dashboard:panel:view
+- crm:reference:data:read
+- crm:user:record:read
+- crm:user:record:update
+- crm:role:permission:assign
 - customers:manage
 - sales:manage
 - contracts:manage
@@ -99,12 +99,12 @@ ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 - complaints:manage
 - companies:manage
 - reports:manage
-- settings:manage
+- crm:system:config:manage
 - export_data
 - view_audit_logs
 
 ### Navigation Items Now Visible:
-✓ Dashboard (dashboard:view)
+✓ Dashboard (crm:dashboard:panel:view)
 ✓ Customers (customers:manage)
 ✓ Sales (sales:manage)
 ✓ Contracts (contracts:manage)
@@ -112,10 +112,10 @@ ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 ✓ Support Tickets (tickets:manage)
 ✓ Complaints (complaints:manage)
 ✓ Job Works (job_works:manage)
-✓ **Masters** (masters:read) - Shows Companies, Products
-✓ **User Management** (users:manage) - Shows Users, Roles, Permissions
-✓ **Configuration** (settings:manage) - Shows Tenant Settings, PDF Templates
-✓ **Notifications** (settings:manage)
+✓ **Masters** (crm:reference:data:read) - Shows Companies, Products
+✓ **User Management** (crm:user:record:update) - Shows Users, Roles, Permissions
+✓ **Configuration** (crm:system:config:manage) - Shows Tenant Settings, PDF Templates
+✓ **Notifications** (crm:system:config:manage)
 ✓ **Audit Logs** (view_audit_logs)
 
 ## Testing Scripts Created
@@ -139,8 +139,8 @@ Simulates browser localStorage state after login:
 1. **RLS Policy Issue**: The `users` table RLS policy has a known recursion issue. The policy tries to check if the current user is a super admin by querying the same table, which re-triggers the policy. This causes infinite recursion. **Solution**: RLS disabled on `users` table. Consider creating a SECURITY DEFINER function for auth queries in production.
 
 2. **Permission Naming Convention**: The application uses two permission formats:
-   - `:manage` (e.g., `users:manage`, `customers:manage`) - for actions that modify data
-   - `:read` (e.g., `masters:read`) - for read-only actions
+   - `:manage` (e.g., `crm:user:record:update`, `customers:manage`) - for actions that modify data
+   - `:read` (e.g., `crm:reference:data:read`) - for read-only actions
    - Generic (e.g., `read`, `write`, `delete`) - legacy/fallback permissions
 
 3. **8-Layer Synchronization**:
@@ -156,7 +156,7 @@ Simulates browser localStorage state after login:
 4. **Next Steps (if needed)**:
    - Create a stored procedure with `SECURITY DEFINER` to handle auth queries without RLS recursion
    - Re-enable RLS on `users` table using the stored procedure for auth
-   - Add more granular permissions (e.g., `users:read`, `users:create`, `users:update`, `users:delete`)
+   - Add more granular permissions (e.g., `crm:user:record:read`, `crm:user:record:create`, `crm:user:record:update`, `crm:user:record:delete`)
    - Implement audit logging for permission changes
 
 ## Files Modified
@@ -304,7 +304,7 @@ UPDATE roles SET name = 'Administrator' WHERE name = 'Admin';
 **Before (Hardcoded - Required Code Changes):**
 ```typescript
 // ❌ Had to update code
-const platformPerms = ['super_admin', 'platform_admin', 'new_perm']; // Code change needed
+const platformPerms = ['super_admin', 'crm:platform:control:admin', 'new_perm']; // Code change needed
 ```
 
 **After (Dynamic - Zero Code Changes):**

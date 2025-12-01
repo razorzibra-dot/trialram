@@ -17,8 +17,8 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('delete', 'Delete access', 'core', '*', 'delete', true),
 
 -- Module management permissions (matching seed.sql format)
-('users:manage', 'Manage users', 'module', 'users', 'manage', false),
-('roles:manage', 'Manage roles', 'module', 'roles', 'manage', false),
+('crm:user:record:update', 'Manage users', 'module', 'users', 'manage', false),
+('crm:role:permission:assign', 'Manage roles', 'module', 'roles', 'manage', false),
 ('customers:manage', 'Manage customers', 'module', 'customers', 'manage', false),
 ('sales:manage', 'Manage sales', 'module', 'sales', 'manage', false),
 ('contracts:manage', 'Manage contracts', 'module', 'contracts', 'manage', false),
@@ -29,7 +29,7 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('tickets:manage', 'Manage tickets', 'module', 'tickets', 'manage', false),
 ('complaints:manage', 'Manage complaints', 'module', 'complaints', 'manage', false),
 ('dashboard:manage', 'Access dashboard', 'module', 'dashboard', 'manage', false),
-('settings:manage', 'Manage settings', 'module', 'settings', 'manage', false),
+('crm:system:config:manage', 'Manage settings', 'module', 'settings', 'manage', false),
 ('companies:manage', 'Manage companies', 'module', 'companies', 'manage', false),
 ('reports:manage', 'Access reports and analytics', 'module', 'reports', 'manage', false),
 ('inventory:manage', 'Manage inventory', 'module', 'inventory', 'manage', false),
@@ -48,9 +48,9 @@ INSERT INTO permissions (name, description, category, resource, action, is_syste
 ('api_access', 'API access', 'module', 'api', 'access', false),
 
 -- System permissions (already correct format)
-('platform_admin', 'Platform administration', 'system', 'platform', 'admin', true),
+('crm:platform:control:admin', 'Platform administration', 'system', 'platform', 'admin', true),
 ('super_admin', 'Full system administration', 'system', 'system', 'admin', true),
-('tenants:manage', 'Manage tenants', 'system', 'tenants', 'manage', true),
+('crm:platform:tenant:manage', 'Manage tenants', 'system', 'tenants', 'manage', true),
 ('system_monitoring', 'System monitoring', 'system', 'system', 'monitor', true)
 
 ON CONFLICT (name) DO NOTHING;
@@ -67,19 +67,19 @@ SELECT
   p_old.id as old_permission_id
 FROM permissions p_old
 JOIN permissions p_new ON p_new.name = CASE 
-  WHEN p_old.name = 'manage_users' THEN 'users:manage'
-  WHEN p_old.name = 'manage_roles' THEN 'roles:manage'
-  WHEN p_old.name = 'manage_customers' THEN 'customers:manage'
-  WHEN p_old.name = 'manage_sales' THEN 'sales:manage'
+  WHEN p_old.name = 'crm:user:record:update' THEN 'crm:user:record:update'
+  WHEN p_old.name = 'crm:role:record:update' THEN 'crm:role:permission:assign'
+  WHEN p_old.name = 'crm:customer:record:update' THEN 'customers:manage'
+  WHEN p_old.name = 'crm:sales:deal:update' THEN 'sales:manage'
   WHEN p_old.name = 'manage_contracts' THEN 'contracts:manage'
-  WHEN p_old.name = 'manage_service_contracts' THEN 'service_contracts:manage'
+  WHEN p_old.name = 'crm:contract:service:update' THEN 'service_contracts:manage'
   WHEN p_old.name = 'manage_products' THEN 'products:manage'
-  WHEN p_old.name = 'manage_product_sales' THEN 'product_sales:manage'
+  WHEN p_old.name = 'crm:product-sale:record:update' THEN 'product_sales:manage'
   WHEN p_old.name = 'manage_job_works' THEN 'job_works:manage'
   WHEN p_old.name = 'manage_tickets' THEN 'tickets:manage'
-  WHEN p_old.name = 'manage_complaints' THEN 'complaints:manage'
+  WHEN p_old.name = 'crm:support:complaint:update' THEN 'complaints:manage'
   WHEN p_old.name = 'manage_dashboard' THEN 'dashboard:manage'
-  WHEN p_old.name = 'manage_settings' THEN 'settings:manage'
+  WHEN p_old.name = 'crm:system:config:manage' THEN 'crm:system:config:manage'
   WHEN p_old.name = 'manage_companies' THEN 'companies:manage'
   WHEN p_old.name = 'manage_reports' THEN 'reports:manage'
   WHEN p_old.name = 'manage_inventory' THEN 'inventory:manage'
@@ -104,9 +104,9 @@ CROSS JOIN permissions p
 WHERE r.name = 'Administrator'
   AND p.name IN (
     'read', 'write', 'delete',
-    'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+    'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
     'contracts:manage', 'service_contracts:manage', 'products:manage',
-    'dashboard:manage', 'settings:manage', 'companies:manage',
+    'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
     'reports:manage', 'export_data', 'view_audit_logs',
     'create_tickets', 'update_tickets', 'create_products', 'update_products',
     'inventory:manage', 'view_financials', 'integrations:manage',
@@ -130,7 +130,7 @@ WHERE r.name = 'Manager'
     'read', 'write',
     'customers:manage', 'sales:manage',
     'contracts:manage', 'service_contracts:manage', 'products:manage',
-    'dashboard:manage', 'settings:manage', 'companies:manage',
+    'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
     'reports:manage', 'integrations:manage',
     'system_monitoring'
   )
@@ -208,15 +208,15 @@ CROSS JOIN permissions p
 WHERE r.name = 'super_admin'
   AND p.name IN (
     'read', 'write', 'delete',
-    'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+    'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
     'contracts:manage', 'service_contracts:manage', 'products:manage',
     'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-    'dashboard:manage', 'settings:manage', 'companies:manage',
+    'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
     'reports:manage', 'export_data', 'view_audit_logs',
     'create_tickets', 'update_tickets', 'create_products', 'update_products',
     'inventory:manage', 'view_financials', 'integrations:manage',
     'bulk_operations', 'advanced_search', 'api_access',
-    'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+    'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
   )
   AND NOT EXISTS (
     SELECT 1 FROM role_permissions rp 
@@ -232,10 +232,10 @@ DROP TABLE IF EXISTS permission_name_mapping;
 
 -- Delete old legacy permissions (after ensuring all role_permissions are updated)
 DELETE FROM permissions WHERE name IN (
-  'manage_users', 'manage_roles', 'manage_customers', 'manage_sales', 
-  'manage_contracts', 'manage_service_contracts', 'manage_products', 
-  'manage_product_sales', 'manage_job_works', 'manage_tickets', 
-  'manage_complaints', 'manage_dashboard', 'manage_settings', 
+  'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 
+  'manage_contracts', 'crm:contract:service:update', 'manage_products', 
+  'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 
+  'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 
   'manage_companies', 'manage_reports', 'manage_inventory',
   'manage_integrations'
 );
@@ -250,11 +250,11 @@ UPDATE permissions SET
     WHEN name IN ('read', 'write', 'delete') THEN 'core'
     WHEN name LIKE '%:manage' THEN 'module'
     WHEN name IN ('export_data', 'view_audit_logs', 'create_tickets', 'update_tickets', 'create_products', 'update_products', 'view_financials', 'bulk_operations', 'advanced_search', 'api_access') THEN 'module'
-    WHEN name IN ('platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring') THEN 'system'
+    WHEN name IN ('crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring') THEN 'system'
     ELSE 'core'
   END,
   is_system_permission = CASE
-    WHEN name IN ('platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring') THEN TRUE
+    WHEN name IN ('crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring') THEN TRUE
     ELSE FALSE
   END;
 
@@ -271,7 +271,7 @@ CREATE INDEX IF NOT EXISTS idx_permissions_resource_action ON permissions(resour
 -- ============================================================================
 
 COMMENT ON TABLE permissions IS 'Permission definitions using {resource}:{action} format';
-COMMENT ON COLUMN permissions.name IS 'Permission name in {resource}:{action} format (e.g., customers:read)';
+COMMENT ON COLUMN permissions.name IS 'Permission name in {resource}:{action} format (e.g., crm:customer:record:read)';
 COMMENT ON COLUMN permissions.resource IS 'Resource/module name (e.g., customers, sales, users)';
 COMMENT ON COLUMN permissions.action IS 'Action name (e.g., read, create, update, delete)';
 

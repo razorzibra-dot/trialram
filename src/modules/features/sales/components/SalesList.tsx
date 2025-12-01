@@ -40,6 +40,8 @@ import {
 import { useSalesStore } from '../store/salesStore';
 import { useDeals, useDeleteDeal, useBulkDeals, useExportDeals } from '../hooks/useSales';
 import { useAuth } from '@/contexts/AuthContext';
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 interface SalesListProps {
   onCreateDeal?: () => void;
@@ -53,6 +55,14 @@ export const SalesList: React.FC<SalesListProps> = ({
   onViewDeal,
 }) => {
   const { hasPermission } = useAuth();
+
+  // Element-level permissions for sales module
+  const canViewDeals = usePermission('crm:sales:list:view', 'accessible');
+  const canCreateDeals = usePermission('crm:sales:list:button.create', 'visible');
+  const canExportDeals = usePermission('crm:sales:list:button.export', 'visible');
+  const canBulkDelete = usePermission('crm:sales:list:button.bulkdelete', 'visible');
+  const canSelectDeals = usePermission('crm:sales:list:selection', 'enabled');
+  const canFilterDeals = usePermission('crm:sales:list:filters', 'visible');
   const {
     deals,
     isLoading,
@@ -117,19 +127,14 @@ export const SalesList: React.FC<SalesListProps> = ({
   };
 
   const handleDeleteDeal = async (deal: Deal) => {
-    if (!hasPermission('delete')) {
-      alert('You do not have permission to delete deals');
-      return;
-    }
-
     if (confirm(`Are you sure you want to delete "${deal.title}"?`)) {
       deleteDeal.mutate(deal.id);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (!hasPermission('delete')) {
-      alert('You do not have permission to delete deals');
+    if (!canBulkDelete) {
+      alert('You do not have permission to bulk delete deals');
       return;
     }
 
@@ -139,6 +144,10 @@ export const SalesList: React.FC<SalesListProps> = ({
   };
 
   const handleExport = () => {
+    if (!canExportDeals) {
+      alert('You do not have permission to export deals');
+      return;
+    }
     exportDeals.mutate('csv');
   };
 
@@ -293,21 +302,27 @@ export const SalesList: React.FC<SalesListProps> = ({
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              {hasPermission('write') && (
+              <PermissionControlled
+                elementPath={`crm:sales:deal.${deal.id}:button.edit`}
+                action="visible"
+              >
                 <DropdownMenuItem onClick={() => onEditDeal?.(deal)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Deal
                 </DropdownMenuItem>
-              )}
-              {hasPermission('delete') && (
-                <DropdownMenuItem 
+              </PermissionControlled>
+              <PermissionControlled
+                elementPath={`crm:sales:deal.${deal.id}:button.delete`}
+                action="visible"
+              >
+                <DropdownMenuItem
                   onClick={() => handleDeleteDeal(deal)}
                   className="text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Deal
                 </DropdownMenuItem>
-              )}
+              </PermissionControlled>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -315,15 +330,14 @@ export const SalesList: React.FC<SalesListProps> = ({
     },
   ];
 
-  const bulkActions = [
+  const bulkActions = canBulkDelete ? [
     {
       label: 'Delete Selected',
       action: handleBulkDelete,
       variant: 'destructive' as const,
       icon: Trash2,
-      permission: 'delete',
     },
-  ];
+  ] : [];
 
   return (
     <div className="space-y-4">
@@ -336,23 +350,27 @@ export const SalesList: React.FC<SalesListProps> = ({
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={exportDeals.isPending}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          {canFilterDeals && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+          )}
+          {canExportDeals && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={exportDeals.isPending}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -362,7 +380,7 @@ export const SalesList: React.FC<SalesListProps> = ({
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          {hasPermission('write') && (
+          {canCreateDeals && (
             <Button onClick={onCreateDeal}>
               <Plus className="h-4 w-4 mr-2" />
               New Deal
@@ -372,7 +390,7 @@ export const SalesList: React.FC<SalesListProps> = ({
       </div>
 
       {/* Filters */}
-      {showFilters && (
+      {showFilters && canFilterDeals && (
         <div className="bg-gray-50 p-4 rounded-lg space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -419,17 +437,15 @@ export const SalesList: React.FC<SalesListProps> = ({
           total: pagination.total,
           totalPages: pagination.totalPages,
         }}
-        selection={{
-          selectedIds: selectedDealIds,
-          onSelectionChange: setSelectedDealIds,
-          onSelectAll: selectAllDeals,
-          onClearSelection: clearSelection,
-        }}
+        selection={canSelectDeals ? {
+          selectedRowKeys: selectedDealIds,
+          onChange: (keys: string[]) => setSelectedDealIds(keys),
+        } : undefined}
         bulkActions={bulkActions}
         emptyState={{
           title: 'No deals found',
           description: 'Get started by creating your first deal',
-          action: hasPermission('write') ? (
+          action: canCreateDeals ? (
             <Button onClick={onCreateDeal}>
               <Plus className="h-4 w-4 mr-2" />
               Create Deal

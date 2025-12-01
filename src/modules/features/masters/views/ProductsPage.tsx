@@ -300,7 +300,7 @@ export const ProductsPage: React.FC = () => {
           >
             View
           </Button>
-          {hasPermission('products:update') && (
+          {hasPermission('crm:product:record:update') && (
             <Button
               type="link"
               size="small"
@@ -310,7 +310,7 @@ export const ProductsPage: React.FC = () => {
               Edit
             </Button>
           )}
-          {hasPermission('products:delete') && (
+          {hasPermission('crm:product:record:delete') && (
             <Popconfirm
               title="Delete Product"
               description={`Are you sure you want to delete "${record.name}"?`}
@@ -352,7 +352,7 @@ export const ProductsPage: React.FC = () => {
           >
             Refresh
           </Button>,
-          hasPermission('products:create') && (
+          hasPermission('crm:product:record:create') && (
             <AntUpload
               key="import"
               accept=".csv"
@@ -364,7 +364,7 @@ export const ProductsPage: React.FC = () => {
               </Button>
             </AntUpload>
           ),
-          hasPermission('products:create') && (
+          hasPermission('crm:product:record:create') && (
             <Button
               key="create"
               type="primary"
@@ -498,7 +498,7 @@ export const ProductsPage: React.FC = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description="No products found"
                 >
-                  {hasPermission('products:create') && (
+                  {hasPermission('crm:product:record:create') && (
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                       Add Your First Product
                     </Button>

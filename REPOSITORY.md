@@ -99,7 +99,7 @@ CREATE POLICY tenant_isolation ON customers
 5. **Engineer** - Technical operations access
 6. **Customer** - Read-only external access
 
-**Permission Format**: `{resource}:{action}` (e.g., `customers:manage`, `users:read`)
+**Permission Format**: `{resource}:{action}` (e.g., `customers:manage`, `crm:user:record:read`)
 
 ---
 
@@ -207,7 +207,7 @@ CREATE TABLE role_permissions (
 
 **Resolution**: 
 - ✅ Updated `supabase/seed.sql` with new permission format
-- ✅ Fixed 34 permission entries: `manage_users` → `users:manage`
+- ✅ Fixed 34 permission entries: `crm:user:record:update` → `crm:user:record:update`
 - ✅ Updated 200+ role permission mappings
 - ✅ Added comprehensive validation scripts
 

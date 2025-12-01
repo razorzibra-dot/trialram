@@ -171,15 +171,15 @@ const EXPECTED_SCHEMA: Record<string, TableSchema> = {
 // Expected permission patterns
 const EXPECTED_PERMISSIONS = [
   'read', 'write', 'delete',
-  'users:manage', 'roles:manage', 'customers:manage', 'sales:manage',
+  'crm:user:record:update', 'crm:role:permission:assign', 'customers:manage', 'sales:manage',
   'contracts:manage', 'service_contracts:manage', 'products:manage',
   'product_sales:manage', 'job_works:manage', 'tickets:manage', 'complaints:manage',
-  'dashboard:manage', 'settings:manage', 'companies:manage',
+  'dashboard:manage', 'crm:system:config:manage', 'companies:manage',
   'reports:manage', 'export_data', 'view_audit_logs',
   'create_tickets', 'update_tickets', 'create_products', 'update_products',
   'inventory:manage', 'view_financials', 'integrations:manage',
   'bulk_operations', 'advanced_search', 'api_access',
-  'platform_admin', 'super_admin', 'tenants:manage', 'system_monitoring'
+  'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring'
 ];
 
 // ============================================================================
@@ -291,7 +291,7 @@ class SchemaDriftDetector {
       // Check permission format compliance
       const formatViolations = actualPermissions?.filter(perm => {
         const hasColon = perm.name.includes(':');
-        const isCore = ['read', 'write', 'delete', 'platform_admin', 'super_admin', 'system_monitoring'].includes(perm.name);
+        const isCore = ['read', 'write', 'delete', 'crm:platform:control:admin', 'super_admin', 'system_monitoring'].includes(perm.name);
         return !hasColon && !isCore && !perm.name.startsWith('custom_');
       }) || [];
 

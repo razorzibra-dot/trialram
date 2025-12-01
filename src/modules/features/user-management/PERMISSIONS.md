@@ -104,7 +104,7 @@ The system implements a strict hierarchical role structure where upper roles inc
 | `user:edit` | ✅ Yes | All tenants |
 | `user:delete` | ✅ Yes | All tenants |
 | `user:reset_password` | ✅ Yes | All tenants |
-| `user:manage_roles` | ✅ Yes | All tenants |
+| `user:crm:role:record:update` | ✅ Yes | All tenants |
 | `role:manage` | ✅ Yes | System |
 | `role:view` | ✅ Yes | System |
 | `role:assign` | ✅ Yes | All tenants |
@@ -133,7 +133,7 @@ canPerformUserAction('super-admin', 'tenant-1', 'admin', 'tenant-2', 'delete') /
 | `user:edit` | ✅ Yes | Own tenant only | Cannot edit super-admins |
 | `user:delete` | ✅ Yes | Own tenant only | Cannot delete other admins or super-admins |
 | `user:reset_password` | ✅ Yes | Own tenant only | |
-| `user:manage_roles` | ✅ Yes | Own tenant only | |
+| `user:crm:role:record:update` | ✅ Yes | Own tenant only | |
 | `role:manage` | ❌ No | N/A | |
 | `role:view` | ✅ Yes | Own tenant only | |
 | `role:assign` | ✅ Yes | Own tenant only | |
@@ -168,7 +168,7 @@ canPerformUserAction('admin', 'tenant-1', 'admin', 'tenant-1', 'delete') // → 
 | `user:edit` | ✅ Yes | Own tenant only | Can only edit regular users |
 | `user:delete` | ❌ No | N/A | Cannot delete users |
 | `user:reset_password` | ✅ Yes | Own tenant only | Only for regular users |
-| `user:manage_roles` | ❌ No | N/A | Cannot manage roles |
+| `user:crm:role:record:update` | ❌ No | N/A | Cannot manage roles |
 | `role:manage` | ❌ No | N/A | |
 | `role:view` | ✅ Yes | Own tenant only | |
 | `role:assign` | ❌ No | N/A | |
@@ -203,7 +203,7 @@ canPerformUserAction('manager', 'tenant-1', 'user', 'tenant-1', 'create') // →
 | `user:edit` | ❌ No | N/A | Cannot edit others |
 | `user:delete` | ❌ No | N/A | |
 | `user:reset_password` | ❌ No | N/A | |
-| `user:manage_roles` | ❌ No | N/A | |
+| `user:crm:role:record:update` | ❌ No | N/A | |
 | `role:manage` | ❌ No | N/A | |
 | `role:view` | ✅ Yes | Own roles only | |
 | `role:assign` | ❌ No | N/A | |

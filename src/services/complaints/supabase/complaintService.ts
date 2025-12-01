@@ -12,7 +12,7 @@ class SupabaseComplaintService {
     let query = this.supabase
       .from('complaints_with_details')
       .select('*')
-      .eq('tenant_id', user.tenant_id);
+      .eq('tenant_id', user.tenantId);
 
     // Apply role-based filtering
     if (user.role === 'agent') {
@@ -63,7 +63,7 @@ class SupabaseComplaintService {
       .from('complaints_with_details')
       .select('*')
       .eq('id', id)
-      .eq('tenant_id', user.tenant_id)
+      .eq('tenant_id', user.tenantId)
       .single();
 
     if (error) throw error;
@@ -81,7 +81,7 @@ class SupabaseComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 
@@ -94,7 +94,7 @@ class SupabaseComplaintService {
         type: complaintData.type,
         priority: complaintData.priority,
         assigned_engineer_id: complaintData.assigned_engineer_id,
-        tenant_id: user.tenant_id
+        tenant_id: user.tenantId
       })
       .select()
       .single();
@@ -109,7 +109,7 @@ class SupabaseComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 
@@ -130,7 +130,7 @@ class SupabaseComplaintService {
       .from('complaints')
       .update(updateData)
       .eq('id', id)
-      .eq('tenant_id', user.tenant_id)
+      .eq('tenant_id', user.tenantId)
       .select()
       .single();
 
@@ -144,7 +144,7 @@ class SupabaseComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    if (!authService.hasPermission('manage_complaints')) {
+    if (!authService.hasPermission('crm:support:complaint:update')) {
       throw new Error('Insufficient permissions');
     }
 
@@ -152,7 +152,7 @@ class SupabaseComplaintService {
       .from('complaints')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('tenant_id', user.tenant_id);
+      .eq('tenant_id', user.tenantId);
 
     if (error) throw error;
   }
@@ -171,7 +171,7 @@ class SupabaseComplaintService {
         user_id: user.id,
         content: commentData.content,
         parent_id: commentData.parent_id,
-        tenant_id: user.tenant_id
+        tenant_id: user.tenantId
       })
       .select()
       .single();
@@ -189,7 +189,7 @@ class SupabaseComplaintService {
     const { data: complaints, error } = await this.supabase
       .from('complaints')
       .select('status, type, priority, created_at, closed_at')
-      .eq('tenant_id', user.tenant_id)
+      .eq('tenant_id', user.tenantId)
       .is('deleted_at', null);
 
     if (error) throw error;

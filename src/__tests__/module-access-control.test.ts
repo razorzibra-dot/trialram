@@ -41,7 +41,7 @@ const mockRegularUser: User = {
   role: 'user',
   isSuperAdmin: false,
   tenantId: 'tenant-1',
-  permissions: ['customers:read', 'sales:read', 'manage_sales'],
+  permissions: ['crm:customer:record:read', 'crm:sales:deal:read', 'crm:sales:deal:update'],
   avatar: undefined,
   status: 'active',
 };
@@ -53,7 +53,7 @@ const mockAdminUser: User = {
   role: 'admin',
   isSuperAdmin: false,
   tenantId: 'tenant-1',
-  permissions: ['manage_users', 'manage_roles', 'manage_products', 'manage_companies'],
+  permissions: ['crm:user:record:update', 'crm:role:record:update', 'manage_products', 'manage_companies'],
   avatar: undefined,
   status: 'active',
 };
@@ -95,7 +95,7 @@ describe('Module Access Control System', () => {
     });
 
     test('User without permission cannot access module', () => {
-      // Regular user doesn't have manage_users permission
+      // Regular user doesn't have crm:user:record:update permission
       const result = ModuleRegistry.canUserAccessModule(mockRegularUser, 'users');
       expect(result).toBe(false);
     });
@@ -118,8 +118,8 @@ describe('Module Access Control System', () => {
 
   describe('Permission Validation', () => {
     test('Module with manage_* permission requirement', () => {
-      // Sales module requires manage_sales
-      const regularUserHasPermission = mockRegularUser.permissions.includes('manage_sales');
+      // Sales module requires crm:sales:deal:update
+      const regularUserHasPermission = mockRegularUser.permissions.includes('crm:sales:deal:update');
       expect(regularUserHasPermission).toBe(true);
       expect(ModuleRegistry.canUserAccessModule(mockRegularUser, 'productSales')).toBe(true);
     });
@@ -127,7 +127,7 @@ describe('Module Access Control System', () => {
     test('Module with *:read permission requirement', () => {
       // Customers module requires read permission
       const hasReadPermission = mockRegularUser.permissions.some(p => 
-        p === 'customers:read' || p.includes(':read')
+        p === 'crm:customer:record:read' || p.includes(':read')
       );
       expect(hasReadPermission).toBe(true);
     });
@@ -308,7 +308,7 @@ describe('Module Access Control System', () => {
       // Simulate permission grant
       const userAfter: User = {
         ...userBefore,
-        permissions: [...userBefore.permissions, 'manage_users'],
+        permissions: [...userBefore.permissions, 'crm:user:record:update'],
       };
       const canAccessAfter = ModuleRegistry.canUserAccessModule(userAfter, 'users');
       expect(canAccessAfter).toBe(true);
@@ -322,7 +322,7 @@ describe('Module Access Control System', () => {
       const userAfter: User = {
         ...userBefore,
         role: 'admin',
-        permissions: ['manage_users', 'manage_roles', ...userBefore.permissions],
+        permissions: ['crm:user:record:update', 'crm:role:record:update', ...userBefore.permissions],
       };
       const modulesAfterCount = ModuleRegistry.getAccessibleModules(userAfter).length;
       expect(modulesAfterCount).toBeGreaterThanOrEqual(modulesBeforeCount);

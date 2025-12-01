@@ -84,7 +84,7 @@ useModuleAccess('sales').canAccess === true // if permissions granted
 ```typescript
 // Uses RBAC to determine access
 const result = useModuleAccess('customers');
-// Checks: manage_customers, customers:read, generic read
+// Checks: crm:customer:record:update, crm:customer:record:read, generic read
 
 // Returns detailed reason for denial
 result.reason === 'Insufficient permissions to access this module'

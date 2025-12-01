@@ -100,11 +100,11 @@ interface User {
 
 ### Permissions Loaded ✅
 ```
-✓ dashboard:view
-✓ masters:read
-✓ user_management:read
-✓ users:manage
-✓ roles:manage
+✓ crm:dashboard:panel:view
+✓ crm:reference:data:read
+✓ crm:user:record:read
+✓ crm:user:record:update
+✓ crm:role:permission:assign
 ✓ customers:manage
 ✓ sales:manage
 ✓ contracts:manage
@@ -115,7 +115,7 @@ interface User {
 ✓ complaints:manage
 ✓ companies:manage
 ✓ reports:manage
-✓ settings:manage
+✓ crm:system:config:manage
 ✓ export_data
 ✓ view_audit_logs
 ✓ read, write, delete (legacy)
@@ -123,7 +123,7 @@ interface User {
 
 ### Navigation Items ✅
 Now visible for admin@acme.com:
-- ✓ Dashboard (dashboard:view)
+- ✓ Dashboard (crm:dashboard:panel:view)
 - ✓ Customers (customers:manage)
 - ✓ Sales (sales:manage)
 - ✓ Contracts (contracts:manage)
@@ -131,10 +131,10 @@ Now visible for admin@acme.com:
 - ✓ Support Tickets (tickets:manage)
 - ✓ Complaints (complaints:manage)
 - ✓ Job Works (job_works:manage)
-- ✓ **Masters** (masters:read) - Companies, Products
-- ✓ **User Management** (users:manage) - Users, Roles, Permissions
-- ✓ **Configuration** (settings:manage) - Tenant Settings, PDF Templates
-- ✓ Notifications (settings:manage)
+- ✓ **Masters** (crm:reference:data:read) - Companies, Products
+- ✓ **User Management** (crm:user:record:update) - Users, Roles, Permissions
+- ✓ **Configuration** (crm:system:config:manage) - Tenant Settings, PDF Templates
+- ✓ Notifications (crm:system:config:manage)
 - ✓ Audit Logs (view_audit_logs)
 
 ## Deliverables

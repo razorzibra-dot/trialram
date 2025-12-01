@@ -360,9 +360,9 @@ This analysis reviewed:
    - Editable permissions
 
 ⚠️ ISSUE FOUND: Different permission naming conventions
-   - core/hooks: 'customers:read', 'sales:create'
+   - core/hooks: 'crm:customer:record:read', 'crm:sales:deal:create'
    - user-management: 'user:list', 'user:view'
-   - rbac service: 'manage_customers', 'read', 'write'
+   - rbac service: 'crm:customer:record:update', 'read', 'write'
    
    Status: INCONSISTENT naming across modules (see Issues section)
 ```
@@ -384,9 +384,9 @@ Permission naming is inconsistent across the codebase:
 
 ```typescript
 // Core hooks use colon separator
-'customers:read'
-'sales:create'
-'products:update'
+'crm:customer:record:read'
+'crm:sales:deal:create'
+'crm:product:record:update'
 
 // User management uses colon
 'user:list'
@@ -394,8 +394,8 @@ Permission naming is inconsistent across the codebase:
 'user:delete'
 
 // RBAC Service uses underscore
-'manage_customers'
-'manage_sales'
+'crm:customer:record:update'
+'crm:sales:deal:update'
 'manage_products'
 'read'
 'write'
@@ -412,10 +412,10 @@ Permission naming is inconsistent across the codebase:
 ```typescript
 // Database (RBAC service mock):
 { id: 'read', name: 'Read', action: 'read', resource: '*' }
-{ id: 'manage_customers', name: 'Manage Customers', resource: 'customers', action: 'manage' }
+{ id: 'crm:customer:record:update', name: 'Manage Customers', resource: 'customers', action: 'manage' }
 
 // usePermission hook expects:
-'customers:read'  // Colon format
+'crm:customer:record:read'  // Colon format
 
 // User management uses:
 'user:list'  // Colon format
@@ -438,7 +438,7 @@ No central permission naming standard defined. Different modules created permiss
 // Before (inconsistent)
 const mockPermissions = [
   { id: 'read', name: 'Read', action: 'read', resource: '*' }
-  { id: 'manage_customers', ... }
+  { id: 'crm:customer:record:update', ... }
 ]
 
 // After (consistent)
@@ -448,8 +448,8 @@ const mockPermissions = [
 ]
 
 // Hook uses consistently
-auth.hasPermission('customers:read')  // Always colon format
-auth.hasPermission('users:create')
+auth.hasPermission('crm:customer:record:read')  // Always colon format
+auth.hasPermission('crm:user:record:create')
 ```
 
 ---
@@ -693,7 +693,7 @@ class RBACService {
 }
 
 // All other layers use:
-const permission = await rbacService.hasPermission(userId, 'customers:read');
+const permission = await rbacService.hasPermission(userId, 'crm:customer:record:read');
 ```
 
 **Option B: Unified Hook Interface**

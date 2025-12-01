@@ -16,14 +16,14 @@ hasPermission: (permission: string): boolean => {
 
 ### Why This Failed
 1. **Permission Supersets Not Handled**: The `authService.hasPermission()` method has sophisticated logic to handle permission supersets:
-   - `masters:manage` grants `masters:read`
+   - `masters:manage` grants `crm:reference:data:read`
    - `resource:manage` grants `resource:read`
    - `resource:admin` grants all `resource:*` permissions
    - Handles synonyms like `:view` for `:read`
 
 2. **Simple Array Check**: The navigation filter was only checking if the exact permission string exists in the array, missing these superset relationships.
 
-3. **Admin Permissions**: While admin users have `masters:read` in the database, if they also have `masters:manage` or other superset permissions, the simple check would fail to recognize that `masters:read` is granted.
+3. **Admin Permissions**: While admin users have `crm:reference:data:read` in the database, if they also have `masters:manage` or other superset permissions, the simple check would fail to recognize that `crm:reference:data:read` is granted.
 
 ## ✅ Solution Applied
 
@@ -47,7 +47,7 @@ export function createNavigationFilterContext(
     userPermissions,
     hasPermission: (permission: string): boolean => {
       // ✅ Use authService.hasPermission() to properly handle permission supersets
-      // This ensures that permissions like 'masters:manage' grant 'masters:read',
+      // This ensures that permissions like 'masters:manage' grant 'crm:reference:data:read',
       // and 'resource:manage' grants 'resource:read', etc.
       return authService.hasPermission(permission);
     },
@@ -65,7 +65,7 @@ export function createNavigationFilterContext(
 
 1. **Consistent Permission Checking**: Now uses the same `authService.hasPermission()` method used throughout the application, ensuring consistent behavior.
 
-2. **Handles Supersets**: Properly recognizes that `masters:manage` grants `masters:read`, so admin users with manage permissions will see the Administration menu.
+2. **Handles Supersets**: Properly recognizes that `masters:manage` grants `crm:reference:data:read`, so admin users with manage permissions will see the Administration menu.
 
 3. **Handles Synonyms**: Recognizes that `:view` is equivalent to `:read`, `:create`/`:update` are equivalent to `:write`, etc.
 
@@ -74,11 +74,11 @@ export function createNavigationFilterContext(
 ## 📋 Verification
 
 ### Database Permissions
-- ✅ Admin role has `masters:read` permission in `role_permissions` table
+- ✅ Admin role has `crm:reference:data:read` permission in `role_permissions` table
 - ✅ Admin role has various `*:manage` permissions that should grant read access
 
 ### Navigation Items
-- ✅ Administration section requires `masters:read` permission
+- ✅ Administration section requires `crm:reference:data:read` permission
 - ✅ Navigation items are fetched from `navigation_items` table
 - ✅ Filtering happens in `useNavigation` hook using `filterNavigationItems`
 
@@ -93,7 +93,7 @@ export function createNavigationFilterContext(
 
 After this fix:
 - ✅ Admin users will see the "Administration" menu section
-- ✅ All navigation items requiring `masters:read` will be visible to admin users
+- ✅ All navigation items requiring `crm:reference:data:read` will be visible to admin users
 - ✅ Permission supersets are properly recognized
 - ✅ Consistent permission checking across the application
 

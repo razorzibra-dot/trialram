@@ -138,7 +138,7 @@ If using `VITE_API_MODE=supabase`:
 1. **Verify Dashboard Access**:
    - Check console logs show: "Super admin detected"
    - Verify URL is `/super-admin/dashboard`
-   - Check RBAC permissions: `super_admin:view_analytics`
+   - Check RBAC permissions: `super_admin:crm:analytics:insight:view`
 
 2. **Check Hook Execution**:
    ```

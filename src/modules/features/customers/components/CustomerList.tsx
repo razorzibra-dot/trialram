@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDate, formatCurrency } from '@/modules/core/utils';
 import { Edit, Trash2, Eye, Mail, Phone } from 'lucide-react';
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 interface CustomerListProps {
   onCreateCustomer?: () => void;
@@ -45,6 +47,13 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   const deleteCustomer = useDeleteCustomer();
   const bulkDelete = useBulkCustomerOperations();
   const exportCustomers = useCustomerExport();
+
+  // Element-level permissions
+  const canViewCustomers = usePermission('crm:contacts:list:view', 'accessible');
+  const canCreateCustomers = usePermission('crm:contacts:list:button.create', 'visible');
+  const canExportCustomers = usePermission('crm:contacts:list:button.export', 'visible');
+  const canBulkDelete = usePermission('crm:contacts:list:button.bulkdelete', 'visible');
+  const canSelectCustomers = usePermission('crm:contacts:list:selection', 'enabled');
 
   // Define table columns
   const columns: Column<Customer>[] = useMemo(() => [
@@ -93,20 +102,22 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     {
       key: 'industry',
       title: 'Industry',
-      dataIndex: 'industry',
-      render: (industry) => (
-        <Badge variant="outline">
-          {industry || 'Not specified'}
-        </Badge>
-      ),
+      render: (_: unknown, customer: Customer | undefined) => {
+        if (!customer) return <span className="text-gray-400">-</span>;
+        return (
+          <Badge variant="outline">
+            {customer.industry || 'Not specified'}
+          </Badge>
+        );
+      },
       sortable: true,
       filterable: true,
     },
     {
       key: 'size',
       title: 'Size',
-      dataIndex: 'size',
-      render: (size) => {
+      render: (_: unknown, customer: Customer | undefined) => {
+        if (!customer) return <span className="text-gray-400">-</span>;
         const sizeColors = {
           startup: 'bg-green-100 text-green-800',
           small: 'bg-blue-100 text-blue-800',
@@ -117,9 +128,9 @@ export const CustomerList: React.FC<CustomerListProps> = ({
         return (
           <Badge
             variant="secondary"
-            className={sizeColors[size as keyof typeof sizeColors] || ''}
+            className={sizeColors[customer.size as keyof typeof sizeColors] || ''}
           >
-            {size || 'Unknown'}
+            {customer.size || 'Unknown'}
           </Badge>
         );
       },
@@ -129,8 +140,8 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     {
       key: 'status',
       title: 'Status',
-      dataIndex: 'status',
-      render: (status) => {
+      render: (_: unknown, customer: Customer | undefined) => {
+        if (!customer) return <span className="text-gray-400">-</span>;
         const statusColors = {
           active: 'bg-green-100 text-green-800',
           inactive: 'bg-gray-100 text-gray-800',
@@ -138,8 +149,8 @@ export const CustomerList: React.FC<CustomerListProps> = ({
         };
 
         return (
-          <Badge className={statusColors[status as keyof typeof statusColors] || ''}>
-            {status || 'Unknown'}
+          <Badge className={statusColors[customer.status as keyof typeof statusColors] || ''}>
+            {customer.status || 'Unknown'}
           </Badge>
         );
       },
@@ -149,16 +160,20 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     {
       key: 'total_sales_amount',
       title: 'Total Sales',
-      dataIndex: 'total_sales_amount',
-      render: (amount) => formatCurrency(amount || 0),
+      render: (_: unknown, customer: Customer | undefined) => {
+        if (!customer) return <span className="text-gray-400">-</span>;
+        return formatCurrency(customer.total_sales_amount || 0);
+      },
       sortable: true,
       align: 'right',
     },
     {
       key: 'created_at',
       title: 'Created',
-      dataIndex: 'created_at',
-      render: (date) => formatDate(date),
+      render: (_: unknown, customer: Customer | undefined) => {
+        if (!customer) return <span className="text-gray-400">-</span>;
+        return formatDate(customer.created_at);
+      },
       sortable: true,
     },
   ], []);
@@ -223,18 +238,25 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   }, [exportCustomers]);
 
   // Row actions
-  const getRowActions = useCallback((customer: Customer) => [
-    {
+  const getRowActions = useCallback((customer: Customer) => {
+    const actions = [];
+
+    // View action
+    actions.push({
       label: 'View',
       icon: <Eye className="w-4 h-4" />,
       onClick: () => onViewCustomer?.(customer),
-    },
-    {
+    });
+
+    // Edit action
+    actions.push({
       label: 'Edit',
       icon: <Edit className="w-4 h-4" />,
       onClick: () => onEditCustomer?.(customer),
-    },
-    {
+    });
+
+    // Delete action
+    actions.push({
       label: 'Delete',
       icon: <Trash2 className="w-4 h-4" />,
       onClick: () => {
@@ -246,29 +268,41 @@ export const CustomerList: React.FC<CustomerListProps> = ({
           });
         }
       },
-    },
-  ], [onViewCustomer, onEditCustomer, deleteCustomer, refetch]);
+    });
+
+    return actions;
+  }, [onViewCustomer, onEditCustomer, deleteCustomer, refetch]);
 
   return (
     <div className="space-y-4">
       {/* Bulk Actions */}
-      {selectedCustomerIds.length > 0 && (
-        <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-sm font-medium text-blue-900">
-            {selectedCustomerIds.length} customer(s) selected
-          </span>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBulkDelete}
-              disabled={bulkDelete.isPending}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Selected
-            </Button>
+      {selectedCustomerIds.length > 0 && canSelectCustomers && (
+        <PermissionControlled
+          elementPath="crm:contacts:list:bulkactions"
+          action="visible"
+        >
+          <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedCustomerIds.length} customer(s) selected
+            </span>
+            <div className="flex space-x-2">
+              <PermissionControlled
+                elementPath="crm:contacts:list:button.bulkdelete"
+                action="visible"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDelete.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Selected
+                </Button>
+              </PermissionControlled>
+            </div>
           </div>
-        </div>
+        </PermissionControlled>
       )}
 
       {/* Data Table */}
@@ -282,18 +316,18 @@ export const CustomerList: React.FC<CustomerListProps> = ({
           total: pagination.total,
           onChange: handlePaginationChange,
         }}
-        selection={{
+        selection={canSelectCustomers ? {
           selectedRowKeys: selectedCustomerIds,
           onChange: handleSelectionChange as any,
-        }}
+        } : undefined}
         search={{
           value: (stableFilters.search as string) || '',
           placeholder: 'Search customers...',
           onChange: handleSearch,
         }}
         actions={{
-          onCreate: onCreateCustomer,
-          onExport: () => handleExport('csv'),
+          onCreate: canCreateCustomers ? onCreateCustomer : undefined,
+          onExport: canExportCustomers ? () => handleExport('csv') : undefined,
           rowActions: getRowActions as any,
         }}
         rowKey="id"

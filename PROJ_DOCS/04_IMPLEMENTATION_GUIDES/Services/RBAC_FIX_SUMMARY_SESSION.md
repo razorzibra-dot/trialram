@@ -216,9 +216,9 @@ Password: password123
 ### Step 5: Verify Permissions
 ```javascript
 // In browser console
-authService.hasPermission('manage_service_contracts')    // true
-authService.hasPermission('manage_product_sales')        // true
-authService.hasPermission('manage_complaints')           // true
+authService.hasPermission('crm:contract:service:update')    // true
+authService.hasPermission('crm:product-sale:record:update')        // true
+authService.hasPermission('crm:support:complaint:update')           // true
 authService.getCurrentTenantId()                         // Acme only
 
 // Verify tenant isolation
@@ -296,7 +296,7 @@ import { useAuth } from '@/contexts/AuthContext';
 function ServiceContractsPage() {
   const { hasPermission } = useAuth();
 
-  if (!hasPermission('manage_service_contracts')) {
+  if (!hasPermission('crm:contract:service:update')) {
     return <AccessDenied />;
   }
 
@@ -321,7 +321,7 @@ if (await authService.hasPermissionAsync('manage_contracts')) {
 ```typescript
 const permissions = await authService.getCurrentUserPermissions();
 console.log(permissions); 
-// ['manage_contracts', 'manage_customers', 'view_dashboard', ...]
+// ['manage_contracts', 'crm:customer:record:update', 'view_dashboard', ...]
 ```
 
 ### Get User Tenant

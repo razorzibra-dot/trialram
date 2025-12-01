@@ -57,6 +57,9 @@ export interface Permission {
   resource: string;
   action: string;
   is_system_permission?: boolean;
+  scope?: Record<string, any>;
+  elementPath?: string;
+  parentPermissionId?: string;
 }
 
 export interface Role {
@@ -125,7 +128,7 @@ export interface PermissionMatrix {
 
 export interface TenantUser extends User {
   roles: Role[];
-  permissions: Permission[];
+  permissionObjects: Permission[]; // Renamed to avoid conflict with User.permissions (string[])
   activity: UserActivity;
   tenant: Tenant;
 }
@@ -141,4 +144,48 @@ export interface RoleChangeRequest {
   reviewed_by?: string;
   reviewed_at?: string;
   created_at: string;
+}
+
+export interface ElementPermission {
+  id: string;
+  elementPath: string;
+  permissionId: string;
+  requiredRoleLevel: 'read' | 'write' | 'admin';
+  conditions: Record<string, any>;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PermissionOverride {
+  id: string;
+  userId: string;
+  permissionId: string;
+  resourceType: 'record' | 'field' | 'element';
+  resourceId?: string;
+  overrideType: 'grant' | 'deny';
+  conditions: Record<string, any>;
+  expiresAt?: string;
+  tenantId: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface PermissionTemplate {
+  id: string;
+  name: string;
+  template: Record<string, any>;
+  applicableTo: 'form' | 'list' | 'dashboard' | 'module';
+  tenantId: string;
+  createdAt: string;
+}
+
+export interface PermissionContext {
+  user: User;
+  tenant: Tenant;
+  resource?: string;
+  recordId?: string;
+  elementPath?: string;
+  action: 'visible' | 'enabled' | 'editable' | 'accessible';
+  metadata?: Record<string, any>;
 }

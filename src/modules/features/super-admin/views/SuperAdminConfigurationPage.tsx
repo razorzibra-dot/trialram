@@ -69,7 +69,7 @@ const SuperAdminConfigurationPage: React.FC = () => {
   });
 
   // Permission check
-  if (!hasPermission('super_user:manage_config')) {
+  if (!hasPermission('crm:platform:config:manage')) {
     return (
       <div style={{ padding: 24 }}>
         <Alert

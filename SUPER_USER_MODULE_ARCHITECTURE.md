@@ -366,7 +366,7 @@ SUPER USER MODULE
 │   └─ Verify user exists in tenant
 │
 ├── Uses: RBAC Service
-│   ├─ Check permission: super_user:manage_tenants
+│   ├─ Check permission: crm:platform:tenant:manage
 │   ├─ Check permission: super_user:impersonate_users
 │   ├─ Assign super_user role
 │   └─ Verify role permissions

@@ -70,9 +70,9 @@ npm run dev
 2. Go to **Console** tab
 3. **You should see logs like**:
    ```
-   [validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:create"
-   [validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:view"
-   [validateRolePermissions] User has permission "manage_product_sales" for action "product_sales:edit"
+   [validateRolePermissions] User has permission "crm:product-sale:record:update" for action "crm:product-sale:record:create"
+   [validateRolePermissions] User has permission "crm:product-sale:record:update" for action "product_sales:view"
+   [validateRolePermissions] User has permission "crm:product-sale:record:update" for action "product_sales:edit"
    ```
 
 ---
@@ -103,7 +103,7 @@ const availableActions = await productSalesRbacService.getAvailableActions(tenan
 ```typescript
 // Calls each permission method correctly
 const createResult = await productSalesRbacService.canCreateProductSale(tenantId);
-// ✅ This checks product_sales:create action
+// ✅ This checks crm:product-sale:record:create action
 // ✅ This returns a PermissionResult with .allowed property
 // ✅ Hook now properly sets canCreate: true/false
 ```
@@ -192,11 +192,11 @@ ProductSaleFormPanel uses useProductSalesPermissions hook
     ↓
 Hook calls canCreateProductSale(tenantId)
     ↓
-RBAC Service converts action to permission: product_sales:create → manage_product_sales
+RBAC Service converts action to permission: crm:product-sale:record:create → crm:product-sale:record:update
     ↓
 Queries database: user_roles + roles tables
     ↓
-Checks if user's roles contain "manage_product_sales" permission
+Checks if user's roles contain "crm:product-sale:record:update" permission
     ↓
 Returns { allowed: true/false }
     ↓

@@ -360,7 +360,7 @@ Total Price = Size-adjusted Unit Price × Pieces
 - Multi-backend compatible
 
 ### **RBAC Integration**
-- Controlled by permissions: `jobworks:create`, `jobworks:update`, `jobworks:delete`
+- Controlled by permissions: `crm:project:record:create`, `crm:project:record:update`, `crm:project:record:delete`
 - Permission checks in JobWorksPage
 - Buttons hidden/shown based on permissions
 

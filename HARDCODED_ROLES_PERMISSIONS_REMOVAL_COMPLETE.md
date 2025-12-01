@@ -124,7 +124,7 @@ switch (role) {
 
 ```typescript
 const featurePermissions = {
-  customer_management: ['customers:read'], // Maps features to permissions (DB-driven)
+  customer_management: ['crm:customer:record:read'], // Maps features to permissions (DB-driven)
 };
 ```
 

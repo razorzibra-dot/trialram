@@ -237,26 +237,26 @@ interface Permission {
 - `delete` - Delete data (global access)
 
 **2. Module Permissions (Feature-Specific):**
-- `manage_customers` - Full customer management
-- `manage_sales` - Sales process management
+- `crm:customer:record:update` - Full customer management
+- `crm:sales:deal:update` - Sales process management
 - `manage_tickets` - Support ticket management
 - `manage_products` - Product catalog management
 - `manage_contracts` - Contract lifecycle management
-- `manage_service_contracts` - Service contract management
-- `manage_complaints` - Complaint handling
-- `manage_product_sales` - Product sales operations
+- `crm:contract:service:update` - Service contract management
+- `crm:support:complaint:update` - Complaint handling
+- `crm:product-sale:record:update` - Product sales operations
 - `manage_job_works` - Job work operations
 
 **3. Administrative Permissions (User Management):**
-- `manage_users` - User account management
-- `manage_roles` - Role and permission management
-- `view_analytics` - Analytics and reporting access
-- `manage_settings` - System configuration
+- `crm:user:record:update` - User account management
+- `crm:role:record:update` - Role and permission management
+- `crm:analytics:insight:view` - Analytics and reporting access
+- `crm:system:config:manage` - System configuration
 - `view_audit_logs` - Audit log access
 
 **4. System Permissions (Platform-Level):**
 - `super_admin` - Platform administrator (super_admin role only)
-- `manage_tenants` - Tenant management (super_admin only)
+- `crm:platform:tenant:manage` - Tenant management (super_admin only)
 - `view_all_tenants` - Cross-tenant visibility (super_admin only)
 
 ### 2.4 Permission Implementation Details
@@ -267,20 +267,20 @@ const basicRolePermissions: Record<string, string[]> = {
   'super_admin': ['*'], // Super admin has all permissions
   'admin': [
     'read', 'write', 'delete',
-    'manage_users', 'manage_roles', 'manage_customers', 'manage_sales',
+    'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update',
     'manage_tickets', 'manage_contracts', 'manage_products', 
-    'manage_service_contracts', 'manage_complaints', 'manage_product_sales',
+    'crm:contract:service:update', 'crm:support:complaint:update', 'crm:product-sale:record:update',
     'manage_job_works', 'view_dashboard', 'view_audit_logs'
   ],
   'manager': [
-    'read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets',
-    'manage_contracts', 'manage_products', 'manage_service_contracts',
-    'manage_complaints', 'manage_product_sales', 'manage_job_works',
+    'read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+    'manage_contracts', 'manage_products', 'crm:contract:service:update',
+    'crm:support:complaint:update', 'crm:product-sale:record:update', 'manage_job_works',
     'view_dashboard', 'view_audit_logs'
   ],
   'agent': [
-    'read', 'write', 'manage_customers', 'manage_sales', 'manage_tickets',
-    'manage_complaints', 'view_dashboard'
+    'read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+    'crm:support:complaint:update', 'view_dashboard'
   ],
   'engineer': [
     'read', 'write', 'manage_products', 'manage_tickets', 
@@ -370,7 +370,7 @@ if (isTenantModule(moduleName)) {
 **Tenant admins (Administrator role) must NOT see or access:**
 1. **Super Admin Role**: The `super_admin` role should never appear in role dropdowns or role management for tenant admins
 2. **Platform-Level Permissions**: Permissions with `category='system'` or `is_system_permission=true` should be hidden from tenant admins
-   - Examples: `super_admin`, `platform_admin`, `tenants:manage`, `system_monitoring`
+   - Examples: `super_admin`, `crm:platform:control:admin`, `crm:platform:tenant:manage`, `system_monitoring`
 3. **Other Tenants' Roles**: Tenant admins can only see roles for their own tenant (`tenant_id` must match)
 
 **Implementation Requirements:**
@@ -452,7 +452,7 @@ const roleMap = { 'admin': 'Administrator' }; // Should lookup from database
 if (role.name === 'super_admin') return false; // Should use database flags
 
 // ❌ WRONG: Hardcoded permission name check
-if (['super_admin', 'platform_admin'].includes(perm.name)) return false; // Should use database flags
+if (['super_admin', 'crm:platform:control:admin'].includes(perm.name)) return false; // Should use database flags
 
 // ❌ WRONG: Hardcoded role validation
 if (!['admin', 'manager', 'user'].includes(userRole)) throw new Error('Invalid role'); // Should use isValidUserRole()
@@ -474,7 +474,7 @@ switch (role) {
 
 // ✅ ACCEPTABLE: Feature-to-permission mapping (not role mapping)
 const featurePermissions = {
-  customer_management: ['customers:read'], // Maps features to permissions (DB-driven)
+  customer_management: ['crm:customer:record:read'], // Maps features to permissions (DB-driven)
 };
 
 // ⚠️ FALLBACK: Hardcoded hierarchy for UI display only (documented as fallback)
@@ -514,27 +514,27 @@ const roleLevels = { admin: 5, manager: 4, ... }; // Documented as UI-only fallb
 3. **NO hardcoded role checks**: Never check `if (user.role === 'admin')` or `if (user.role === 'super_admin')` to grant permissions. Only use role checks for UI display or logging purposes.
 4. **NO hardcoded permission maps**: Never create static maps like `ROLE_PERMISSIONS: Record<UserRole, Permission[]>` in application code. These should only exist in database seed data.
 5. **Fallback permissions are temporary**: Fallback permission systems should only be used when database is unavailable, and should log warnings when used.
-6. **Permission format**: Use `{resource}:{action}` format (e.g., `users:update`, `users:manage`, `customers:read`).
-7. **Super admin handling**: Super admins should have all permissions in database, not hardcoded bypasses. If super admin needs special handling, it should be via database permission `super_admin` or `platform_admin`, not code-level checks.
+6. **Permission format**: Use `{resource}:{action}` format (e.g., `crm:user:record:update`, `crm:user:record:update`, `crm:customer:record:read`).
+7. **Super admin handling**: Super admins should have all permissions in database, not hardcoded bypasses. If super admin needs special handling, it should be via database permission `super_admin` or `crm:platform:control:admin`, not code-level checks.
 
 **Correct Implementation:**
 ```typescript
 // ✅ CORRECT: Use dynamic permissions from database
-const canEdit = authService.hasPermission('users:update') || 
-                authService.hasPermission('users:manage');
+const canEdit = authService.hasPermission('crm:user:record:update') || 
+                authService.hasPermission('crm:user:record:update');
 
 // ❌ WRONG: Hardcoded role check
 if (user.role === 'admin') return true;
 
 // ❌ WRONG: Hardcoded permission map
-const ROLE_PERMISSIONS = { 'admin': ['users:update', ...] };
+const ROLE_PERMISSIONS = { 'admin': ['crm:user:record:update', ...] };
 ```
 
 **Database-Driven Permission Flow:**
 1. User logs in → `authService.login()` fetches user from database
 2. User's role is resolved → `user_roles` table links to `roles` table
 3. Role permissions are fetched → `role_permissions` table links to `permissions` table
-4. Permissions are attached to user → `user.permissions = ['users:manage', 'customers:read', ...]`
+4. Permissions are attached to user → `user.permissions = ['crm:user:record:update', 'crm:customer:record:read', ...]`
 5. Permission checks use `user.permissions` → `authService.hasPermission()` checks this array
 
 **Why This Matters:**
@@ -553,7 +553,7 @@ Navigation items may not appear for users even when they have the correct permis
 
 **Root Cause:**
 The `authService.hasPermission()` method has sophisticated logic to handle:
-- **Permission Supersets**: `masters:manage` grants `masters:read`, `resource:manage` grants `resource:read`
+- **Permission Supersets**: `masters:manage` grants `crm:reference:data:read`, `resource:manage` grants `resource:read`
 - **Permission Synonyms**: `:view` is equivalent to `:read`, `:create`/`:update` are equivalent to `:write`
 - **Super Admin Handling**: Super admin role automatically grants all permissions
 - **Resource/Action Combinations**: Handles complex permission patterns
@@ -592,7 +592,7 @@ export function createNavigationFilterContext(
     userPermissions,
     hasPermission: (permission: string): boolean => {
       // ✅ Use authService.hasPermission() to properly handle permission supersets
-      // This ensures that permissions like 'masters:manage' grant 'masters:read',
+      // This ensures that permissions like 'masters:manage' grant 'crm:reference:data:read',
       // and 'resource:manage' grants 'resource:read', etc.
       return authService.hasPermission(permission);
     },
@@ -607,7 +607,7 @@ export function createNavigationFilterContext(
 ```
 
 **Why This Matters:**
-- **Permission Supersets**: Users with `masters:manage` should see navigation items requiring `masters:read`
+- **Permission Supersets**: Users with `masters:manage` should see navigation items requiring `crm:reference:data:read`
 - **Consistency**: Navigation filtering uses the same permission logic as the rest of the application
 - **Future-Proof**: New permission relationships are automatically handled by `authService.hasPermission()`
 - **Admin Access**: Admin users with various `*:manage` permissions will correctly see all navigation items
@@ -634,11 +634,11 @@ export function createNavigationFilterContext(
 - ❌ Assuming simple array checks will work for all permission scenarios
 
 **Example Issue:**
-- Admin user has `masters:read` and `masters:manage` permissions in database
-- Navigation item requires `masters:read` permission
-- Simple array check: `userPermissions.includes('masters:read')` → ✅ Works if exact match exists
-- But if admin only has `masters:manage` (not `masters:read`), simple check fails
-- `authService.hasPermission('masters:read')` → ✅ Works because it recognizes `masters:manage` grants `masters:read`
+- Admin user has `crm:reference:data:read` and `masters:manage` permissions in database
+- Navigation item requires `crm:reference:data:read` permission
+- Simple array check: `userPermissions.includes('crm:reference:data:read')` → ✅ Works if exact match exists
+- But if admin only has `masters:manage` (not `crm:reference:data:read`), simple check fails
+- `authService.hasPermission('crm:reference:data:read')` → ✅ Works because it recognizes `masters:manage` grants `crm:reference:data:read`
 
 **Related Files:**
 - `src/utils/navigationFilter.ts` - Navigation filtering logic
@@ -742,6 +742,97 @@ export function usePermissions(): UsePermissionsReturn {
 - ❌ Showing "Permission Denied" before permissions are loaded
 - ❌ Hardcoding permission checks instead of using hooks
 - ❌ Not providing backward compatibility aliases
+
+### 2.10 Permission Token Format & Multi-Layer Enforcement - CRITICAL
+
+**Canonical Pattern:** `<app>:<domain>:<resource>[:<scope>][:<action>]`  
+Each colon represents one semantic dimension. Every token MUST follow this sequence so creation, storage, caching, hooks, UI, and audit logs stay synchronized across all eight layers (Database → Types → Mock Service → Supabase Service → Service Factory → Module Service → Hooks → UI). Tokens that do not match this pattern are invalid and must be blocked during reviews/CI.
+
+**Dimension Breakdown:**
+
+1. **`<app>` – Application / Service Owner**
+   - Identifies which product or microservice owns the permission (`crm`, `billing`, `admin`, `analytics`, etc.).
+   - Prevents name collisions (`crm:user:record:read` vs `identity:user:record:read`).
+   - Enables app-level filtering in admin tooling and Supabase analytics.
+   - *Examples:* `crm`, `admin`, `billing`, `analytics`.
+
+2. **`<domain>` – Functional Module**
+   - Indicates the business area inside the app (`contact`, `deal`, `report`, `settings`, `user`, `company`, etc.).
+   - Drives grouping in RBAC UI (collapsible sections like “Contacts”, “Deals”).
+   - Guides backend teams when batching permission seeds per module.
+   - *Examples:* `contact`, `deal`, `report`, `settings`, `user`, `task`.
+
+3. **`<resource>` – Entity Type**
+   - Describes what object is being protected (`record`, `pipeline`, `dashboard`, `config`, etc.).
+   - Must stay consistent inside a domain (Contacts always use `record`, Reports use `dashboard` or `report`).
+   - Supports analytics and auditing by resource type.
+   - *Examples:* `record`, `pipeline`, `dashboard`, `config`, `report`.
+
+4. **`[:<scope>]` – Optional Qualifier**
+   - Adds ownership visibility (`own`, `team`, `org`), field-level targeting (`field.email`), sensitivity markers (`sensitive`, `pii`), or mode flavors (`export`, `assign`, `bulk`).
+   - Scope is optional but must follow a documented style per module—never invent ad-hoc scopes without updating this section and `PERMISSION_SYSTEM_IMPLEMENTATION.md`.
+   - Multiple scoped variants can exist when mapped to real policies (e.g., `crm:deal:record:own:update`, `crm:deal:record:team:update`).
+   - *Examples:* `own`, `team`, `org`, `field.email`, `field.address`, `sensitive`, `export`, `assign`.
+
+5. **`[:<action>]` – Operation Verb**
+   - Standard CRUD plus domain verbs (`create`, `read`, `update`, `delete`, `move`, `export`, `share`, `assign`, `archive`, `restore`, etc.).
+   - Must align with Supabase policies and `authService.hasPermission()` superset logic (`:manage` grants `:read`, `:update`, etc.).
+   - Always include unless the scope encodes the verb—pick one convention per module and document it.
+   - *Examples:* `read`, `create`, `update`, `delete`, `move`, `export`, `share`, `assign`.
+
+**Usage Examples:**
+
+- `crm:customer:record:read` → CRM app, Contacts domain, contact rows, read action.
+- `crm:customer:record:field.email:update` → CRM Contacts, contact rows, update action limited to email field.
+- `crm:deal:pipeline:move` → CRM Deals, pipeline resource, move action.
+- `crm:deal:record:own:update` → CRM Deals, own deals only, update action.
+- `crm:report:dashboard:share` → CRM Reports, dashboard resource, share action.
+- `crm:user:config:assign` → CRM Users, config resource, assign role/users.
+
+**Scope Style Reference:**
+
+- **Ownership:** `own`, `team`, `org` (maps to tenant/user filters in Supabase RLS).
+- **Field-Level:** `field.email`, `field.phone`, `field.salary`.
+- **Sensitivity:** `sensitive`, `pii`, `financial`.
+- **Mode/Flavor:** `export`, `import`, `assign`, `share`, `bulk`, `archive`.
+
+**Cheat Sheet (ask before shipping new permissions):**
+
+1. App? → Which application/service? (`crm`)
+2. Domain? → Which module? (`contact`, `deal`, `report`, `settings`, `user`, etc.)
+3. Resource? → What entity? (`record`, `pipeline`, `dashboard`, `config`, etc.)
+4. Scope? → Any limiter? (`own`, `team`, `field.email`, `export`, etc.)
+5. Action? → What operation? (`read`, `update`, `share`, `assign`, etc.)
+
+**Eight-Layer Synchronization (MUST PASS ALL):**
+
+1. **Database:** Insert the full token into `permissions` (`service_app`, `domain`, `resource`, `scope`, `action`). Add migrations/constraints rejecting malformed tokens.
+2. **Types:** Update TypeScript interfaces (`src/types/rbac.ts`, DTOs) so camelCase mirrors snake_case columns.
+3. **Mock Service:** Mirror the token and validation rules in mock seeds/fixtures so Storybook/tests behave like production.
+4. **Supabase Service:** Apply tokens in Supabase service queries and RLS policies, mapping ownership scopes to tenant/team filters.
+5. **Factory:** Route through `serviceFactory` (no direct imports) so mock/supabase parity stays intact.
+6. **Module Service:** Consume permissions exclusively through service proxies and `authService.hasPermission(token)`; never use `userPermissions.includes`.
+7. **Hooks:** Update `usePermissions`, `useModuleAccess`, etc. to expose the new token (with backward-compatible aliases) and invalidate caches when permissions change.
+8. **UI:** Enforce the permission in React components, routes, and navigation; document constraints (ownership, field-level limits) directly in tooltips/forms.
+
+**Implementation Workflow:**
+
+1. Design the token using the canonical pattern and document it in feature specs plus `PERMISSION_SYSTEM_IMPLEMENTATION.md`.
+2. Create migration + seed updates (`supabase/migrations`, `supabase/seed.sql`) and run `AUTH_SYNC` scripts so tenants receive the new token.
+3. Update fallback permission maps only if necessary (log warnings until DB permissions land in staging).
+4. Add tests in `src/services/rbac/__tests__` verifying `authService.hasPermission(token)` handles scope + superset logic.
+5. Validate navigation, route guards, and hooks rely on `authService.hasPermission(token)` (never simple includes checks).
+6. Record verification in `PERMISSION_VERIFICATION_SUMMARY.md` and check off rows in `ELEMENT_LEVEL_PERMISSION_IMPLEMENTATION_CHECKLIST.md`.
+
+**Failure Prevention Rules:**
+
+- Tokens are immutable once shipped; renames require migrations + documentation updates.
+- Reject any token missing `<app>` or `<domain>`—missing dimensions break analytics, caching, and Supabase filters.
+- Do not overload `scope` with verbs that belong to `action`; pick one place to describe behavior per module.
+- Treat any feature/bug fix that bypasses this naming scheme as a release blocker until corrected.
+- CI reviewers must confirm the eight-layer checklist before approving PRs.
+
+By enforcing this structure, permissions remain portable across applications, avoid collisions, and deliver predictable behavior whenever new modules or fixes touch the RBAC system.
 
 ---
 

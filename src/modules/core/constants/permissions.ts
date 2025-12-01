@@ -10,13 +10,13 @@
  * @example
  * // For customers module
  * export const CUSTOMER_PERMISSIONS: BasePermissions = {
- *   READ: 'customers:read',
- *   CREATE: 'customers:create',
- *   UPDATE: 'customers:update',
- *   DELETE: 'customers:delete',
+ *   READ: 'crm:customer:record:read',
+ *   CREATE: 'crm:customer:record:create',
+ *   UPDATE: 'crm:customer:record:update',
+ *   DELETE: 'crm:customer:record:delete',
  *   APPROVE: 'customers:approve',
  *   REJECT: 'customers:reject',
- *   EXPORT: 'customers:export',
+ *   EXPORT: 'crm:customer:record:export',
  *   IMPORT: 'customers:import',
  * };
  */

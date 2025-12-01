@@ -117,7 +117,7 @@ describe('Phase 9: User Management Module Integration Tests', () => {
         CREATE_USER: 'create_users',
         UPDATE_USER: 'update_users',
         DELETE_USER: 'delete_users',
-        MANAGE_ROLES: 'manage_roles',
+        MANAGE_ROLES: 'crm:role:record:update',
         VIEW_PERMISSIONS: 'view_permissions',
       };
 

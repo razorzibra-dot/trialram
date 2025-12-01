@@ -5,8 +5,9 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useService } from '@/modules/core/hooks/useService';
+import { auditService } from '@/services/serviceFactory';
 import { useTenantContext } from '@/hooks/useTenantContext';
+import { useService } from '@/modules/core/hooks';
 import { STATS_QUERY_CONFIG, LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 import type { ICustomerService } from '@/modules/features/customers/services/customerService';
 import type { ISalesService } from '@/modules/features/sales/services/salesService';
@@ -73,7 +74,6 @@ export const useDashboardStats = () => {
  * Fetches recent audit log entries and formats them as activities
  */
 export const useRecentActivity = (limit: number = 10) => {
-  const auditService = useService<any>('auditService'); // Using any for now since audit service interface may vary
   const { isInitialized } = useTenantContext();
 
   return useQuery({

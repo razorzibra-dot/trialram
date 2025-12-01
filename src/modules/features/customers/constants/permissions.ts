@@ -5,29 +5,29 @@
 
 export const CUSTOMER_PERMISSIONS = {
   // Read permissions
-  READ: 'customers:read',
+  READ: 'crm:customer:record:read',
   LIST: 'customers:list',
-  VIEW: 'customers:view',
+  VIEW: 'crm:customer:record:read',
   
   // Create permissions
-  CREATE: 'customers:create',
+  CREATE: 'crm:customer:record:create',
   IMPORT: 'customers:import',
   
   // Update permissions
-  UPDATE: 'customers:update',
+  UPDATE: 'crm:customer:record:update',
   EDIT: 'customers:edit',
   
   // Delete permissions
-  DELETE: 'customers:delete',
+  DELETE: 'crm:customer:record:delete',
   BULK_DELETE: 'customers:bulk_delete',
   
   // Export permissions
-  EXPORT: 'customers:export',
+  EXPORT: 'crm:customer:record:export',
   
   // Special permissions
   MANAGE_CONTACTS: 'customers:manage_contacts',
   MANAGE_CONTRACTS: 'customers:manage_contracts',
-  VIEW_ANALYTICS: 'customers:view_analytics',
+  VIEW_ANALYTICS: 'crm:customer:record:read_analytics',
   MERGE: 'customers:merge',
 } as const;
 

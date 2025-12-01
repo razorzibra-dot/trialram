@@ -9,21 +9,21 @@ Fix critical synchronization issues between seed SQL, migration scripts, and dat
 
 ### 1.1 **Fix Permission Format in seed.sql**
 - [x] **1.1.1** Update permission names in `supabase/seed.sql` lines 14-48
-  - [x] Change `manage_users` → `users:manage` 
-  - [x] Change `manage_roles` → `roles:manage`
-  - [x] Change `manage_customers` → `customers:manage`
-  - [x] Change `manage_sales` → `sales:manage`
+  - [x] Change `crm:user:record:update` → `crm:user:record:update` 
+  - [x] Change `crm:role:record:update` → `crm:role:permission:assign`
+  - [x] Change `crm:customer:record:update` → `customers:manage`
+  - [x] Change `crm:sales:deal:update` → `sales:manage`
   - [x] Change `manage_contracts` → `contracts:manage`
-  - [x] Change `manage_service_contracts` → `service_contracts:manage`
+  - [x] Change `crm:contract:service:update` → `service_contracts:manage`
   - [x] Change `manage_products` → `products:manage`
-  - [x] Change `manage_product_sales` → `product_sales:manage`
+  - [x] Change `crm:product-sale:record:update` → `product_sales:manage`
   - [x] Change `manage_job_works` → `job_works:manage`
   - [x] Change `manage_tickets` → `tickets:manage`
-  - [x] Change `manage_complaints` → `complaints:manage`
+  - [x] Change `crm:support:complaint:update` → `complaints:manage`
   - [x] Change `manage_dashboard` → `dashboard:manage`
-  - [x] Change `manage_settings` → `settings:manage`
+  - [x] Change `crm:system:config:manage` → `crm:system:config:manage`
   - [x] Change `manage_companies` → `companies:manage`
-  - [x] Change `manage_tenants` → `tenants:manage`
+  - [x] Change `crm:platform:tenant:manage` → `crm:platform:tenant:manage`
 
 - [x] **1.1.2** Verify all 34 permission entries are updated
 - [x] **1.1.3** Ensure permission IDs (UUIDs) remain unchanged

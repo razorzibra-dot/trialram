@@ -12,13 +12,13 @@
 WITH migration_permissions AS (
     -- Extract permissions from migration INSERT statement
     SELECT 
-        'users:manage' as permission_name,
+        'crm:user:record:update' as permission_name,
         'users' as resource,
         'manage' as action,
         'module' as category,
         false as is_system
     UNION ALL
-    SELECT 'roles:manage', 'roles', 'manage', 'module', false
+    SELECT 'crm:role:permission:assign', 'roles', 'manage', 'module', false
     UNION ALL
     SELECT 'customers:manage', 'customers', 'manage', 'module', false
     UNION ALL
@@ -40,7 +40,7 @@ WITH migration_permissions AS (
     UNION ALL
     SELECT 'dashboard:manage', 'dashboard', 'manage', 'module', false
     UNION ALL
-    SELECT 'settings:manage', 'settings', 'manage', 'module', false
+    SELECT 'crm:system:config:manage', 'settings', 'manage', 'module', false
     UNION ALL
     SELECT 'companies:manage', 'companies', 'manage', 'module', false
     UNION ALL
@@ -76,11 +76,11 @@ WITH migration_permissions AS (
     UNION ALL
     SELECT 'delete', '*', 'delete', 'core', true
     UNION ALL
-    SELECT 'platform_admin', 'platform', 'admin', 'system', true
+    SELECT 'crm:platform:control:admin', 'platform', 'admin', 'system', true
     UNION ALL
     SELECT 'super_admin', 'system', 'admin', 'system', true
     UNION ALL
-    SELECT 'tenants:manage', 'tenants', 'manage', 'system', true
+    SELECT 'crm:platform:tenant:manage', 'tenants', 'manage', 'system', true
     UNION ALL
     SELECT 'system_monitoring', 'system', 'monitor', 'system', true
 )
@@ -102,8 +102,8 @@ WITH seed_permissions AS (
         ('read', 'Read access', '*', 'read'),
         ('write', 'Write access', '*', 'write'),
         ('delete', 'Delete access', '*', 'delete'),
-        ('users:manage', 'Manage users', 'users', 'manage'),
-        ('roles:manage', 'Manage roles', 'roles', 'manage'),
+        ('crm:user:record:update', 'Manage users', 'users', 'manage'),
+        ('crm:role:permission:assign', 'Manage roles', 'roles', 'manage'),
         ('customers:manage', 'Manage customers', 'customers', 'manage'),
         ('sales:manage', 'Manage sales', 'sales', 'manage'),
         ('contracts:manage', 'Manage contracts', 'contracts', 'manage'),
@@ -114,11 +114,11 @@ WITH seed_permissions AS (
         ('tickets:manage', 'Manage tickets', 'tickets', 'manage'),
         ('complaints:manage', 'Manage complaints', 'complaints', 'manage'),
         ('dashboard:manage', 'Access dashboard', 'dashboard', 'manage'),
-        ('settings:manage', 'Manage settings', 'settings', 'manage'),
+        ('crm:system:config:manage', 'Manage settings', 'settings', 'manage'),
         ('companies:manage', 'Manage companies', 'companies', 'manage'),
-        ('platform_admin', 'Platform administration', 'platform', 'admin'),
+        ('crm:platform:control:admin', 'Platform administration', 'platform', 'admin'),
         ('super_admin', 'Full system administration', 'system', 'admin'),
-        ('tenants:manage', 'Manage tenants', 'tenants', 'manage'),
+        ('crm:platform:tenant:manage', 'Manage tenants', 'tenants', 'manage'),
         ('system_monitoring', 'System monitoring', 'system', 'monitor'),
         ('reports:manage', 'Access reports and analytics', 'reports', 'manage'),
         ('export_data', 'Export data and reports', 'data', 'export'),
@@ -148,8 +148,8 @@ FROM seed_permissions;
 -- Test 1.1.3: Compare migration vs seed permission formats
 WITH migration_perms AS (
     SELECT 
-        'users:manage' as name, 'users' as resource, 'manage' as action
-    UNION ALL SELECT 'roles:manage', 'roles', 'manage'
+        'crm:user:record:update' as name, 'users' as resource, 'manage' as action
+    UNION ALL SELECT 'crm:role:permission:assign', 'roles', 'manage'
     UNION ALL SELECT 'customers:manage', 'customers', 'manage'
     UNION ALL SELECT 'sales:manage', 'sales', 'manage'
     UNION ALL SELECT 'contracts:manage', 'contracts', 'manage'
@@ -160,7 +160,7 @@ WITH migration_perms AS (
     UNION ALL SELECT 'tickets:manage', 'tickets', 'manage'
     UNION ALL SELECT 'complaints:manage', 'complaints', 'manage'
     UNION ALL SELECT 'dashboard:manage', 'dashboard', 'manage'
-    UNION ALL SELECT 'settings:manage', 'settings', 'manage'
+    UNION ALL SELECT 'crm:system:config:manage', 'settings', 'manage'
     UNION ALL SELECT 'companies:manage', 'companies', 'manage'
     UNION ALL SELECT 'reports:manage', 'reports', 'manage'
     UNION ALL SELECT 'inventory:manage', 'inventory', 'manage'
@@ -178,15 +178,15 @@ WITH migration_perms AS (
     UNION ALL SELECT 'read', '*', 'read'
     UNION ALL SELECT 'write', '*', 'write'
     UNION ALL SELECT 'delete', '*', 'delete'
-    UNION ALL SELECT 'platform_admin', 'platform', 'admin'
+    UNION ALL SELECT 'crm:platform:control:admin', 'platform', 'admin'
     UNION ALL SELECT 'super_admin', 'system', 'admin'
-    UNION ALL SELECT 'tenants:manage', 'tenants', 'manage'
+    UNION ALL SELECT 'crm:platform:tenant:manage', 'tenants', 'manage'
     UNION ALL SELECT 'system_monitoring', 'system', 'monitor'
 ),
 seed_perms AS (
     SELECT 
-        'users:manage' as name, 'users' as resource, 'manage' as action
-    UNION ALL SELECT 'roles:manage', 'roles', 'manage'
+        'crm:user:record:update' as name, 'users' as resource, 'manage' as action
+    UNION ALL SELECT 'crm:role:permission:assign', 'roles', 'manage'
     UNION ALL SELECT 'customers:manage', 'customers', 'manage'
     UNION ALL SELECT 'sales:manage', 'sales', 'manage'
     UNION ALL SELECT 'contracts:manage', 'contracts', 'manage'
@@ -197,11 +197,11 @@ seed_perms AS (
     UNION ALL SELECT 'tickets:manage', 'tickets', 'manage'
     UNION ALL SELECT 'complaints:manage', 'complaints', 'manage'
     UNION ALL SELECT 'dashboard:manage', 'dashboard', 'manage'
-    UNION ALL SELECT 'settings:manage', 'settings', 'manage'
+    UNION ALL SELECT 'crm:system:config:manage', 'settings', 'manage'
     UNION ALL SELECT 'companies:manage', 'companies', 'manage'
-    UNION ALL SELECT 'platform_admin', 'platform', 'admin'
+    UNION ALL SELECT 'crm:platform:control:admin', 'platform', 'admin'
     UNION ALL SELECT 'super_admin', 'system', 'admin'
-    UNION ALL SELECT 'tenants:manage', 'tenants', 'manage'
+    UNION ALL SELECT 'crm:platform:tenant:manage', 'tenants', 'manage'
     UNION ALL SELECT 'system_monitoring', 'system', 'monitor'
     UNION ALL SELECT 'reports:manage', 'reports', 'manage'
     UNION ALL SELECT 'export_data', 'data', 'export'
@@ -236,19 +236,19 @@ FULL OUTER JOIN seed_perms s ON m.name = s.name;
 -- Test 1.1.4: Validate the legacy to new permission mapping logic
 WITH legacy_mappings AS (
     -- This simulates the mapping from the migration file
-    SELECT 'manage_users' as old_name, 'users:manage' as new_name
-    UNION ALL SELECT 'manage_roles', 'roles:manage'
-    UNION ALL SELECT 'manage_customers', 'customers:manage'
-    UNION ALL SELECT 'manage_sales', 'sales:manage'
+    SELECT 'crm:user:record:update' as old_name, 'crm:user:record:update' as new_name
+    UNION ALL SELECT 'crm:role:record:update', 'crm:role:permission:assign'
+    UNION ALL SELECT 'crm:customer:record:update', 'customers:manage'
+    UNION ALL SELECT 'crm:sales:deal:update', 'sales:manage'
     UNION ALL SELECT 'manage_contracts', 'contracts:manage'
-    UNION ALL SELECT 'manage_service_contracts', 'service_contracts:manage'
+    UNION ALL SELECT 'crm:contract:service:update', 'service_contracts:manage'
     UNION ALL SELECT 'manage_products', 'products:manage'
-    UNION ALL SELECT 'manage_product_sales', 'product_sales:manage'
+    UNION ALL SELECT 'crm:product-sale:record:update', 'product_sales:manage'
     UNION ALL SELECT 'manage_job_works', 'job_works:manage'
     UNION ALL SELECT 'manage_tickets', 'tickets:manage'
-    UNION ALL SELECT 'manage_complaints', 'complaints:manage'
+    UNION ALL SELECT 'crm:support:complaint:update', 'complaints:manage'
     UNION ALL SELECT 'manage_dashboard', 'dashboard:manage'
-    UNION ALL SELECT 'manage_settings', 'settings:manage'
+    UNION ALL SELECT 'crm:system:config:manage', 'crm:system:config:manage'
     UNION ALL SELECT 'manage_companies', 'companies:manage'
     UNION ALL SELECT 'manage_reports', 'reports:manage'
     UNION ALL SELECT 'manage_inventory', 'inventory:manage'

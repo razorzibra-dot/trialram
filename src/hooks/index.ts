@@ -53,6 +53,9 @@ export {
   useFeatureAccess,
 } from './usePermission';
 
+// Additional tenant hooks
+export { useCurrentTenant } from './useCurrentTenant';
+
 // Phase 5: Super Admin Isolation Hooks
 export { useModuleAccess, useAccessibleModules, type ModuleAccessResult } from './useModuleAccess';
 export { useCanAccessModule } from './useCanAccessModule';

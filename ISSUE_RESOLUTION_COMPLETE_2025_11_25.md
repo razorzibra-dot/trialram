@@ -98,7 +98,7 @@ Permissions: 21/21 loaded
 ├── complaints:manage
 ├── contracts:manage
 ├── customers:manage
-├── dashboard:view ← Key permission
+├── crm:dashboard:panel:view ← Key permission
 └── ... and 15 more
 
 RESULT: ✅ All permissions present

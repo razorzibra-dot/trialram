@@ -56,7 +56,7 @@ BEGIN
     -- Test 2.1: Valid core permission creation should work
     BEGIN
         INSERT INTO permissions (name, description, resource, action, category, is_system_permission)
-        VALUES ('users:read', 'Read users', 'users', 'read', 'core', true)
+        VALUES ('crm:user:record:read', 'Read users', 'users', 'read', 'core', true)
         RETURNING id INTO test_permission_id;
 
         RAISE NOTICE '✓ Valid core permission creation: SUCCESS';
@@ -77,7 +77,7 @@ BEGIN
     -- Test 2.3: Valid administrative permission creation should work
     BEGIN
         INSERT INTO permissions (name, description, resource, action, category, is_system_permission)
-        VALUES ('users:manage_roles', 'Manage user roles', 'users', 'manage_roles', 'administrative', true);
+        VALUES ('crm:user:record:update_roles', 'Manage user roles', 'users', 'crm:role:record:update', 'administrative', true);
 
         RAISE NOTICE '✓ Valid administrative permission creation: SUCCESS';
     EXCEPTION WHEN OTHERS THEN
@@ -97,7 +97,7 @@ BEGIN
     -- Test 2.5: Duplicate permission name should fail
     BEGIN
         INSERT INTO permissions (name, description, resource, action, category, is_system_permission)
-        VALUES ('users:read', 'Duplicate permission', 'users', 'read', 'core', true);
+        VALUES ('crm:user:record:read', 'Duplicate permission', 'users', 'read', 'core', true);
 
         RAISE NOTICE '✗ Duplicate permission name: FAILED - Should have been blocked';
     EXCEPTION WHEN unique_violation THEN
@@ -129,7 +129,7 @@ BEGIN
     END;
 
     -- Clean up test data
-    DELETE FROM permissions WHERE name LIKE 'users:read' OR name LIKE 'customers:%' OR name LIKE 'users:manage_roles' OR name LIKE 'platform:%' OR name LIKE '*:admin' OR name LIKE 'test:%';
+    DELETE FROM permissions WHERE name LIKE 'crm:user:record:read' OR name LIKE 'customers:%' OR name LIKE 'crm:user:record:update_roles' OR name LIKE 'platform:%' OR name LIKE '*:admin' OR name LIKE 'test:%';
 
     RAISE NOTICE '=== PERMISSIONS DATA VALIDATION TESTS COMPLETE ===';
 

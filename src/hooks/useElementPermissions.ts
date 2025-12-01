@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { elementPermissionService } from '@/services/serviceFactory';
+import { elementPermissionService, authService } from '@/services/serviceFactory';
 import { useCurrentUser } from './useCurrentUser';
 import { useCurrentTenant } from './useCurrentTenant';
 import { PermissionContext } from '@/types/rbac';
@@ -104,12 +104,17 @@ export const useElementPermissions = (): UseElementPermissionsReturn => {
 
 /**
  * Hook for simple permission checking (single permission)
+ * ✅ Returns boolean for backward compatibility
+ * ✅ Optimistic rendering: Returns true initially while loading (prevents flash of hidden content)
+ * 
+ * Note: For loading state, use useElementPermissions() hook instead
  */
 export const usePermission = (
   elementPath: string,
   action: 'visible' | 'enabled' | 'editable' | 'accessible'
 ): boolean => {
-  const [permission, setPermission] = useState<boolean>(false);
+  const [permission, setPermission] = useState<boolean>(true); // ✅ OPTIMISTIC: Start with true to prevent flash of hidden content
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const currentUser = useCurrentUser();
   const currentTenant = useCurrentTenant();
 
@@ -117,9 +122,11 @@ export const usePermission = (
     const checkPermission = async () => {
       if (!currentUser || !currentTenant) {
         setPermission(false);
+        setIsLoading(false);
         return;
       }
 
+      setIsLoading(true);
       try {
         const context: PermissionContext = {
           user: currentUser,
@@ -137,14 +144,24 @@ export const usePermission = (
         setPermission(result);
       } catch (err) {
         console.error('[usePermission] Error checking permission:', err);
-        setPermission(false);
+        // ✅ FALLBACK: If permission check fails, check base permission via authService
+        try {
+          const hasBasePermission = authService.hasPermission(elementPath);
+          setPermission(hasBasePermission);
+        } catch (fallbackErr) {
+          console.warn('[usePermission] Fallback permission check also failed:', fallbackErr);
+          setPermission(false);
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkPermission();
   }, [currentUser?.id, currentTenant?.id, elementPath, action]);
 
-  return permission;
+  // ✅ Return true while loading (optimistic) or actual permission result
+  return isLoading ? true : permission;
 };
 
 /**

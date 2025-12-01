@@ -44,10 +44,12 @@ const DashboardPage: React.FC = () => {
   const { data: salesPipeline, isLoading: pipelineLoading } = useSalesPipeline();
 
   // Element-level permissions for dashboard
+  // ✅ Database-driven: Uses element-level permission evaluation
+  // ✅ Optimistic rendering: usePermission returns true while loading (prevents flash of hidden content)
   const canViewDashboard = usePermission('crm:dashboard:panel:view', 'accessible');
   const canViewStats = usePermission('crm:dashboard:stats:view', 'visible');
   const canViewRecentActivity = usePermission('crm:dashboard:widget.recentactivity:view', 'visible');
-  const canViewTopCustomers = usePermission('crm:dashboard:widget.topcrm:customer:record:read', 'visible');
+  const canViewTopCustomers = usePermission('crm:dashboard:widget.topcustomers:view', 'visible');
   const canViewTicketStats = usePermission('crm:dashboard:widget.ticketstats:view', 'visible');
   const canViewSalesPipeline = usePermission('crm:dashboard:widget.salespipeline:view', 'visible');
   const canViewQuickActions = usePermission('crm:dashboard:section.quickactions:view', 'visible');

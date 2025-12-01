@@ -88,14 +88,20 @@ export const useRecentActivity = (limit: number = 10) => {
         });
 
         // Map audit logs to activity format
-        const activities = (auditLogs.data || auditLogs || []).map((log: any) => ({
-          id: log.id,
-          type: mapAuditActionToActivityType(log.action),
-          title: formatAuditAction(log.action, log.resource),
-          description: log.details ? JSON.stringify(log.details) : `Action performed on ${log.resource}`,
-          timestamp: log.timestamp,
-          user: log.user_name || log.user_id || 'System',
-        }));
+        const activities = (auditLogs.data || auditLogs || []).map((log: any) => {
+          // Handle both 'resource' and 'table_name' fields (schema migration compatibility)
+          const resource = log.resource || log.table_name || 'unknown';
+          const action = log.action || 'unknown';
+          
+          return {
+            id: log.id,
+            type: mapAuditActionToActivityType(action),
+            title: formatAuditAction(action, resource),
+            description: log.details ? JSON.stringify(log.details) : log.new_values ? JSON.stringify(log.new_values) : `Action performed on ${resource}`,
+            timestamp: log.timestamp || log.created_at,
+            user: log.user_name || log.user?.name || log.user_id || 'System',
+          };
+        });
 
         return activities;
       } catch (error) {
@@ -109,16 +115,23 @@ export const useRecentActivity = (limit: number = 10) => {
 };
 
 // Helper function to map audit actions to activity types
-const mapAuditActionToActivityType = (action: string): 'deal' | 'ticket' | 'customer' | 'user' => {
-  if (action.includes('deal') || action.includes('sale')) return 'deal';
-  if (action.includes('ticket')) return 'ticket';
-  if (action.includes('customer')) return 'customer';
-  if (action.includes('user')) return 'user';
+const mapAuditActionToActivityType = (action: string | null | undefined): 'deal' | 'ticket' | 'customer' | 'user' => {
+  if (!action) return 'user'; // default for null/undefined
+  
+  const lowerAction = action.toLowerCase();
+  if (lowerAction.includes('deal') || lowerAction.includes('sale')) return 'deal';
+  if (lowerAction.includes('ticket')) return 'ticket';
+  if (lowerAction.includes('customer')) return 'customer';
+  if (lowerAction.includes('user') || lowerAction.includes('role')) return 'user';
   return 'user'; // default
 };
 
 // Helper function to format audit actions into readable titles
-const formatAuditAction = (action: string, resource: string): string => {
+const formatAuditAction = (action: string | null | undefined, resource: string | null | undefined): string => {
+  // Handle null/undefined values
+  const safeAction = action || 'unknown';
+  const safeResource = resource || 'item';
+  
   const actionMap: Record<string, string> = {
     'create': 'Created',
     'update': 'Updated',
@@ -127,10 +140,21 @@ const formatAuditAction = (action: string, resource: string): string => {
     'logout': 'Logged out',
     'assign': 'Assigned',
     'unassign': 'Unassigned',
+    'role_created': 'Created role',
+    'role_updated': 'Updated role',
+    'role_deleted': 'Deleted role',
+    'role_assigned': 'Assigned role',
+    'role_removed': 'Removed role',
   };
 
-  const actionWord = actionMap[action] || action;
-  const resourceName = resource.charAt(0).toUpperCase() + resource.slice(1);
+  // Try to find action in map, or use the action as-is (capitalize first letter)
+  const actionWord = actionMap[safeAction.toLowerCase()] || 
+                     (safeAction.charAt(0).toUpperCase() + safeAction.slice(1));
+  
+  // Capitalize resource name safely
+  const resourceName = safeResource && safeResource.length > 0
+    ? safeResource.charAt(0).toUpperCase() + safeResource.slice(1)
+    : 'Item';
 
   return `${actionWord} ${resourceName}`;
 };

@@ -46,6 +46,7 @@ import { useLeadRating } from '../hooks/useLeadRating';
 import { PermissionField } from '@/components/forms/PermissionField';
 import { PermissionSection } from '@/components/layout/PermissionSection';
 import { usePermission } from '@/hooks/useElementPermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerFormPanelProps {
   visible: boolean;
@@ -113,7 +114,26 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const canEditFinancialInfo = usePermission('crm:contacts:form:section.financial', 'accessible');
   const canEditLeadInfo = usePermission('crm:contacts:form:section.lead', 'accessible');
   const canEditNotes = usePermission('crm:contacts:form:section.notes', 'accessible');
-  const canSaveForm = usePermission('crm:contacts:form:button.save', 'enabled');
+  
+  // ✅ Form action button permissions - check element-level first, then fallback to base permissions
+  const canSaveFormElement = usePermission('crm:contacts:form:button.save', 'enabled');
+  const canCreateFormElement = usePermission('crm:contacts:form:button.create', 'enabled');
+  const canUpdateFormElement = usePermission('crm:contacts:form:button.update', 'enabled');
+  
+  // ✅ FALLBACK: Check base record permissions if element permissions don't exist
+  // This ensures backward compatibility and handles cases where element permissions aren't assigned yet
+  const { hasPermission } = useAuth();
+  const canCreateCustomer = hasPermission('crm:customer:record:create');
+  const canUpdateCustomer = hasPermission('crm:customer:record:update');
+  
+  // Determine if save button should be enabled based on mode
+  // Priority: element permission > base permission (for backward compatibility)
+  const canSaveForm = isEditMode 
+    ? (canUpdateFormElement || canUpdateCustomer) // Edit mode: check update permission
+    : (canCreateFormElement || canCreateCustomer); // Create mode: check create permission
+  
+  // Final check: use element permission if available, otherwise use mode-based permission
+  const finalCanSaveForm = canSaveFormElement || canSaveForm;
 
   useEffect(() => {
     if (visible && customer) {
@@ -186,7 +206,7 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           >
             Cancel
           </Button>
-          {canSaveForm && (
+          {finalCanSaveForm && (
             <Button
               type="primary"
               size="large"
@@ -211,7 +231,6 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
         <PermissionSection
           elementPath="crm:contacts:form:section.basic"
           title="Basic Information"
-          icon={<FileTextOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />}
         >
           <Card style={sectionStyles.card} variant="borderless">
             <div style={sectionStyles.header}>
@@ -492,12 +511,12 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                   placeholder="e.g., 50000"
                   min={0}
                   formatter={(value) =>
-                    `$${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                    value ? `$${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                   }
-                  parser={(value) =>
-                    parseInt(value?.replace(/\$\s?|(,*)/g, '') || '0')
-                  }
-                  prefix={<DollarOutlined style={{ color: '#6b7280' }} />}
+                  parser={(value) => {
+                    const parsed = value?.replace(/\$\s?|(,*)/g, '') || '0';
+                    return parsed as any;
+                  }}
                 />
               </Form.Item>
             </Col>

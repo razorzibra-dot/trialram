@@ -79,6 +79,20 @@ class ElementPermissionService {
         }
       }
 
+      // ✅ FALLBACK: Check base permission directly via authService
+      // This handles cases where element permissions don't exist but base permissions do
+      try {
+        const basePermission = normalizedElementPath;
+        const hasBasePermission = authService.hasPermission(basePermission);
+        if (hasBasePermission) {
+          console.log(`[ElementPermissionService] ✅ Fallback: Base permission "${basePermission}" granted for element "${elementPath}"`);
+          this.setCachedResult(cacheKey, true);
+          return true;
+        }
+      } catch (error) {
+        console.warn('[ElementPermissionService] Error checking base permission fallback:', error);
+      }
+
       // Check permission overrides
       const hasOverride = await this.checkPermissionOverrides(elementPath, action, context);
       if (hasOverride !== null) {
@@ -103,6 +117,18 @@ class ElementPermissionService {
    */
   private async hasPermission(permission: string, context: PermissionContext): Promise<boolean> {
     try {
+      // ✅ FALLBACK: First check if user has permission via authService (faster, uses cached permissions)
+      // This handles cases where permissions are already loaded in user.permissions array
+      try {
+        const hasDirectPermission = authService.hasPermission(permission);
+        if (hasDirectPermission) {
+          return true;
+        }
+      } catch (error) {
+        // Continue to database check if authService check fails
+        console.warn('[ElementPermissionService] authService.hasPermission check failed, falling back to database:', error);
+      }
+
       // Get user's roles for their tenant
       const { data: userRoles, error: roleError } = await supabase
         .from('user_roles')
@@ -123,7 +149,9 @@ class ElementPermissionService {
       const roleIds = userRoles.map(ur => ur.role_id);
 
       // Fetch roles with permissions
-      const { data: roles, error: fetchRolesError } = await supabase
+      // ✅ FIX: Don't filter by tenant_id for roles - roles can be shared across tenants
+      // Only filter by tenant_id if it's explicitly set (not null)
+      let rolesQuery = supabase
         .from('roles')
         .select(`
           id,
@@ -140,8 +168,17 @@ class ElementPermissionService {
             )
           )
         `)
-        .in('id', roleIds)
-        .eq('tenant_id', context.user.tenantId || null);
+        .in('id', roleIds);
+      
+      // Only filter by tenant_id if user has a tenant (not super admin)
+      if (context.user.tenantId) {
+        rolesQuery = rolesQuery.or(`tenant_id.eq.${context.user.tenantId},tenant_id.is.null`);
+      } else {
+        // Super admin: get all roles
+        rolesQuery = rolesQuery.is('tenant_id', null);
+      }
+      
+      const { data: roles, error: fetchRolesError } = await rolesQuery;
 
       if (fetchRolesError) {
         console.warn('[ElementPermissionService] Error fetching roles:', fetchRolesError);
@@ -234,20 +271,50 @@ class ElementPermissionService {
     requiredPermission: string,
     context: PermissionContext
   ): boolean {
-    // Handle wildcards
+    // Exact match first
+    if (permission.name === requiredPermission) {
+      // Check scope/context constraints if any
+      if (permission.scope) {
+        return this.evaluateScopeConstraints(permission.scope, context);
+      }
+      return true;
+    }
+
+    // Handle wildcards in permission name
     const permPattern = permission.name.replace(/\*/g, '.*');
     const regex = new RegExp(`^${permPattern}$`);
 
-    if (!regex.test(requiredPermission)) {
-      return false;
+    if (regex.test(requiredPermission)) {
+      // Check scope/context constraints if any
+      if (permission.scope) {
+        return this.evaluateScopeConstraints(permission.scope, context);
+      }
+      return true;
     }
 
-    // Check scope/context constraints
-    if (permission.scope) {
-      return this.evaluateScopeConstraints(permission.scope, context);
+    // ✅ FALLBACK: Check if permission name is a prefix of required permission
+    // This handles cases where permission is "crm:dashboard:stats:view" 
+    // and required is "crm:dashboard:stats:view:visible"
+    if (requiredPermission.startsWith(permission.name + ':')) {
+      if (permission.scope) {
+        return this.evaluateScopeConstraints(permission.scope, context);
+      }
+      return true;
     }
 
-    return true;
+    // ✅ FALLBACK: Check if permission name matches element_path
+    // This handles element-level permissions where element_path is set
+    if (permission.elementPath && (
+      permission.elementPath === requiredPermission ||
+      requiredPermission.startsWith(permission.elementPath + ':')
+    )) {
+      if (permission.scope) {
+        return this.evaluateScopeConstraints(permission.scope, context);
+      }
+      return true;
+    }
+
+    return false;
   }
 
   /**

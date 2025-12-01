@@ -39,6 +39,7 @@ import { Customer } from '@/types/crm';
 import { PermissionControlled } from '@/components/common/PermissionControlled';
 import { PermissionSection } from '@/components/layout/PermissionSection';
 import { usePermission } from '@/hooks/useElementPermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerDetailPanelProps {
   visible: boolean;
@@ -174,7 +175,18 @@ const CustomerDetailPanelContent: React.FC<
 }) => {
 
   // Element-level permissions
-  const canEditCustomer = usePermission(`crm:contacts:record.${customer.id}:button.edit`, 'visible');
+  // ✅ Check record-specific permission first, then fallback to detail button and base permissions
+  const canEditCustomerRecord = usePermission(`crm:contacts:record.${customer.id}:button.edit`, 'visible');
+  const canEditCustomerDetail = usePermission('crm:contacts:detail:button.edit', 'visible');
+  
+  // ✅ FALLBACK: Check base record permissions if element permissions don't exist
+  const { hasPermission } = useAuth();
+  const canUpdateCustomer = hasPermission('crm:customer:record:update');
+  
+  // Final check: use record-specific permission if available, otherwise fallback to detail button or base permission
+  const canEditCustomer = canEditCustomerRecord || canEditCustomerDetail || canUpdateCustomer;
+  
+  // Section permissions
   const canViewBasicInfo = usePermission('crm:contacts:detail:section.basic', 'accessible');
   const canViewBusinessInfo = usePermission('crm:contacts:detail:section.business', 'accessible');
   const canViewAddressInfo = usePermission('crm:contacts:detail:section.address', 'accessible');
@@ -374,7 +386,6 @@ const CustomerDetailPanelContent: React.FC<
         <PermissionSection
           elementPath="crm:contacts:detail:section.basic"
           title="Basic Information"
-          icon={<FileTextOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />}
         >
           <Card style={sectionStyles.card} variant="borderless">
             <Descriptions column={1} size="small">

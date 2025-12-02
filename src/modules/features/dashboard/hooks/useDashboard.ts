@@ -10,7 +10,7 @@ import { useTenantContext } from '@/hooks/useTenantContext';
 import { useService } from '@/modules/core/hooks';
 import { STATS_QUERY_CONFIG, LISTS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 import type { ICustomerService } from '@/modules/features/customers/services/customerService';
-import type { ISalesService } from '@/modules/features/sales/services/salesService';
+import type { ISalesService } from '@/modules/features/deals/services/salesService';
 
 // Query Keys
 export const dashboardKeys = {
@@ -30,7 +30,7 @@ export const dashboardKeys = {
  */
 export const useDashboardStats = () => {
   const customerService = useService<ICustomerService>('customerService');
-  const salesService = useService<ISalesService>('salesService');
+  const salesService = useService<ISalesService>('dealsService');
   const ticketService = useService<any>('ticketService'); // Using any for now since ticket service interface may vary
   const { isInitialized } = useTenantContext();
 
@@ -219,7 +219,7 @@ export const useTicketStats = () => {
  */
 export const useTopCustomers = (limit: number = 5) => {
   const customerService = useService<ICustomerService>('customerService');
-  const salesService = useService<ISalesService>('salesService');
+  const salesService = useService<ISalesService>('dealsService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({
@@ -303,7 +303,7 @@ export const useWidgetData = (widgetType: string) => {
  * Groups deals by pipeline stages and calculates values
  */
 export const useSalesPipeline = () => {
-  const salesService = useService<ISalesService>('salesService');
+  const salesService = useService<ISalesService>('dealsService');
   const { isInitialized } = useTenantContext();
 
   return useQuery({

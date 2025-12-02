@@ -398,7 +398,7 @@ export const ServiceContractsPage: React.FC = () => {
         breadcrumb={{
           items: [
             { title: 'Home', path: '/tenant/dashboard' },
-            { title: 'Sales', path: '/tenant/sales' },
+            { title: 'Deals', path: '/tenant/deals' },
             { title: 'Service Contracts' }
           ]
         }}

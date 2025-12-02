@@ -198,7 +198,7 @@ const CustomerDetailPage: React.FC = () => {
       dataIndex: 'sale_number',
       key: 'sale_number',
       render: (text: string, record: RelatedSale) => (
-        <a onClick={() => navigate(`/tenant/sales/${record.id}`)}>{text}</a>
+        <a onClick={() => navigate(`/tenant/deals/${record.id}`)}>{text}</a>
       ),
     },
     {

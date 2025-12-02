@@ -128,7 +128,7 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
     const iconMap: Record<string, React.ReactNode> = {
       '/tenant/dashboard': <DashboardOutlined />,
       '/tenant/customers': <TeamOutlined />,
-      '/tenant/sales': <ShoppingCartOutlined />,
+      '/tenant/deals': <ShoppingCartOutlined />,
       '/tenant/product-sales': <ShoppingCartOutlined />,
       '/tenant/contracts': <FileTextOutlined />,
       '/tenant/service-contracts': <FileTextOutlined />,

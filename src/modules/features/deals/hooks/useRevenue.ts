@@ -40,7 +40,7 @@ export const revenueKeys = {
  */
 export const useRecognizeRevenue = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({
@@ -86,7 +86,7 @@ export const useRecognizeRevenue = () => {
  */
 export const useCreateRevenueSchedule = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({
@@ -125,7 +125,7 @@ export const useCreateRevenueSchedule = () => {
  * const { data: schedule } = useRevenueSchedule('deal-123');
  */
 export const useRevenueSchedule = (dealId: string) => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useQuery({
     queryKey: revenueKeys.schedule(dealId),

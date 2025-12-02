@@ -37,7 +37,7 @@ export const pipelineKeys = {
  * const { data: pipelineStats } = useSalesPipeline();
  */
 export const useSalesPipeline = () => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const { setStats } = useSalesStore();
 
   return useQuery({
@@ -62,7 +62,7 @@ export const useSalesPipeline = () => {
  * const { data: analytics } = useSalesAnalytics('quarter');
  */
 export const useSalesAnalytics = (period?: string) => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useQuery({
     queryKey: pipelineKeys.analytics(period),
@@ -81,7 +81,7 @@ export const useSalesAnalytics = (period?: string) => {
  * const { data: stages } = useDealStages();
  */
 export const useDealStages = () => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useQuery({
     queryKey: pipelineKeys.stages(),
@@ -100,7 +100,7 @@ export const useDealStages = () => {
  * const { data: pipelineStages } = usePipelineStages();
  */
 export const usePipelineStages = () => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useQuery({
     queryKey: [...pipelineKeys.stages(), 'with-metadata'],

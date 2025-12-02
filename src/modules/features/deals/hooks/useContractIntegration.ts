@@ -38,7 +38,7 @@ export const contractKeys = {
  */
 export const useLinkContract = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({
@@ -71,7 +71,7 @@ export const useLinkContract = () => {
  * const { data: deals } = useDealsByContract('contract-456');
  */
 export const useDealsByContract = (contractId: string) => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useQuery({
     queryKey: contractKeys.byContract(contractId),
@@ -101,7 +101,7 @@ export const useDealsByContract = (contractId: string) => {
  */
 export const useCreateContractFromDeal = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({
@@ -150,7 +150,7 @@ export const useCreateContractFromDeal = () => {
  */
 export const useConvertDealToContract = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({

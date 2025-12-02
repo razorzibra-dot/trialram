@@ -39,7 +39,7 @@ export const paymentKeys = {
  */
 export const useProcessPayment = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({
@@ -81,7 +81,7 @@ export const useProcessPayment = () => {
  */
 export const useUpdatePaymentStatus = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({

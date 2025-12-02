@@ -43,7 +43,7 @@ export const dealKeys = {
  * });
  */
 export const useDeals = (filters: SalesFilters = {}) => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const { setDeals, setLoading, setError } = useSalesStore();
 
   return useQuery({
@@ -76,7 +76,7 @@ export const useDeals = (filters: SalesFilters = {}) => {
  * const { data: deal } = useDeal(dealId);
  */
 export const useDeal = (id: string) => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const { setSelectedDeal } = useSalesStore();
 
   return useQuery({
@@ -102,7 +102,7 @@ export const useDeal = (id: string) => {
  */
 export const useCreateDeal = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
 
   return useMutation({
@@ -123,7 +123,7 @@ export const useCreateDeal = () => {
  */
 export const useUpdateDeal = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
 
   return useMutation({
@@ -145,7 +145,7 @@ export const useUpdateDeal = () => {
  */
 export const useDeleteDeal = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
 
   return useMutation({
@@ -166,7 +166,7 @@ export const useDeleteDeal = () => {
  */
 export const useUpdateDealStage = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: ({ id, stage }: { id: string; stage: string }) =>
@@ -187,7 +187,7 @@ export const useUpdateDealStage = () => {
  */
 export const useBulkDealOperations = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
 
   return useMutation({
@@ -227,7 +227,7 @@ export const useBulkDealOperations = () => {
  * Provides summary metrics for deals dashboard
  */
 export const useSalesStats = () => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
   const { setStats, setLoading: setStatsLoading, setError: setStatsError } = useSalesStore();
 
   return useQuery({
@@ -250,7 +250,7 @@ export const useSalesStats = () => {
  * Export deals mutation
  */
 export const useDealExport = () => {
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: (format: 'csv' | 'json') => service.exportDeals(format),
@@ -265,7 +265,7 @@ export const useDealExport = () => {
  */
 export const useDealImport = () => {
   const queryClient = useQueryClient();
-  const service = useService<ISalesService>('salesService');
+  const service = useService<ISalesService>('dealsService');
 
   return useMutation({
     mutationFn: (data: string) => service.importDeals(data),

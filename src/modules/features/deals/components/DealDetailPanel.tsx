@@ -98,7 +98,7 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
   const [loadingContracts, setLoadingContracts] = useState(false);
 
   const customerService = useService<CustomerService>('customerService');
-  const salesService = useService<ISalesService>('salesService');
+  const salesService = useService<ISalesService>('dealsService');
 
   // Load customer details
   useEffect(() => {

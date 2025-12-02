@@ -43,7 +43,7 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
 
-  const salesService = useService<SalesService>('salesService');
+  const salesService = useService<SalesService>('dealsService');
 
   // Get items from deal
   const items = useMemo(() => {

@@ -47,7 +47,7 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [prefilledData, setPrefilledData] = useState<Partial<ContractFormData> | null>(null);
 
-  const salesService = useService<SalesService>('salesService');
+  const salesService = useService<SalesService>('dealsService');
   const createContract = useCreateContract();
 
   // Validate deal and prefill contract data when modal opens

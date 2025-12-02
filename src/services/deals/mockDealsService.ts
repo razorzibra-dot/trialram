@@ -1,7 +1,7 @@
 import { Deal, RevenueRecognitionSchedule } from '@/types/crm';
 import { authService, contractService } from '../serviceFactory';
 
-class MockSalesService {
+class MockDealsService {
   private baseUrl = '/api/deals';
 
   // Mock data for demonstration - Closed Deals
@@ -1081,4 +1081,4 @@ class MockSalesService {
   }
 }
 
-export const mockSalesService = new MockSalesService();
+export const mockDealsService = new MockDealsService();

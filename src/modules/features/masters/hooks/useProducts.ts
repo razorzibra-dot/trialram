@@ -29,11 +29,38 @@ export const productKeys = {
  * Hook for fetching products with filters
  */
 export const useProducts = (filters: ProductFilters = {}) => {
+  console.log('[useProducts] 🔍 Hook called with filters:', filters);
   const productService = useService<ProductService>('productService');
+  console.log('[useProducts] ✅ Service retrieved:', {
+    type: typeof productService,
+    hasGetProducts: 'getProducts' in productService,
+    constructorName: productService?.constructor?.name,
+    serviceType: productService instanceof ProductService ? 'ProductService (module)' : 'Other'
+  });
 
   return useQuery({
     queryKey: productKeys.list(filters),
-    queryFn: () => productService.getProducts(filters),
+    queryFn: async () => {
+      console.log('[useProducts] 📞 Calling productService.getProducts...');
+      try {
+        const result = await productService.getProducts(filters);
+        console.log('[useProducts] ✅ getProducts returned:', {
+          hasData: !!result,
+          dataLength: result?.data?.length,
+          total: result?.total,
+          page: result?.page,
+          sampleProduct: result?.data?.[0] ? {
+            id: result.data[0].id,
+            name: result.data[0].name,
+            sku: result.data[0].sku
+          } : null
+        });
+        return result;
+      } catch (error) {
+        console.error('[useProducts] ❌ getProducts error:', error);
+        throw error;
+      }
+    },
     ...LISTS_QUERY_CONFIG,
   });
 };

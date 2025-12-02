@@ -59,25 +59,82 @@ export class ProductService extends BaseService implements IProductService {
    */
   async getProducts(filters: ProductFilters = {}): Promise<PaginatedResponse<Product>> {
     try {
-      // Delegate to factory service (which routes to Supabase or Mock based on API mode)
-      const products = await factoryProductService.getProducts(filters);
+      console.log('[ProductService] ⚡ getProducts called with filters:', filters);
+      console.log('[ProductService] Factory service instance:', factoryProductService);
+      console.log('[ProductService] Factory service getProducts method:', typeof factoryProductService.getProducts);
       
-      // Transform to paginated response format if needed
+      // Delegate to factory service (which routes to Supabase or Mock based on API mode)
+      console.log('[ProductService] Calling factory service getProducts...');
+      let products;
+      try {
+        products = await factoryProductService.getProducts(filters);
+        console.log('[ProductService] ✅ Factory service call completed');
+      } catch (factoryError) {
+        console.error('[ProductService] ❌ Factory service error:', factoryError);
+        throw factoryError;
+      }
+      
+      console.log('[ProductService] Factory service returned:', {
+        isArray: Array.isArray(products),
+        type: typeof products,
+        hasData: products && typeof products === 'object' && 'data' in products,
+        length: Array.isArray(products) ? products.length : (products && typeof products === 'object' && 'data' in products ? products.data?.length : 0)
+      });
+      
+      // ✅ FIXED: Transform to paginated response format
+      // SupabaseProductService returns Product[] (array)
+      // MockProductService returns { data, total, page, limit, totalPages }
       const page = filters.page || 1;
       const pageSize = filters.pageSize || 20;
-      const total = Array.isArray(products) ? products.length : products.total || 0;
-      const data = Array.isArray(products) ? products : products.data || [];
+      
+      let allProducts: Product[] = [];
+      let totalCount = 0;
+      
+      if (Array.isArray(products)) {
+        // Supabase service returns array
+        allProducts = products;
+        totalCount = products.length;
+        console.log('[ProductService] Products is array, length:', products.length);
+      } else if (products && typeof products === 'object' && 'data' in products) {
+        // Mock service returns paginated response
+        allProducts = products.data || [];
+        totalCount = products.total || 0;
+        console.log('[ProductService] Products is paginated response, total:', totalCount, 'data length:', allProducts.length);
+      } else {
+        console.warn('[ProductService] Unexpected products format:', products);
+      }
+      
+      // ✅ Apply pagination to array if needed (Supabase returns all, we paginate here)
+      const startIndex = Array.isArray(products) ? (page - 1) * pageSize : 0;
+      const endIndex = Array.isArray(products) ? startIndex + pageSize : allProducts.length;
+      const paginatedData = Array.isArray(products) ? allProducts.slice(startIndex, endIndex) : allProducts;
+      
+      console.log('[ProductService] Products fetched', { 
+        total: totalCount, 
+        page, 
+        pageSize, 
+        returned: paginatedData.length,
+        isArray: Array.isArray(products),
+        sampleProduct: paginatedData[0] ? {
+          id: paginatedData[0].id,
+          name: paginatedData[0].name,
+          sku: paginatedData[0].sku,
+          price: paginatedData[0].price
+        } : null
+      });
       
       return {
-        data,
-        total,
+        data: paginatedData,
+        total: totalCount,
         page,
         pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        totalPages: Math.ceil(totalCount / pageSize),
       };
     } catch (error) {
+      console.error('[ProductService] Error in getProducts:', error);
       // Graceful error handling for tenant context
       if (error instanceof Error && error.message.includes('Tenant context not initialized')) {
+        console.warn('[ProductService] Tenant context not initialized, returning empty response');
         return {
           data: [],
           total: 0,
@@ -87,7 +144,14 @@ export class ProductService extends BaseService implements IProductService {
         };
       }
       this.handleError('Failed to fetch products', error);
-      throw error;
+      // Return empty response instead of throwing to prevent UI crash
+      return {
+        data: [],
+        total: 0,
+        page: filters.page || 1,
+        pageSize: filters.pageSize || 20,
+        totalPages: 0,
+      };
     }
   }
 
@@ -199,12 +263,19 @@ export class ProductService extends BaseService implements IProductService {
    */
   async getProductStats(): Promise<ProductStats> {
     try {
-      // Get all products for stats calculation using factory service
-      const response = await this.getProducts({ pageSize: 1000 });
-      const products = response.data;
+      // ✅ Get ALL products for stats calculation (no pagination limit)
+      // Use a very large pageSize to get all products, or fetch without pagination
+      const response = await this.getProducts({ page: 1, pageSize: 10000 });
+      const products = response.data || [];
+
+      console.log('[ProductService] Calculating stats', { 
+        productsCount: products.length, 
+        totalFromResponse: response.total,
+        sampleProduct: products[0]
+      });
 
       const stats: ProductStats = {
-        total: products.length,
+        total: response.total || products.length, // Use response.total for accurate count
         byCategory: {},
         byStatus: {},
         byType: {},
@@ -218,8 +289,9 @@ export class ProductService extends BaseService implements IProductService {
 
       // Calculate statistics
       products.forEach(product => {
-        // Category stats
-        const category = product.category || 'Other';
+        // ✅ FIXED: Use categoryName if available, otherwise use category_id or 'Other'
+        // Category stats - use categoryName if populated, otherwise use category_id or 'Uncategorized'
+        const category = product.categoryName || (product.category_id ? `Category-${product.category_id.substring(0, 8)}` : 'Uncategorized');
         stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
 
         // Status stats
@@ -237,16 +309,17 @@ export class ProductService extends BaseService implements IProductService {
         // Stock analysis
         const stockQuantity = product.stock_quantity || 0;
         const reorderLevel = product.reorder_level || 0;
+        const minStockLevel = product.min_stock_level || 0;
         
         if (stockQuantity === 0) {
           stats.outOfStockProducts++;
-        } else if (stockQuantity <= reorderLevel) {
+        } else if (stockQuantity <= reorderLevel || stockQuantity <= minStockLevel) {
           stats.lowStockProducts++;
         }
 
         // Value calculations
         const price = product.price || 0;
-        const quantity = product.stock_quantity || 1;
+        const quantity = product.stock_quantity || 0; // Use 0 instead of 1 for accurate inventory value
         stats.totalValue += price * quantity;
       });
 

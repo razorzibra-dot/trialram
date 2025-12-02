@@ -1,6 +1,6 @@
 /**
- * Sales Routes
- * Route definitions for the sales module
+ * Deals Routes
+ * Route definitions for the deals module
  */
 
 import React, { lazy, Suspense } from 'react';
@@ -9,24 +9,24 @@ import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
 import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load components for code splitting
-const SalesPage = lazy(() => import('./views/SalesPage').then(m => ({ default: m.SalesPage })));
+const DealsPage = lazy(() => import('./views/DealsPage').then(m => ({ default: m.DealsPage })));
 const LeadsPage = lazy(() => import('./views/LeadsPage').then(m => ({ default: m.LeadsPage })));
 
 // Route wrapper with error boundary and suspense
 const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ErrorBoundary>
-    <Suspense fallback={<LoadingSpinner text="Loading sales..." />}>
+    <Suspense fallback={<LoadingSpinner text="Loading deals..." />}>
       {children}
     </Suspense>
   </ErrorBoundary>
 );
 
-export const salesRoutes: RouteObject[] = [
+export const dealsRoutes: RouteObject[] = [
   {
-    path: 'sales',
+    path: 'deals',
     element: (
       <RouteWrapper>
-        <SalesPage />
+        <DealsPage />
       </RouteWrapper>
     ),
   },
@@ -40,4 +40,4 @@ export const salesRoutes: RouteObject[] = [
   },
 ];
 
-export default salesRoutes;
+export default dealsRoutes;

@@ -1,6 +1,6 @@
 /**
- * Sales Page - Enterprise Design
- * Main sales dashboard with statistics and deal management
+ * Deals Page - Enterprise Design
+ * Main deals dashboard with statistics and deal management
  * Unified grid control with side drawer panels for CRUD operations
  */
 
@@ -12,17 +12,17 @@ import { TrendingUp, DollarSign, Target, BarChart3 } from 'lucide-react';
 import { Deal } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
 import { ViewModeSelector, KanbanBoard } from '@/components/ui/view-modes';
-import { SalesDealDetailPanel } from '../components/SalesDealDetailPanel';
-import { SalesDealFormPanel } from '../components/SalesDealFormPanel';
-import { useSalesStats, useDeals, useDeleteDeal, useUpdateDealStage } from '../hooks/useSales';
-import { useSalesStore } from '../store/salesStore';
+import { DealDetailPanel } from '../components/DealDetailPanel';
+import { DealFormPanel } from '../components/DealFormPanel';
+import { useSalesStats, useDeals, useDeleteDeal, useUpdateDealStage } from '../hooks/useDeals';
+import { useSalesStore } from '../store/dealStore';
 import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
-export const SalesPage: React.FC = () => {
+export const DealsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const { filters, setFilters } = useSalesStore();
   const [searchText, setSearchText] = useState('');

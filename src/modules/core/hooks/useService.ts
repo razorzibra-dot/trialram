@@ -12,15 +12,24 @@ import { serviceContainer } from '../services/ServiceContainer';
  */
 export function useService<T = unknown>(serviceName: string): T {
   try {
+    console.log(`[useService] 🔍 Looking for service '${serviceName}'...`);
+    const registeredServices = serviceContainer.getRegisteredServices();
+    console.log(`[useService] 📋 Registered services:`, registeredServices);
+    
     const service = serviceContainer.get(serviceName);
     
     if (!service) {
-      const registeredServices = serviceContainer.getRegisteredServices();
-      console.error(`[useService] Service '${serviceName}' not found. Registered services:`, registeredServices);
+      console.error(`[useService] ❌ Service '${serviceName}' not found. Registered services:`, registeredServices);
       throw new Error(`Service '${serviceName}' not found in service container. Make sure it's registered. Available: ${registeredServices.join(', ')}`);
     }
     
-    console.log(`[useService] ✅ Retrieved service '${serviceName}'`);
+    console.log(`[useService] ✅ Retrieved service '${serviceName}':`, {
+      type: typeof service,
+      isFunction: typeof service === 'function',
+      hasGetProducts: 'getProducts' in service,
+      constructorName: service?.constructor?.name,
+      serviceKeys: service && typeof service === 'object' ? Object.keys(service) : []
+    });
     return service as T;
   } catch (error) {
     console.error(`[useService] ❌ Error retrieving service '${serviceName}':`, error);

@@ -68,9 +68,9 @@ describe('Module Registration Validation', () => {
     });
 
     it('should have Sales Module registered', () => {
-      const salesModule = moduleRegistry.get('sales');
-      expect(salesModule).toBeDefined();
-      expect(salesModule?.name).toBe('sales');
+      const dealsModule = moduleRegistry.get('deals');
+      expect(dealsModule).toBeDefined();
+      expect(dealsModule?.name).toBe('deals');
     });
 
     it('should have Tickets Module registered', () => {
@@ -204,9 +204,9 @@ describe('Module Registration Validation', () => {
       expect(customerModule).toBeDefined();
       expect(customerModule.name).toBe('customers');
 
-      const { salesModule } = await import('../features/sales');
-      expect(salesModule).toBeDefined();
-      expect(salesModule.name).toBe('sales');
+      const { dealsModule } = await import('../features/deals');
+      expect(dealsModule).toBeDefined();
+      expect(dealsModule.name).toBe('deals');
     });
 
     it('should support lazy loading without errors', async () => {

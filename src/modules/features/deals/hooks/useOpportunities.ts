@@ -7,7 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Deal, SalesFilters } from '@/types';
 import { CreateDealDTO } from '@/types/dtos';
-import { salesService as factorySalesService } from '@/services/serviceFactory';
+import { dealsService as factoryDealsService } from '@/services/serviceFactory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/hooks/useNotification';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';

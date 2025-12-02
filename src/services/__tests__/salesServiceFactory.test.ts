@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { salesService } from '@/services/serviceFactory';
+import { dealsService } from '@/services/serviceFactory';
 
 /**
  * Sales Service Factory Tests

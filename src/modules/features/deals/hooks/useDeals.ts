@@ -10,7 +10,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSalesStore, SalesFilters } from '../store/salesStore';
+import { useSalesStore, SalesFilters } from '../store/dealStore';
 import { ISalesService } from '../services/salesService';
 import { useService } from '@/modules/core/hooks/useService';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
@@ -223,6 +223,30 @@ export const useBulkDealOperations = () => {
 };
 
 /**
+ * Fetch deal statistics
+ * Provides summary metrics for deals dashboard
+ */
+export const useSalesStats = () => {
+  const service = useService<ISalesService>('salesService');
+  const { setStats, setLoading: setStatsLoading, setError: setStatsError } = useSalesStore();
+
+  return useQuery({
+    queryKey: dealKeys.stats(),
+    queryFn: async () => {
+      try {
+        const stats = await service.getDealStats();
+        setStats(stats);
+        return stats;
+      } catch (error) {
+        setStatsError((error as any).message);
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
  * Export deals mutation
  */
 export const useDealExport = () => {
@@ -254,3 +278,9 @@ export const useDealImport = () => {
     },
   });
 };
+
+/**
+ * Aliases for backward compatibility
+ */
+export const useBulkDeals = () => useBulkDealOperations();
+export const useExportDeals = () => useDealExport();

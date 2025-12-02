@@ -9,7 +9,7 @@
 
 import { BaseService } from '@/modules/core/services/BaseService';
 import { customerService as factoryCustomerService } from '@/services/serviceFactory';
-import { salesService as factorySalesService } from '@/services/serviceFactory';
+import { dealsService as factoryDealsService } from '@/services/serviceFactory';
 import { 
   getMockData, 
   getMockActivityData, 

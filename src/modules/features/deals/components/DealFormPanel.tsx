@@ -1,9 +1,9 @@
 /**
- * Sales Deal Form Panel - Enterprise Enhanced Edition
+ * Deal Form Panel - Enterprise Enhanced Edition
  * Professional create/edit form with card-based sections, validation, and rich UI
  * ✨ Enterprise Grade UI/UX Enhancements (Phase 7)
- * ✅ Phase 3.1: Link Sales to Customers
- * ✅ Phase 3.2: Link Sales to Products
+ * ✅ Phase 3.1: Link Deals to Customers
+ * ✅ Phase 3.2: Link Deals to Products
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -16,7 +16,7 @@ import {
 import { Deal, Customer, SaleItem } from '@/types/crm';
 import { Product } from '@/types/masters';
 import dayjs from 'dayjs';
-import { useCreateDeal, useUpdateDeal, useDealStages } from '../hooks/useSales';
+import { useCreateDeal, useUpdateDeal, useDealStages } from '../hooks/useDeals';
 import { useService } from '@/modules/core/hooks/useService';
 import { CustomerService } from '@/modules/features/customers/services/customerService';
 import { PermissionField } from '@/components/forms/PermissionField';
@@ -29,7 +29,7 @@ interface ProductServiceInterface {
   getProduct(id: string): Promise<Product>;
 }
 
-interface SalesDealFormPanelProps {
+interface DealFormPanelProps {
   visible: boolean;
   deal: Deal | null;
   onClose: () => void;
@@ -61,7 +61,7 @@ const sourceConfig: Record<string, { emoji: string; label: string }> = {
   'conference': { emoji: '🎤', label: 'Conference' },
 };
 
-export const SalesDealFormPanel: React.FC<SalesDealFormPanelProps> = ({
+export const DealFormPanel: React.FC<DealFormPanelProps> = ({
   visible,
   deal,
   onClose,

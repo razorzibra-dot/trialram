@@ -10,8 +10,8 @@ import { ApiMode } from '@/types';
 import { mockAuthService } from './auth/mockAuthService';
 import { mockServiceContractService } from './servicecontract/mockServiceContractService';
 import { mockProductSaleService } from './productsale/mockProductSaleService';
-import { mockSalesService } from './sales/mockSalesService';
-import { mockLeadsService } from './sales/mockLeadsService';
+import { mockDealsService } from './deals/mockDealsService';
+import { mockLeadsService } from './deals/mockLeadsService';
 import { mockCustomerService } from './customer/mockCustomerService';
 import { mockJobWorkService } from './jobwork/mockJobWorkService';
 import { mockProductService } from './product/mockProductService';
@@ -38,8 +38,8 @@ import { mockProductCategoryService } from './productcategory/mockProductCategor
 // Import all supabase services
 import { supabaseServiceContractService } from './servicecontract/supabase/serviceContractService';
 import { supabaseProductSaleService } from './productsale/supabase/productSaleService';
-import { supabaseSalesService } from './sales/supabase/salesService';
-import { supabaseLeadsService } from './sales/supabase/leadsService';
+import { supabaseDealsService } from './deals/supabase/dealsService';
+import { supabaseLeadsService } from './deals/supabase/leadsService';
 import { supabaseCustomerService } from './customer/supabase/customerService';
 import { supabaseJobWorkService } from './jobwork/supabase/jobWorkService';
 import { supabaseProductService } from './product/supabase/productService';
@@ -67,8 +67,6 @@ import { mockTicketCommentService } from './mockTicketCommentService';
 import { ticketCommentService as supabaseTicketCommentService } from './supabase/ticketCommentService';
 import { mockTicketAttachmentService } from './mockTicketAttachmentService';
 import { ticketAttachmentService as supabaseTicketAttachmentService } from './supabase/ticketAttachmentService';
-import { mockDealsService } from './deals/mock/dealsService';
-import { supabaseDealsService } from './deals/supabase/dealsService';
 import { mockSalesActivityService } from './sales-activities/mockSalesActivityService';
 import { supabaseSalesActivityService } from './sales-activities/supabase/salesActivityService';
 import { mockOpportunityService } from './opportunities/mockOpportunityService';
@@ -161,10 +159,10 @@ class ServiceFactory {
         supabase: supabaseProductSaleService,
         description: 'Product sales operations'
       },
-      sales: {
-        mock: mockSalesService,
-        supabase: supabaseSalesService,
-        description: 'Sales & deal management'
+      deals: {
+        mock: mockDealsService,
+        supabase: supabaseDealsService,
+        description: 'Deal management & sales pipeline'
       },
       leads: {
         mock: mockLeadsService,
@@ -311,11 +309,6 @@ class ServiceFactory {
         supabase: supabaseTicketCommentService,
         description: 'Ticket comment management'
       },
-      deals: {
-        mock: mockDealsService,
-        supabase: supabaseDealsService,
-        description: 'Sales deals and closed opportunities management'
-      },
       salesactivities: {
         mock: mockSalesActivityService,
         supabase: supabaseSalesActivityService,
@@ -419,7 +412,7 @@ export const authService = createServiceProxy('auth');
 export const serviceContractService = createServiceProxy('servicecontract');
 export const contractService = createServiceProxy('contract');
 export const productSaleService = createServiceProxy('productsale');
-export const salesService = createServiceProxy('sales');
+export const dealsService = createServiceProxy('deals');
 export const leadsService = createServiceProxy('leads');
 export const customerService = createServiceProxy('customer');
 export const jobWorkService = createServiceProxy('jobwork');
@@ -446,7 +439,6 @@ export const sessionConfigService = createServiceProxy('sessionconfig');
 export const complaintService = createServiceProxy('complaint');
 export const productCategoryService = createServiceProxy('productcategory');
 export const ticketCommentService = createServiceProxy('ticketcomment');
-export const dealsService = createServiceProxy('deals');
 export const salesActivityService = createServiceProxy('salesactivities');
 export const opportunityService = createServiceProxy('opportunities');
 export const purchaseOrderService = createServiceProxy('purchaseorder');

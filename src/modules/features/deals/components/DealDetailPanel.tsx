@@ -18,7 +18,7 @@ import { ConvertToContractModal } from './ConvertToContractModal';
 import { CreateProductSalesModal } from './CreateProductSalesModal';
 import { useProcessPayment, useUpdatePaymentStatus, useRecognizeRevenue, useCreateRevenueSchedule, useRevenueSchedule } from '../hooks';
 
-interface SalesDealDetailPanelProps {
+interface DealDetailPanelProps {
   visible: boolean;
   deal: Deal | null;
   onClose: () => void;
@@ -77,7 +77,7 @@ const getStageProgress = (stage: string) => {
   return index >= 0 ? ((index + 1) / stages.length) * 100 : 0;
 };
 
-export const SalesDealDetailPanel: React.FC<SalesDealDetailPanelProps> = ({
+export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
   visible,
   deal,
   onClose,

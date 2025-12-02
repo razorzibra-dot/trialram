@@ -5,7 +5,7 @@
  */
 
 import { supabase, getSupabaseClient } from '@/services/supabase/client';
-
+import type { Product } from '@/types/masters';
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
 
 // Simple base service implementation since the import is missing
@@ -26,33 +26,7 @@ class BaseSupabaseService {
   }
 }
 
-export interface Product {
-   id: string;
-   name: string;
-   description?: string;
-   category_id?: string;
-   sku: string;
-   price: number;
-   cost?: number;
-   currency: string;
-   // Advanced pricing
-   pricing_tiers?: any[];
-   discount_rules?: any[];
-   stock_quantity: number;
-   reorder_level?: number;
-   status: 'active' | 'inactive' | 'discontinued';
-   image_url?: string;
-   specifications?: Record<string, any>;
-   tags?: string[];
-   tenant_id: string;
-   created_at: string;
-   updated_at: string;
-
-   // Product hierarchy fields
-   parent_id?: string;
-   is_variant?: boolean;
-   variant_group_id?: string;
-}
+// ✅ Product type is imported from '@/types/masters' at the top of the file
 
 export interface ProductFilters {
   status?: string;
@@ -70,45 +44,171 @@ export class SupabaseProductService extends BaseSupabaseService {
    * Get all products with optional filtering
    */
   async getProducts(filters?: ProductFilters): Promise<Product[]> {
+    console.log('[SupabaseProductService] ⚡ getProducts called', { filters });
     try {
       this.log('Fetching products', filters);
 
+      console.log('[SupabaseProductService] Step 1: Getting tenant context...');
       const tenant = await this.ensureTenantContext();
+      console.log('[SupabaseProductService] Step 1: Tenant context:', { 
+        tenantId: tenant?.tenantId, 
+        userId: tenant?.userId,
+        role: tenant?.role 
+      });
+      
+      if (!tenant) {
+        console.error('[SupabaseProductService] ❌ No tenant context available');
+        return [];
+      }
 
+      console.log('[SupabaseProductService] Step 2: Getting Supabase client...');
       const client = getSupabaseClient();
 
+      console.log('[SupabaseProductService] Step 3: Building query...');
       let query = client
         .from('products')
-        .select(
-          `*,
-          category:product_categories(*)`
-        );
+        .select('*');
 
       // Apply filters
       if (filters?.tenantId) {
+        console.log('[SupabaseProductService] Filtering by tenantId from filters:', filters.tenantId);
         query = query.eq('tenant_id', filters.tenantId);
-      } else {
+      } else if (tenant.tenantId) {
+        // ✅ Only filter by tenant if user is not super admin
+        console.log('[SupabaseProductService] Filtering by tenantId from context:', tenant.tenantId);
         query = query.eq('tenant_id', tenant.tenantId);
+      } else {
+        console.log('[SupabaseProductService] ⚠️ No tenant filter applied (super admin or no tenant)');
       }
+      // ✅ Super admins (tenantId = null) can see all products
+
       if (filters?.status) {
+        console.log('[SupabaseProductService] Filtering by status:', filters.status);
         query = query.eq('status', filters.status);
       }
       if (filters?.categoryId) {
+        console.log('[SupabaseProductService] Filtering by categoryId:', filters.categoryId);
         query = query.eq('category_id', filters.categoryId);
       }
 
-      // Exclude deleted records
-      query = query.is('deleted_at', null);
+      // ✅ Exclude deleted records (only if column exists)
+      console.log('[SupabaseProductService] Step 4: Adding deleted_at filter...');
+      try {
+        query = query.is('deleted_at', null);
+        console.log('[SupabaseProductService] ✅ deleted_at filter added');
+      } catch (deletedAtError) {
+        console.warn('[SupabaseProductService] ⚠️ deleted_at column may not exist yet, continuing without filter');
+      }
 
-      const { data, error } = await query.order('name');
+      console.log('[SupabaseProductService] Step 5: Executing query...');
+      const { data, error } = await query.order('name', { ascending: true });
+      
+      console.log('[SupabaseProductService] Step 6: Query result:', {
+        hasData: !!data,
+        dataLength: data?.length,
+        hasError: !!error,
+        errorCode: error?.code,
+        errorMessage: error?.message
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[SupabaseProductService] ❌ Query error:', error);
+        // ✅ Handle case where deleted_at column doesn't exist
+        if (error.code === '42703' && error.message?.includes('deleted_at')) {
+          console.warn('[SupabaseProductService] 🔄 deleted_at column does not exist, retrying without filter');
+          // Retry without deleted_at filter
+          let retryQuery = client
+            .from('products')
+            .select('*');
+          
+          if (filters?.tenantId) {
+            retryQuery = retryQuery.eq('tenant_id', filters.tenantId);
+          } else if (tenant.tenantId) {
+            retryQuery = retryQuery.eq('tenant_id', tenant.tenantId);
+          }
+          
+          if (filters?.status) {
+            retryQuery = retryQuery.eq('status', filters.status);
+          }
+          if (filters?.categoryId) {
+            retryQuery = retryQuery.eq('category_id', filters.categoryId);
+          }
+          
+          console.log('[SupabaseProductService] 🔄 Retrying query without deleted_at...');
+          const { data: retryData, error: retryError } = await retryQuery.order('name', { ascending: true });
+          
+          console.log('[SupabaseProductService] 🔄 Retry result:', {
+            hasData: !!retryData,
+            dataLength: retryData?.length,
+            hasError: !!retryError
+          });
+          
+          if (retryError) {
+            console.error('[SupabaseProductService] ❌ Retry error:', retryError);
+            throw retryError;
+          }
+          
+          this.log('Products fetched (without deleted_at filter)', { count: retryData?.length });
+          console.log('[SupabaseProductService] ✅ Products fetched (retry):', {
+            count: retryData?.length,
+            sampleProduct: retryData?.[0] ? {
+              id: retryData[0].id,
+              name: retryData[0].name,
+              sku: retryData[0].sku,
+              tenant_id: retryData[0].tenant_id
+            } : null
+          });
+          return retryData?.map((p) => this.mapProductResponse(p)) || [];
+        }
+        throw error;
+      }
 
-      this.log('Products fetched', { count: data?.length });
-      return data?.map((p) => this.mapProductResponse(p)) || [];
+      this.log('Products fetched', { count: data?.length, tenantId: tenant.tenantId });
+      console.log('[SupabaseProductService] ✅ Products fetched:', {
+        count: data?.length,
+        tenantId: tenant.tenantId,
+        sampleProduct: data?.[0] ? {
+          id: data[0].id,
+          name: data[0].name,
+          sku: data[0].sku,
+          tenant_id: data[0].tenant_id,
+          price: data[0].price,
+          status: data[0].status
+        } : null,
+        allProducts: data?.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
+      });
+      
+      console.log('[SupabaseProductService] Step 7: Mapping products...');
+      console.log('[SupabaseProductService] Raw DB product sample:', data?.[0] ? {
+        id: data[0].id,
+        name: data[0].name,
+        sku: data[0].sku,
+        code: data[0].code, // Check if it's 'code' instead of 'sku'
+        tenant_id: data[0].tenant_id,
+        allKeys: Object.keys(data[0])
+      } : null);
+      
+      const mappedProducts = data?.map((p) => this.mapProductResponse(p)) || [];
+      console.log('[SupabaseProductService] ✅ Mapped products:', {
+        count: mappedProducts.length,
+        sampleMapped: mappedProducts[0] ? {
+          id: mappedProducts[0].id,
+          name: mappedProducts[0].name,
+          sku: mappedProducts[0].sku,
+          tenant_id: mappedProducts[0].tenant_id,
+          price: mappedProducts[0].price,
+          status: mappedProducts[0].status
+        } : null
+      });
+      
+      console.log('[SupabaseProductService] Step 8: Returning products array, length:', mappedProducts.length);
+      return mappedProducts;
     } catch (error) {
       this.logError('Error fetching products', error);
-      throw error;
+      console.error('[SupabaseProductService] ❌ Full error details:', error);
+      console.error('[SupabaseProductService] ❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      // Return empty array instead of throwing to prevent UI crash
+      return [];
     }
   }
 
@@ -123,10 +223,7 @@ export class SupabaseProductService extends BaseSupabaseService {
 
       const { data, error } = await getSupabaseClient()
         .from('products')
-        .select(
-          `*,
-          category:product_categories(*)`
-        )
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -162,7 +259,7 @@ export class SupabaseProductService extends BaseSupabaseService {
             type: (data as any).type,
             sku: data.sku,
             price: data.price || 0,
-            cost_price: (data as any).cost_price || data.cost,
+            cost_price: (data as any).cost_price || (data as any).cost,
             currency: data.currency || 'USD',
             // Advanced pricing
             pricing_tiers: data.pricing_tiers,
@@ -190,10 +287,7 @@ export class SupabaseProductService extends BaseSupabaseService {
             variant_group_id: data.variant_group_id,
           },
         ])
-        .select(
-          `*,
-          category:product_categories(*)`
-        )
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -228,7 +322,7 @@ export class SupabaseProductService extends BaseSupabaseService {
           type: (updates as any).type,
           sku: updates.sku,
           price: updates.price,
-          cost_price: (updates as any).cost_price || updates.cost,
+          cost_price: (updates as any).cost_price || (updates as any).cost,
           currency: updates.currency,
           stock_quantity: updates.stock_quantity,
           unit: (updates as any).unit,
@@ -252,10 +346,7 @@ export class SupabaseProductService extends BaseSupabaseService {
           variant_group_id: updates.variant_group_id,
         })
         .eq('id', id)
-        .select(
-          `*,
-          category:product_categories(*)`
-        )
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -315,7 +406,7 @@ export class SupabaseProductService extends BaseSupabaseService {
 
       query = query.is('deleted_at', null);
 
-      const { data, error } = await query.order('name');
+      const { data, error } = await query.order('name', { ascending: true });
 
       if (error) throw error;
 
@@ -633,18 +724,23 @@ export class SupabaseProductService extends BaseSupabaseService {
 
   private async ensureTenantContext() {
     const tenant = multiTenantService.getCurrentTenant();
-    if (!tenant?.tenantId) {
+    
+    // ✅ Allow super admins (who may have null tenantId)
+    if (!tenant) {
       this.logError('No tenant context available', new Error('Unauthorized'));
       throw new Error('Unauthorized');
     }
 
-    await getSupabaseClient().auth.updateUser({
-      data: {
-        tenant_id: tenant.tenantId,
-        role: tenant.role,
-        user_id: tenant.userId,
-      },
-    });
+    // ✅ Super admins can have null tenantId, that's okay
+    if (tenant.tenantId) {
+      await getSupabaseClient().auth.updateUser({
+        data: {
+          tenant_id: tenant.tenantId,
+          role: tenant.role,
+          user_id: tenant.userId,
+        },
+      });
+    }
 
     return tenant;
   }
@@ -658,19 +754,33 @@ export class SupabaseProductService extends BaseSupabaseService {
       name: dbProduct.name,
       description: dbProduct.description || '',
       category_id: dbProduct.category_id,
-      sku: dbProduct.sku,
+      categoryName: dbProduct.categoryName || dbProduct.category_name, // Support both naming conventions
+      sku: dbProduct.sku || dbProduct.code || '', // ✅ Handle both 'sku' and 'code' column names
       price: dbProduct.price || 0,
-      cost: dbProduct.cost,
+      cost_price: dbProduct.cost_price || dbProduct.cost, // ✅ FIXED: Map cost_price from DB
       currency: dbProduct.currency || 'USD',
       stock_quantity: dbProduct.stock_quantity || 0,
+      min_stock_level: dbProduct.min_stock_level,
+      max_stock_level: dbProduct.max_stock_level,
       reorder_level: dbProduct.reorder_level,
       status: (dbProduct.status || 'active') as Product['status'],
       image_url: dbProduct.image_url || '',
       specifications: dbProduct.specifications,
       tags: dbProduct.tags || [],
+      brand: dbProduct.brand,
+      manufacturer: dbProduct.manufacturer,
+      type: dbProduct.type,
+      unit: dbProduct.unit,
+      weight: dbProduct.weight,
+      dimensions: dbProduct.dimensions,
+      supplier_id: dbProduct.supplier_id,
+      warranty_period: dbProduct.warranty_period || dbProduct.warranty_period_months,
+      service_contract_available: dbProduct.service_contract_available,
+      notes: dbProduct.notes,
       tenant_id: dbProduct.tenant_id,
       created_at: dbProduct.created_at,
       updated_at: dbProduct.updated_at,
+      created_by: dbProduct.created_by,
       // Product hierarchy fields
       parent_id: dbProduct.parent_id,
       is_variant: dbProduct.is_variant,

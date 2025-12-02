@@ -23,7 +23,7 @@ export const NotFoundPage: React.FC = () => {
   const quickLinks = [
     { name: 'Dashboard', href: '/tenant/dashboard', icon: LayoutDashboard },
     { name: 'Customers', href: '/tenant/customers', icon: Users },
-    { name: 'Sales', href: '/tenant/sales', icon: ShoppingCart },
+    { name: 'Deals', href: '/tenant/deals', icon: ShoppingCart },
     { name: 'Contracts', href: '/tenant/contracts', icon: FileText },
     { name: 'Tickets', href: '/tenant/tickets', icon: MessageSquare },
     { name: 'Demo Accounts', href: '/demo-accounts', icon: Users },

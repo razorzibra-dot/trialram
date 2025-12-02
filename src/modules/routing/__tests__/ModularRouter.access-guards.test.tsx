@@ -46,7 +46,7 @@ describe('ModularRouter - Route Wrapping', () => {
     // Routes that should be wrapped
     const routesToWrap: TestRouteConfig[] = [
       { path: 'customers', module: 'customers', shouldWrap: true, description: 'Customer module route' },
-      { path: 'sales', module: 'sales', shouldWrap: true, description: 'Sales module route' },
+      { path: 'deals', module: 'deals', shouldWrap: true, description: 'Deals module route' },
       { path: 'contracts', module: 'contracts', shouldWrap: true, description: 'Contracts module route' },
       { path: 'products', module: 'products', shouldWrap: true, description: 'Products module route' },
       { path: 'tickets', module: 'tickets', shouldWrap: true, description: 'Tickets module route' },

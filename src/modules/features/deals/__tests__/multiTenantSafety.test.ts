@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { mockSalesService } from '@/services/salesService';
+import { mockDealsService } from '@/services/deals/mockDealsService';
 
 /**
- * Multi-Tenant Safety Tests for Sales Module
+ * Multi-Tenant Safety Tests for Deals Module
  * Ensures that tenant data is properly isolated and not accessible across tenant boundaries
  */
 
-describe('Sales Module - Multi-Tenant Safety', () => {
+describe('Deals Module - Multi-Tenant Safety', () => {
   const tenant1Id = 'tenant_1';
   const tenant2Id = 'tenant_2';
   const customerId = 'customer_1';
@@ -15,7 +15,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Tenant Data Isolation - getDealsByCustomer', () => {
     it('should only return deals for specified tenant', async () => {
-      const tenant1Deals = await (mockSalesService as any).getDealsByCustomer({
+      const tenant1Deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant1Id,
       });
@@ -26,12 +26,12 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should not return deals from other tenants', async () => {
-      const tenant1Deals = await (mockSalesService as any).getDealsByCustomer({
+      const tenant1Deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant1Id,
       });
 
-      const tenant2Deals = await (mockSalesService as any).getDealsByCustomer({
+      const tenant2Deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant2Id,
       });
@@ -46,7 +46,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should respect both customerId and tenantId filters', async () => {
-      const deals = await (mockSalesService as any).getDealsByCustomer({
+      const deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant1Id,
       });
@@ -60,7 +60,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Tenant Data Isolation - getSalesStats', () => {
     it('should return stats scoped to specific tenant', async () => {
-      const stats = await (mockSalesService as any).getSalesStats({
+      const stats = await (mockDealsService as any).getSalesStats({
         tenantId: tenant1Id,
       });
 
@@ -70,11 +70,11 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should return different stats for different tenants', async () => {
-      const stats1 = await (mockSalesService as any).getSalesStats({
+      const stats1 = await (mockDealsService as any).getSalesStats({
         tenantId: tenant1Id,
       });
 
-      const stats2 = await (mockSalesService as any).getSalesStats({
+      const stats2 = await (mockDealsService as any).getSalesStats({
         tenantId: tenant2Id,
       });
 
@@ -89,11 +89,11 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Tenant Data Isolation - getDealStages', () => {
     it('should return stages for specific tenant', async () => {
-      const stages1 = await (mockSalesService as any).getDealStages({
+      const stages1 = await (mockDealsService as any).getDealStages({
         tenantId: tenant1Id,
       });
 
-      const stages2 = await (mockSalesService as any).getDealStages({
+      const stages2 = await (mockDealsService as any).getDealStages({
         tenantId: tenant2Id,
       });
 
@@ -108,7 +108,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Bulk Operations - Tenant Safety', () => {
     it('should only update deals for specified tenant', async () => {
-      const result = await (mockSalesService as any).bulkUpdateDeals({
+      const result = await (mockDealsService as any).bulkUpdateDeals({
         tenantId: tenant1Id,
         deals: [
           { id: 'deal_1', status: 'closed' },
@@ -122,7 +122,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should only delete deals for specified tenant', async () => {
-      const result = await (mockSalesService as any).bulkDeleteDeals({
+      const result = await (mockDealsService as any).bulkDeleteDeals({
         tenantId: tenant1Id,
         dealIds: ['deal_1', 'deal_2'],
       });
@@ -135,7 +135,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     it('should not allow cross-tenant bulk operations', async () => {
       // Attempting to update a deal from tenant2 while operating as tenant1
       // should fail or ignore the request
-      const result = await (mockSalesService as any).bulkUpdateDeals({
+      const result = await (mockDealsService as any).bulkUpdateDeals({
         tenantId: tenant1Id,
         deals: [
           { id: 'deal_from_tenant_2', status: 'closed' },
@@ -151,7 +151,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Search Operations - Tenant Safety', () => {
     it('should only search within specified tenant', async () => {
-      const results = await (mockSalesService as any).searchDeals({
+      const results = await (mockDealsService as any).searchDeals({
         tenantId: tenant1Id,
         query: 'deal',
       });
@@ -163,12 +163,12 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should return different results for different tenants', async () => {
-      const results1 = await (mockSalesService as any).searchDeals({
+      const results1 = await (mockDealsService as any).searchDeals({
         tenantId: tenant1Id,
         query: 'deal',
       });
 
-      const results2 = await (mockSalesService as any).searchDeals({
+      const results2 = await (mockDealsService as any).searchDeals({
         tenantId: tenant2Id,
         query: 'deal',
       });
@@ -188,7 +188,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Export/Import - Tenant Safety', () => {
     it('should export only deals from specified tenant', async () => {
-      const csv = await (mockSalesService as any).exportDeals({
+      const csv = await (mockDealsService as any).exportDeals({
         tenantId: tenant1Id,
       });
 
@@ -198,7 +198,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
     it('should import deals with tenant context preserved', async () => {
       const csv = 'id,title,value\ndeal_1,Test Deal,50000';
-      const result = await (mockSalesService as any).importDeals({
+      const result = await (mockDealsService as any).importDeals({
         tenantId: tenant1Id,
         csvData: csv,
       });
@@ -236,11 +236,11 @@ describe('Sales Module - Multi-Tenant Safety', () => {
   describe('Multi-Tenant Scenarios', () => {
     it('should handle simultaneous requests from different tenants', async () => {
       const [deals1, deals2] = await Promise.all([
-        (mockSalesService as any).getDealsByCustomer({
+        (mockDealsService as any).getDealsByCustomer({
           customerId,
           tenantId: tenant1Id,
         }),
-        (mockSalesService as any).getDealsByCustomer({
+        (mockDealsService as any).getDealsByCustomer({
           customerId,
           tenantId: tenant2Id,
         }),
@@ -256,16 +256,16 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     });
 
     it('should maintain isolation during mixed operations', async () => {
-      const stats1 = await (mockSalesService as any).getSalesStats({
+      const stats1 = await (mockDealsService as any).getSalesStats({
         tenantId: tenant1Id,
       });
 
-      const deals = await (mockSalesService as any).getDealsByCustomer({
+      const deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant1Id,
       });
 
-      const stats2 = await (mockSalesService as any).getSalesStats({
+      const stats2 = await (mockDealsService as any).getSalesStats({
         tenantId: tenant2Id,
       });
 
@@ -280,7 +280,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
 
   describe('Tenant Security', () => {
     it('should not expose tenant_1 data when requesting as tenant_2', async () => {
-      const deals = await (mockSalesService as any).getDealsByCustomer({
+      const deals = await (mockDealsService as any).getDealsByCustomer({
         customerId,
         tenantId: tenant2Id,
       });
@@ -294,7 +294,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     it('should require valid tenantId for all operations', async () => {
       // Operations should fail or return empty when tenantId is missing/invalid
       try {
-        await (mockSalesService as any).getDealsByCustomer({
+        await (mockDealsService as any).getDealsByCustomer({
           customerId,
           tenantId: null, // Invalid tenant
         });
@@ -307,7 +307,7 @@ describe('Sales Module - Multi-Tenant Safety', () => {
     it('should not allow privilege escalation through tenant parameter', async () => {
       // Even if someone tries to request data from a different tenant
       // they should only get their own tenant's data
-      const deals = await (mockSalesService as any).getDealsByCustomer({
+      const deals = await (mockDealsService as any).getDealsByCustomer({
         customerId: 'customer_2', // Different customer
         tenantId: tenant1Id,
       });

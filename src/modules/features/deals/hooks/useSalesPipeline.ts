@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useSalesStore } from '../store/salesStore';
+import { useSalesStore } from '../store/dealStore';
 import { ISalesService } from '../services/salesService';
 import { useService } from '@/modules/core/hooks/useService';
 import { STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';

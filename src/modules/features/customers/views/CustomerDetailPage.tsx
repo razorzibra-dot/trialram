@@ -45,7 +45,7 @@ import { StatCard } from '@/components/common/StatCard';
 import { DataTabErrorBoundary } from '@/components/errors/DataTabErrorBoundary';
 import { useCustomer, useDeleteCustomer } from '../hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSalesByCustomer } from '@/modules/features/sales/hooks/useSales';
+import { useSalesByCustomer } from '@/modules/features/deals/hooks/useDeals';
 import { useContractsByCustomer } from '@/modules/features/contracts/hooks/useContracts';
 import { useTicketsByCustomer } from '@/modules/features/tickets/hooks/useTickets';
 

@@ -50,10 +50,10 @@ export async function registerFeatureModules(): Promise<void> {
     registerModule(customerModule);
     console.log('Customer module registered');
 
-    // Sales module
-    const { salesModule } = await import('./features/sales');
-    registerModule(salesModule);
-    console.log('Sales module registered');
+    // Deals module
+    const { dealsModule } = await import('./features/deals');
+    registerModule(dealsModule);
+    console.log('Deals module registered');
 
     // Tickets module
     const { ticketsModule } = await import('./features/tickets');

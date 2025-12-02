@@ -37,8 +37,8 @@ import {
   Upload,
   RefreshCw
 } from 'lucide-react';
-import { useSalesStore } from '../store/salesStore';
-import { useDeals, useDeleteDeal, useBulkDeals, useExportDeals } from '../hooks/useSales';
+import { useSalesStore } from '../store/dealStore';
+import { useDeals, useDeleteDeal, useBulkDeals, useExportDeals } from '../hooks/useDeals';
 import { useAuth } from '@/contexts/AuthContext';
 import { PermissionControlled } from '@/components/common/PermissionControlled';
 import { usePermission } from '@/hooks/useElementPermissions';
@@ -49,7 +49,7 @@ interface SalesListProps {
   onViewDeal?: (deal: Deal) => void;
 }
 
-export const SalesList: React.FC<SalesListProps> = ({
+export const DealsList: React.FC<SalesListProps> = ({
   onCreateDeal,
   onEditDeal,
   onViewDeal,

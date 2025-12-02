@@ -1,10 +1,9 @@
 /**
- * Sales Module Hooks - Centralized exports
- * All React Query hooks for sales operations
+ * Deals Module Hooks - Centralized exports
+ * All React Query hooks for deal operations
  */
 
-// Deal/Sales hooks
-export * from './useSales';
+// Deal hooks
 export * from './useDeals';
 export * from './useSalesPipeline';
 

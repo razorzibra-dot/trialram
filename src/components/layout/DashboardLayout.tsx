@@ -47,7 +47,7 @@ const DashboardLayout = () => {
   // Module access checks
   const canAccessSuperAdmin = useCanAccessModule('super-admin');
   const canAccessCustomers = useCanAccessModule('customers');
-  const canAccessSales = useCanAccessModule('sales');
+  const canAccessSales = useCanAccessModule('deals');
   const canAccessProductSales = useCanAccessModule('productSales');
   const canAccessContracts = useCanAccessModule('contracts');
   const canAccessServiceContracts = useCanAccessModule('serviceContract');
@@ -129,7 +129,7 @@ const DashboardLayout = () => {
       items: [
         canAccessCustomers && { name: 'Dashboard', href: '/tenant/dashboard', icon: LayoutDashboard, permission: 'read' },
         canAccessCustomers && { name: 'Customers', href: '/tenant/customers', icon: Users, permission: 'read' },
-        canAccessSales && { name: 'Sales', href: '/tenant/sales', icon: ShoppingCart, permission: 'read' },
+        canAccessSales && { name: 'Deals', href: '/tenant/deals', icon: ShoppingCart, permission: 'read' },
       ].filter(Boolean)
     });
 

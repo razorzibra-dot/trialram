@@ -266,7 +266,7 @@ export const EnterpriseLayout: React.FC<EnterpriseLayoutProps> = ({ children }) 
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={['/sales', '/contracts', '/users', '/configuration', '/super-admin']}
+          defaultOpenKeys={['/deals', '/contracts', '/users', '/configuration', '/super-admin']}
           items={getMenuItems()}
           style={{
             border: 'none',

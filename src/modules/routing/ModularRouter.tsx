@@ -34,7 +34,7 @@ import { LoadingSpinner } from '@/modules/core/components/LoadingSpinner';
 
 // Lazy load modular pages
 const DashboardPage = lazy(() => import('@/modules/features/dashboard/views/DashboardPage'));
-const SalesPage = lazy(() => import('@/modules/features/sales/views/SalesPage').then(m => ({ default: m.SalesPage })));
+const DealsPage = lazy(() => import('@/modules/features/deals/views/DealsPage').then(m => ({ default: m.DealsPage })));
 const TicketsPage = lazy(() => import('@/modules/features/tickets/views/TicketsPage').then(m => ({ default: m.TicketsPage })));
 const JobWorksPage = lazy(() => import('@/modules/features/jobworks/views/JobWorksPage'));
 const CustomersPage = lazy(() => import('@/modules/features/customers/views/CustomerListPage'));
@@ -121,7 +121,8 @@ function getModuleNameFromPath(path?: string): string | null {
   const pathMap: Record<string, string> = {
     'dashboard': 'dashboard',
     'customers': 'customers',
-    'sales': 'sales',
+    'deals': 'deals',
+    'sales': 'deals', // Backward compatibility: map /sales path to deals module
     'product-sales': 'product-sales',
     'contracts': 'contracts',
     'service-contracts': 'service-contracts',
@@ -190,7 +191,7 @@ export function createModularRouter() {
         },
         {
           path: "sales",
-          element: <Navigate to="/tenant/sales" replace />,
+          element: <Navigate to="/tenant/deals" replace />,
         },
         {
           path: "product-sales",

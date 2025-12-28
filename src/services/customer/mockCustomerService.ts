@@ -304,10 +304,11 @@ class MockCustomerService {
     }
 
     // Credit limit validation
-    if (customerData.credit_limit !== undefined) {
-      if (typeof customerData.credit_limit !== 'number' || customerData.credit_limit < 0) {
+    if (customerData.credit_limit !== undefined && customerData.credit_limit !== null && customerData.credit_limit !== '') {
+      const creditLimit = Number(customerData.credit_limit);
+      if (isNaN(creditLimit) || creditLimit < 0) {
         errors.push('Credit limit must be a positive number');
-      } else if (customerData.credit_limit > 999999999.99) {
+      } else if (creditLimit > 999999999.99) {
         errors.push('Credit limit cannot exceed 999,999,999.99');
       }
     }

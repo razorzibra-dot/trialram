@@ -33,6 +33,10 @@ export const LeadsPage: React.FC = () => {
   };
 
   const handleEdit = (lead: LeadDTO) => {
+    // Prevent editing converted leads
+    if (lead.convertedToCustomer) {
+      return;
+    }
     setSelectedLead(lead);
     setDrawerMode('edit');
   };
@@ -40,11 +44,6 @@ export const LeadsPage: React.FC = () => {
   const handleView = (lead: LeadDTO) => {
     setSelectedLead(lead);
     setDrawerMode('view');
-  };
-
-  const handleConvert = (lead: LeadDTO) => {
-    // This would typically open a customer creation/conversion modal
-    console.log('Convert lead to customer:', lead);
   };
 
   const handleDrawerClose = () => {
@@ -156,7 +155,7 @@ export const LeadsPage: React.FC = () => {
 
       {/* Lead Form Panel (Create/Edit) */}
       <LeadFormPanel
-        visible={drawerMode === 'create' || drawerMode === 'edit'}
+        open={drawerMode === 'create' || drawerMode === 'edit'}
         lead={drawerMode === 'edit' ? selectedLead : null}
         onClose={handleDrawerClose}
         onSuccess={handleSuccess}
@@ -164,11 +163,10 @@ export const LeadsPage: React.FC = () => {
 
       {/* Lead Detail Panel (View) */}
       <LeadDetailPanel
-        visible={drawerMode === 'view'}
+        open={drawerMode === 'view'}
         lead={selectedLead}
         onClose={handleDrawerClose}
         onEdit={handleEdit}
-        onConvert={handleConvert}
       />
     </>
   );

@@ -4,10 +4,12 @@
  */
 
 import React from 'react';
-import { Drawer, Button, Row, Col, Tag, Empty, Spin, Divider, Space } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { Drawer, Button, Row, Col, Tag, Empty, Spin, Divider, Space, Card, Statistic } from 'antd';
+import { EditOutlined, ShoppingOutlined, InfoCircleOutlined, DollarOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Product } from '@/types/masters';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency } from '@/utils/formatters';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 
 interface ProductsDetailPanelProps {
   product: Product | null;
@@ -16,15 +18,6 @@ interface ProductsDetailPanelProps {
   onClose: () => void;
   onEdit: () => void;
 }
-
-/**
- * Status color mapping
- */
-const statusColors: Record<string, string> = {
-  active: 'green',
-  inactive: 'default',
-  discontinued: 'red',
-};
 
 /**
  * Stock status helper
@@ -62,16 +55,6 @@ const Descriptions: React.FC<{
   </div>
 );
 
-/**
- * Format currency
- */
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
-
 export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
   product,
   isOpen,
@@ -80,6 +63,36 @@ export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
   onEdit,
 }) => {
   const { hasPermission } = useAuth();
+  
+  // Database-driven lookups
+  const { getColor: getStatusColor } = useReferenceDataLookup('product_status');
+
+  // Section styles configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: '#0ea5e9',
+      marginRight: 10,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
 
   if (!product) {
     return (
@@ -101,117 +114,157 @@ export const ProductsDetailPanel: React.FC<ProductsDetailPanelProps> = ({
   return (
     <Drawer
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ShoppingOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
           <span>Product Details</span>
-          {hasPermission('crm:product:record:update') && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={onEdit}
-              style={{ marginRight: 16 }}
-            >
-              Edit
-            </Button>
-          )}
         </div>
       }
       placement="right"
       onClose={onClose}
       open={isOpen}
-      width={500}
-      styles={{ body: { padding: '24px' } }}
+      width={650}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>
+            Close
+          </Button>
+          {hasPermission('crm:product:record:update') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<EditOutlined />}
+              onClick={onEdit}
+            >
+              Edit Product
+            </Button>
+          )}
+        </div>
+      }
     >
-      <Spin spinning={isLoading}>
-        {/* Product Name Section */}
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: '0 0 12px 0', color: '#111827', fontSize: 20, fontWeight: 600 }}>
-            {product.name}
-          </h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Tag color={statusColors[product.status || 'active']}>
-              {(product.status || 'active').toUpperCase()}
-            </Tag>
-            <Tag color={stockStatus.color}>{stockStatus.label}</Tag>
-          </div>
-        </div>
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        <Spin spinning={isLoading}>
+          {/* Product Overview Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <ShoppingOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Product Overview</h3>
+            </div>
+            <h2 style={{ margin: '0 0 12px 0', color: '#111827', fontSize: 20, fontWeight: 600 }}>
+              {product.name}
+            </h2>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Tag color={getStatusColor(product.status || 'active')}>
+                {(product.status || 'active').toUpperCase()}
+              </Tag>
+              <Tag color={stockStatus.color}>{stockStatus.label}</Tag>
+            </div>
+          </Card>
 
-        {/* Basic Information */}
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            Basic Information
-          </h3>
-          <Descriptions
-            items={[
-              { label: 'Product ID', value: product.id },
-              { label: 'SKU', value: product.sku },
-              { label: 'Category', value: product.category },
-              { label: 'Brand', value: product.brand },
-            ]}
-          />
-        </div>
+          {/* Basic Information Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <InfoCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+            </div>
+            <Descriptions
+              items={[
+                { label: 'Product ID', value: product.id },
+                { label: 'SKU', value: product.sku },
+                { label: 'Category', value: product.categoryName || product.category_id || '-' },
+                { label: 'Brand', value: product.brand },
+              ]}
+            />
+          </Card>
 
-        <Divider />
+          {/* Pricing & Stock Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <DollarOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Pricing & Stock</h3>
+            </div>
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={12}>
+                <Statistic
+                  title="Selling Price"
+                  value={product.price || 0}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: '#0ea5e9' }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Cost Price"
+                  value={product.cost_price || 0}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: '#10b981' }}
+                />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Statistic
+                  title="Current Stock"
+                  value={product.stock_quantity || 0}
+                  suffix="units"
+                  valueStyle={{ color: stockStatus.color === 'red' ? '#ef4444' : stockStatus.color === 'orange' ? '#f59e0b' : '#10b981' }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Reorder Level"
+                  value={product.reorder_level || 0}
+                  suffix="units"
+                  valueStyle={{ color: '#8b5cf6' }}
+                />
+              </Col>
+            </Row>
+          </Card>
 
-        {/* Pricing & Stock */}
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            Pricing & Stock
-          </h3>
-          <Descriptions
-            items={[
-              { label: 'Price', value: formatCurrency(product.price || 0) },
-              { label: 'Cost Price', value: formatCurrency(product.cost_price || 0) },
-              { label: 'Current Stock', value: `${product.stock_quantity || 0} units` },
-              { label: 'Reorder Level', value: `${product.reorder_level || 0} units` },
-            ]}
-          />
-        </div>
+          {/* Additional Details Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <InfoCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Additional Details</h3>
+            </div>
+            <Descriptions
+              items={[
+                { label: 'Manufacturer', value: product.manufacturer },
+                { label: 'Unit', value: product.unit },
+                { label: 'Description', value: product.description },
+              ]}
+            />
+          </Card>
 
-        <Divider />
-
-        {/* Additional Details */}
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            Additional Details
-          </h3>
-          <Descriptions
-            items={[
-              { label: 'Manufacturer', value: product.manufacturer },
-              { label: 'Unit', value: product.unit },
-              { label: 'Description', value: product.description },
-            ]}
-          />
-        </div>
-
-        {product.notes && (
-          <>
-            <Divider />
-            <div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#111827' }}>
-                Notes
-              </h3>
+          {product.notes && (
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <FileTextOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Notes</h3>
+              </div>
               <p style={{ color: '#666', margin: 0, whiteSpace: 'pre-wrap' }}>
                 {product.notes}
               </p>
-            </div>
-          </>
-        )}
+            </Card>
+          )}
 
-        {/* Meta Information */}
-        <Divider />
-        <div>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#111827' }}>
-            Meta Information
-          </h3>
-          <Descriptions
-            items={[
-              { label: 'Created', value: product.created_at ? new Date(product.created_at).toLocaleDateString() : '-' },
-              { label: 'Last Updated', value: product.updated_at ? new Date(product.updated_at).toLocaleDateString() : '-' },
-            ]}
-          />
-        </div>
-      </Spin>
+          {/* Meta Information Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <InfoCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Meta Information</h3>
+            </div>
+            <Descriptions
+              items={[
+                { label: 'Created', value: product.created_at ? new Date(product.created_at).toLocaleDateString() : '-' },
+                { label: 'Last Updated', value: product.updated_at ? new Date(product.updated_at).toLocaleDateString() : '-' },
+              ]}
+            />
+          </Card>
+        </Spin>
+      </div>
     </Drawer>
   );
 };

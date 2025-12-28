@@ -248,8 +248,8 @@ describe('Phase 8: Comprehensive Integration Testing', () => {
 
         // Verify pipeline progression
         expect(lead.score).toBeGreaterThan(80); // Qualified lead
-        expect(opportunity.probability).toBeGreaterThanOrEqual(70); // Qualified opportunity
-        expect(deal.probability).toBeGreaterThanOrEqual(80); // High-probability deal
+        expect(opportunity.probability).toBeGreaterThanOrEqual(70); // Qualified opportunity (has probability)
+        expect(deal.status).toBe('won'); // ✅ Deals use status field, not stage or probability
         expect(contract.status).toBe('pending_approval'); // Ready for legal review
 
         // Verify value consistency across pipeline stages
@@ -259,20 +259,20 @@ describe('Phase 8: Comprehensive Integration Testing', () => {
 
       it('should track sales metrics and analytics correctly', async () => {
         const deals = [
-          { ...mockDeal, stage: 'closed_won', value: 100000, probability: 100 },
-          { ...mockDeal, id: 'deal-2', stage: 'closed_lost', value: 50000, probability: 0 },
-          { ...mockDeal, id: 'deal-3', stage: 'proposal', value: 200000, probability: 75 },
+          { ...mockDeal, status: 'won', value: 100000 },
+          { ...mockDeal, id: 'deal-2', status: 'lost', value: 50000 },
+          { ...mockDeal, id: 'deal-3', status: 'won', value: 200000 },
         ];
 
         // Calculate pipeline metrics
         const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
-        const weightedValue = deals.reduce((sum, deal) => 
-          sum + (deal.value * deal.probability / 100), 0
-        );
-        const winRate = deals.filter(deal => deal.stage === 'closed_won').length / deals.length;
+        const wonDealsValue = deals
+          .filter(deal => deal.status === 'won')
+          .reduce((sum, deal) => sum + deal.value, 0);
+        const winRate = deals.filter(deal => deal.status === 'won').length / deals.length;
 
         expect(totalValue).toBe(350000);
-        expect(weightedValue).toBeGreaterThan(totalValue * 0.6); // At least 60% of total value
+        expect(wonDealsValue).toBeGreaterThan(totalValue * 0.5); // More than 50% won
         expect(winRate).toBeGreaterThan(0.3); // At least 30% win rate
       });
     });
@@ -737,7 +737,8 @@ describe('Phase 8: Comprehensive Integration Testing', () => {
           ],
           filters: {
             'customers.tenant_id': 'tenant-1',
-            'deals.stage !=': 'closed_lost',
+            // Deals have status (won/lost/cancelled), not pipeline stages
+            'deals.status NOT IN': ['lost', 'cancelled'],
           },
           aggregations: [
             'COUNT(deals.id) as deal_count',

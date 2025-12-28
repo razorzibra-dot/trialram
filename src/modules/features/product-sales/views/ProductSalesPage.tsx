@@ -1,10 +1,16 @@
 /**
- * Product Sales Page - Enterprise Version
- * Redesigned with Ant Design and EnterpriseLayout
+ * Product Sales Page - Enterprise Design
+ * Main page for displaying and managing product sales
+ * Unified grid control with side drawer panels for CRUD operations
+ * Enterprise styling and features aligned with Customer and Deal modules
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency, formatDate } from '@/utils/formatters';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
 import {
@@ -44,8 +50,7 @@ import {
 import { useService } from '@/modules/core/hooks/useService';
 import { 
   ProductSale, 
-  ProductSaleFilters, 
-  PRODUCT_SALE_STATUSES,
+  ProductSaleFilters,
   ProductSalesAnalytics 
 } from '@/types/productSales';
 import { 
@@ -83,6 +88,17 @@ export const ProductSalesPage: React.FC = () => {
   const { generateContract } = useGenerateContractFromSale();
   const { mutate: deleteProductSale } = useDeleteProductSale();
   const { bulkUpdateStatus, bulkDelete, bulkExport } = useBulkOperations();
+
+  // Database-driven status colors and labels
+  const { getColor: getStatusColor, getLabel: getStatusLabel } = useReferenceDataLookup('product_sale_status');
+  
+  // Load reference data for status filter dropdown
+  const currentTenant = useCurrentTenant();
+  const tenantId = currentTenant?.id;
+  const { options: statusOptions, isLoading: loadingStatuses } = useReferenceDataByCategory(
+    tenantId,
+    'product_sale_status'
+  );
 
   // State management
   const [productSales, setProductSales] = useState<ProductSale[]>([]);
@@ -187,12 +203,11 @@ export const ProductSalesPage: React.FC = () => {
 
   const handleDeleteSale = async (sale: ProductSale) => {
     try {
+      // Notifications handled by hook
       await productSaleService.deleteProductSale(sale.id);
-      message.success('Product sale deleted successfully');
       loadProductSales();
       loadAnalytics();
     } catch (err) {
-      message.error('Failed to delete product sale');
       console.error('Error deleting product sale:', err);
     }
   };
@@ -206,16 +221,16 @@ export const ProductSalesPage: React.FC = () => {
 
   const handleDeleteFromDetail = () => {
     if (selectedSale) {
+      // Notifications handled by hook
       deleteProductSale(selectedSale.id, {
         onSuccess: () => {
-          message.success('Product sale deleted successfully');
           setShowDetailModal(false);
           setSelectedSale(null);
           loadProductSales();
           loadAnalytics();
         },
         onError: () => {
-          message.error('Failed to delete product sale');
+          console.error('Failed to delete product sale');
         },
       });
     }
@@ -228,7 +243,7 @@ export const ProductSalesPage: React.FC = () => {
     setSelectedSale(null);
     loadProductSales();
     loadAnalytics();
-    message.success('Operation completed successfully');
+    // Notifications handled by mutation hook
   };
 
   const handleSearch = (value: string) => {
@@ -328,38 +343,14 @@ export const ProductSalesPage: React.FC = () => {
   };
 
   const getStatusTag = (status: string) => {
-    const statusConfig = PRODUCT_SALE_STATUSES.find(s => s.value === status);
-    const colorMap: Record<string, string> = {
-      'draft': 'default',
-      'pending': 'processing',
-      'confirmed': 'success',
-      'delivered': 'success',
-      'cancelled': 'error',
-      'refunded': 'warning'
-    };
     return (
-      <Tag color={colorMap[status] || 'default'}>
-        {statusConfig?.label || status}
+      <Tag color={getStatusColor(status)}>
+        {getStatusLabel(status)}
       </Tag>
     );
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  // Table columns - base configuration
    
   const baseColumns = useMemo(() => {
     const cols: ColumnsType<ProductSale> = [
@@ -371,7 +362,7 @@ export const ProductSalesPage: React.FC = () => {
         render: (text: string, record: ProductSale) => (
           <div>
             <div style={{ fontWeight: 500 }}>{text}</div>
-            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>ID: {record.id}</div>
+            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>#{record.id?.substring(0, 8)}</div>
           </div>
         ),
       },
@@ -382,8 +373,7 @@ export const ProductSalesPage: React.FC = () => {
         width: 200,
         render: (text: string, record: ProductSale) => (
           <div>
-            <div style={{ fontWeight: 500 }}>{text}</div>
-            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>ID: {record.customer_id}</div>
+            <div style={{ fontWeight: 500 }}>{record.customer_name || 'N/A'}</div>
           </div>
         ),
       },
@@ -394,37 +384,34 @@ export const ProductSalesPage: React.FC = () => {
         width: 200,
         render: (text: string, record: ProductSale) => (
           <div>
-            <div style={{ fontWeight: 500 }}>{text}</div>
-            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-              {record.warranty_period} months warranty
-            </div>
+            <div style={{ fontWeight: 500 }}>{record.product_name || 'N/A'}</div>
           </div>
         ),
       },
       {
-        title: 'Quantity',
-        dataIndex: 'quantity',
-        key: 'quantity',
+        title: 'Units',
+        dataIndex: 'units',
+        key: 'units',
         width: 100,
         align: 'center',
-        render: (text: number) => <span style={{ fontWeight: 500 }}>{text}</span>,
+        render: (text: number) => <span style={{ fontWeight: 500 }}>{text || 0}</span>,
       },
       {
-        title: 'Unit Price',
-        dataIndex: 'unit_price',
-        key: 'unit_price',
+        title: 'Cost Per Unit',
+        dataIndex: 'cost_per_unit',
+        key: 'cost_per_unit',
         width: 120,
         align: 'right',
-        render: (text: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(text)}</span>,
+        render: (text: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(text || 0)}</span>,
       },
       {
-        title: 'Total Value',
-        dataIndex: 'total_value',
-        key: 'total_value',
+        title: 'Total Cost',
+        dataIndex: 'total_cost',
+        key: 'total_cost',
         width: 130,
         align: 'right',
         render: (text: number) => (
-          <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatCurrency(text)}</span>
+          <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatCurrency(text || 0)}</span>
         ),
       },
       {
@@ -445,13 +432,14 @@ export const ProductSalesPage: React.FC = () => {
         title: 'Actions',
         key: 'actions',
         fixed: 'right',
-        width: 180,
+        width: 200,
         align: 'center',
         render: (_: unknown, record: ProductSale) => (
           <Space size="small">
             <Tooltip title="View Details">
               <Button
                 type="text"
+                size="small"
                 icon={<EyeOutlined />}
                 onClick={() => handleViewSale(record)}
               />
@@ -460,6 +448,7 @@ export const ProductSalesPage: React.FC = () => {
               <Tooltip title="Edit">
                 <Button
                   type="text"
+                  size="small"
                   icon={<EditOutlined />}
                   onClick={() => handleEditSale(record)}
                 />
@@ -469,6 +458,7 @@ export const ProductSalesPage: React.FC = () => {
               <Tooltip title="Download Invoice">
                 <Button
                   type="text"
+                  size="small"
                   icon={<DownloadOutlined />}
                   onClick={() => window.open(record.invoice_url, '_blank')}
                 />
@@ -484,7 +474,7 @@ export const ProductSalesPage: React.FC = () => {
                 okButtonProps={{ danger: true }}
               >
                 <Tooltip title="Delete">
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}
@@ -504,7 +494,8 @@ export const ProductSalesPage: React.FC = () => {
     return applyColumnConfig(baseColumns, columnConfig);
   }, [baseColumns, columnConfig]);
 
-  if (!hasPermission('crm:product-sale:record:update')) {
+  // Page access requires read permission (viewing the list/analytics)
+  if (!hasPermission('crm:product-sale:record:read')) {
     return (
       <>
         <div style={{ padding: 24 }}>
@@ -554,7 +545,7 @@ export const ProductSalesPage: React.FC = () => {
             >
               Refresh
             </Button>
-            {hasPermission('crm:product-sale:record:update') && (
+            {hasPermission('crm:product-sale:record:create') && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -635,10 +626,11 @@ export const ProductSalesPage: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleStatusFilter}
                     value={filters.status}
+                    loading={loadingStatuses}
                   >
-                    {PRODUCT_SALE_STATUSES.map((status) => (
-                      <Option key={status.value} value={status.value}>
-                        {status.label}
+                    {statusOptions.map((option) => (
+                      <Option key={option.value} value={option.value}>
+                        {option.label}
                       </Option>
                     ))}
                   </Select>
@@ -757,7 +749,7 @@ export const ProductSalesPage: React.FC = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description="No product sales found"
                     >
-                      {hasPermission('crm:product-sale:record:update') && (
+                      {hasPermission('crm:product-sale:record:create') && (
                         <Button
                           type="primary"
                           icon={<PlusOutlined />}
@@ -777,7 +769,7 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Product Sale Form Side Panel - Create */}
       <ProductSaleFormPanel
-        visible={showCreateModal}
+        open={showCreateModal}
         productSale={null}
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleFormSuccess}
@@ -785,7 +777,7 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Product Sale Form Side Panel - Edit */}
       <ProductSaleFormPanel
-        visible={showEditModal}
+        open={showEditModal}
         productSale={selectedSale}
         onClose={() => setShowEditModal(false)}
         onSuccess={handleFormSuccess}
@@ -793,7 +785,7 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Product Sale Detail Side Panel */}
       <ProductSaleDetailPanel
-        visible={showDetailModal}
+        open={showDetailModal}
         productSale={selectedSale}
         onClose={() => setShowDetailModal(false)}
         onEdit={() => {
@@ -806,14 +798,14 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Advanced Search Modal */}
       <AdvancedSearchModal
-        visible={showAdvancedSearch}
+        open={showAdvancedSearch}
         onSearch={handleAdvancedSearch}
         onClose={() => setShowAdvancedSearch(false)}
       />
 
       {/* Advanced Filters Modal */}
       <AdvancedFiltersModal
-        visible={showAdvancedFilters}
+        open={showAdvancedFilters}
         filters={filters}
         onApply={handleApplyAdvancedFilters}
         onClose={() => setShowAdvancedFilters(false)}
@@ -821,21 +813,24 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Reports Modal */}
       <ReportsModal
-        visible={showReportsModal}
+        open={showReportsModal}
         data={productSales}
+        analytics={analytics}
+        customers={[]}
+        products={[]}
         onClose={() => setShowReportsModal(false)}
       />
 
       {/* Export Modal */}
       <ExportModal
-        visible={showExportModal}
+        open={showExportModal}
         data={productSales}
         onClose={() => setShowExportModal(false)}
       />
 
       {/* Filter Presets Modal */}
       <FilterPresetsModal
-        visible={showFilterPresets}
+        open={showFilterPresets}
         currentFilters={filters}
         onLoadPreset={handleLoadPreset}
         onClose={() => setShowFilterPresets(false)}
@@ -843,14 +838,14 @@ export const ProductSalesPage: React.FC = () => {
 
       {/* Dynamic Columns Modal */}
       <DynamicColumnsModal
-        visible={showDynamicColumns}
+        open={showDynamicColumns}
         onClose={() => setShowDynamicColumns(false)}
         onColumnsChange={handleColumnsChange}
       />
 
       {/* Notification Preferences Modal */}
       <NotificationPreferencesModal
-        visible={showNotificationPreferences}
+        open={showNotificationPreferences}
         onClose={() => setShowNotificationPreferences(false)}
         onSuccess={() => {
           message.success('Notification preferences updated successfully');

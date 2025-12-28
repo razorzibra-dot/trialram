@@ -528,3 +528,83 @@ This codebase is **PRODUCTION READY** with:
 ---
 
 **Repository Status**: ✅ STANDARDIZED & PRODUCTION READY (Feb 2025)
+
+---
+
+## CRUD Service Implementation Pattern (CRITICAL - MANDATORY)
+
+**⚠️ ALWAYS follow this pattern when implementing CREATE/UPDATE operations**
+
+### Pre-Implementation Checklist
+
+Before implementing ANY CRUD operation for a module:
+
+1. **Read the Database Schema First**
+   - Check `supabase/COMPLETE_DATABASE_EXPORT.sql` OR `supabase/complete_database_schema.sql`
+   - Note ALL columns that exist in the table
+   - Note column data types and constraints
+   - Note which columns are auto-generated
+
+2. **Identify Field Categories**
+   - **Auto-generated** (NEVER send): `id`, `created_at`, `updated_at`, `deleted_at`
+   - **System-set** (service sets): `tenant_id`, `created_by`, `updated_by`
+   - **User-provided**: All other fields from input type
+   - **Computed/virtual**: Fields in types but NOT in DB (e.g., `attachments`)
+
+### ✅ CORRECT Pattern: Explicit Field Mapping
+
+```typescript
+async createEntity(data: EntityCreateInput): Promise<Entity> {
+  const insertData = {
+    // Only fields that EXIST in database table
+    customer_id: data.customerId,
+    title: data.title,
+    status: data.status || 'draft',
+    created_by: (await supabaseClient.auth.getUser()).data.user?.id,
+  };
+  // ... insert
+}
+
+async updateEntity(id: string, data: EntityUpdateInput): Promise<Entity> {
+  const fieldMap: Record<string, string> = {
+    title: 'title',
+    status: 'status',
+    // Only updateable fields - exclude id, created_at, tenant_id
+  };
+  // Build update object using fieldMap
+}
+```
+
+### ❌ WRONG Pattern: Never Use
+
+```typescript
+// ❌ WRONG: Spreading spreads non-existent columns → 400 Bad Request
+.insert([{ ...data, created_by: userId }])
+
+// ❌ WRONG: toDatabase() doesn't filter invalid columns
+.update({ ...toDatabase(data), updated_at: now })
+```
+
+### Common Pitfalls
+
+| Pitfall | Problem | Solution |
+|---------|---------|----------|
+| Spreading input | Non-existent columns → 400 | Explicit field mapping |
+| Generic toDatabase() | Invalid columns | Per-entity field mapping |
+| Computed fields | attachments in insert | Exclude, load separately |
+| Read-only fields | id in update | Use fieldMap excluding these |
+
+### Module-Specific Verified Patterns
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| Deals | ✅ | Uses toDatabase() mapper |
+| Products | ✅ | Fixed: removed specifications, pricing_tiers |
+| Product Sales | ✅ | Fixed: removed sale_date, excluded attachments |
+| Job Works | ✅ | Fixed: excluded specifications from update |
+| Service Contracts | ✅ | Matches enterprise schema |
+| Customers | ✅ | Explicit field mapping |
+| Tickets | ✅ | Explicit fieldMap |
+| Complaints | ✅ | Explicit field list |
+
+**Last Updated**: December 2025

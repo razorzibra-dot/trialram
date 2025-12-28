@@ -13,7 +13,7 @@
 
 import React, { useMemo } from 'react';
 import { Select, Spin, Alert } from 'antd';
-import { useStatusOptions, useCategories, useSuppliers, useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useStatusOptions, useSuppliers, useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
 
 export type DynamicMultiSelectType = 'categories' | 'suppliers' | 'status' | 'custom';
 
@@ -99,9 +99,10 @@ export const DynamicMultiSelect: React.FC<DynamicMultiSelectProps> = ({
   filterOption,
 }) => {
   // Load data based on type
-  const categoriesHook = useCategories(tenantId);
   const suppliersHook = useSuppliers(tenantId);
   const statusHook = useStatusOptions(tenantId, module || '');
+  // For categories, use reference_data with category='product_category'
+  const categoriesHook = useReferenceDataByCategory(tenantId, 'product_category');
   const customHook = useReferenceDataByCategory(tenantId, category || '');
 
   // Determine which hook to use
@@ -109,7 +110,7 @@ export const DynamicMultiSelect: React.FC<DynamicMultiSelectProps> = ({
     switch (type) {
       case 'categories':
         return {
-          options: categoriesHook.categoryOptions,
+          options: categoriesHook.options,
           loading: categoriesHook.loading,
           error: categoriesHook.error,
         };

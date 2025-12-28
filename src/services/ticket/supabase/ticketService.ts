@@ -6,6 +6,7 @@
 
 import { supabase, getSupabaseClient } from '@/services/supabase/client';
 import { authService } from '../../serviceFactory';
+import { roleService } from '@/services/roleService';
 
 // Simple base service implementation since the import is missing
 class BaseSupabaseService {
@@ -197,8 +198,8 @@ export class SupabaseTicketService extends BaseSupabaseService {
              due_date: processedData.due_date,
              estimated_hours: processedData.estimated_hours,
              resolution: processedData.resolution,
-             sla_target: processedData.sla_target,
-             sla_start: processedData.sla_start,
+             // ❌ REMOVED: sla_target and sla_start - NOT columns in tickets table
+             // These fields don't exist in the database schema and would cause 400 errors
              tenant_id: assignedTenantId, // ⭐ SECURITY: Use validated tenant_id
              created_at: new Date().toISOString(),
              updated_at: new Date().toISOString(),
@@ -620,37 +621,60 @@ export class SupabaseTicketService extends BaseSupabaseService {
       return ticketData;
     }
 
-    // Auto-assignment logic based on category and priority
-    let assignedTo: string | undefined;
-
-    switch (ticketData.category) {
-      case 'billing':
-        // Assign to billing specialist (user 2 in mock data)
-        assignedTo = '2';
-        break;
-      case 'technical':
-        // Assign to technical specialist (user 3 in mock data)
-        assignedTo = '3';
-        break;
-      case 'feature_request':
-        // Assign to product manager (user 1 in mock data)
-        assignedTo = '1';
-        break;
-      default: {
-        // Round-robin assignment for general tickets
-        const availableAgents = ['2', '3']; // Exclude admin user
-        // In a real implementation, you'd track last assignments
-        assignedTo = availableAgents[0];
-        break;
+    try {
+      // ✅ ENTERPRISE: Get assignable users from database-driven role config
+      const tenantId = user.tenant_id || user.tenantId;
+      if (!tenantId) {
+        console.warn('[TicketService] No tenant ID for auto-assignment');
+        return ticketData;
       }
-    }
 
-    // For urgent tickets, assign to most experienced agent
-    if (ticketData.priority === 'urgent') {
-      assignedTo = '1'; // Admin user
-    }
+      const assignableUsers = await roleService.getAssignableUsers(tenantId, 'tickets');
+      
+      if (!assignableUsers || assignableUsers.length === 0) {
+        console.warn('[TicketService] No assignable users found');
+        return ticketData;
+      }
 
-    return { ...ticketData, assigned_to: assignedTo };
+      // Get ticket counts for load balancing (round-robin)
+      const userIds = assignableUsers.map(u => u.id);
+      const { data: tickets } = await supabase
+        .from('tickets')
+        .select('assigned_to', { count: 'exact' })
+        .in('assigned_to', userIds)
+        .eq('status', 'open');
+
+      // Build user load map
+      const userLoadMap: Record<string, number> = {};
+      assignableUsers.forEach(u => {
+        userLoadMap[u.id] = 0;
+      });
+
+      tickets?.forEach(ticket => {
+        if (ticket.assigned_to && userLoadMap[ticket.assigned_to] !== undefined) {
+          userLoadMap[ticket.assigned_to]++;
+        }
+      });
+
+      // Find user with least open tickets
+      const assignedUserId = assignableUsers.reduce((prev, current) => {
+        return userLoadMap[current.id] < userLoadMap[prev.id] ? current : prev;
+      }).id;
+
+      console.log('[TicketService] Auto-assigning ticket (database-driven):', {
+        category: ticketData.category,
+        priority: ticketData.priority,
+        assignToId: assignedUserId,
+        userLoad: userLoadMap,
+        assignableCount: assignableUsers.length
+      });
+
+      return { ...ticketData, assigned_to: assignedUserId };
+    } catch (error) {
+      console.error('[TicketService] Error in auto-assignment:', error);
+      // Return original data if assignment fails
+      return ticketData;
+    }
   }
 
   private applySLARules(ticketData: Partial<Ticket>): Partial<Ticket> {

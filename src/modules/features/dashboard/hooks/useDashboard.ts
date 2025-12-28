@@ -51,17 +51,28 @@ export const useDashboardStats = () => {
       const resolvedTicketStats =
         ticketStats.status === 'fulfilled' ? ticketStats.value : null;
 
+      const totalDeals = Number(
+        (resolvedSalesStats as any)?.totalDeals ??
+        (resolvedSalesStats as any)?.total ??
+        0
+      );
+      const totalRevenue = Number((resolvedSalesStats as any)?.totalValue ?? 0);
+
+      console.log('[Dashboard] Stats resolved', {
+        totalCustomers: resolvedCustomerStats?.totalCustomers ?? resolvedCustomerStats?.total ?? 0,
+        totalDeals,
+        totalRevenue,
+        salesStatsRaw: resolvedSalesStats
+      });
+
       return {
         totalCustomers:
           resolvedCustomerStats?.totalCustomers ??
           resolvedCustomerStats?.total ??
           0,
-        totalDeals:
-          resolvedSalesStats?.totalDeals ??
-          resolvedSalesStats?.total ??
-          0,
+        totalDeals,
         totalTickets: resolvedTicketStats?.total ?? 0,
-        totalRevenue: resolvedSalesStats?.totalValue ?? 0,
+        totalRevenue,
       };
     },
     ...STATS_QUERY_CONFIG,
@@ -97,7 +108,7 @@ export const useRecentActivity = (limit: number = 10) => {
             id: log.id,
             type: mapAuditActionToActivityType(action),
             title: formatAuditAction(action, resource),
-            description: log.details ? JSON.stringify(log.details) : log.new_values ? JSON.stringify(log.new_values) : `Action performed on ${resource}`,
+            description: log.details ? JSON.stringify(log.details) : log.changes ? JSON.stringify(log.changes) : `Action performed on ${resource}`,
             timestamp: log.timestamp || log.created_at,
             user: log.user_name || log.user?.name || log.user_id || 'System',
           };

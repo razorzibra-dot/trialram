@@ -37,7 +37,7 @@ export interface AdvancedSearchInputs {
 }
 
 interface AdvancedSearchModalProps {
-  visible: boolean;
+  open: boolean;
   onSearch: (searchInputs: AdvancedSearchInputs) => void;
   onClose: () => void;
 }

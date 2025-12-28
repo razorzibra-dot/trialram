@@ -4,11 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty } from 'antd';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, Tooltip, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Briefcase, Clock, CheckCircle, DollarSign } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
+import { formatCurrency } from '@/utils/formatters';
 import { JobWorksDetailPanel } from '../components/JobWorksDetailPanel';
 import { JobWorksFormPanel } from '../components/JobWorksFormPanel';
 import { JobWork } from '../services/jobWorksService';
@@ -35,7 +36,7 @@ const JobWorksPage: React.FC = () => {
 
   // Queries
   const { data: response, isLoading: jobWorksLoading, refetch } = useJobWorks(filters);
-  const { data: stats, isLoading: statsLoading } = useJobWorkStats();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useJobWorkStats();
   const deleteJobWork = useDeleteJobWork();
 
   const jobWorks = response?.data || [];
@@ -43,6 +44,7 @@ const JobWorksPage: React.FC = () => {
 
   const handleRefresh = () => {
     refetch();
+    refetchStats();
     message.success('Data refreshed');
   };
 
@@ -79,13 +81,9 @@ const JobWorksPage: React.FC = () => {
   };
 
   const handleDelete = async (jobWork: JobWork) => {
-    try {
-      await deleteJobWork.mutateAsync(jobWork.id);
-      message.success(`Job work "${jobWork.title}" deleted`);
-      refetch();
-    } catch (error) {
-      message.error('Failed to delete job work');
-    }
+    // Notifications handled by useDeleteJobWork hook
+    await deleteJobWork.mutateAsync(jobWork.id);
+    refetch();
   };
 
   const handleSearch = (value: string) => {
@@ -118,16 +116,7 @@ const JobWorksPage: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
-  // Table columns - minimal and focused
   const columns: ColumnsType<JobWork> = [
     {
       title: 'Job Work',
@@ -199,44 +188,45 @@ const JobWorksPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 140,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-          {hasPermission('crm:project:record:update') && (
+          <Tooltip title="View Details">
             <Button
-              type="link"
+              type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditJobWork(record)}
-            >
-              Edit
-            </Button>
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {hasPermission('crm:project:record:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditJobWork(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:project:record:delete') && (
             <Popconfirm
               title="Delete Job Work"
               description={`Are you sure you want to delete "${record.title}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -358,7 +348,7 @@ const JobWorksPage: React.FC = () => {
 
       {/* Detail Panel (View) */}
       <JobWorksDetailPanel
-        visible={drawerMode === 'view'}
+        open={drawerMode === 'view'}
         jobWork={selectedJobWork}
         onClose={() => setDrawerMode(null)}
         onEdit={() => setDrawerMode('edit')}

@@ -7,6 +7,7 @@ import React from 'react';
 import { DataTable } from '@/modules/shared/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/utils/formatters';
 import { 
   Plus, 
   MoreHorizontal,
@@ -46,15 +47,6 @@ export const JobWorksList: React.FC<JobWorksListProps> = ({
   const deleteJobWork = useDeleteJobWork();
 
   const jobWorks = response?.data || [];
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getStatusBadge = (status: string) => {
     if (!status) {

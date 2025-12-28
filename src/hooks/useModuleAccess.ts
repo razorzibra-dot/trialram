@@ -60,7 +60,7 @@ const SUPER_ADMIN_ONLY_MODULES = ['super-admin', 'system-admin', 'admin-panel'];
  */
 const TENANT_MODULES = [
   'customers',
-  'sales',
+  'deals',
   'contracts',
   'service-contracts',
   'products',

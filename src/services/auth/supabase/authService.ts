@@ -589,7 +589,14 @@ class SupabaseAuthService {
     const userStr = localStorage.getItem(this.userKey);
     const user = userStr ? JSON.parse(userStr) : null;
     if (user) {
-      console.log('[getCurrentUser] User:', { id: user.id, email: user.email, role: user.role, name: user.name });
+      console.log('[getCurrentUser] 🔍 User:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+        permissionsCount: user.permissions?.length || 0,
+        permissions: user.permissions?.slice(0, 3) // Show first 3 permissions
+      });
     }
     return user;
   }

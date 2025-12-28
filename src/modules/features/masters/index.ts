@@ -11,10 +11,6 @@ export * from './services/productService';
 export * from './hooks/useCompanies';
 export * from './hooks/useProducts';
 
-// Component exports
-export * from './components/CompaniesList';
-export * from './components/ProductsList';
-
 // Routes
 export { mastersRoutes } from './routes';
 import { mastersRoutes } from './routes';

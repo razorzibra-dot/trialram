@@ -10,6 +10,7 @@ export interface ProductSale {
   cost_per_unit: number;
   total_cost: number;
   total_amount?: number; // Added for notifications
+  sale_date: string; // Date when sale was made
   delivery_date: string;
   warranty_expiry: string;
   status: 'new' | 'renewed' | 'expired';
@@ -91,6 +92,7 @@ export interface ProductSaleFormData {
   product_id: string;
   units: number;
   cost_per_unit: number;
+  // Note: sale_date is NOT a database column - it's derived from created_at on read
   delivery_date: string;
   notes: string;
   attachments: File[];
@@ -185,9 +187,11 @@ export interface ContractGenerationData {
 
 // Constants
 export const PRODUCT_SALE_STATUSES = [
-  { value: 'new', label: 'New', color: 'bg-green-100 text-green-800' },
-  { value: 'renewed', label: 'Renewed', color: 'bg-blue-100 text-blue-800' },
-  { value: 'expired', label: 'Expired', color: 'bg-red-100 text-red-800' }
+  { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-800' },
+  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800' },
+  { value: 'renewed', label: 'Renewed', color: 'bg-cyan-100 text-cyan-800' },
+  { value: 'expired', label: 'Expired', color: 'bg-red-100 text-red-800' },
+  { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-100 text-gray-800' }
 ] as const;
 
 export const SERVICE_CONTRACT_STATUSES = [

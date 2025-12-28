@@ -11,7 +11,7 @@ import { useService } from '@/modules/core/hooks/useService';
 import { useNotification } from '@/hooks/useNotification';
 import { productSalesKeys } from './useProductSales';
 import { productSalesAuditService } from '../services/productSalesAuditService';
-import { productSalesRbacService } from '../services/productSalesRbacService';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Hook for creating a new product sale
@@ -22,6 +22,7 @@ export const useCreateProductSale = () => {
   const { addSale, setSaving, setError, clearError } = useProductSalesStore();
   const { success, error } = useNotification();
   const service = useService<any>('productSaleService');
+  const { evaluateElementPermission } = useAuth();
 
   return useMutation({
     mutationFn: async (data: ProductSaleFormData) => {
@@ -29,10 +30,16 @@ export const useCreateProductSale = () => {
       setSaving(true);
 
       try {
-        // Check RBAC permission for create operation
-        const permissionResult = await productSalesRbacService.canCreateProductSale();
-        if (!permissionResult.allowed) {
-          throw new Error(permissionResult.reason || 'You do not have permission to create product sales');
+        // Check permission using centralized context
+        console.log('[useCreateProductSale] 🔍 Checking create permission using centralized context');
+
+        const hasPermission = await evaluateElementPermission(
+          'crm:product-sales:list:button.create:visible',
+          'visible'
+        );
+
+        if (!hasPermission) {
+          throw new Error('You do not have permission to create product sales');
         }
 
         if (!data.customer_id || !data.product_id) {
@@ -70,7 +77,7 @@ export const useCreateProductSale = () => {
 
       // Invalidate and refetch product sales list
       queryClient.invalidateQueries({
-        queryKey: productSalesKeys.list(),
+        queryKey: productSalesKeys.lists(),
       });
 
       success('Product sale created successfully');
@@ -137,7 +144,7 @@ export const useCreateProductSaleWithContract = () => {
 
       // Invalidate caches
       queryClient.invalidateQueries({
-        queryKey: productSalesKeys.list(),
+        queryKey: productSalesKeys.lists(),
       });
 
       success('Product sale and service contract created successfully');

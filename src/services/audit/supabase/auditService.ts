@@ -322,14 +322,18 @@ class SupabaseAuditService {
       
       const { error } = await supabase.from('audit_logs').insert({
         action,
-        table_name: tableName,
-        record_id: resourceId,
+        entity_type: tableName,
+        entity_id: resourceId,
+        resource: tableName,
+        resource_id: resourceId,
         user_id: user.id,
-        old_values: changes?.before || null,
-        new_values: changes?.after || null,
+        changes: changes ? {
+          before: changes.before || {},
+          after: changes.after || {}
+        } : null,
         ip_address: '127.0.0.1', // In production, capture from request
         user_agent: navigator?.userAgent || 'Unknown',
-        tenant_id: user.tenant_id || null,
+        tenant_id: (user as any).tenant_id || null,
         created_at: new Date().toISOString()
       });
 

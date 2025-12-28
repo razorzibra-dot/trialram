@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Drawer, Button, Row, Col, Tag, Empty, Spin, Input, Avatar, Divider, List, Upload, message } from 'antd';
-import { EditOutlined, SendOutlined, PaperClipOutlined, ClockCircleOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Drawer, Button, Row, Col, Tag, Empty, Spin, Input, Avatar, Divider, List, Upload, message, Card, Statistic } from 'antd';
+import { EditOutlined, SendOutlined, PaperClipOutlined, ClockCircleOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined, InfoCircleOutlined, UserOutlined, MessageOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/crm';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTicketComments, useCreateTicketComment, useAddCommentReply } from '../hooks/useTicketComments';
 import { useTicketAttachments, useUploadTicketAttachment, useDeleteTicketAttachment, useDownloadTicketAttachment } from '../hooks/useTicketAttachments';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 import dayjs from 'dayjs';
 
 interface TicketsDetailPanelProps {
@@ -19,27 +20,6 @@ interface TicketsDetailPanelProps {
   onClose: () => void;
   onEdit: () => void;
 }
-
-/**
- * Status color mapping
- */
-const statusColors: Record<string, string> = {
-  open: 'warning',
-  in_progress: 'processing',
-  resolved: 'success',
-  closed: 'default',
-  pending: 'warning',
-};
-
-/**
- * Priority color mapping
- */
-const priorityColors: Record<string, string> = {
-  low: 'default',
-  medium: 'blue',
-  high: 'orange',
-  urgent: 'red',
-};
 
 /**
  * Descriptions component for formatted display
@@ -94,6 +74,37 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
   const { hasPermission, user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Database-driven color lookups
+  const { getColor: getStatusColor, getLabel: getStatusLabel } = useReferenceDataLookup('ticket_status');
+  const { getColor: getPriorityColor, getLabel: getPriorityLabel } = useReferenceDataLookup('ticket_priority');
+
+  // Section styles configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: '#0ea5e9',
+      marginRight: 10,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
 
   // Comments hooks
   const { data: comments = [], isLoading: commentsLoading } = useTicketComments(ticket?.id || '');
@@ -198,260 +209,278 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
   return (
     <Drawer
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FileTextOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
           <span>Ticket Details</span>
-          {hasPermission('crm:support:ticket:update') && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={onEdit}
-              style={{ marginRight: 16 }}
-            >
-              Edit
-            </Button>
-          )}
         </div>
       }
       placement="right"
       onClose={onClose}
       open={isOpen}
-      width={500}
-      styles={{ body: { padding: '24px' } }}
+      width={650}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>
+            Close
+          </Button>
+          {hasPermission('crm:support:ticket:update') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<EditOutlined />}
+              onClick={onEdit}
+            >
+              Edit Ticket
+            </Button>
+          )}
+        </div>
+      }
     >
-      <Spin spinning={isLoading}>
-        {/* Title Section */}
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: '0 0 12px 0', color: '#111827', fontSize: 20, fontWeight: 600 }}>
-            {ticket.title}
-          </h2>
-          {ticket.description && (
-            <p style={{ margin: 0, color: '#666', fontSize: 14, lineHeight: 1.6 }}>
-              {ticket.description}
-            </p>
-          )}
-        </div>
-
-        {/* Status & Priority */}
-        <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ fontSize: 12, color: '#666', fontWeight: 500 }}>Status</span>
-            <div style={{ marginTop: 6 }}>
-              <Tag color={statusColors[ticket.status || 'open']} style={{ fontSize: 13, padding: '4px 12px' }}>
-                {(ticket.status || 'open').replace('_', ' ').toUpperCase()}
-              </Tag>
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        <Spin spinning={isLoading}>
+          {/* Title & Status Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <InfoCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Ticket Overview</h3>
             </div>
-          </div>
-          <div>
-            <span style={{ fontSize: 12, color: '#666', fontWeight: 500 }}>Priority</span>
-            <div style={{ marginTop: 6 }}>
-              <Tag color={priorityColors[ticket.priority || 'medium']} style={{ fontSize: 13, padding: '4px 12px' }}>
-                {(ticket.priority || 'medium').toUpperCase()}
-              </Tag>
-            </div>
-          </div>
-        </div>
-
-        {/* Basic Information */}
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            Basic Information
-          </h3>
-          <Descriptions
-            items={[
-              {
-                label: 'Ticket ID',
-                value: ticket.id,
-              },
-              {
-                label: 'Customer',
-                value: ticket.customer_name || ticket.customer_id || '-',
-              },
-              {
-                label: 'Category',
-                value: ticket.category ? ticket.category.replace('_', ' ').toUpperCase() : '-',
-              },
-            ]}
-          />
-        </div>
-
-        {/* Assignment & Timeline */}
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            Assignment & Timeline
-          </h3>
-          <Descriptions
-            items={[
-              {
-                label: 'Assigned To',
-                value: ticket.assigned_to_name || 'Unassigned',
-              },
-              {
-                label: 'Created',
-                value: ticket.created_at ? dayjs(ticket.created_at).format('MMM DD, YYYY HH:mm') : '-',
-              },
-              {
-                label: 'Updated',
-                value: ticket.updated_at ? dayjs(ticket.updated_at).format('MMM DD, YYYY HH:mm') : '-',
-              },
-              {
-                label: 'Due Date',
-                value:
-                  ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== 'resolved' && ticket.status !== 'closed' ? (
-                    <span style={{ color: '#dc2626', fontWeight: 500 }}>
-                      {dayjs(ticket.due_date).format('MMM DD, YYYY')}
-                    </span>
-                  ) : ticket.due_date ? (
-                    dayjs(ticket.due_date).format('MMM DD, YYYY')
-                  ) : (
-                    '-'
-                  ),
-              },
-              {
-                label: 'Resolved',
-                value: ticket.resolved_at ? dayjs(ticket.resolved_at).format('MMM DD, YYYY HH:mm') : 'Not resolved',
-              },
-            ]}
-          />
-        </div>
-
-        {/* Additional Tags */}
-        {ticket.tags && ticket.tags.length > 0 && (
-          <div style={{ paddingTop: 24, borderTop: '1px solid #f0f0f0' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#111827' }}>
-              Tags
-            </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {ticket.tags.map((tag, index) => (
-                <Tag key={index} color="blue">
-                  {tag}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Time Tracking */}
-        {(ticket.estimated_hours || ticket.actual_hours) && (
-          <div style={{ paddingTop: 24, borderTop: '1px solid #f0f0f0' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-              <ClockCircleOutlined style={{ marginRight: 8 }} />
-              Time Tracking
-            </h3>
-            <Row gutter={16}>
-              {ticket.estimated_hours && (
-                <Col span={12}>
-                  <div style={{ textAlign: 'center', padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                    <div style={{ fontSize: 18, fontWeight: 600, color: '#1890ff' }}>
-                      {ticket.estimated_hours}h
-                    </div>
-                    <div style={{ fontSize: 12, color: '#666' }}>Estimated</div>
-                  </div>
-                </Col>
-              )}
-              {ticket.actual_hours && (
-                <Col span={12}>
-                  <div style={{ textAlign: 'center', padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                    <div style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
-                      {ticket.actual_hours}h
-                    </div>
-                    <div style={{ fontSize: 12, color: '#666' }}>Actual</div>
-                  </div>
-                </Col>
-              )}
-            </Row>
-          </div>
-        )}
-
-        {/* Comments Section */}
-        <div style={{ paddingTop: 24, borderTop: '1px solid #f0f0f0' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
-            💬 Comments ({comments.length})
-          </h3>
-
-          {/* Comments List */}
-          <div style={{ marginBottom: 16 }}>
-            {commentsLoading ? (
-              <Spin size="small" />
-            ) : comments.length > 0 ? (
-              <List
-                dataSource={comments}
-                renderItem={(comment: TicketComment) => (
-                  <Comment
-                    author={
-                      <span style={{ fontWeight: 500 }}>
-                        {comment.author_name}
-                        {comment.author_role && (
-                          <Tag style={{ marginLeft: 8, fontSize: 10 }}>
-                            {comment.author_role}
-                          </Tag>
-                        )}
-                      </span>
-                    }
-                    avatar={
-                      <Avatar size="small">
-                        {comment.author_name.charAt(0).toUpperCase()}
-                      </Avatar>
-                    }
-                    content={<p style={{ margin: 0 }}>{comment.content}</p>}
-                    datetime={
-                      <span style={{ fontSize: 12, color: '#666' }}>
-                        {dayjs(comment.created_at).format('MMM DD, YYYY HH:mm')}
-                      </span>
-                    }
-                  />
-                )}
-                locale={{ emptyText: 'No comments yet' }}
-              />
-            ) : (
-              <Empty
-                description="No comments yet"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                style={{ margin: '16px 0' }}
-              />
+            <h2 style={{ margin: '0 0 12px 0', color: '#111827', fontSize: 20, fontWeight: 600 }}>
+              {ticket.title}
+            </h2>
+            {ticket.description && (
+              <p style={{ margin: '0 0 16px 0', color: '#666', fontSize: 14, lineHeight: 1.6 }}>
+                {ticket.description}
+              </p>
             )}
-          </div>
+            <Row gutter={16}>
+              <Col span={12}>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, color: '#666', fontWeight: 500 }}>Status</span>
+                  <div style={{ marginTop: 6 }}>
+                    <Tag color={getStatusColor(ticket.status || 'open')} style={{ fontSize: 13, padding: '4px 12px' }}>
+                      {getStatusLabel(ticket.status || 'open')}
+                    </Tag>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <span style={{ fontSize: 12, color: '#666', fontWeight: 500 }}>Priority</span>
+                  <div style={{ marginTop: 6 }}>
+                    <Tag color={getPriorityColor(ticket.priority || 'medium')} style={{ fontSize: 13, padding: '4px 12px' }}>
+                      {getPriorityLabel(ticket.priority || 'medium')}
+                    </Tag>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
 
-          {/* Add Comment */}
-          {hasPermission('crm:support:ticket:create') && (
-            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Input.TextArea
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={2}
-                  style={{ flex: 1 }}
-                  onPressEnter={(e) => {
-                    if (e.shiftKey) return; // Allow shift+enter for new lines
-                    e.preventDefault();
-                    handleAddComment();
-                  }}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={handleAddComment}
-                  loading={createComment.isPending}
-                  disabled={!newComment.trim()}
-                  style={{ alignSelf: 'flex-end' }}
-                >
-                  Comment
-                </Button>
-              </div>
+          {/* Basic Information Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <InfoCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
             </div>
-          )}
-        </div>
+            <Descriptions
+              items={[
+                {
+                  label: 'Ticket ID',
+                  value: ticket.id,
+                },
+                {
+                  label: 'Customer',
+                  value: ticket.customer_name || ticket.customer_id || '-',
+                },
+                {
+                  label: 'Category',
+                  value: ticket.category ? ticket.category.replace('_', ' ').toUpperCase() : '-',
+                },
+              ]}
+            />
+          </Card>
 
-        {/* Attachments Section */}
-        <div style={{ paddingTop: 24, borderTop: '1px solid #f0f0f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#111827' }}>
-              <PaperClipOutlined style={{ marginRight: 8 }} />
-              Attachments ({attachments.length})
-            </h3>
+          {/* Assignment & Timeline Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <UserOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Assignment & Timeline</h3>
+            </div>
+            <Descriptions
+              items={[
+                {
+                  label: 'Assigned To',
+                  value: ticket.assigned_to_name || 'Unassigned',
+                },
+                {
+                  label: 'Created',
+                  value: ticket.created_at ? dayjs(ticket.created_at).format('MMM DD, YYYY HH:mm') : '-',
+                },
+                {
+                  label: 'Updated',
+                  value: ticket.updated_at ? dayjs(ticket.updated_at).format('MMM DD, YYYY HH:mm') : '-',
+                },
+                {
+                  label: 'Due Date',
+                  value:
+                    ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== 'resolved' && ticket.status !== 'closed' ? (
+                      <span style={{ color: '#dc2626', fontWeight: 500 }}>
+                        {dayjs(ticket.due_date).format('MMM DD, YYYY')}
+                      </span>
+                    ) : ticket.due_date ? (
+                      dayjs(ticket.due_date).format('MMM DD, YYYY')
+                    ) : (
+                      '-'
+                    ),
+                },
+                {
+                  label: 'Resolved',
+                  value: ticket.resolved_at ? dayjs(ticket.resolved_at).format('MMM DD, YYYY HH:mm') : 'Not resolved',
+                },
+              ]}
+            />
+          </Card>
+
+          {/* Tags Card */}
+          {ticket.tags && ticket.tags.length > 0 && (
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <InfoCircleOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Tags</h3>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {ticket.tags.map((tag, index) => (
+                  <Tag key={index} color="blue">
+                    {tag}
+                  </Tag>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Time Tracking Card */}
+          {(ticket.estimated_hours || ticket.actual_hours) && (
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <ClockCircleOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Time Tracking</h3>
+              </div>
+              <Row gutter={16}>
+                {ticket.estimated_hours && (
+                  <Col span={12}>
+                    <Statistic
+                      title="Estimated Hours"
+                      value={ticket.estimated_hours}
+                      suffix="h"
+                      valueStyle={{ color: '#0ea5e9' }}
+                    />
+                  </Col>
+                )}
+                {ticket.actual_hours && (
+                  <Col span={12}>
+                    <Statistic
+                      title="Actual Hours"
+                      value={ticket.actual_hours}
+                      suffix="h"
+                      valueStyle={{ color: '#10b981' }}
+                    />
+                  </Col>
+                )}
+              </Row>
+            </Card>
+          )}
+
+          {/* Comments Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <MessageOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Comments ({comments.length})</h3>
+            </div>
+
+            {/* Comments List */}
+            <div style={{ marginBottom: 16 }}>
+              {commentsLoading ? (
+                <Spin size="small" />
+              ) : comments.length > 0 ? (
+                <List
+                  dataSource={comments}
+                  renderItem={(comment: TicketComment) => (
+                    <Comment
+                      author={
+                        <span style={{ fontWeight: 500 }}>
+                          {comment.author_name}
+                          {comment.author_role && (
+                            <Tag style={{ marginLeft: 8, fontSize: 10 }}>
+                              {comment.author_role}
+                            </Tag>
+                          )}
+                        </span>
+                      }
+                      avatar={
+                        <Avatar size="small">
+                          {comment.author_name.charAt(0).toUpperCase()}
+                        </Avatar>
+                      }
+                      content={<p style={{ margin: 0 }}>{comment.content}</p>}
+                      datetime={
+                        <span style={{ fontSize: 12, color: '#666' }}>
+                          {dayjs(comment.created_at).format('MMM DD, YYYY HH:mm')}
+                        </span>
+                      }
+                    />
+                  )}
+                  locale={{ emptyText: 'No comments yet' }}
+                />
+              ) : (
+                <Empty
+                  description="No comments yet"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ margin: '16px 0' }}
+                />
+              )}
+            </div>
+
+            {/* Add Comment */}
             {hasPermission('crm:support:ticket:create') && (
-              <div>
+              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Input.TextArea
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={2}
+                    style={{ flex: 1 }}
+                    onPressEnter={(e) => {
+                      if (e.shiftKey) return; // Allow shift+enter for new lines
+                      e.preventDefault();
+                      handleAddComment();
+                    }}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={handleAddComment}
+                    loading={createComment.isPending}
+                    disabled={!newComment.trim()}
+                    style={{ alignSelf: 'flex-end' }}
+                  >
+                    Comment
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Attachments Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <PaperClipOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Attachments ({attachments.length})</h3>
+            </div>
+
+            {hasPermission('crm:support:ticket:create') && (
+              <div style={{ marginBottom: 16 }}>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -470,72 +499,72 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
                 </Button>
               </div>
             )}
-          </div>
 
-          {/* Attachments List */}
-          {attachmentsLoading ? (
-            <Spin size="small" />
-          ) : attachments.length > 0 ? (
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              <List
-                dataSource={attachments}
-                renderItem={(attachment: TicketAttachment) => (
-                  <List.Item
-                    style={{
-                      padding: '12px',
-                      border: '1px solid #f0f0f0',
-                      borderRadius: 4,
-                      marginBottom: 8
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                        <PaperClipOutlined style={{ marginRight: 12, color: '#666' }} />
-                        <div>
-                          <div style={{ fontWeight: 500, marginBottom: 2 }}>
-                            {attachment.filename}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#666' }}>
-                            {formatFileSize(attachment.file_size)} •
-                            Uploaded {dayjs(attachment.created_at).format('MMM DD, YYYY')}
+            {/* Attachments List */}
+            {attachmentsLoading ? (
+              <Spin size="small" />
+            ) : attachments.length > 0 ? (
+              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <List
+                  dataSource={attachments}
+                  renderItem={(attachment: TicketAttachment) => (
+                    <List.Item
+                      style={{
+                        padding: '12px',
+                        border: '1px solid #f0f0f0',
+                        borderRadius: 4,
+                        marginBottom: 8
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                          <PaperClipOutlined style={{ marginRight: 12, color: '#666' }} />
+                          <div>
+                            <div style={{ fontWeight: 500, marginBottom: 2 }}>
+                              {attachment.filename}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#666' }}>
+                              {formatFileSize(attachment.file_size)} •
+                              Uploaded {dayjs(attachment.created_at).format('MMM DD, YYYY')}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() => handleDownloadAttachment(attachment)}
-                          loading={downloadAttachment.isPending}
-                          title="Download"
-                        />
-                        {hasPermission('crm:support:ticket:delete') && (
+                        <div style={{ display: 'flex', gap: 8 }}>
                           <Button
                             type="text"
                             size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDeleteAttachment(attachment)}
-                            loading={deleteAttachment.isPending}
-                            title="Delete"
+                            icon={<DownloadOutlined />}
+                            onClick={() => handleDownloadAttachment(attachment)}
+                            loading={downloadAttachment.isPending}
+                            title="Download"
                           />
-                        )}
+                          {hasPermission('crm:support:ticket:delete') && (
+                            <Button
+                              type="text"
+                              size="small"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleDeleteAttachment(attachment)}
+                              loading={deleteAttachment.isPending}
+                              title="Delete"
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </List.Item>
-                )}
+                    </List.Item>
+                  )}
+                />
+              </div>
+            ) : (
+              <Empty
+                description="No attachments yet"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ margin: '16px 0' }}
               />
-            </div>
-          ) : (
-            <Empty
-              description="No attachments yet"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ margin: '16px 0' }}
-            />
-          )}
-        </div>
-      </Spin>
+            )}
+          </Card>
+        </Spin>
+      </div>
     </Drawer>
   );
 };

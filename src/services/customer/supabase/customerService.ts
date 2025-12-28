@@ -246,10 +246,11 @@ class SupabaseCustomerService {
     }
 
     // Credit limit validation
-    if (customerData.credit_limit !== undefined) {
-      if (typeof customerData.credit_limit !== 'number' || customerData.credit_limit < 0) {
+    if (customerData.credit_limit !== undefined && customerData.credit_limit !== null && customerData.credit_limit !== '') {
+      const creditLimit = Number(customerData.credit_limit);
+      if (isNaN(creditLimit) || creditLimit < 0) {
         errors.push('Credit limit must be a positive number');
-      } else if (customerData.credit_limit > 999999999.99) {
+      } else if (creditLimit > 999999999.99) {
         errors.push('Credit limit cannot exceed 999,999,999.99');
       }
     }
@@ -289,18 +290,6 @@ class SupabaseCustomerService {
     }
   }
 
-  private extractNameParts(contactName?: string): { firstName: string; lastName: string } {
-    const fallback = 'Customer';
-    const trimmed = (contactName || '').trim();
-    if (!trimmed) {
-      return { firstName: fallback, lastName: fallback };
-    }
-    const parts = trimmed.split(/\s+/);
-    const firstName = parts.shift() || fallback;
-    const lastName = parts.length > 0 ? parts.join(' ') : firstName;
-    return { firstName, lastName };
-  }
-
   /**
    * Create new customer
    */
@@ -328,13 +317,9 @@ class SupabaseCustomerService {
 
       const now = new Date().toISOString();
 
-      const { firstName, lastName } = this.extractNameParts(customerData.contact_name);
-
       const insertData = {
         company_name: customerData.company_name,
         contact_name: customerData.contact_name,
-        first_name: firstName,
-        last_name: lastName,
         email: customerData.email,
         phone: customerData.phone,
         mobile: customerData.mobile,
@@ -430,20 +415,43 @@ class SupabaseCustomerService {
         }
       }
 
-      const { firstName, lastName } = this.extractNameParts(updatedData.contact_name);
-
-      const updateData: Record<string, any> = {
-        ...updates,
-        contact_name: updatedData.contact_name,
-        first_name: firstName,
-        last_name: lastName,
-        updated_at: new Date().toISOString()
+      // ✅ FIXED: Use explicit field mapping instead of spreading
+      // This prevents sending virtual fields like 'tags' (CustomerTag[] objects)
+      // that don't match the DB schema (tags is VARCHAR[] in DB)
+      const fieldMap: Record<string, string> = {
+        company_name: 'company_name',
+        contact_name: 'contact_name',
+        email: 'email',
+        phone: 'phone',
+        mobile: 'mobile',
+        website: 'website',
+        address: 'address',
+        city: 'city',
+        country: 'country',
+        industry: 'industry',
+        size: 'size',
+        status: 'status',
+        customer_type: 'customer_type',
+        credit_limit: 'credit_limit',
+        payment_terms: 'payment_terms',
+        tax_id: 'tax_id',
+        source: 'source',
+        rating: 'rating',
+        notes: 'notes',
+        assigned_to: 'assigned_to',
+        last_contact_date: 'last_contact_date',
+        next_follow_up_date: 'next_follow_up_date',
+        // Exclude: tags (virtual - handled via customer_tag_mapping table)
+        // Exclude: id, tenant_id, created_at, created_by (immutable)
       };
 
-      // Remove fields that shouldn't be updated
-      delete updateData.id;
-      delete updateData.tenant_id;
-      delete updateData.created_at;
+      const updateData: Record<string, unknown> = {};
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined && fieldMap[key]) {
+          updateData[fieldMap[key]] = value;
+        }
+      });
+      updateData.updated_at = new Date().toISOString();
 
       const { data, error } = await retryQuery(async () =>
         getSupabaseClient()
@@ -872,9 +880,10 @@ class SupabaseCustomerService {
       const bySize: Record<string, number> = {};
 
       customers.forEach(customer => {
-        const statusKey = customer.status || 'unknown';
-        const industryKey = customer.industry || 'unknown';
-        const sizeKey = (customer.size as string | undefined) || 'unknown';
+        const statusKey = (customer.status || 'unknown').toLowerCase();
+        // Normalize industry to lowercase for consistent grouping
+        const industryKey = (customer.industry || 'unknown').toLowerCase();
+        const sizeKey = ((customer.size as string | undefined) || 'unknown').toLowerCase();
 
         byStatus[statusKey] = (byStatus[statusKey] || 0) + 1;
         byIndustry[industryKey] = (byIndustry[industryKey] || 0) + 1;
@@ -914,7 +923,6 @@ class SupabaseCustomerService {
     const company = row.company || row.companies || null;
     const contactName =
       row.contact_name ||
-      [row.first_name, row.last_name].filter(Boolean).join(' ').trim() ||
       row.email ||
       'Unknown contact';
 

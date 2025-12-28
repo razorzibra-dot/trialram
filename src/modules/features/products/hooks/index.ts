@@ -1,12 +1,6 @@
-export {
-  useProducts,
-  useProduct,
-  useCreateProduct,
-  useUpdateProduct,
-  useDeleteProduct,
-  useProductExport,
-  productKeys,
-} from './useProducts';
+// NOTE: Product hooks moved to masters module
+// Use @/modules/features/masters/hooks/useProducts instead
+// This was done to consolidate product management and avoid duplication
 
 export {
   useCategories,

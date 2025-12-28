@@ -11,7 +11,7 @@ import { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/serviceFactory';
 import { useCurrentUser, useCurrentTenant } from '@/hooks';
-import { supabase } from '@/services/supabase/client';
+// supabase queries for element-level permissions are centralized in AuthContext
 import {
   getPermissionGuard,
   canPerformUserAction,
@@ -100,54 +100,50 @@ export function usePermissions(): UsePermissionsReturn {
       }
 
       try {
-        // Simple direct query to check user permissions
-        const { data: permissions, error } = await supabase
-          .from('user_roles')
-          .select(`
-            roles!user_roles_role_id_fkey(
-              role_permissions(
-                permissions(name)
-              )
-            )
-          `)
-          .eq('user_id', currentUser.id)
-          .eq('tenant_id', currentUser.tenantId || null);
+        // If permissions are already attached to the current user (loaded at login/restore),
+        // use them directly to avoid repeated DB queries from multiple components mounting.
+        const userPerms: string[] = currentUser.permissions || [];
 
-        if (error) {
-          console.error('[usePermissions] Error fetching permissions:', error);
+        if (Array.isArray(userPerms) && userPerms.length > 0) {
           setElementPermissions({
-            canCreateUser: false,
-            canEditUsers: false,
-            canDeleteUsers: false,
-            canViewUsers: false,
+            canViewUsers: userPerms.includes('crm:user:list:view:accessible'),
+            canCreateUser: userPerms.includes('crm:user:list:button.create:visible'),
+            canEditUsers: userPerms.includes('crm:user:record:update'),
+            canDeleteUsers: userPerms.includes('crm:user:record:delete'),
+          });
+
+          console.log('[usePermissions] Element permissions derived from user.permissions:', {
+            hasPermissionsLoaded: true,
+            canViewUsers: userPerms.includes('crm:user:list:view:accessible'),
+            canCreateUser: userPerms.includes('crm:user:list:button.create:visible'),
+            canEditUsers: userPerms.includes('crm:user:record:update'),
+            canDeleteUsers: userPerms.includes('crm:user:record:delete'),
           });
           return;
         }
 
-        // Extract permission names from the nested structure
-        const permissionNames: string[] = [];
-        permissions?.forEach((userRole: any) => {
-          userRole.roles?.role_permissions?.forEach((rp: any) => {
-            if (rp.permissions?.name) {
-              permissionNames.push(rp.permissions.name);
-            }
-          });
-        });
+        // Fallback: use ElementPermissionService which includes caching to avoid repeated DB calls
+        // This evaluates permissions using cached userRoles and role_permissions.
+        const evalFn = auth.evaluateElementPermission;
+        const [canViewUsers, canCreateUser, canEditUsers, canDeleteUsers] = await Promise.all([
+          evalFn ? evalFn('user:list', 'accessible', undefined) : Promise.resolve(false),
+          evalFn ? evalFn('user:list:button.create', 'visible', undefined) : Promise.resolve(false),
+          evalFn ? evalFn('user:record', 'editable', undefined) : Promise.resolve(false),
+          evalFn ? evalFn('user:record', 'editable', undefined) : Promise.resolve(false),
+        ]);
 
         setElementPermissions({
-          canViewUsers: permissionNames.includes('crm:user:list:view:accessible'),
-          canCreateUser: permissionNames.includes('crm:user:list:button.create:visible'),
-          canEditUsers: permissionNames.includes('crm:user:record:update'),
-          canDeleteUsers: permissionNames.includes('crm:user:record:delete'),
+          canViewUsers,
+          canCreateUser,
+          canEditUsers,
+          canDeleteUsers,
         });
 
-        console.log('[usePermissions] Element permissions loaded:', {
-          totalPermissions: permissionNames.length,
-          permissionNames: permissionNames.filter(p => p.startsWith('crm:user')),
-          canViewUsers: permissionNames.includes('crm:user:list:view:accessible'),
-          canCreateUser: permissionNames.includes('crm:user:list:button.create:visible'),
-          canEditUsers: permissionNames.includes('crm:user:record:update'),
-          canDeleteUsers: permissionNames.includes('crm:user:record:delete'),
+        console.log('[usePermissions] Element permissions loaded (fallback via ElementPermissionService):', {
+          canViewUsers,
+          canCreateUser,
+          canEditUsers,
+          canDeleteUsers,
         });
       } catch (error) {
         console.error('[usePermissions] Error checking element permissions:', error);

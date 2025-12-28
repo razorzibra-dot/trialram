@@ -10,35 +10,37 @@
 
 import { rbacService as factoryRbacService } from '@/services/serviceFactory';
 import { ProductSale } from '@/types/productSales';
+import { usePermission } from '@/hooks/useElementPermissions';
 
 /**
  * RBAC actions specific to product sales module
  * Used for permission checking and audit logging
  */
 export enum ProductSalesRbacAction {
+  // Element-level permissions (following ELEMENT_PERMISSION_GUIDE.md)
   // Create operations
-  CREATE_PRODUCT_SALE = 'crm:product-sale:record:create',
-  CREATE_PRODUCT_SALE_WITH_CONTRACT = 'crm:product-sale:record:create_with_contract',
-  
+  CREATE_PRODUCT_SALE = 'crm:product-sales:list:button.create:visible',
+  CREATE_PRODUCT_SALE_WITH_CONTRACT = 'crm:product-sales:form:access',
+
   // Read operations
-  VIEW_PRODUCT_SALES = 'product_sales:view',
-  VIEW_PRODUCT_SALE_DETAILS = 'product_sales:view_details',
-  VIEW_AUDIT_TRAIL = 'product_sales:view_audit',
-  EXPORT_PRODUCT_SALES = 'product_sales:export',
-  
+  VIEW_PRODUCT_SALES = 'crm:product-sales:list:view',
+  VIEW_PRODUCT_SALE_DETAILS = 'crm:product-sales:record.{id}:tab.details:accessible',
+  VIEW_AUDIT_TRAIL = 'crm:product-sales:record.{id}:tab.history:accessible',
+  EXPORT_PRODUCT_SALES = 'crm:product-sales:list:button.export:visible',
+
   // Update operations
-  EDIT_PRODUCT_SALE = 'product_sales:edit',
-  EDIT_PRODUCT_SALE_FIELDS = 'product_sales:edit_fields',
-  CHANGE_STATUS = 'product_sales:change_status',
-  
+  EDIT_PRODUCT_SALE = 'crm:product-sales:record.{id}:field.customer_id:editable',
+  EDIT_PRODUCT_SALE_FIELDS = 'crm:product-sales:record.{id}:field.quantity:editable',
+  CHANGE_STATUS = 'crm:product-sales:record.{id}:field.status:editable',
+
   // Delete operations
   DELETE_PRODUCT_SALE = 'crm:product-sale:record:delete',
-  BULK_DELETE_PRODUCT_SALES = 'product_sales:bulk_delete',
-  
+  BULK_DELETE_PRODUCT_SALES = 'crm:product-sales:list:button.bulkdelete:visible',
+
   // Approval operations
   APPROVE_PRODUCT_SALE = 'product_sales:approve',
   REJECT_PRODUCT_SALE = 'product_sales:reject',
-  
+
   // Bulk operations
   BULK_UPDATE_STATUS = 'product_sales:bulk_update_status',
   BULK_EXPORT = 'product_sales:bulk_export',

@@ -15,7 +15,8 @@ import { ISalesService } from '../services/salesService';
 import { useService } from '@/modules/core/hooks/useService';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 import { handleError } from '@/modules/core/utils/errorHandler';
-import type { Deal, CreateDealDTO } from '@/types';
+import type { Deal, CreateDealDTO, DealFiltersDTO } from '@/types';
+import { useNotification } from '@/hooks/useNotification';
 
 /**
  * Query key factory for consistent cache management
@@ -24,7 +25,7 @@ import type { Deal, CreateDealDTO } from '@/types';
 export const dealKeys = {
   all: ['deals'] as const,
   lists: () => [...dealKeys.all, 'list'] as const,
-  list: (filters: DealFilters) => [...dealKeys.lists(), filters] as const,
+  list: (filters: SalesFilters) => [...dealKeys.lists(), filters] as const,
   details: () => [...dealKeys.all, 'detail'] as const,
   detail: (id: string) => [...dealKeys.details(), id] as const,
   stats: () => [...dealKeys.all, 'stats'] as const,
@@ -52,7 +53,40 @@ export const useDeals = (filters: SalesFilters = {}) => {
       try {
         setLoading(true);
         const response = await service.getDeals(filters);
-        setDeals(response.data);
+
+        // Normalize response: service implementations may return an array
+        // or a paginated object with a `data` property. Support both shapes.
+        let dealsData: any[] = [];
+        if (Array.isArray(response)) {
+          dealsData = response as any[];
+        } else if (response && Array.isArray((response as any).data)) {
+          dealsData = (response as any).data;
+        } else if (response && (response as any).data) {
+          // In some implementations data may be present but not an array
+          dealsData = Array.isArray((response as any).data) ? (response as any).data : [];
+        }
+
+        // Debug: log normalized deals before setting store
+        try {
+          console.log('[useDeals] 🔁 Normalized deals count:', (dealsData || []).length, 'ids:', (dealsData || []).map(d => d.id).slice(0,5));
+        } catch (e) {
+          // ignore
+        }
+
+        setDeals(dealsData);
+
+        // Normalize return shape: if service returned an array, return a paginated-like object
+        if (Array.isArray(response)) {
+          const paginated = {
+            data: dealsData,
+            page: 1,
+            pageSize: dealsData.length,
+            total: dealsData.length,
+            totalPages: 1
+          } as const;
+          return paginated;
+        }
+
         return response;
       } catch (error) {
         const message = handleError(error, 'useDeals');
@@ -104,6 +138,7 @@ export const useCreateDeal = () => {
   const queryClient = useQueryClient();
   const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (data: CreateDealDTO) => service.createDeal(data),
@@ -111,9 +146,11 @@ export const useCreateDeal = () => {
       (store as any).addDeal(newDeal);
       queryClient.invalidateQueries({ queryKey: dealKeys.lists() });
       queryClient.invalidateQueries({ queryKey: dealKeys.stats() });
+      success('Deal created successfully');
     },
     onError: (error) => {
-      handleError(error, 'useCreateDeal');
+      const message = handleError(err, 'useCreateDeal');
+      error(message);
     },
   });
 };
@@ -125,6 +162,7 @@ export const useUpdateDeal = () => {
   const queryClient = useQueryClient();
   const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateDealDTO> }) =>
@@ -133,9 +171,12 @@ export const useUpdateDeal = () => {
       (store as any).updateDeal(updatedDeal.id, updatedDeal);
       queryClient.invalidateQueries({ queryKey: dealKeys.lists() });
       queryClient.invalidateQueries({ queryKey: dealKeys.detail(updatedDeal.id) });
+      queryClient.invalidateQueries({ queryKey: dealKeys.stats() });
+      success('Deal updated successfully');
     },
     onError: (error) => {
-      handleError(error, 'useUpdateDeal');
+      const message = handleError(err, 'useUpdateDeal');
+      error(message);
     },
   });
 };
@@ -147,6 +188,7 @@ export const useDeleteDeal = () => {
   const queryClient = useQueryClient();
   const service = useService<ISalesService>('dealsService');
   const store = useSalesStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (id: string) => service.deleteDeal(id),
@@ -154,33 +196,17 @@ export const useDeleteDeal = () => {
       (store as any).removeDeal(id);
       queryClient.invalidateQueries({ queryKey: dealKeys.lists() });
       queryClient.invalidateQueries({ queryKey: dealKeys.stats() });
+      success('Deal deleted successfully');
     },
     onError: (error) => {
-      handleError(error, 'useDeleteDeal');
+      const message = handleError(err, 'useDeleteDeal');
+      error(message);
     },
   });
 };
 
-/**
- * Update deal stage mutation
- */
-export const useUpdateDealStage = () => {
-  const queryClient = useQueryClient();
-  const service = useService<ISalesService>('dealsService');
-
-  return useMutation({
-    mutationFn: ({ id, stage }: { id: string; stage: string }) =>
-      service.updateDealStage(id, stage),
-    onSuccess: (updatedDeal) => {
-      queryClient.invalidateQueries({ queryKey: dealKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: dealKeys.detail(updatedDeal.id) });
-      queryClient.invalidateQueries({ queryKey: dealKeys.stats() });
-    },
-    onError: (error) => {
-      handleError(error, 'useUpdateDealStage');
-    },
-  });
-};
+// NOTE: useUpdateDealStage removed - Deals have status (won/lost/cancelled), not pipeline stages.
+// Pipeline stages belong to Opportunities. See types/crm.ts for reference.
 
 /**
  * Bulk deal operations mutation
@@ -234,7 +260,7 @@ export const useSalesStats = () => {
     queryKey: dealKeys.stats(),
     queryFn: async () => {
       try {
-        const stats = await service.getDealStats();
+        const stats = await service.getSalesStats();
         setStats(stats);
         return stats;
       } catch (error) {
@@ -284,3 +310,23 @@ export const useDealImport = () => {
  */
 export const useBulkDeals = () => useBulkDealOperations();
 export const useExportDeals = () => useDealExport();
+
+/**
+ * Handle deal closure (convert won deals to orders/contracts)
+ */
+export const useHandleDealClosure = () => {
+  const queryClient = useQueryClient();
+  const service = useService<ISalesService>('dealsService');
+
+  return useMutation({
+    mutationFn: (dealId: string) => (service as any).handleDealClosure(dealId),
+    onSuccess: (updatedDeal: any) => {
+      queryClient.invalidateQueries({ queryKey: dealKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: dealKeys.detail(updatedDeal.id) });
+      queryClient.invalidateQueries({ queryKey: dealKeys.stats() });
+    },
+    onError: (error) => {
+      handleError(error, 'useHandleDealClosure');
+    }
+  });
+};

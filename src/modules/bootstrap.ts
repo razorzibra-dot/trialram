@@ -61,7 +61,7 @@ export async function registerFeatureModules(): Promise<void> {
     console.log('Tickets module registered');
 
     // Job Works module
-    const { jobWorksModule } = await import('./features/job-works');
+    const { jobWorksModule } = await import('./features/jobworks');
     registerModule(jobWorksModule);
     console.log('Job Works module registered');
 
@@ -74,11 +74,6 @@ export async function registerFeatureModules(): Promise<void> {
     const { mastersModule } = await import('./features/masters');
     registerModule(mastersModule);
     console.log('Masters module registered');
-
-    // Contracts module
-    const { contractsModule } = await import('./features/contracts');
-    registerModule(contractsModule);
-    console.log('Contracts module registered');
 
     // Super Admin module
     const { superAdminModule } = await import('./features/super-admin');

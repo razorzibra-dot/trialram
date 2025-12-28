@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 import {
   Card,
   Table,
@@ -56,20 +59,17 @@ const statusTagConfig: Record<string, { color: string; icon: React.ReactNode }> 
   expired: { color: 'error', icon: <CloseCircleOutlined /> },
 };
 
-const serviceTypeOptions: Array<ServiceContractType['serviceType']> = [
-  'support',
-  'maintenance',
-  'consulting',
-  'training',
-  'hosting',
-  'custom'
-];
-
 export const ServiceContractsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const serviceContractService = useService<any>('serviceContractService');
+
+  // ✅ Database-driven dropdowns - no hardcoded values
+  const currentTenant = useCurrentTenant();
+  const { data: serviceTypes = [], isLoading: loadingServiceTypes } = useReferenceDataByCategory(currentTenant?.id, 'service_contract_type');
+
+  const serviceTypeOptions = serviceTypes.map(type => type.key);
 
   const [contracts, setContracts] = useState<ServiceContractType[]>([]);
   const [stats, setStats] = useState<ServiceContractStats | null>(null);
@@ -229,21 +229,7 @@ export const ServiceContractsPage: React.FC = () => {
     <Tag color="blue">{type.toUpperCase()}</Tag>
   );
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount || 0);
-  };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   const isExpiringSoon = (endDate: string, status: string) => {
     if (status !== 'active') return false;
@@ -346,16 +332,16 @@ export const ServiceContractsPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 180,
+      width: 160,
       align: 'center',
       render: (_: unknown, record: ServiceContractType) => (
         <Space size="small">
           <Tooltip title="View Details">
-            <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewContract(record)} />
+            <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewContract(record)} />
           </Tooltip>
           {hasPermission('crm:contract:service:update') && (
             <Tooltip title="Edit">
-              <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
             </Tooltip>
           )}
           {hasPermission('crm:contract:service:update') && (
@@ -368,7 +354,7 @@ export const ServiceContractsPage: React.FC = () => {
               okButtonProps={{ danger: true }}
             >
               <Tooltip title="Delete">
-                <Button type="text" danger icon={<DeleteOutlined />} />
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
           )}
@@ -505,6 +491,7 @@ export const ServiceContractsPage: React.FC = () => {
               <Select
                 placeholder="Filter by service type"
                 allowClear
+                loading={loadingServiceTypes}
                 style={{ width: '100%' }}
                 onChange={handleServiceTypeFilter}
                 value={filters.serviceType}

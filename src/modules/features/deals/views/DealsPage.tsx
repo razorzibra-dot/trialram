@@ -2,21 +2,24 @@
  * Deals Page - Enterprise Design
  * Main deals dashboard with statistics and deal management
  * Unified grid control with side drawer panels for CRUD operations
+ * 
+ * NOTE: Deals are CLOSED transactions with status (won/lost/cancelled).
+ * Pipeline stages belong to Opportunities, not Deals.
  */
 
-import React, { useState, useMemo } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Typography, Spin } from 'antd';
+import React, { useState } from 'react';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, Tooltip, message, Empty, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { TrendingUp, DollarSign, Target, BarChart3 } from 'lucide-react';
 import { Deal } from '@/types/crm';
 import { PageHeader, StatCard } from '@/components/common';
-import { ViewModeSelector, KanbanBoard } from '@/components/ui/view-modes';
 import { DealDetailPanel } from '../components/DealDetailPanel';
 import { DealFormPanel } from '../components/DealFormPanel';
-import { useSalesStats, useDeals, useDeleteDeal, useUpdateDealStage } from '../hooks/useDeals';
+import { useSalesStats, useDeals, useDeleteDeal } from '../hooks/useDeals';
 import { useSalesStore } from '../store/dealStore';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency } from '@/utils/formatters';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -26,8 +29,7 @@ export const DealsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const { filters, setFilters } = useSalesStore();
   const [searchText, setSearchText] = useState('');
-  const [stageFilter, setStageFilter] = useState<string>('all');
-  const [currentView, setCurrentView] = useState<'table' | 'kanban'>('table');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Drawer states
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -37,16 +39,6 @@ export const DealsPage: React.FC = () => {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useSalesStats();
   const { data: dealsData, isLoading: dealsLoading, refetch: refetchDeals } = useDeals(filters);
   const deleteDeal = useDeleteDeal();
-  const updateDealStage = useUpdateDealStage();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const handleRefresh = () => {
     refetchStats();
@@ -70,14 +62,10 @@ export const DealsPage: React.FC = () => {
   };
 
   const handleDelete = async (deal: Deal) => {
-    try {
-      await deleteDeal.mutateAsync(deal.id);
-      message.success(`Deal "${deal.title}" deleted successfully`);
-      refetchDeals();
-      refetchStats();
-    } catch (error) {
-      message.error('Failed to delete deal');
-    }
+    // Notifications handled by useDeleteDeal hook
+    await deleteDeal.mutateAsync(deal.id);
+    refetchDeals();
+    refetchStats();
   };
 
   const handleSearch = (value: string) => {
@@ -85,127 +73,17 @@ export const DealsPage: React.FC = () => {
     setFilters({ ...filters, search: value, page: 1 });
   };
 
-  const handleStageFilterChange = (value: string) => {
-    setStageFilter(value);
-    const stageValue: string | undefined = value === 'all' ? undefined : value;
-    setFilters({ ...filters, stage: stageValue, page: 1 });
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    const statusValue: string | undefined = value === 'all' ? undefined : value;
+    setFilters({ ...filters, status: statusValue, page: 1 });
   };
 
-  const handleViewChange = (view: 'table' | 'kanban') => {
-    setCurrentView(view);
-  };
-
-  // Kanban board data
-  const kanbanColumns = useMemo(() => {
-    const deals = dealsData?.data || [];
-    const columns = [
-      {
-        id: 'lead',
-        title: 'Lead',
-        color: '#fbbf24', // yellow
-        items: deals.filter(deal => deal.stage === 'lead').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'medium', // Default priority
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-      {
-        id: 'qualified',
-        title: 'Qualified',
-        color: '#3b82f6', // blue
-        items: deals.filter(deal => deal.stage === 'qualified').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'medium',
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-      {
-        id: 'proposal',
-        title: 'Proposal',
-        color: '#8b5cf6', // purple
-        items: deals.filter(deal => deal.stage === 'proposal').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'high',
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-      {
-        id: 'negotiation',
-        title: 'Negotiation',
-        color: '#f59e0b', // amber
-        items: deals.filter(deal => deal.stage === 'negotiation').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'high',
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-      {
-        id: 'closed_won',
-        title: 'Closed Won',
-        color: '#10b981', // green
-        items: deals.filter(deal => deal.stage === 'closed_won').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'low',
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-      {
-        id: 'closed_lost',
-        title: 'Closed Lost',
-        color: '#ef4444', // red
-        items: deals.filter(deal => deal.stage === 'closed_lost').map(deal => ({
-          id: deal.id,
-          title: deal.title,
-          status: deal.status,
-          priority: 'low',
-          assignee: deal.assigned_to_name || 'Unassigned',
-          dueDate: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : undefined,
-        })),
-      },
-    ];
-
-    return columns;
-  }, [dealsData]);
-
-  const handleKanbanItemMove = async (itemId: string, fromColumn: string, toColumn: string) => {
-    try {
-      // Update the deal stage
-      await updateDealStage.mutateAsync({
-        id: itemId,
-        stage: toColumn
-      });
-      message.success('Deal stage updated successfully');
-      refetchDeals();
-      refetchStats();
-    } catch (error) {
-      message.error('Failed to update deal stage');
-      console.error('Kanban move error:', error);
-    }
-  };
-
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case 'lead': return 'default';
-      case 'qualified': return 'processing';
-      case 'proposal': return 'warning';
-      case 'negotiation': return 'warning';
-      case 'closed_won': return 'green';
-      case 'closed_lost': return 'red';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'won': return 'green';
+      case 'lost': return 'red';
+      case 'cancelled': return 'default';
       default: return 'default';
     }
   };
@@ -233,13 +111,13 @@ export const DealsPage: React.FC = () => {
       render: (value) => <div style={{ fontWeight: 500 }}>{formatCurrency(value)}</div>,
     },
     {
-      title: 'Stage',
-      key: 'stage',
-      dataIndex: 'stage',
+      title: 'Status',
+      key: 'status',
+      dataIndex: 'status',
       width: 120,
-      render: (stage) => (
-        <Tag color={getStageColor(stage)}>
-          {stage?.replace('_', ' ').toUpperCase()}
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {status?.toUpperCase() || 'UNKNOWN'}
         </Tag>
       ),
     },
@@ -250,59 +128,47 @@ export const DealsPage: React.FC = () => {
       width: 130,
     },
     {
+      title: 'Close Date',
+      key: 'close_date',
+      dataIndex: 'close_date',
+      width: 130,
+      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+    },
+    {
       title: 'Expected Close',
       key: 'expected_close',
       dataIndex: 'expected_close_date',
       width: 130,
-      render: (date, record) => {
-        console.log('[SalesPage Grid] Expected Close Date Debug:', {
-          field: 'expected_close_date',
-          value: date,
-          dealId: record.id,
-          dealTitle: record.title,
-          allRecordFields: Object.keys(record),
-        });
-        return date ? new Date(date).toLocaleDateString() : '-';
-      },
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      dataIndex: 'status',
-      width: 100,
-      render: (status) => (
-        <Tag color={status === 'won' ? 'green' : status === 'lost' ? 'red' : status === 'open' ? 'blue' : 'default'}>
-          {status?.toUpperCase() || 'OPEN'}
-        </Tag>
-      ),
+      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
     },
     {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>
-            View
-          </Button>
+          <Tooltip title="View Details">
+            <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)} />
+          </Tooltip>
           {hasPermission('crm:sales:deal:update') && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-              Edit
-            </Button>
+            <Tooltip title="Edit">
+              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+            </Tooltip>
           )}
           {hasPermission('crm:sales:deal:delete') && (
             <Popconfirm
               title="Delete Deal"
               description={`Are you sure you want to delete "${record.title}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -313,20 +179,16 @@ export const DealsPage: React.FC = () => {
   return (
     <>
       <PageHeader
-        title="Sales Dashboard"
-        description="Track your sales performance and manage your pipeline"
+        title="Deals Dashboard"
+        description="Manage closed deals and track sales performance"
         breadcrumb={{
           items: [
             { title: 'Dashboard', path: '/tenant/dashboard' },
-            { title: 'Sales' }
+            { title: 'Deals' }
           ]
         }}
         extra={
           <>
-            <ViewModeSelector
-              currentView={currentView}
-              onViewChange={handleViewChange}
-            />
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Refresh
             </Button>
@@ -384,13 +246,13 @@ export const DealsPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Stage Breakdown */}
-        {stats?.byStage && (
+        {/* Status Breakdown */}
+        {stats?.byStatus && (
           <div style={{ marginBottom: 24 }}>
-            <Title level={4} style={{ marginBottom: 16 }}>Pipeline by Stage</Title>
+            <Title level={4} style={{ marginBottom: 16 }}>Deals by Status</Title>
             <Row gutter={[16, 16]}>
-              {Object.entries(stats.byStage).map(([stage, count]) => (
-                <Col xs={24} sm={12} md={8} lg={4} key={stage}>
+              {Object.entries(stats.byStatus).map(([status, count]) => (
+                <Col xs={24} sm={12} md={8} lg={6} key={status}>
                   <Card
                     style={{
                       borderRadius: 8,
@@ -398,11 +260,11 @@ export const DealsPage: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <Tag color={getStageColor(stage)}>{stage.replace('_', ' ').toUpperCase()}</Tag>
+                      <Tag color={getStatusColor(status)}>{status.toUpperCase()}</Tag>
                       <span style={{ fontWeight: 600, fontSize: 16 }}>{count}</span>
                     </div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1890ff' }}>
-                      {formatCurrency(stats.byStageValue?.[stage] || 0)}
+                      {formatCurrency(stats.byStatusValue?.[status] || 0)}
                     </div>
                   </Card>
                 </Col>
@@ -411,92 +273,72 @@ export const DealsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Conditional View Rendering */}
-        {currentView === 'table' ? (
-          /* Deals Table */
-          <Card
-            style={{
-              borderRadius: 8,
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            {/* Search and Filters */}
-            <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-              <Space.Compact style={{ width: '100%' }}>
-                <Search
-                  placeholder="Search deals by name, customer, or owner..."
-                  allowClear
-                  enterButton={<SearchOutlined />}
-                  size="large"
-                  onSearch={handleSearch}
-                  style={{ flex: 1 }}
-                />
-                <Select
-                  value={stageFilter}
-                  onChange={handleStageFilterChange}
-                  style={{ width: 150 }}
-                  size="large"
-                >
-                  <Option value="all">All Stages</Option>
-                  <Option value="lead">Lead</Option>
-                  <Option value="qualified">Qualified</Option>
-                  <Option value="proposal">Proposal</Option>
-                  <Option value="negotiation">Negotiation</Option>
-                  <Option value="closed_won">Closed Won</Option>
-                  <Option value="closed_lost">Closed Lost</Option>
-                </Select>
-              </Space.Compact>
-            </Space>
-
-            {/* Table */}
-            <Table
-              columns={columns}
-              dataSource={dealsData?.data || []}
-              loading={dealsLoading}
-              pagination={{
-                current: filters.page || 1,
-                pageSize: filters.pageSize || 20,
-                total: dealsData?.total || 0,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                onChange: (page, pageSize) => {
-                  setFilters({ ...filters, page, pageSize });
-                },
-              }}
-              rowKey="id"
-              locale={{
-                emptyText: <Empty description="No deals found" style={{ marginTop: 48, marginBottom: 48 }} />,
-              }}
-            />
-          </Card>
-        ) : (
-          /* Kanban Board */
-          <div style={{ marginTop: 24 }}>
-            {dealsLoading ? (
-              <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                <Spin size="large" tip="Loading pipeline..." />
-              </div>
-            ) : (
-              <KanbanBoard
-                columns={kanbanColumns}
-                onItemMove={handleKanbanItemMove}
+        {/* Deals Table */}
+        <Card
+          style={{
+            borderRadius: 8,
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {/* Search and Filters */}
+          <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
+            <Space.Compact style={{ width: '100%' }}>
+              <Search
+                placeholder="Search deals by name, customer, or owner..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                size="large"
+                onSearch={handleSearch}
+                style={{ flex: 1 }}
               />
-            )}
-          </div>
-        )}
+              <Select
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+                style={{ width: 150 }}
+                size="large"
+              >
+                <Option value="all">All Status</Option>
+                <Option value="won">Won</Option>
+                <Option value="lost">Lost</Option>
+                <Option value="cancelled">Cancelled</Option>
+              </Select>
+            </Space.Compact>
+          </Space>
+
+          {/* Table */}
+          <Table
+            columns={columns}
+            dataSource={dealsData?.data || []}
+            loading={dealsLoading}
+            pagination={{
+              current: filters.page || 1,
+              pageSize: filters.pageSize || 20,
+              total: dealsData?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              onChange: (page, pageSize) => {
+                setFilters({ ...filters, page, pageSize });
+              },
+            }}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty description="No deals found" style={{ marginTop: 48, marginBottom: 48 }} />,
+            }}
+          />
+        </Card>
       </div>
 
       {/* Detail Panel (View) */}
-      <SalesDealDetailPanel
-        visible={drawerMode === 'view'}
+      <DealDetailPanel
+        open={drawerMode === 'view'}
         deal={selectedDeal}
         onClose={() => setDrawerMode(null)}
         onEdit={() => setDrawerMode('edit')}
       />
 
       {/* Form Panel (Create/Edit) */}
-      <SalesDealFormPanel
-        visible={drawerMode === 'create' || drawerMode === 'edit'}
+      <DealFormPanel
+        open={drawerMode === 'create' || drawerMode === 'edit'}
         deal={drawerMode === 'edit' ? selectedDeal : null}
         onClose={() => setDrawerMode(null)}
         onSuccess={() => {

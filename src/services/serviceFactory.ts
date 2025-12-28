@@ -18,7 +18,6 @@ import { mockProductService } from './product/mockProductService';
 import { mockCompanyService } from './company/mockCompanyService';
 import { mockUserService } from './user/mockUserService';
 import { mockRbacService } from './rbac/mockRbacService';
-import { mockUINotificationService } from './mockUINotificationService';
 import { mockNotificationService } from './notification/mockNotificationService';
 import { mockTenantService } from './tenant/mockTenantService';
 import { mockTicketService } from './ticket/mockTicketService';
@@ -31,7 +30,6 @@ import { mockComplianceNotificationService } from './compliancenotification/mock
 import { mockRateLimitService } from './ratelimit/mockRateLimitService';
 import { mockReferenceDataService } from './referencedata/mockReferenceDataService';
 import { mockReferenceDataLoader } from './referencedata/mockReferenceDataLoader';
-import { mockSessionConfigService } from './mockSessionConfigService';
 import { mockComplaintService } from './complaints/mockComplaintService';
 import { mockProductCategoryService } from './productcategory/mockProductCategoryService';
 
@@ -63,10 +61,10 @@ import { supabaseAuthService } from './auth/supabase/authService';
 import { supabaseSuperAdminService } from './superadmin/supabase/superAdminService';
 import { supabaseComplaintService } from './complaints/supabase/complaintService';
 import { supabaseProductCategoryService } from './productcategory/supabase/productCategoryService';
-import { mockTicketCommentService } from './mockTicketCommentService';
-import { ticketCommentService as supabaseTicketCommentService } from './supabase/ticketCommentService';
-import { mockTicketAttachmentService } from './mockTicketAttachmentService';
-import { ticketAttachmentService as supabaseTicketAttachmentService } from './supabase/ticketAttachmentService';
+import { ticketCommentService as mockTicketCommentService } from './ticketcomment/mockTicketCommentService';
+import { ticketCommentService as supabaseTicketCommentService } from './ticketcomment/supabase/ticketCommentService';
+import { ticketAttachmentService as mockTicketAttachmentService } from './ticketattachment/mockTicketAttachmentService';
+import { ticketAttachmentService as supabaseTicketAttachmentService } from './ticketattachment/supabase/ticketAttachmentService';
 import { mockSalesActivityService } from './sales-activities/mockSalesActivityService';
 import { supabaseSalesActivityService } from './sales-activities/supabase/salesActivityService';
 import { mockOpportunityService } from './opportunities/mockOpportunityService';
@@ -75,6 +73,8 @@ import { mockPurchaseOrderService } from './purchaseorder/mockPurchaseOrderServi
 import { supabasePurchaseOrderService } from './purchaseorder/supabase/purchaseOrderService';
 import { mockNavigationService } from './navigation/mockNavigationService';
 import { supabaseNavigationService } from './navigation/supabase/navigationService';
+import { mockSessionConfigService } from './sessionConfigService';
+import { mockUINotificationService } from './uinotification/mockUINotificationService';
 import { elementPermissionService as elementPermissionServiceImpl } from './rbac/elementPermissionService';
 import { dynamicPermissionManager } from './rbac/dynamicPermissionManager';
 
@@ -208,8 +208,8 @@ class ServiceFactory {
         description: 'Dynamic permission evaluation with business rules and context'
       },
       uinotification: {
-        mock: mockUINotificationService,
-        description: 'Client-side UI notifications'
+        special: () => mockUINotificationService,
+        description: 'UI notifications (client-side toast and notification messages)'
       },
       notification: {
         mock: mockNotificationService,

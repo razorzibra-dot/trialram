@@ -72,6 +72,7 @@ const mockProductSalesBase: ProductSale[] = [
     units: 1.00,
     cost_per_unit: 75000.00,
     total_cost: 75000.00,
+    sale_date: '2024-06-15',
     delivery_date: '2024-09-01',
     warranty_expiry: '2025-09-01',
     status: 'new',
@@ -90,6 +91,7 @@ const mockProductSalesBase: ProductSale[] = [
     units: 2.00,
     cost_per_unit: 3500.00,
     total_cost: 7000.00,
+    sale_date: '2024-06-10',
     delivery_date: '2024-08-01',
     warranty_expiry: '2025-08-01',
     status: 'new',
@@ -108,6 +110,7 @@ const mockProductSalesBase: ProductSale[] = [
     units: 1.00,
     cost_per_unit: 15000.00,
     total_cost: 15000.00,
+    sale_date: '2024-06-01',
     delivery_date: '2024-06-01',
     warranty_expiry: '2025-06-01',
     status: 'expired',
@@ -330,6 +333,8 @@ class MockProductSaleService {
         units: data.units,
         cost_per_unit: data.cost_per_unit,
         total_cost: data.units * data.cost_per_unit,
+        // Note: sale_date is NOT a database column - it's derived from created_at on read
+        sale_date: new Date().toISOString().split('T')[0],
         delivery_date: data.delivery_date,
         warranty_expiry: warrantyExpiry.toISOString().split('T')[0],
         status,
@@ -368,14 +373,28 @@ class MockProductSaleService {
       }
 
       const existingSale = mockProductSalesBase[index];
+      
+      // Map only valid database columns (excluding attachments which is handled separately)
       const updatedSale: ProductSale = {
         ...existingSale,
-        ...data,
-        total_cost: data.units && data.cost_per_unit
-          ? data.units * data.cost_per_unit
-          : existingSale.total_cost,
         updated_at: new Date().toISOString()
       };
+
+      // Only include fields that exist in the database
+      // Note: sale_date is NOT a database column - it's derived from created_at on read
+      if (data.customer_id !== undefined) updatedSale.customer_id = data.customer_id;
+      if (data.product_id !== undefined) updatedSale.product_id = data.product_id;
+      if (data.units !== undefined) updatedSale.units = data.units;
+      if (data.cost_per_unit !== undefined) updatedSale.cost_per_unit = data.cost_per_unit;
+      if (data.delivery_date !== undefined) updatedSale.delivery_date = data.delivery_date;
+      if (data.notes !== undefined) updatedSale.notes = data.notes;
+
+      // Recalculate total cost if units or cost changed
+      if (data.units !== undefined || data.cost_per_unit !== undefined) {
+        const units = data.units ?? existingSale.units;
+        const costPerUnit = data.cost_per_unit ?? existingSale.cost_per_unit;
+        updatedSale.total_cost = units * costPerUnit;
+      }
 
       // Handle attachments - convert File[] to FileAttachment[] if needed
       if (data.attachments && Array.isArray(data.attachments) && data.attachments.length > 0) {

@@ -23,21 +23,13 @@ import {
 } from 'lucide-react';
 import { PageHeader, StatCard } from '@/components/common';
 import { useAdminDashboardStats, useRecentUsers, useSystemHealth, useRoleDistribution } from '../hooks/useAdminDashboard';
+import { formatCurrency } from '@/utils/formatters';
 
 const AdminDashboardPage: React.FC = () => {
   const { data: adminStats, isLoading: statsLoading } = useAdminDashboardStats();
   const { data: recentUsers, isLoading: usersLoading } = useRecentUsers(5);
   const { data: systemHealth, isLoading: healthLoading } = useSystemHealth();
   const { data: roleDistribution, isLoading: roleLoading } = useRoleDistribution();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   return (
     <>

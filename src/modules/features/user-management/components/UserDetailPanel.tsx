@@ -5,10 +5,11 @@
  */
 import React from 'react';
 import { Drawer, Descriptions, Row, Col, Avatar, Tag, Button, Space, Divider, Badge, Card, Empty, Spin, Tooltip } from 'antd';
-import { EditOutlined, MailOutlined, PhoneOutlined, CrownOutlined, CalendarOutlined, UserOutlined, BankOutlined, IdcardOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons';
+import { EditOutlined, MailOutlined, PhoneOutlined, CrownOutlined, CalendarOutlined, UserOutlined, BankOutlined, IdcardOutlined, DeleteOutlined, LockOutlined, KeyOutlined, HistoryOutlined } from '@ant-design/icons';
 import { UserDTO, UserRole, UserStatus } from '@/types/dtos/userDtos';
 import { useAuth } from '@/contexts/AuthContext';
 import { shouldShowTenantIdField } from '@/utils/tenantIsolation';
+import { formatDate } from '@/utils/formatters';
 
 interface UserDetailPanelProps {
   user: UserDTO | null;
@@ -78,17 +79,6 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
       default:
         return 'default';
     }
-  };
-
-  const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   /**
@@ -163,18 +153,25 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
 
   return (
     <Drawer
-      title={`User Profile`}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>User Details</span>
+        </div>
+      }
       placement="right"
       onClose={onClose}
       open={open}
       width={600}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
         hasPermission('crm:user:record:update') && (
-          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={onClose}>Close</Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button size="large" onClick={onClose}>Close</Button>
             {onEdit && (
               <Button
                 type="primary"
+                size="large"
                 icon={<EditOutlined />}
                 onClick={() => {
                   onEdit(user);
@@ -186,6 +183,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
             )}
             {onResetPassword && (
               <Button
+                size="large"
                 icon={<LockOutlined />}
                 onClick={() => {
                   onResetPassword(user.id);
@@ -198,6 +196,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
             {onDelete && (
               <Button
                 danger
+                size="large"
                 icon={<DeleteOutlined />}
                 onClick={() => {
                   onDelete(user.id);
@@ -207,119 +206,137 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
                 Delete
               </Button>
             )}
-          </Space>
+          </div>
         )
       }
     >
-      {/* User Header */}
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <Avatar
-          size={80}
-          src={user.avatarUrl}
-          style={{ backgroundColor: '#1890ff', marginBottom: 16, fontSize: 32, lineHeight: '80px' }}
-        >
-          {getInitials(user.name)}
-        </Avatar>
-        <div style={{ marginBottom: 12 }}>
-          <h2 style={{ margin: 0, marginBottom: 8 }}>{user.name}</h2>
-          <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>{user.email}</p>
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {/* User Header */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Avatar
+            size={80}
+            src={user.avatarUrl}
+            style={{ backgroundColor: '#1890ff', marginBottom: 16, fontSize: 32, lineHeight: '80px' }}
+          >
+            {getInitials(user.name)}
+          </Avatar>
+          <div style={{ marginBottom: 12 }}>
+            <h2 style={{ margin: 0, marginBottom: 8 }}>{user.name}</h2>
+            <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>{user.email}</p>
+          </div>
+          <Space wrap style={{ justifyContent: 'center', marginTop: 12 }}>
+            <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
+              {user.role.replace(/_/g, ' ')}
+            </Tag>
+            <Tag color={getStatusColor(user.status)}>
+              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+            </Tag>
+          </Space>
         </div>
-        <Space wrap style={{ justifyContent: 'center', marginTop: 12 }}>
-          <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
-            {user.role.replace(/_/g, ' ')}
-          </Tag>
-          <Tag color={getStatusColor(user.status)}>
-            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-          </Tag>
-        </Space>
-      </div>
 
-      <Divider />
+        <Divider />
 
-      {/* Contact Information */}
-      <Card title="Contact Information" size="small" style={{ marginBottom: 16 }}>
-        <Descriptions column={1} size="small">
-          <Descriptions.Item label={<><MailOutlined /> Email</>}>
-            {user.email}
-          </Descriptions.Item>
-          {user.phone && (
-            <Descriptions.Item label={<><PhoneOutlined /> Phone</>}>
-              {user.phone}
-            </Descriptions.Item>
-          )}
-          {user.mobile && (
-            <Descriptions.Item label={<><PhoneOutlined /> Mobile</>}>
-              {user.mobile}
-            </Descriptions.Item>
-          )}
-        </Descriptions>
-      </Card>
-
-      {/* Company Information */}
-      {(user.companyName || user.department || user.position) && (
-        <Card title="Company Information" size="small" style={{ marginBottom: 16 }}>
+        {/* Contact Information */}
+        <Card size="small" style={{ marginBottom: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <MailOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Contact Information</h3>
+          </div>
           <Descriptions column={1} size="small">
-            {user.companyName && (
-              <Descriptions.Item label={<><BankOutlined /> Company</>}>
-                {user.companyName}
+            <Descriptions.Item label="Email">
+              {user.email}
+            </Descriptions.Item>
+            {user.phone && (
+              <Descriptions.Item label="Phone">
+                {user.phone}
               </Descriptions.Item>
             )}
-            {user.department && (
-              <Descriptions.Item label="Department">
-                {user.department}
-              </Descriptions.Item>
-            )}
-            {user.position && (
-              <Descriptions.Item label={<><IdcardOutlined /> Position</>}>
-                {user.position}
+            {user.mobile && (
+              <Descriptions.Item label="Mobile">
+                {user.mobile}
               </Descriptions.Item>
             )}
           </Descriptions>
         </Card>
-      )}
 
-      {/* Account Information */}
-      <Card title="Account Information" size="small" style={{ marginBottom: 16 }}>
-        <Descriptions column={1} size="small">
-          <Descriptions.Item label="Role">
-            <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
-              {user.role.replace(/_/g, ' ')}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Status">
-            <Tag color={getStatusColor(user.status)}>
-              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Tenant">
-            {getTenantDisplay()}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
+        {/* Company Information */}
+        {(user.companyName || user.department || user.position) && (
+          <Card size="small" style={{ marginBottom: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+              <BankOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Company Information</h3>
+            </div>
+            <Descriptions column={1} size="small">
+              {user.companyName && (
+                <Descriptions.Item label="Company">
+                  {user.companyName}
+                </Descriptions.Item>
+              )}
+              {user.department && (
+                <Descriptions.Item label="Department">
+                  {user.department}
+                </Descriptions.Item>
+              )}
+              {user.position && (
+                <Descriptions.Item label="Position">
+                  {user.position}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </Card>
+        )}
 
-      {/* Activity Information */}
-      <Card title="Activity Information" size="small">
-        <Descriptions column={1} size="small">
-          {user.lastLogin && (
-            <Descriptions.Item label={<><CalendarOutlined /> Last Login</>}>
-              {formatDate(user.lastLogin)}
+        {/* Account Information */}
+        <Card size="small" style={{ marginBottom: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <KeyOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Account Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="Role">
+              <Tag icon={getRoleIcon(user.role)} color={getRoleColor(user.role)}>
+                {user.role.replace(/_/g, ' ')}
+              </Tag>
             </Descriptions.Item>
-          )}
-          <Descriptions.Item label={<><CalendarOutlined /> Created</>}>
-            {formatDate(user.createdAt)}
-          </Descriptions.Item>
-          {user.updatedAt && (
-            <Descriptions.Item label="Last Updated">
-              {formatDate(user.updatedAt)}
+            <Descriptions.Item label="Status">
+              <Tag color={getStatusColor(user.status)}>
+                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+              </Tag>
             </Descriptions.Item>
-          )}
-          {user.createdBy && (
-            <Descriptions.Item label="Created By">
-              <code style={{ fontSize: '11px' }}>{user.createdBy}</code>
+            <Descriptions.Item label="Tenant">
+              {getTenantDisplay()}
             </Descriptions.Item>
-          )}
-        </Descriptions>
-      </Card>
+          </Descriptions>
+        </Card>
+
+        {/* Activity Information */}
+        <Card size="small" style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <HistoryOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Activity Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
+            {user.lastLogin && (
+              <Descriptions.Item label="Last Login">
+                {formatDate(user.lastLogin)}
+              </Descriptions.Item>
+            )}
+            <Descriptions.Item label="Created">
+              {formatDate(user.createdAt)}
+            </Descriptions.Item>
+            {user.updatedAt && (
+              <Descriptions.Item label="Last Updated">
+                {formatDate(user.updatedAt)}
+              </Descriptions.Item>
+            )}
+            {user.createdBy && (
+              <Descriptions.Item label="Created By">
+                <code style={{ fontSize: '11px' }}>{user.createdBy}</code>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      </div>
     </Drawer>
   );
 };

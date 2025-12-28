@@ -4,19 +4,20 @@
  */
 
 import React from 'react';
-import { Drawer, Descriptions, Button, Space, Divider, Tag, Empty } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { Drawer, Descriptions, Button, Space, Divider, Tag, Empty, Card, Statistic, Row, Col } from 'antd';
+import { EditOutlined, InfoCircleOutlined, UserOutlined, ClockCircleOutlined, DollarOutlined, ToolOutlined } from '@ant-design/icons';
 import { JobWork } from '../services/jobWorksService';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 
 interface JobWorksDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   jobWork: JobWork | null;
   onClose: () => void;
   onEdit: () => void;
 }
 
 export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
-  visible,
+  open,
   jobWork,
   onClose,
   onEdit,
@@ -24,6 +25,33 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
   if (!jobWork) {
     return null;
   }
+
+  // Section styles configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: '#0ea5e9',
+      marginRight: 10,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -45,41 +73,38 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (date: string | undefined) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString();
-  };
-
   return (
     <Drawer
-      title="Job Work Details"
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ToolOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>Job Work Details</span>
+        </div>
+      }
       placement="right"
-      width={500}
+      width={650}
       onClose={onClose}
-      open={visible}
+      open={open}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
-        <Space style={{ float: 'right' }}>
-          <Button onClick={onClose}>Close</Button>
-          <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
-            Edit
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>
+            Close
           </Button>
-        </Space>
+          <Button type="primary" size="large" icon={<EditOutlined />} onClick={onEdit}>
+            Edit Job Work
+          </Button>
+        </div>
       }
     >
-      {jobWork ? (
-        <div>
-          {/* Basic Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Basic Information</h3>
-          <Descriptions column={1} size="small" bordered>
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {/* Basic Information Card */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <InfoCircleOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
             <Descriptions.Item label="Title">
               {jobWork.title}
             </Descriptions.Item>
@@ -90,12 +115,15 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
               {jobWork.customer_name || 'N/A'}
             </Descriptions.Item>
           </Descriptions>
+        </Card>
 
-          <Divider />
-
-          {/* Status & Priority */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Status & Priority</h3>
-          <Descriptions column={1} size="small" bordered>
+        {/* Status & Priority Card */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <InfoCircleOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Status & Priority</h3>
+          </div>
+          <Descriptions column={1} size="small">
             <Descriptions.Item label="Status">
               <Tag color={getStatusColor(jobWork.status)}>
                 {jobWork.status?.replace('_', ' ').toUpperCase()}
@@ -107,12 +135,15 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
               </Tag>
             </Descriptions.Item>
           </Descriptions>
+        </Card>
 
-          <Divider />
-
-          {/* Assignment & Timeline */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Assignment & Timeline</h3>
-          <Descriptions column={1} size="small" bordered>
+        {/* Assignment & Timeline Card */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Assignment & Timeline</h3>
+          </div>
+          <Descriptions column={1} size="small">
             <Descriptions.Item label="Assigned To">
               {jobWork.assigned_to_name || 'Unassigned'}
             </Descriptions.Item>
@@ -126,28 +157,50 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
               {formatDate(jobWork.completion_date)}
             </Descriptions.Item>
           </Descriptions>
+        </Card>
 
-          <Divider />
+        {/* Hours & Cost Card */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <ClockCircleOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Hours & Cost</h3>
+          </div>
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col span={8}>
+              <Statistic
+                title="Estimated Hours"
+                value={jobWork.estimated_hours || 0}
+                suffix="h"
+                valueStyle={{ color: '#0ea5e9' }}
+              />
+            </Col>
+            <Col span={8}>
+              <Statistic
+                title="Actual Hours"
+                value={jobWork.actual_hours || 0}
+                suffix="h"
+                valueStyle={{ color: '#10b981' }}
+              />
+            </Col>
+            <Col span={8}>
+              <Statistic
+                title="Cost"
+                value={jobWork.cost || 0}
+                prefix="$"
+                precision={2}
+                valueStyle={{ color: '#8b5cf6' }}
+              />
+            </Col>
+          </Row>
+        </Card>
 
-          {/* Hours & Cost */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Hours & Cost</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Estimated Hours">
-              {jobWork.estimated_hours || '-'} hours
-            </Descriptions.Item>
-            <Descriptions.Item label="Actual Hours">
-              {jobWork.actual_hours || '-'} hours
-            </Descriptions.Item>
-            <Descriptions.Item label="Cost">
-              {formatCurrency(jobWork.cost || 0)}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Divider />
-
-          {/* Audit Info */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Audit Information</h3>
-          <Descriptions column={1} size="small" bordered>
+        {/* Audit Information Card */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <InfoCircleOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Audit Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
             <Descriptions.Item label="Created">
               {formatDate(jobWork.created_at)}
             </Descriptions.Item>
@@ -155,10 +208,8 @@ export const JobWorksDetailPanel: React.FC<JobWorksDetailPanelProps> = ({
               {formatDate(jobWork.updated_at)}
             </Descriptions.Item>
           </Descriptions>
-        </div>
-      ) : (
-        <Empty description="No job work data" />
-      )}
+        </Card>
+      </div>
     </Drawer>
   );
 };

@@ -199,61 +199,8 @@ describe('Mock Sales Service', () => {
     });
   });
 
-  describe('getDealStages', () => {
-    it('should return array of deal stages', async () => {
-      const result = await (mockSalesService as any).getDealStages({
-        tenantId: mockTenantId,
-      });
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThan(0);
-    });
-
-    it('should return stages with required properties', async () => {
-      const result = await (mockSalesService as any).getDealStages({
-        tenantId: mockTenantId,
-      });
-
-      result.forEach((stage: any) => {
-        expect(stage).toHaveProperty('id');
-        expect(stage).toHaveProperty('name');
-        expect(stage).toHaveProperty('color');
-        expect(stage).toHaveProperty('probability');
-      });
-    });
-
-    it('should return stages in probability order', async () => {
-      const result = await (mockSalesService as any).getDealStages({
-        tenantId: mockTenantId,
-      });
-
-      for (let i = 0; i < result.length - 1; i++) {
-        expect(result[i].probability).toBeLessThanOrEqual(result[i + 1].probability);
-      }
-    });
-  });
-
-  describe('updateDealStage', () => {
-    it('should update deal stage', async () => {
-      const result = await (mockSalesService as any).updateDealStage({
-        dealId: 'deal_1',
-        stageId: 'stage_2',
-        tenantId: mockTenantId,
-      });
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should return updated deal', async () => {
-      const result = await (mockSalesService as any).updateDealStage({
-        dealId: 'deal_1',
-        stageId: 'stage_3',
-        tenantId: mockTenantId,
-      });
-
-      expect(result).toHaveProperty('deal');
-    });
-  });
+  // NOTE: getDealStages and updateDealStage tests removed - Deals have status (won/lost/cancelled),
+  // not pipeline stages. Pipeline stages belong to Opportunities. See types/crm.ts for reference.
 
   describe('searchDeals', () => {
     it('should return array of search results', async () => {

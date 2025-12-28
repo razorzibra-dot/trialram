@@ -3,16 +3,18 @@ export interface Complaint {
   title: string;
   description: string;
   customer_id: string;
-  type: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
-  status: 'new' | 'in_progress' | 'closed';
+  customer_name?: string;
+  category: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
+  status: 'new' | 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_engineer_id?: string;
-  engineer_resolution?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  resolution?: string;
   comments: ComplaintComment[];
   tenant_id: string;
   created_at: string;
   updated_at: string;
-  closed_at?: string;
+  resolved_at?: string;
 }
 
 export interface ComplaintComment {
@@ -27,9 +29,9 @@ export interface ComplaintComment {
 
 export interface ComplaintFilters {
   status?: string;
-  type?: string;
+  category?: string;
   priority?: string;
-  assigned_engineer?: string;
+  assigned_to?: string;
   customer_id?: string;
   search?: string;
   date_from?: string;
@@ -60,14 +62,14 @@ export interface ComplaintFormData {
   title: string;
   description: string;
   customer_id: string;
-  type: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
+  category: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_engineer_id?: string;
+  assigned_to?: string;
 }
 
 export interface ComplaintUpdateData {
-  status?: 'new' | 'in_progress' | 'closed';
-  assigned_engineer_id?: string;
-  engineer_resolution?: string;
+  status?: 'new' | 'open' | 'in_progress' | 'resolved' | 'closed';
+  assigned_to?: string;
+  resolution?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
 }

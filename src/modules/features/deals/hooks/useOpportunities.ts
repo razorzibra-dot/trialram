@@ -55,11 +55,9 @@ export const useOpportunity = (id: string) => {
     queryFn: async () => {
       const deal = await factorySalesService.getDeal(id);
 
-      // Validate that this is actually an opportunity (qualified stage)
-      const opportunityStages = ['qualified', 'proposal', 'negotiation'];
-      if (!opportunityStages.includes(deal.stage)) {
-        throw new Error('Deal is not in opportunity stage');
-      }
+      // ✅ Note: Stage validation removed as stage belongs to opportunities table
+      // This deal service retrieves from deals table which has no stage field
+      // Opportunity staging is managed separately in opportunities table
 
       return deal;
     },
@@ -77,13 +75,9 @@ export const useCreateOpportunity = () => {
 
   return useMutation({
     mutationFn: async (data: CreateDealDTO) => {
-      // Ensure the deal starts in qualified stage for opportunities
-      const opportunityData = {
-        ...data,
-        stage: 'qualified' as const
-      };
-
-      return await factorySalesService.createDeal(opportunityData);
+      // ✅ Stage is managed in opportunities table, not in deals
+      // This creates a deal record without stage field
+      return await factorySalesService.createDeal(data);
     },
     onSuccess: (newOpportunity) => {
       queryClient.invalidateQueries({ queryKey: opportunitiesKeys.opportunities() });
@@ -149,8 +143,9 @@ export const useConvertOpportunityToDeal = () => {
       queryClient.invalidateQueries({ queryKey: opportunitiesKeys.stats() });
       queryClient.invalidateQueries({ queryKey: opportunitiesKeys.pipeline() });
 
-      const stageMessage = convertedDeal.stage === 'closed_won' ? 'won' : 'lost';
-      success(`Opportunity marked as ${stageMessage}`);
+      // ✅ Status field used instead of stage for deals
+      const statusMessage = convertedDeal.status === 'won' ? 'won' : 'lost';
+      success(`Opportunity marked as ${statusMessage}`);
     },
     onError: (err) => {
       console.error('[useConvertOpportunityToDeal] Error:', err);
@@ -201,17 +196,19 @@ export const useOpportunityPipeline = () => {
   return useQuery({
     queryKey: [...opportunitiesKeys.pipeline(), tenantId],
     queryFn: async () => {
-      // Get pipeline data for opportunity stages
-      const opportunityStages = ['qualified', 'proposal', 'negotiation'];
+      // ✅ Deals use status field (won, lost, cancelled), not stages
+      // Stage is in opportunities table only
+      const statuses = ['won', 'lost', 'cancelled'];
 
       const pipelineData = await Promise.all(
-        opportunityStages.map(async (stage) => {
-          const response = await factorySalesService.getDeals({ stage });
+        statuses.map(async (status) => {
+          const response = await factorySalesService.getDeals({ /* status filter not available in getDeals */ });
+          const filteredDeals = response.filter(deal => deal.status === status);
           return {
-            stage,
-            deals: response.data,
-            count: response.total || 0,
-            totalValue: response.data.reduce((sum, deal) => sum + (deal.value || 0), 0),
+            status,
+            deals: filteredDeals,
+            count: filteredDeals.length,
+            totalValue: filteredDeals.reduce((sum, deal) => sum + (deal.value || 0), 0),
           };
         })
       );

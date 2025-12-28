@@ -19,8 +19,11 @@ import {
 } from '@ant-design/icons';
 import { Complaint, ComplaintFormData } from '@/types/complaints';
 import { useCreateComplaint, useUpdateComplaint } from '../hooks/useComplaints';
-import { useCustomers } from '@/modules/features/customers/hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
+import { useActiveUsers } from '@/hooks/useActiveUsers';
+import { useCustomersDropdown } from '@/hooks/useCustomersDropdown';
 
 interface ComplaintsFormPanelProps {
   visible: boolean;
@@ -29,49 +32,31 @@ interface ComplaintsFormPanelProps {
   onSuccess: () => void;
 }
 
-// Professional section styling
+// Professional styling configuration
 const sectionStyles = {
+  card: {
+    marginBottom: 20,
+    borderRadius: 8,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+  },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
+    marginBottom: 16,
     paddingBottom: 12,
-    borderBottom: '2px solid #f0f0f0',
+    borderBottom: '2px solid #e5e7eb',
+  },
+  headerIcon: {
+    fontSize: 20,
+    color: '#0ea5e9',
+    marginRight: 10,
+    fontWeight: 600,
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: 700,
+    fontWeight: 600,
     color: '#1f2937',
     margin: 0,
-  },
-  headerIcon: {
-    fontSize: 18,
-    color: '#0ea5e9',
-  },
-  card: {
-    marginBottom: 20,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    border: '1px solid #f0f0f0',
-    borderRadius: 8,
-  },
-  fieldGroup: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: 16,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#374151',
-    marginBottom: 8,
-    display: 'block',
-  },
-  fieldDescription: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-    marginBottom: 8,
   },
 };
 
@@ -89,28 +74,32 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
 
   const isEditMode = !!complaint;
 
-  // Fetch customers for dropdown
-  const { data: customersData } = useCustomers({ page: 1, pageSize: 100 });
-  const customers = customersData?.data || [];
+  // Load customers for dropdown using shared hook
+  const { data: customerOptions = [], isLoading: loadingCustomers } = useCustomersDropdown();
 
-  const typeOptions = [
-    { label: 'Equipment Breakdown', value: 'breakdown' },
-    { label: 'Preventive Maintenance', value: 'preventive' },
-    { label: 'Software Update', value: 'software_update' },
-    { label: 'System Optimization', value: 'optimize' },
-  ];
+  // ✅ Database-driven dropdowns - no hardcoded values
+  const currentTenant = useCurrentTenant();
+  const { data: complaintTypes = [], isLoading: loadingTypes } = useReferenceDataByCategory(currentTenant?.id, 'complaint_type');
+  const { data: priorities = [], isLoading: loadingPriorities } = useReferenceDataByCategory(currentTenant?.id, 'complaint_priority');
 
-  const priorityOptions = [
-    { label: 'Low', value: 'low' },
-    { label: 'Medium', value: 'medium' },
-    { label: 'High', value: 'high' },
-    { label: 'Urgent', value: 'urgent' },
-  ];
+  // Load active users for "Assigned Engineer" dropdown
+  const { data: activeUsers = [], isLoading: loadingUsers } = useActiveUsers();
 
-  const customerOptions = customers.map(customer => ({
-    label: `${customer.company_name} (${customer.email})`,
-    value: customer.id,
+  const categoryOptions = complaintTypes.map(type => ({
+    label: type.label,
+    value: type.key,
   }));
+
+  const priorityOptions = priorities.map(priority => {
+    const metadata = (priority.metadata as any) || {};
+    const icon = metadata.icon || '';
+    return {
+      label: `${icon} ${priority.label}`,
+      value: priority.key,
+    };
+  });
+
+  // customerOptions provided by useCustomersDropdown hook
 
   useEffect(() => {
     if (visible && complaint) {
@@ -129,9 +118,9 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
         title: values.title,
         description: values.description,
         customer_id: values.customer_id,
-        type: values.type,
+        category: values.category,
         priority: values.priority,
-        assigned_engineer_id: values.assigned_engineer_id || undefined,
+        assigned_to: values.assigned_to || undefined,
       };
 
       if (isEditMode && complaint) {
@@ -139,44 +128,21 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
           id: complaint.id,
           data: {
             status: values.status,
-            assigned_engineer_id: values.assigned_engineer_id,
-            engineer_resolution: values.engineer_resolution,
+            assigned_to: values.assigned_to,
+            resolution: values.resolution,
             priority: values.priority,
           },
         });
-        message.success('Complaint updated successfully');
       } else {
         await createComplaint.mutateAsync(formData);
-        message.success('Complaint created successfully');
       }
 
       onSuccess();
     } catch (error) {
-      if (error instanceof Error) {
-        message.error(error.message);
-      }
+      // Notifications handled by hooks
+      console.error('Error submitting complaint form:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return '#ff4d4f';
-      case 'high': return '#faad14';
-      case 'medium': return '#1890ff';
-      case 'low': return '#52c41a';
-      default: return '#d9d9d9';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'breakdown': return '#ff4d4f';
-      case 'preventive': return '#1890ff';
-      case 'software_update': return '#722ed1';
-      case 'optimize': return '#52c41a';
-      default: return '#d9d9d9';
     }
   };
 
@@ -192,43 +158,41 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
       width={600}
       onClose={onClose}
       open={visible}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
-        <Space style={{ float: 'right', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <Button
+            size="large"
             icon={<CloseOutlined />}
             onClick={onClose}
-            size="large"
           >
             Cancel
           </Button>
           <Button
             type="primary"
+            size="large"
             loading={loading}
             onClick={handleSubmit}
-            size="large"
             icon={<SaveOutlined />}
           >
             {isEditMode ? 'Update Complaint' : 'Create Complaint'}
           </Button>
-        </Space>
+        </div>
       }
-      styles={{
-        header: { borderBottom: '1px solid #e5e7eb' },
-        body: { padding: '24px', background: '#fafafa' }
-      }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        requiredMark="optional"
-        autoComplete="off"
-      >
-        {/* Basic Information Section */}
-        <Card style={sectionStyles.card as any}>
-          <div style={sectionStyles.header as any}>
-            <FileTextOutlined style={sectionStyles.headerIcon as any} />
-            <h3 style={sectionStyles.headerTitle as any}>Basic Information</h3>
-          </div>
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark="optional"
+          autoComplete="off"
+        >
+          {/* Basic Information Section */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <FileTextOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+            </div>
 
           <Form.Item
             label="Complaint Title"
@@ -240,10 +204,10 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
             tooltip="Provide a clear, descriptive title for the complaint"
           >
             <Input
-              placeholder="e.g., Equipment malfunction in production line"
               size="large"
-              prefix={<ExclamationCircleOutlined />}
               allowClear
+              placeholder="e.g., Equipment malfunction in production line"
+              prefix={<ExclamationCircleOutlined />}
             />
           </Form.Item>
 
@@ -261,30 +225,32 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
               placeholder="Describe the complaint in detail, including when it started, what symptoms are observed, and any impact on operations..."
               maxLength={1000}
               showCount
+              style={{ fontFamily: 'inherit' }}
             />
           </Form.Item>
         </Card>
 
         {/* Complaint Details Section */}
-        <Card style={sectionStyles.card as any}>
-          <div style={sectionStyles.header as any}>
-            <SettingOutlined style={sectionStyles.headerIcon as any} />
-            <h3 style={sectionStyles.headerTitle as any}>Complaint Details</h3>
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <SettingOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Complaint Details</h3>
           </div>
 
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
-                label="Type"
-                name="type"
-                rules={[{ required: true, message: 'Please select complaint type' }]}
-                tooltip="Categorize the type of complaint"
+                label="Category"
+                name="category"
+                rules={[{ required: true, message: 'Please select complaint category' }]}
+                tooltip="Categorize the complaint using reference data"
               >
                 <Select
-                  placeholder="Select complaint type"
+                  placeholder="Select complaint category"
                   size="large"
+                  loading={loadingTypes}
                   optionLabelProp="label"
-                  options={typeOptions}
+                  options={categoryOptions}
                 />
               </Form.Item>
             </Col>
@@ -298,6 +264,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
                 <Select
                   placeholder="Select priority level"
                   size="large"
+                  loading={loadingPriorities}
                   optionLabelProp="label"
                   options={priorityOptions}
                 />
@@ -325,10 +292,10 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
         </Card>
 
         {/* Customer Information Section */}
-        <Card style={sectionStyles.card as any}>
-          <div style={sectionStyles.header as any}>
-            <UserOutlined style={sectionStyles.headerIcon as any} />
-            <h3 style={sectionStyles.headerTitle as any}>Customer Information</h3>
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Customer Information</h3>
           </div>
 
           <Form.Item
@@ -338,56 +305,59 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
             tooltip="Select the customer who reported this complaint"
           >
             <Select
-              placeholder="Select customer"
               size="large"
+              placeholder="Select customer"
               showSearch
               optionFilterProp="label"
               options={customerOptions}
-              loading={!customersData}
+              loading={loadingCustomers}
             />
           </Form.Item>
         </Card>
 
         {/* Assignment Section */}
-        <Card style={sectionStyles.card as any}>
-          <div style={sectionStyles.header as any}>
-            <UserOutlined style={sectionStyles.headerIcon as any} />
-            <h3 style={sectionStyles.headerTitle as any}>Assignment</h3>
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Assignment</h3>
           </div>
 
           <Form.Item
-            label="Assigned Engineer"
-            name="assigned_engineer_id"
-            tooltip="Assign an engineer to handle this complaint (optional)"
+            label="Assigned To"
+            name="assigned_to"
+            tooltip="Assign an engineer or owner to handle this complaint (optional)"
           >
             <Select
-              placeholder="Select engineer (optional)"
               size="large"
+              placeholder="Select owner (optional)"
               allowClear
               showSearch
               optionFilterProp="children"
+              loading={loadingUsers}
             >
-              {/* TODO: Fetch engineers from user service */}
-              <Select.Option value="eng1">John Smith (Senior Engineer)</Select.Option>
-              <Select.Option value="eng2">Sarah Johnson (Technical Specialist)</Select.Option>
-              <Select.Option value="eng3">Mike Davis (Field Engineer)</Select.Option>
+              {activeUsers.map((user) => (
+                <Select.Option key={user.id} value={user.id}>
+                  👤 {user.firstName} {user.lastName}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
 
           {isEditMode && (
-            <Form.Item
-              label="Engineer Resolution"
-              name="engineer_resolution"
-              tooltip="Resolution notes from the assigned engineer"
-            >
-              <Input.TextArea
-                rows={3}
-                placeholder="Enter resolution details, actions taken, and final outcome..."
-                maxLength={500}
-                showCount
-              />
-            </Form.Item>
-          )}
+              <Form.Item
+                label="Resolution"
+                name="resolution"
+                tooltip="Resolution notes from the owner or engineer"
+              >
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Enter resolution details, actions taken, and final outcome..."
+                  maxLength={500}
+                  showCount
+                  style={{ fontFamily: 'inherit' }}
+                />
+              </Form.Item>
+            )}
         </Card>
 
         {/* Helper Alert */}
@@ -401,6 +371,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
           />
         )}
       </Form>
+      </div>
     </Drawer>
   );
 };

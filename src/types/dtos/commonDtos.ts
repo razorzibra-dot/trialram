@@ -97,12 +97,18 @@ export interface AuditMetadataDTO {
   
   /** User ID who created the record */
   createdBy: string;
+
+  /** User name who created the record (populated from JOIN) */
+  createdByName?: string;
   
   /** Record last update timestamp (ISO 8601) */
   updatedAt: string;
   
   /** User ID who last updated the record */
   updatedBy: string;
+
+  /** User name who last updated the record (populated from JOIN) */
+  updatedByName?: string;
   
   /** Soft delete timestamp (null if not deleted) */
   deletedAt?: string | null;

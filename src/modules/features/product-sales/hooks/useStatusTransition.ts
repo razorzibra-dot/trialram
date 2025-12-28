@@ -3,7 +3,7 @@
  * Manages status transitions with validation, UI feedback, and notifications
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import { ProductSale } from '@/types/productSales';
@@ -26,20 +26,12 @@ export const useStatusTransition = (sale: ProductSale | null): UseStatusTransiti
   const [validNextStatuses, setValidNextStatuses] = useState<ProductSaleStatus[]>([]);
 
   // Update valid next statuses when sale changes
-  const updateValidStatuses = useCallback(() => {
+  useEffect(() => {
     if (sale?.status) {
       const nextStatuses = getValidNextStatuses(sale.status as ProductSaleStatus);
       setValidNextStatuses(nextStatuses);
     }
   }, [sale?.status]);
-
-  // Call updateValidStatuses when sale changes
-  if (sale?.status) {
-    const nextStatuses = getValidNextStatuses(sale.status as ProductSaleStatus);
-    if (nextStatuses !== validNextStatuses) {
-      updateValidStatuses();
-    }
-  }
 
   const mutation = useMutation({
     mutationFn: async (params: { 

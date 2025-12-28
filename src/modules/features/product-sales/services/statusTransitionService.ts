@@ -145,58 +145,42 @@ async function performStatusSpecificActions(
 
 /**
  * Handle 'confirmed' status transition
- * - Verify inventory availability
- * - Reserve stock
- * - Notify stakeholders
+ * - Send confirmation notification
  */
 async function handleConfirmedStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Implement inventory check and reservation
-    // const inventoryService = getInventoryService();
-    // await inventoryService.reserveStock(sale.product_id, sale.quantity);
-    console.log('Stock reserved for sale:', sale.id);
-
     // Send confirmation notification
     await workflowNotificationService.notifyStatusChange({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
+      totalValue: sale.total_cost,
       oldStatus: event.fromStatus,
       newStatus: event.toStatus,
       reason: event.reason,
       recipientRole: 'all',
     });
   } catch (error) {
-    console.error('Error reserving stock:', error);
+    console.error('Error handling confirmed status:', error);
   }
 }
 
 /**
  * Handle 'shipped' status transition
- * - Create shipment record
- * - Send notification
+ * - Send shipment notification
  */
 async function handleShippedStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Implement shipment creation
-    // const shipmentService = getShipmentService();
-    // const shipment = await shipmentService.create({
-    //   product_sale_id: sale.id,
-    //   customer_id: sale.customer_id,
-    //   status: 'shipped',
-    // });
-    console.log('Shipment created for sale:', sale.id);
-
     // Send shipment notification
     await workflowNotificationService.notifyShipmentReady({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
-      quantity: sale.quantity,
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
     });
   } catch (error) {
     console.error('Error handling shipped status:', error);
@@ -205,33 +189,21 @@ async function handleShippedStatus(sale: ProductSale, event: StatusTransitionEve
 
 /**
  * Handle 'delivered' status transition
- * - Update inventory (reduce by quantity)
- * - Activate warranty period
  * - Trigger delivery notifications
  */
 async function handleDeliveredStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Implement delivery completion
-    // const inventoryService = getInventoryService();
-    // await inventoryService.reduceStock(sale.product_id, sale.quantity);
-    
-    // TODO: Activate warranty
-    // const warrantyService = getWarrantyService();
-    // await warrantyService.activateWarranty({
-    //   product_sale_id: sale.id,
-    //   warranty_period: sale.warranty_period,
-    //   start_date: new Date(),
-    // });
-
     console.log('Delivery completed for sale:', sale.id);
 
     // Send delivery confirmation notification
     await workflowNotificationService.notifyDeliveryConfirmed({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
     });
   } catch (error) {
     console.error('Error handling delivered status:', error);
@@ -240,30 +212,21 @@ async function handleDeliveredStatus(sale: ProductSale, event: StatusTransitionE
 
 /**
  * Handle 'invoiced' status transition
- * - Generate invoice document
- * - Send invoice to customer
- * - Record in accounting system
+ * - Send invoice notification
  */
 async function handleInvoicedStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Implement invoice generation
-    // const invoiceService = getInvoiceService();
-    // const invoice = await invoiceService.generate({
-    //   product_sale_id: sale.id,
-    //   customer_id: sale.customer_id,
-    //   amount: sale.total_value,
-    //   items: sale.items,
-    // });
-
     console.log('Invoice generated for sale:', sale.id);
 
     // Send invoice notification
     await workflowNotificationService.notifyInvoiceGenerated({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
     });
   } catch (error) {
     console.error('Error handling invoiced status:', error);
@@ -272,31 +235,21 @@ async function handleInvoicedStatus(sale: ProductSale, event: StatusTransitionEv
 
 /**
  * Handle 'paid' status transition
- * - Activate service contract if exists
- * - Record payment
- * - Update accounting records
+ * - Send payment received notification
  */
 async function handlePaidStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // Activate service contract if it exists
-    if (sale.service_contract_id) {
-      // TODO: Implement contract activation
-      // const contractService = getContractService();
-      // await contractService.activateContract(sale.service_contract_id);
-      console.log('Service contract activated for sale:', sale.id);
-    }
-
-    // TODO: Record payment in accounting system
     console.log('Payment recorded for sale:', sale.id);
 
     // Send payment received notification
     await workflowNotificationService.notifyPaymentReceived({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
-      paymentMethod: sale.payment_method || 'Bank Transfer',
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
     });
   } catch (error) {
     console.error('Error handling paid status:', error);
@@ -305,25 +258,21 @@ async function handlePaidStatus(sale: ProductSale, event: StatusTransitionEvent)
 
 /**
  * Handle 'cancelled' status transition
- * - Release reserved inventory
- * - Cancel related records (invoices, etc.)
  * - Send cancellation notification
  */
 async function handleCancelledStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Release reserved inventory
-    // const inventoryService = getInventoryService();
-    // await inventoryService.releaseReservedStock(sale.product_id, sale.quantity);
-
-    console.log('Sale cancelled, inventory released for sale:', sale.id);
+    console.log('Sale cancelled for sale:', sale.id);
 
     // Send cancellation notification
     await workflowNotificationService.notifySaleCancelled({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
       reason: event.reason || 'Not specified',
     });
   } catch (error) {
@@ -333,36 +282,21 @@ async function handleCancelledStatus(sale: ProductSale, event: StatusTransitionE
 
 /**
  * Handle 'refunded' status transition
- * - Reverse inventory operations
- * - Process refund
- * - Cancel related contracts
  * - Send refund notification
  */
 async function handleRefundedStatus(sale: ProductSale, event: StatusTransitionEvent): Promise<void> {
   try {
-    // TODO: Implement refund processing
-    // const refundService = getRefundService();
-    // await refundService.process({
-    //   product_sale_id: sale.id,
-    //   amount: sale.total_value,
-    //   reason: event.reason,
-    // });
-
-    // TODO: Cancel service contract if exists
-    if (sale.service_contract_id) {
-      // const contractService = getContractService();
-      // await contractService.cancelContract(sale.service_contract_id);
-    }
-
     console.log('Refund processed for sale:', sale.id);
 
     // Send refund notification
     await workflowNotificationService.notifyRefundProcessed({
-      saleNumber: sale.sale_number,
+      saleNumber: sale.id,
       customerId: sale.customer_id,
       customerName: sale.customer_name || 'Valued Customer',
       productName: sale.product_name || 'Product',
-      totalValue: sale.total_value,
+      totalValue: sale.total_cost,
+      oldStatus: event.fromStatus,
+      newStatus: event.toStatus,
       reason: event.reason || 'Not specified',
     });
   } catch (error) {

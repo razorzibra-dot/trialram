@@ -180,4 +180,4 @@ Session Config:
 export const mockSessionConfigService = new MockSessionConfigService();
 
 // Initialize from environment on import
-sessionConfigService.initializeFromEnvironment();
+mockSessionConfigService.initializeFromEnvironment();

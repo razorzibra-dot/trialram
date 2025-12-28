@@ -26,11 +26,11 @@ import { invoiceService } from '../services/invoiceService';
 import { getCustomerName, getProductName } from '../utils/dataEnrichment';
 
 interface InvoiceGenerationModalProps {
-  visible: boolean;
+  open: boolean;
   sale: ProductSale | null;
   saleItems: ProductSaleItem[];
-  customers: Customer[];
-  products: Product[];
+  customers?: Customer[];
+  products?: Product[];
   onClose: () => void;
   onSuccess?: (invoiceNumber: string) => void;
 }
@@ -39,11 +39,11 @@ interface InvoiceGenerationModalProps {
  * Invoice Generation Modal
  */
 export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
-  visible,
+  open,
   sale,
   saleItems,
-  customers,
-  products,
+  customers = [],
+  products = [],
   onClose,
   onSuccess,
 }) => {
@@ -106,7 +106,7 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
   return (
     <Modal
       title="Generate Invoice"
-      open={visible}
+      open={open}
       onCancel={onClose}
       onOk={() => form.submit()}
       width={720}
@@ -144,7 +144,7 @@ export const InvoiceGenerationModal: React.FC<InvoiceGenerationModalProps> = ({
                 </Col>
                 <Col span={12}>
                   <p>
-                    <strong>Email:</strong> {customers.find(c => c.id === sale.customer_id)?.email || 'N/A'}
+                    <strong>Email:</strong> {customers?.find(c => c.id === sale.customer_id)?.email || 'N/A'}
                   </p>
                 </Col>
                 <Col span={12}>

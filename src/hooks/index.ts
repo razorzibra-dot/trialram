@@ -25,7 +25,7 @@
  */
 
 // Service Factory Hooks
-export { useService } from './useService';
+// useService moved to @/modules/core/hooks/useService (factory pattern replaced with container-based DI)
 
 // Existing utility hooks
 export { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +37,7 @@ export { useEnhancedTableScroll } from './useEnhancedTableScroll';
 export { useTenantContext } from './useTenantContext';
 export { useSessionManager } from './useSessionManager';
 export { usePermissionBasedNavigation } from './usePermissionBasedNavigation';
+export { useActiveUsers } from './useActiveUsers'; // Shared hook for "Assigned To" dropdowns
 
 // Phase 6: Permission & Access Control Hooks
 export {

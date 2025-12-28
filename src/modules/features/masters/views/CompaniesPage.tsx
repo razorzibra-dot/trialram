@@ -15,6 +15,7 @@ import {
   Input, 
   Select, 
   Popconfirm,
+  Tooltip,
   Empty,
   message,
   Upload as AntUpload
@@ -40,6 +41,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Company, CompanyFilters, CompanyFormData } from '@/types/masters';
 import { CompaniesDetailPanel } from '../components/CompaniesDetailPanel';
 import { CompaniesFormPanel } from '../components/CompaniesFormPanel';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -48,6 +50,10 @@ const { Option } = Select;
 
 export const CompaniesPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  
+  // Database-driven lookups
+  const { getLabel: getSizeLabel } = useReferenceDataLookup('company_size');
+  
   const [filters, setFilters] = useState<CompanyFilters>({
     page: 1,
     pageSize: 20,
@@ -102,36 +108,30 @@ export const CompaniesPage: React.FC = () => {
       setIsSaving(true);
       
       if (drawerMode === 'create') {
-        // Create new company
+        // Notifications handled by useCreateCompany hook
         await createCompany.mutateAsync(values as CompanyFormData);
-        message.success('Company created successfully');
       } else if (drawerMode === 'edit' && selectedCompany) {
-        // Update existing company
+        // Notifications handled by useUpdateCompany hook
         await updateCompany.mutateAsync({
           id: selectedCompany.id,
           data: values,
         });
-        message.success('Company updated successfully');
       }
       
       handleDrawerClose();
     } catch (error) {
       console.error('Error saving company:', error);
-      message.error(error instanceof Error ? error.message : 'Failed to save company');
+      // Notifications handled by hooks
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (company: Company) => {
-    try {
-      await deleteCompany.mutateAsync(company.id);
-      message.success(`Company "${company.name}" deleted successfully`);
-      refetchCompanies();
-      refetchStats();
-    } catch (error) {
-      message.error('Failed to delete company');
-    }
+    // Notifications handled by useDeleteCompany hook
+    await deleteCompany.mutateAsync(company.id);
+    refetchCompanies();
+    refetchStats();
   };
 
   const handleFileImport = (file: File) => {
@@ -179,17 +179,6 @@ export const CompaniesPage: React.FC = () => {
       default:
         return 'default';
     }
-  };
-
-  const getSizeLabel = (size: string) => {
-    const labels: Record<string, string> = {
-      startup: 'Startup',
-      small: 'Small',
-      medium: 'Medium',
-      large: 'Large',
-      enterprise: 'Enterprise'
-    };
-    return labels[size] || size;
   };
 
   // Table columns
@@ -273,44 +262,45 @@ export const CompaniesPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-          {hasPermission('crm:company:record:update') && (
+          <Tooltip title="View Details">
             <Button
-              type="link"
+              type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              Edit
-            </Button>
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {hasPermission('crm:company:record:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:company:record:delete') && (
             <Popconfirm
               title="Delete Company"
               description={`Are you sure you want to delete "${record.name}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>

@@ -144,6 +144,9 @@ export class SupabaseNotificationService extends BaseSupabaseService {
 
   /**
    * Create notification
+   * ✅ FIXED: Use correct DB column names
+   * DB has: recipient_id (not user_id), metadata (not data), is_read (not read)
+   * DB does NOT have: action_label, category, updated_at
    */
   async createNotification(data: Partial<Notification>): Promise<Notification> {
     try {
@@ -153,19 +156,16 @@ export class SupabaseNotificationService extends BaseSupabaseService {
         .from('notifications')
         .insert([
           {
-            user_id: data.user_id,
-            recipient_id: data.user_id, // Ensure both are set for backward compatibility
+            recipient_id: data.user_id, // ✅ Map user_id to correct column name
             type: data.type || 'info',
             title: data.title,
             message: data.message,
-            data: data.data,
-            is_read: false, // Use is_read only - primary field for read status
+            metadata: data.data || {}, // ✅ Map data to metadata (DB column name)
+            is_read: false,
             action_url: data.action_url,
-            action_label: data.action_label,
-            category: data.category,
+            // ❌ REMOVED: action_label, category, updated_at - NOT in DB schema
             tenant_id: data.tenant_id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            // Let DB auto-generate: id, created_at
           },
         ])
         .select()
@@ -183,6 +183,7 @@ export class SupabaseNotificationService extends BaseSupabaseService {
 
   /**
    * Create multiple notifications
+   * ✅ FIXED: Use correct DB column names
    */
   async createNotifications(notifications: Partial<Notification>[]): Promise<Notification[]> {
     try {
@@ -192,19 +193,15 @@ export class SupabaseNotificationService extends BaseSupabaseService {
         .from('notifications')
         .insert(
           notifications.map((n) => ({
-            user_id: n.user_id,
-            recipient_id: n.user_id, // Ensure both are set for backward compatibility
+            recipient_id: n.user_id, // ✅ Map user_id to correct column name
             type: n.type || 'info',
             title: n.title,
             message: n.message,
-            data: n.data,
-            is_read: false, // Use is_read only - primary field for read status
+            metadata: n.data || {}, // ✅ Map data to metadata
+            is_read: false,
             action_url: n.action_url,
-            action_label: n.action_label,
-            category: n.category,
+            // ❌ REMOVED: user_id, action_label, category, created_at, updated_at
             tenant_id: n.tenant_id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           }))
         )
         .select();
@@ -221,6 +218,7 @@ export class SupabaseNotificationService extends BaseSupabaseService {
 
   /**
    * Mark notification as read
+   * ✅ FIXED: Use is_read (not read), remove updated_at (doesn't exist)
    */
   async markAsRead(id: string): Promise<Notification> {
     try {
@@ -229,9 +227,9 @@ export class SupabaseNotificationService extends BaseSupabaseService {
       const { data, error } = await getSupabaseClient()
         .from('notifications')
         .update({
-          read: true,
+          is_read: true, // ✅ Correct column name
           read_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          // ❌ REMOVED: updated_at - NOT in DB schema
         })
         .eq('id', id)
         .select()
@@ -249,6 +247,7 @@ export class SupabaseNotificationService extends BaseSupabaseService {
 
   /**
    * Mark all notifications as read for a user
+   * ✅ FIXED: Use is_read (not read), recipient_id (not user_id), remove updated_at
    */
   async markAllAsRead(userId: string): Promise<number> {
     try {
@@ -257,12 +256,12 @@ export class SupabaseNotificationService extends BaseSupabaseService {
       const { error, count } = await getSupabaseClient()
         .from('notifications')
         .update({
-          read: true,
+          is_read: true, // ✅ Correct column name
           read_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          // ❌ REMOVED: updated_at - NOT in DB schema
         })
-        .eq('user_id', userId)
-        .eq('read', false);
+        .eq('recipient_id', userId) // ✅ Correct column name
+        .eq('is_read', false); // ✅ Correct column name
 
       if (error) throw error;
 

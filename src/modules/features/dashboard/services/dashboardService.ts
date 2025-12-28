@@ -148,9 +148,11 @@ export class DashboardService extends BaseService {
    */
   private async fetchSalesStats(): Promise<{ count: number; revenue: number }> {
     try {
-      const sales = await this.getSalesService().getDeals({ status: 'won' });
-      const count = sales.length;
-      const revenue = sales.reduce((sum, sale) => sum + (sale.value || 0), 0);
+      // Use analytics to ensure total deals includes all statuses, not just won
+      const stats: any = await (this.getSalesService() as any).getSalesStats();
+      const count = stats?.totalDeals ?? 0;
+      // Revenue: use wonValue when available, else totalValue as a fallback
+      const revenue = stats?.wonValue ?? stats?.totalValue ?? 0;
       return { count, revenue };
     } catch (error) {
       this.handleError('Failed to fetch sales stats', error);

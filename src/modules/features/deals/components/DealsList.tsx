@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Deal } from '@/types/crm';
+import { formatCurrency } from '@/utils/formatters';
 import { DataTable } from '@/modules/shared/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +80,13 @@ export const DealsList: React.FC<SalesListProps> = ({
     clearSelection,
   } = useSalesStore();
 
+  // Debug: log store data at render
+  try {
+    console.log('[DealsList] render - deals count:', deals?.length, 'sample ids:', deals?.slice(0,5).map(d => d.id));
+  } catch (e) {
+    // Ignore errors during debug logging
+  }
+
   const { refetch } = useDeals(filters);
   const deleteDeal = useDeleteDeal();
   const { bulkUpdate, bulkDelete } = useBulkDeals();
@@ -86,44 +94,29 @@ export const DealsList: React.FC<SalesListProps> = ({
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStageBadge = (stage: string) => {
-    const variants = {
-      lead: 'bg-gray-100 text-gray-800',
-      qualified: 'bg-blue-100 text-blue-800',
-      proposal: 'bg-yellow-100 text-yellow-800',
-      negotiation: 'bg-orange-100 text-orange-800',
-      closed_won: 'bg-green-100 text-green-800',
-      closed_lost: 'bg-red-100 text-red-800'
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, string> = {
+      won: 'bg-green-100 text-green-800',
+      lost: 'bg-red-100 text-red-800',
+      cancelled: 'bg-gray-100 text-gray-800'
     };
     
-    const color = variants[stage as keyof typeof variants] || variants.lead;
+    const color = variants[status] || 'bg-gray-100 text-gray-800';
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
-        {stage.replace('_', ' ')}
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
-  const getStageProgress = (stage: string) => {
-    const progressMap = {
-      lead: 10,
-      qualified: 25,
-      proposal: 50,
-      negotiation: 75,
-      closed_won: 100,
-      closed_lost: 0
+  const getStatusProgress = (status: string) => {
+    const progressMap: Record<string, number> = {
+      won: 100,
+      lost: 0,
+      cancelled: 0
     };
-    return progressMap[stage as keyof typeof progressMap] || 0;
+    return progressMap[status] || 0;
   };
 
   const handleDeleteDeal = async (deal: Deal) => {
@@ -171,12 +164,16 @@ export const DealsList: React.FC<SalesListProps> = ({
       },
     },
     {
-      key: 'customer_id',
-      header: 'Customer ID',
+      key: 'customer_name',
+      header: 'Customer',
       sortable: true,
       render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
-        return deal.customer_id || <span className="text-gray-400">Unassigned</span>;
+        return (
+          <span className="font-medium">
+            {deal.customer_name || <span className="text-gray-400">Unknown Customer</span>}
+          </span>
+        );
       },
     },
     {
@@ -189,16 +186,16 @@ export const DealsList: React.FC<SalesListProps> = ({
       },
     },
     {
-      key: 'stage',
-      header: 'Stage',
+      key: 'status',
+      header: 'Status',
       sortable: true,
       render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
         return (
           <div className="space-y-2">
-            {getStageBadge(deal.stage || 'lead')}
+            {getStatusBadge(deal.status || 'won')}
             <Progress 
-              value={getStageProgress(deal.stage || 'lead')} 
+              value={getStatusProgress(deal.status || 'won')} 
               className="h-1"
             />
           </div>
@@ -206,12 +203,16 @@ export const DealsList: React.FC<SalesListProps> = ({
       },
     },
     {
-      key: 'assigned_to',
-      header: 'Owner ID',
+      key: 'assigned_to_name',
+      header: 'Owner',
       sortable: true,
       render: (_: unknown, deal: Deal | undefined) => {
         if (!deal) return <span className="text-gray-400">-</span>;
-        return deal.assigned_to || <span className="text-gray-400">Unassigned</span>;
+        return (
+          <span className="text-sm">
+            {deal.assigned_to_name || <span className="text-gray-400">Unassigned</span>}
+          </span>
+        );
       },
     },
     {
@@ -406,19 +407,16 @@ export const DealsList: React.FC<SalesListProps> = ({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Stage</label>
+              <label className="block text-sm font-medium mb-2">Status</label>
               <Select value={selectedStage} onValueChange={setSelectedStage}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All stages" />
+                  <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Stages</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
-                  <SelectItem value="proposal">Proposal</SelectItem>
-                  <SelectItem value="negotiation">Negotiation</SelectItem>
-                  <SelectItem value="closed_won">Closed Won</SelectItem>
-                  <SelectItem value="closed_lost">Closed Lost</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="won">Won</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>

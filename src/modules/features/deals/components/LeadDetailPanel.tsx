@@ -18,8 +18,8 @@ import {
   Timeline,
   Avatar,
   Tooltip,
-  message
 } from 'antd';
+import { formatDate } from '@/utils/formatters';
 import {
   UserOutlined,
   PhoneOutlined,
@@ -35,39 +35,23 @@ import {
   TeamOutlined
 } from '@ant-design/icons';
 import { LeadDTO } from '@/types/dtos';
-import { useConvertLeadToCustomer } from '../hooks/useLeads';
 
 const { Title, Text, Paragraph } = Typography;
 
 interface LeadDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   lead?: LeadDTO | null;
   onClose: () => void;
   onEdit?: (lead: LeadDTO) => void;
-  onConvert?: (lead: LeadDTO) => void;
 }
 
 export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
-  visible,
+  open,
   lead,
   onClose,
-  onEdit,
-  onConvert
+  onEdit
 }) => {
-  const convertLead = useConvertLeadToCustomer();
-
   if (!lead) return null;
-
-  const handleConvert = async () => {
-    try {
-      // This would typically open a modal to select/create customer
-      // For now, we'll just show a message
-      message.info('Lead conversion would open customer selection modal');
-      onConvert?.(lead);
-    } catch (error) {
-      message.error('Failed to convert lead');
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -77,6 +61,7 @@ export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
       case 'unqualified': return 'red';
       case 'converted': return 'purple';
       case 'lost': return 'gray';
+      case 'cancelled': return 'red';
       default: return 'default';
     }
   };
@@ -114,42 +99,30 @@ export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
     return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <Drawer
       title={
-        <Space>
-          <UserOutlined />
-          Lead Details
-        </Space>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>Lead Details</span>
+        </div>
       }
       width={800}
-      open={visible}
+      open={open}
       onClose={onClose}
-      extra={
-        <Space>
-          <Button onClick={() => onEdit?.(lead)}>
-            Edit Lead
-          </Button>
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>Close</Button>
           {!lead.convertedToCustomer && (
-            <Button type="primary" onClick={handleConvert}>
-              Convert to Customer
+            <Button size="large" type="primary" onClick={() => onEdit?.(lead)}>
+              Edit Lead
             </Button>
           )}
-        </Space>
+        </div>
       }
     >
-      <div style={{ padding: '0 8px' }}>
+      <div style={{ padding: '0 24px 24px 24px' }}>
         {/* Lead Header */}
         <Card style={{ marginBottom: 16 }}>
           <Row gutter={16} align="middle">
@@ -256,38 +229,32 @@ export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
           </Col>
           <Col xs={24} lg={12}>
             <Card title="Activity Timeline">
-              <Timeline mode="left" size="small">
-                <Timeline.Item
-                  dot={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
-                  label={formatDate(lead.audit.createdAt)}
-                >
-                  Lead created
-                </Timeline.Item>
-                {lead.lastContact && (
-                  <Timeline.Item
-                    dot={<PhoneOutlined style={{ color: '#52c41a' }} />}
-                    label={formatDate(lead.lastContact)}
-                  >
-                    Last contact
-                  </Timeline.Item>
-                )}
-                {lead.nextFollowUp && (
-                  <Timeline.Item
-                    dot={<ClockCircleOutlined style={{ color: '#faad14' }} />}
-                    label={formatDate(lead.nextFollowUp)}
-                  >
-                    Next follow-up
-                  </Timeline.Item>
-                )}
-                {lead.convertedToCustomer && lead.convertedAt && (
-                  <Timeline.Item
-                    dot={<CheckCircleOutlined style={{ color: '#722ed1' }} />}
-                    label={formatDate(lead.convertedAt)}
-                  >
-                    Converted to customer
-                  </Timeline.Item>
-                )}
-              </Timeline>
+              <Timeline 
+                mode="left" 
+                size="small"
+                items={[
+                  {
+                    dot: <ClockCircleOutlined style={{ color: '#1890ff' }} />,
+                    label: formatDate(lead.audit.createdAt),
+                    children: 'Lead created'
+                  },
+                  ...(lead.lastContact ? [{
+                    dot: <PhoneOutlined style={{ color: '#52c41a' }} />,
+                    label: formatDate(lead.lastContact),
+                    children: 'Last contact'
+                  }] : []),
+                  ...(lead.nextFollowUp ? [{
+                    dot: <ClockCircleOutlined style={{ color: '#faad14' }} />,
+                    label: formatDate(lead.nextFollowUp),
+                    children: 'Next follow-up'
+                  }] : []),
+                  ...(lead.convertedToCustomer && lead.convertedAt ? [{
+                    dot: <CheckCircleOutlined style={{ color: '#722ed1' }} />,
+                    label: formatDate(lead.convertedAt),
+                    children: 'Converted to customer'
+                  }] : [])
+                ]}
+              />
             </Card>
           </Col>
         </Row>
@@ -309,6 +276,9 @@ export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 <Descriptions.Item label="Assigned To">
                   {lead.assignedToName || lead.assignedTo || '-'}
                 </Descriptions.Item>
+                <Descriptions.Item label="Created By">
+                  {lead.audit.createdByName || lead.audit.createdBy || '-'}
+                </Descriptions.Item>
                 <Descriptions.Item label="Created">
                   {formatDate(lead.audit.createdAt)}
                 </Descriptions.Item>
@@ -316,11 +286,11 @@ export const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </Col>
             <Col xs={24} sm={12}>
               <Descriptions column={1} size="small">
+                <Descriptions.Item label="Last Updated By">
+                  {lead.audit.updatedByName || lead.audit.updatedBy || '-'}
+                </Descriptions.Item>
                 <Descriptions.Item label="Last Updated">
                   {formatDate(lead.audit.updatedAt)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Created By">
-                  {lead.audit.createdBy || '-'}
                 </Descriptions.Item>
               </Descriptions>
             </Col>

@@ -185,18 +185,19 @@ const ModuleProtectedRoute: React.FC<ModuleProtectedRouteProps> = ({
 
       // Try to log to audit trail
       try {
-        auditService.logAction({
-          action: 'UNAUTHORIZED_MODULE_ACCESS',
-          resource: `module:${moduleName}`,
-          resourceId: moduleName,
-          userId: user.id,
-          details: {
+        auditService.logAction(
+          'UNAUTHORIZED_MODULE_ACCESS',
+          `module:${moduleName}`,
+          moduleName,
+          undefined, // changes
+          {
             reason,
             isSuperAdmin,
             module: moduleName,
-          },
-          status: 'denied',
-        });
+            userId: user.id,
+            status: 'denied',
+          }
+        );
       } catch (auditError) {
         console.error('[ModuleProtectedRoute] Failed to log unauthorized access:', auditError);
       }

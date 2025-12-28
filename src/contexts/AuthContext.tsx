@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, AuthState } from '@/types/auth';
 import { authService as factoryAuthService, sessionConfigService as factorySessionConfigService, uiNotificationService as factoryUINotificationService, multiTenantService as factoryMultiTenantService } from '@/services/serviceFactory';
+import { elementPermissionService } from '@/services/rbac/elementPermissionService';
 import { sessionManager } from '@/utils/sessionManager';
 import { httpInterceptor } from '@/utils/httpInterceptor';
 import type { TenantContext } from '@/types/tenant';
@@ -54,6 +55,19 @@ interface AuthContextType extends AuthState {
    * Get permissions for the current user (pulled from auth service / DB)
    */
   getUserPermissions: (role?: string) => string[];
+  /**
+   * Evaluate an element-level permission using centralized cached service
+   * Returns true/false and caches result inside the AuthContext for the session
+   */
+  evaluateElementPermission?: (
+    elementPath: string,
+    action: 'visible' | 'enabled' | 'editable' | 'accessible',
+    recordId?: string
+  ) => Promise<boolean>;
+  /**
+   * Preload common element permission checks to prime caches and avoid duplicate network calls
+   */
+  preloadElementPermissions?: (items: Array<{ elementPath: string; action: 'visible' | 'enabled' | 'editable' | 'accessible'; recordId?: string }>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,6 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [tenant, setTenant] = useState<TenantContext | null>(null);
+  // In-memory cache for evaluated element permissions to avoid duplicate DB calls
+  const elementPermissionCache = React.useRef<Map<string, boolean>>(new Map());
 
   const navigate = useNavigate();
 
@@ -147,6 +163,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTenant(tenantContext);
         }
 
+        // Preload common element permissions to prime caches and avoid duplicate calls across components
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          preloadElementPermissions?.([
+            { elementPath: 'user:list', action: 'accessible' },
+            { elementPath: 'user:list:button.create', action: 'visible' },
+            { elementPath: 'user:record', action: 'editable' },
+            { elementPath: 'navigation', action: 'accessible' },
+          ]);
+        } catch (e) {
+          console.debug('[AuthContext] preloadElementPermissions failed during init', e);
+        }
+
         // Initialize session manager with config
         sessionManager.initialize(factorySessionConfigService.getConfig());
         
@@ -176,6 +205,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [handleSessionExpiry, handleSessionExtension, handleUnauthorized, handleForbidden, handleTokenRefresh]);
 
+  /**
+   * Evaluate an element-level permission using a central cache and the elementPermissionService
+   */
+  const evaluateElementPermission = async (
+    elementPath: string,
+    action: 'visible' | 'enabled' | 'editable' | 'accessible',
+    recordId?: string
+  ): Promise<boolean> => {
+    try {
+      const user = authState.user;
+      const tenantCtx = tenant;
+      if (!user) return false;
+
+      const key = `${user.id}:${tenantCtx?.tenantId || 'null'}:${elementPath}:${action}:${recordId || 'noid'}`;
+      const cached = elementPermissionCache.current.get(key);
+      if (typeof cached === 'boolean') return cached;
+
+      const result = await elementPermissionService.evaluateElementPermission(elementPath, action, { user, tenant: tenantCtx, recordId });
+      elementPermissionCache.current.set(key, result);
+      return result;
+    } catch (error) {
+      console.error('[AuthContext] evaluateElementPermission error:', error);
+      return false;
+    }
+  };
+
+  const preloadElementPermissions = async (items: Array<{ elementPath: string; action: 'visible' | 'enabled' | 'editable' | 'accessible'; recordId?: string }>) => {
+    try {
+      await Promise.all(items.map(i => evaluateElementPermission(i.elementPath, i.action, i.recordId)));
+    } catch (e) {
+      console.warn('[AuthContext] preloadElementPermissions error:', e);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
@@ -204,6 +267,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         undefined, // onIdleWarning - handled by SessionProvider component
         handleSessionExtension
       );
+
+      // Preload element permissions on login as well
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        preloadElementPermissions?.([
+          { elementPath: 'user:list', action: 'accessible' },
+          { elementPath: 'user:list:button.create', action: 'visible' },
+          { elementPath: 'user:record', action: 'editable' },
+          { elementPath: 'navigation', action: 'accessible' },
+        ]);
+      } catch (e) {
+        console.debug('[AuthContext] preloadElementPermissions failed on login', e);
+      }
 
       factoryUINotificationService.successNotify(
         'Welcome back!',
@@ -504,6 +580,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     canAccessModule: canAccessModuleMethod,
     isImpersonating,
     getCurrentImpersonationSession,
+    evaluateElementPermission,
+    preloadElementPermissions,
   };
 
   return (

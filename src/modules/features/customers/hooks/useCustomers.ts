@@ -10,6 +10,7 @@ import { useService } from '@/modules/core/hooks/useService';
 import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
 import { handleError } from '@/modules/core/utils/errorHandler';
 import type { Customer, CustomerTag } from '@/types/crm';
+import { useNotification } from '@/hooks/useNotification';
 
 /**
  * Query key factory for consistent cache management
@@ -121,6 +122,7 @@ export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   const service = useService<ICustomerService>('customerService');
   const store = useCustomerStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (data: CreateCustomerData) => service.createCustomer(data),
@@ -128,9 +130,11 @@ export const useCreateCustomer = () => {
       (store as any).addCustomer(newCustomer);
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+      success('Customer created successfully');
     },
     onError: (error) => {
-      handleError(error, 'useCreateCustomer');
+      const message = handleError(error, 'useCreateCustomer');
+      error(message);
     },
   });
 };
@@ -142,6 +146,7 @@ export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
   const service = useService<ICustomerService>('customerService');
   const store = useCustomerStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateCustomerData> }) =>
@@ -150,9 +155,12 @@ export const useUpdateCustomer = () => {
       (store as any).updateCustomer(updatedCustomer.id, updatedCustomer);
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       queryClient.invalidateQueries({ queryKey: customerKeys.detail(updatedCustomer.id) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+      success('Customer updated successfully');
     },
     onError: (error) => {
-      handleError(error, 'useUpdateCustomer');
+      const message = handleError(error, 'useUpdateCustomer');
+      error(message);
     },
   });
 };
@@ -164,6 +172,7 @@ export const useDeleteCustomer = () => {
   const queryClient = useQueryClient();
   const service = useService<ICustomerService>('customerService');
   const store = useCustomerStore();
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (id: string) => service.deleteCustomer(id),
@@ -171,9 +180,11 @@ export const useDeleteCustomer = () => {
       (store as any).removeCustomer(id);
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+      success('Customer deleted successfully');
     },
     onError: (error) => {
-      handleError(error, 'useDeleteCustomer');
+      const message = handleError(error, 'useDeleteCustomer');
+      error(message);
     },
   });
 };
@@ -183,11 +194,16 @@ export const useDeleteCustomer = () => {
  */
 export const useCustomerExport = () => {
   const service = useService<ICustomerService>('customerService');
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (format: 'csv' | 'json') => service.exportCustomers(format),
+    onSuccess: () => {
+      success('Customers exported successfully');
+    },
     onError: (error) => {
-      handleError(error, 'useCustomerExport');
+      const message = handleError(error, 'useCustomerExport');
+      error(message);
     },
   });
 };
@@ -198,15 +214,18 @@ export const useCustomerExport = () => {
 export const useCustomerImport = () => {
   const queryClient = useQueryClient();
   const service = useService<ICustomerService>('customerService');
+  const { success, error } = useNotification();
 
   return useMutation({
     mutationFn: (data: string) => service.importCustomers(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
+      success('Customers imported successfully');
     },
     onError: (error) => {
-      handleError(error, 'useCustomerImport');
+      const message = handleError(error, 'useCustomerImport');
+      error(message);
     },
   });
 };

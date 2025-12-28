@@ -13,6 +13,9 @@ import { TicketsDetailPanel } from '../components/TicketsDetailPanel';
 import { TicketsFormPanel } from '../components/TicketsFormPanel';
 import { useTickets, useTicketStats, useDeleteTicket } from '../hooks/useTickets';
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 import dayjs from 'dayjs';
 import {
   AlertCircle,
@@ -22,27 +25,6 @@ import {
 } from 'lucide-react';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
-
-/**
- * Status color mapping for tags
- */
-const statusColors: Record<string, string> = {
-  open: 'warning',
-  in_progress: 'processing',
-  resolved: 'success',
-  closed: 'default',
-  pending: 'warning',
-};
-
-/**
- * Priority color mapping for tags
- */
-const priorityColors: Record<string, string> = {
-  low: 'default',
-  medium: 'blue',
-  high: 'orange',
-  urgent: 'red',
-};
 
 /**
  * Status icon mapping
@@ -59,6 +41,25 @@ export const TicketsPage: React.FC = () => {
   const { data: ticketsData, isLoading: ticketsLoading } = useTickets();
   const { data: statsData, isLoading: statsLoading } = useTicketStats();
   const deleteTicket = useDeleteTicket();
+  
+  const currentTenant = useCurrentTenant();
+  const { data: ticketStatuses = [], isLoading: loadingStatuses } = useReferenceDataByCategory(currentTenant?.id, 'ticket_status');
+  const { data: ticketPriorities = [], isLoading: loadingPriorities } = useReferenceDataByCategory(currentTenant?.id, 'ticket_priority');
+  
+  // Database-driven color lookups
+  const { getColor: getStatusColor } = useReferenceDataLookup('ticket_status');
+  const { getColor: getPriorityColor } = useReferenceDataLookup('ticket_priority');
+  
+  // Prepare filter options with 'All' option
+  const statusFilterOptions = useMemo(() => [
+    { label: 'All Statuses', value: 'all' },
+    ...ticketStatuses.map(s => ({ label: s.label, value: s.key }))
+  ], [ticketStatuses]);
+  
+  const priorityFilterOptions = useMemo(() => [
+    { label: 'All Priorities', value: 'all' },
+    ...ticketPriorities.map(p => ({ label: p.label, value: p.key }))
+  ], [ticketPriorities]);
 
   // State management
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -168,7 +169,7 @@ export const TicketsPage: React.FC = () => {
       key: 'status',
       width: 130,
       render: (status: string) => (
-        <Tag color={statusColors[status || 'open']} style={{ fontSize: 12, padding: '4px 12px' }}>
+        <Tag color={getStatusColor(status || 'open')} style={{ fontSize: 12, padding: '4px 12px' }}>
           {(status || 'open').replace('_', ' ').toUpperCase()}
         </Tag>
       ),
@@ -187,7 +188,7 @@ export const TicketsPage: React.FC = () => {
       key: 'priority',
       width: 110,
       render: (priority: string) => (
-        <Tag color={priorityColors[priority || 'medium']} style={{ fontSize: 12, padding: '4px 12px' }}>
+        <Tag color={getPriorityColor(priority || 'medium')} style={{ fontSize: 12, padding: '4px 12px' }}>
           {(priority || 'medium').toUpperCase()}
         </Tag>
       ),
@@ -232,36 +233,41 @@ export const TicketsPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 120,
+      width: 160,
       fixed: 'right' as const,
+      align: 'center',
       render: (_: unknown, record: Ticket) => (
         <Space size="small">
-          <Button
-            type="text"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewClick(record)}
-            title="View"
-          />
-          {hasPermission('crm:support:ticket:update') && (
+          <Tooltip title="View Details">
             <Button
               type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditClick(record)}
-              title="Edit"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewClick(record)}
             />
+          </Tooltip>
+          {hasPermission('crm:support:ticket:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditClick(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:support:ticket:delete') && (
             <Popconfirm
-              title="Delete ticket?"
+              title="Delete Ticket"
               description={`Are you sure you want to delete "${record.title}"?`}
               onConfirm={() => handleDeleteClick(record)}
               okText="Delete"
-              okType="danger"
               cancelText="Cancel"
+              okButtonProps={{ danger: true }}
             >
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} title="Delete" />
+              <Tooltip title="Delete">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -351,13 +357,8 @@ export const TicketsPage: React.FC = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 150 }}
-              options={[
-                { label: 'All Statuses', value: 'all' },
-                { label: 'Open', value: 'open' },
-                { label: 'In Progress', value: 'in_progress' },
-                { label: 'Resolved', value: 'resolved' },
-                { label: 'Closed', value: 'closed' },
-              ]}
+              loading={loadingStatuses}
+              options={statusFilterOptions}
             />
             <Select
               placeholder="Filter by priority"
@@ -365,13 +366,8 @@ export const TicketsPage: React.FC = () => {
               value={priorityFilter}
               onChange={setPriorityFilter}
               style={{ width: 150 }}
-              options={[
-                { label: 'All Priorities', value: 'all' },
-                { label: 'Low', value: 'low' },
-                { label: 'Medium', value: 'medium' },
-                { label: 'High', value: 'high' },
-                { label: 'Urgent', value: 'urgent' },
-              ]}
+              loading={loadingPriorities}
+              options={priorityFilterOptions}
             />
           </Space.Compact>
         </Space>

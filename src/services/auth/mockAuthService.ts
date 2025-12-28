@@ -328,7 +328,6 @@ class MockAuthService {
     
     'crm:dashboard:panel:view': 'Access tenant dashboard and analytics',
     'crm:reference:data:read': 'Access master data and configuration',
-    'crm:user:record:read': 'Access user and role management interface',
     
     // Administrative permissions using {resource}:{action} format
     'crm:user:record:read': 'View user accounts and access',

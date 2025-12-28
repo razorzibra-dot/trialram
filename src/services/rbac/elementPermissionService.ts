@@ -28,6 +28,8 @@ type PermissionLike = Pick<Permission, 'name' | 'scope'> & Partial<Permission>;
 
 class ElementPermissionService {
   private permissionsCache = new Map<string, { data: any; timestamp: number }>();
+  private userRolesCache = new Map<string, { roles: string[]; timestamp: number }>();
+  private permissionOverridesCache = new Map<string, { data: boolean | null; timestamp: number }>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -129,24 +131,12 @@ class ElementPermissionService {
         console.warn('[ElementPermissionService] authService.hasPermission check failed, falling back to database:', error);
       }
 
-      // Get user's roles for their tenant
-      const { data: userRoles, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role_id')
-        .eq('user_id', context.user.id)
-        .eq('tenant_id', context.user.tenantId || null);
+      // Get user's roles for their tenant (with caching)
+      const roleIds = await this.getUserRoles(context.user.id, context.user.tenantId || null);
 
-      if (roleError) {
-        console.warn('[ElementPermissionService] Error fetching user roles:', roleError);
+      if (!roleIds || roleIds.length === 0) {
         return false;
       }
-
-      if (!userRoles || userRoles.length === 0) {
-        return false;
-      }
-
-      // Get role IDs
-      const roleIds = userRoles.map(ur => ur.role_id);
 
       // Fetch roles with permissions
       // ✅ FIX: Don't filter by tenant_id for roles - roles can be shared across tenants
@@ -209,7 +199,7 @@ class ElementPermissionService {
   }
 
   /**
-   * Check permission overrides for specific elements
+   * Check permission overrides for specific elements (with caching)
    * @param elementPath - Element path to check
    * @param action - Action being performed
    * @param context - Permission context
@@ -220,6 +210,13 @@ class ElementPermissionService {
     action: string,
     context: PermissionContext
   ): Promise<boolean | null> {
+    const cacheKey = `${context.user.id}:${elementPath}:${action}:${context.user.tenantId || 'null'}`;
+    const cached = this.permissionOverridesCache.get(cacheKey);
+
+    if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+      return cached.data;
+    }
+
     try {
       const { data: overrides, error } = await supabase
         .from('permission_overrides')
@@ -237,24 +234,29 @@ class ElementPermissionService {
 
       if (error) {
         console.warn('[ElementPermissionService] Error fetching overrides:', error);
+        this.permissionOverridesCache.set(cacheKey, { data: null, timestamp: Date.now() });
         return null;
       }
 
       if (!overrides || overrides.length === 0) {
+        this.permissionOverridesCache.set(cacheKey, { data: null, timestamp: Date.now() });
         return null;
       }
 
       // Check most recent override
       const override = overrides[0];
+      let result: boolean | null = null;
       if (override.override_type === 'grant') {
-        return true;
+        result = true;
       } else if (override.override_type === 'deny') {
-        return false;
+        result = false;
       }
 
-      return null;
+      this.permissionOverridesCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
     } catch (error) {
       console.error('[ElementPermissionService] Error checking overrides:', error);
+      this.permissionOverridesCache.set(cacheKey, { data: null, timestamp: Date.now() });
       return null;
     }
   }
@@ -410,13 +412,65 @@ class ElementPermissionService {
   }
 
   /**
+   * Get cached user roles or fetch from database
+   * @param userId - User ID to get roles for
+   * @param tenantId - Tenant ID to filter roles by
+   * @returns Promise<string[]> - Array of role IDs
+   */
+  private async getUserRoles(userId: string, tenantId: string | null): Promise<string[]> {
+    const cacheKey = `${userId}:${tenantId || 'null'}`;
+    const cached = this.userRolesCache.get(cacheKey);
+
+    if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+      return cached.roles;
+    }
+
+    // Fetch from database
+    const { data: userRoles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role_id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId);
+
+    if (roleError) {
+      console.warn('[ElementPermissionService] Error fetching user roles:', roleError);
+      return [];
+    }
+
+    const roleIds = (userRoles || []).map(ur => ur.role_id);
+
+    // Cache the result
+    this.userRolesCache.set(cacheKey, {
+      roles: roleIds,
+      timestamp: Date.now()
+    });
+
+    return roleIds;
+  }
+
+  /**
    * Clear permission cache for user
    * @param userId - User ID to clear cache for
    */
   clearUserCache(userId: string): void {
+    // Clear permission cache
     for (const [key] of this.permissionsCache) {
       if (key.startsWith(`${userId}:`)) {
         this.permissionsCache.delete(key);
+      }
+    }
+
+    // Clear user roles cache
+    for (const [key] of this.userRolesCache) {
+      if (key.startsWith(`${userId}:`)) {
+        this.userRolesCache.delete(key);
+      }
+    }
+
+    // Clear permission overrides cache
+    for (const [key] of this.permissionOverridesCache) {
+      if (key.startsWith(`${userId}:`)) {
+        this.permissionOverridesCache.delete(key);
       }
     }
   }

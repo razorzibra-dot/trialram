@@ -27,6 +27,7 @@ import {
   Row,
   Col,
   Alert,
+  Card,
 } from 'antd';
 import {
   EditOutlined,
@@ -34,6 +35,9 @@ import {
   LinkOutlined,
   DisconnectOutlined,
   ReloadOutlined,
+  UserOutlined,
+  SafetyOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { useTenantAccess } from '../hooks/useTenantAccess';
 import { SuperUserType } from '@/types/superUserModule';
@@ -110,172 +114,166 @@ export const SuperUserDetailPanel: React.FC<SuperUserDetailPanelProps> = ({
 
   return (
     <Drawer
-      title="Super User Details"
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>Super User Details</span>
+        </div>
+      }
       placement="right"
       onClose={onClose}
       open={visible}
       width={500}
-      bodyStyle={{ paddingBottom: 80 }}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>Close</Button>
+          <Button
+            size="large"
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => onEdit?.(superUser)}
+          >
+            Edit
+          </Button>
+          <Button
+            size="large"
+            icon={<LinkOutlined />}
+            onClick={() => onGrantAccess?.(superUser.id)}
+          >
+            Grant Access
+          </Button>
+          <Popconfirm
+            title="Delete Super User"
+            description="Are you sure you want to delete this super user?"
+            okText="Yes, Delete"
+            okType="danger"
+            cancelText="Cancel"
+            onConfirm={handleDelete}
+          >
+            <Button size="large" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </div>
+      }
     >
-      {/* Basic Information */}
-      <Descriptions
-        column={1}
-        size="small"
-        bordered
-        className="mb-6"
-        items={[
-          {
-            label: 'ID',
-            children: <code className="text-xs">{superUser.id}</code>,
-          },
-          {
-            label: 'User ID',
-            children: superUser.userId,
-          },
-          {
-            label: 'Access Level',
-            children: (
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {/* Basic Information */}
+        <Card size="small" style={{ marginBottom: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <SafetyOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Basic Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="ID">
+              <code style={{ fontSize: '11px' }}>{superUser.id}</code>
+            </Descriptions.Item>
+            <Descriptions.Item label="User ID">
+              {superUser.userId}
+            </Descriptions.Item>
+            <Descriptions.Item label="Access Level">
               <Tag color={accessLevelColor[superUser.accessLevel] || 'default'}>
                 {superUser.accessLevel}
               </Tag>
-            ),
-          },
-          {
-            label: 'Super Admin',
-            children: (
+            </Descriptions.Item>
+            <Descriptions.Item label="Super Admin">
               <Tag color={superUser.isSuperAdmin ? 'green' : 'default'}>
                 {superUser.isSuperAdmin ? 'Yes' : 'No'}
               </Tag>
-            ),
-          },
-          {
-            label: 'Created',
-            children: new Date(superUser.createdAt).toLocaleString(),
-          },
-          {
-            label: 'Updated',
-            children: new Date(superUser.updatedAt).toLocaleString(),
-          },
-          {
-            label: 'Last Activity',
-            children: superUser.lastActivityAt
-              ? new Date(superUser.lastActivityAt).toLocaleString()
-              : <span className="text-gray-400">Never</span>,
-          },
-        ]}
-      />
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
 
-      <Divider>Tenant Access</Divider>
-
-      {/* Tenant Access List */}
-      <Spin spinning={loadingTenants} tip="Loading tenant access...">
-        {accessList && accessList.length > 0 ? (
-          <List
-            dataSource={accessList}
-            renderItem={(access) => (
-              <List.Item
-                key={access.id}
-                actions={[
-                  <Popconfirm
-                    title="Revoke Access"
-                    description={`Remove access to tenant?`}
-                    okText="Yes"
-                    cancelText="No"
-                    onConfirm={() =>
-                      onRevokeAccess?.(superUser.id, access.tenantId)
-                    }
-                  >
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<DisconnectOutlined />}
-                      title="Revoke Access"
-                    />
-                  </Popconfirm>,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <span>
-                      Tenant ID: {access.tenantId}
-                      <Tag
-                        color={accessLevelColor[access.accessLevel] || 'default'}
-                        style={{ marginLeft: 8 }}
+        {/* Tenant Access */}
+        <Card size="small" style={{ marginBottom: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <LinkOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Tenant Access</h3>
+          </div>
+          <Spin spinning={loadingTenants} tip="Loading tenant access...">
+            {accessList && accessList.length > 0 ? (
+              <List
+                dataSource={accessList}
+                renderItem={(access) => (
+                  <List.Item
+                    key={access.id}
+                    actions={[
+                      <Popconfirm
+                        title="Revoke Access"
+                        description="Remove access to this tenant?"
+                        okText="Yes"
+                        cancelText="No"
+                        onConfirm={() =>
+                          onRevokeAccess?.(superUser.id, access.tenantId)
+                        }
                       >
-                        {access.accessLevel}
-                      </Tag>
-                    </span>
-                  }
-                  description={`Access granted: ${new Date(
-                    access.createdAt
-                  ).toLocaleDateString()}`}
-                />
-              </List.Item>
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DisconnectOutlined />}
+                          title="Revoke Access"
+                        />
+                      </Popconfirm>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      title={
+                        <span>
+                          Tenant ID: {access.tenantId}
+                          <Tag
+                            color={accessLevelColor[access.accessLevel] || 'default'}
+                            style={{ marginLeft: 8 }}
+                          >
+                            {access.accessLevel}
+                          </Tag>
+                        </span>
+                      }
+                      description={`Access granted: ${new Date(
+                        access.createdAt
+                      ).toLocaleDateString()}`}
+                    />
+                  </List.Item>
+                )}
+                locale={{ emptyText: 'No tenant access assigned' }}
+              />
+            ) : (
+              <Empty description="No tenant access assigned" />
             )}
-            locale={{ emptyText: 'No tenant access assigned' }}
-          />
-        ) : (
-          <Empty description="No tenant access assigned" />
-        )}
-      </Spin>
-
-      {/* Action Buttons */}
-      <Divider />
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Alert
-          message="Tip"
-          description="Use the buttons below to manage this super user's permissions and access rights"
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-        <Row gutter={8}>
-          <Col span={24}>
-            <Button
-              block
-              icon={<ReloadOutlined />}
-              onClick={handleRefreshAccess}
-              loading={loadingTenants}
-            >
-              Refresh Access
-            </Button>
-          </Col>
-        </Row>
-        <Row gutter={8}>
-          <Col span={12}>
-            <Button
-              block
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => onEdit?.(superUser)}
-            >
-              Edit
-            </Button>
-          </Col>
-          <Col span={12}>
-            <Button
-              block
-              icon={<LinkOutlined />}
-              onClick={() => onGrantAccess?.(superUser.id)}
-            >
-              Grant Access
-            </Button>
-          </Col>
-        </Row>
-        <Popconfirm
-          title="Delete Super User"
-          description="Are you sure you want to delete this super user? This action cannot be undone."
-          okText="Yes, Delete"
-          okType="danger"
-          cancelText="Cancel"
-          onConfirm={handleDelete}
-        >
-          <Button block danger icon={<DeleteOutlined />}>
-            Delete Super User
+          </Spin>
+          <Button
+            block
+            style={{ marginTop: 12 }}
+            icon={<ReloadOutlined />}
+            onClick={handleRefreshAccess}
+            loading={loadingTenants}
+          >
+            Refresh Access
           </Button>
-        </Popconfirm>
-      </Space>
+        </Card>
+
+        {/* Activity Information */}
+        <Card size="small" style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+            <HistoryOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Activity Information</h3>
+          </div>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="Created">
+              {new Date(superUser.createdAt).toLocaleString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Updated">
+              {new Date(superUser.updatedAt).toLocaleString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Last Activity">
+              {superUser.lastActivityAt
+                ? new Date(superUser.lastActivityAt).toLocaleString()
+                : <span style={{ color: '#999' }}>Never</span>}
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+      </div>
     </Drawer>
   );
 };

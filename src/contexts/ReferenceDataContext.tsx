@@ -121,7 +121,8 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
    * Fetch all reference data from service (Layer 5: Factory routes to correct backend)
    */
   const fetchAllReferenceData = useCallback(async () => {
-    if (!isMountedRef.current || !tenantId) return;
+    // Allow super admins (tenantId can be null) to load shared reference data
+    if (!isMountedRef.current) return;
 
     setMetadata((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -163,14 +164,14 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
    useEffect(() => {
      isMountedRef.current = true;
 
-     // Only load data if user is authenticated and tenant context exists with valid tenantId
-    if (isAuthenticated && tenantId !== undefined && tenantId !== null && tenantId !== 'undefined') {
+     // Only load data if user is authenticated and tenant context has been resolved
+    if (isAuthenticated && tenantId !== undefined) {
        // Load data on mount
        fetchAllReferenceData();
 
        // Setup auto-refresh timer (5 minutes)
        refreshTimerRef.current = setInterval(() => {
-        if (isMountedRef.current && isAuthenticated && tenantId !== undefined && tenantId !== null && tenantId !== 'undefined') {
+        if (isMountedRef.current && isAuthenticated && tenantId !== undefined) {
            fetchAllReferenceData();
          }
        }, cacheTTL);

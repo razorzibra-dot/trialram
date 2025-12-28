@@ -20,7 +20,9 @@ import {
   Modal,
   message,
   Tooltip,
+  Card,
 } from 'antd';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import {
   EditOutlined,
   MailOutlined,
@@ -34,6 +36,9 @@ import {
   FilePdfOutlined,
   BellOutlined,
   LockOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 import { ProductSale, ProductSaleItem } from '@/types/productSales';
 import { StatusTransitionModal } from './StatusTransitionModal';
@@ -42,9 +47,10 @@ import { InvoiceEmailModal } from './InvoiceEmailModal';
 import { NotificationHistoryPanel } from './NotificationHistoryPanel';
 import { useGenerateContractFromSale } from '../hooks/useGenerateContractFromSale';
 import { useProductSalesPermissions } from '../hooks/useProductSalesPermissions';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 
 interface ProductSaleDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   productSale: ProductSale | null;
   saleItems?: ProductSaleItem[];
   onClose: () => void;
@@ -56,7 +62,7 @@ interface ProductSaleDetailPanelProps {
 }
 
 export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
-  visible,
+  open,
   productSale,
   saleItems = [],
   onClose,
@@ -78,8 +84,39 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
   // RBAC permission checking
   const permissions = useProductSalesPermissions({
     sale: productSale || undefined,
-    autoLoad: visible, // Load permissions when drawer opens
+    autoLoad: open, // Load permissions when drawer opens
   });
+
+  // Database-driven status colors
+  const { getColor: getStatusColor } = useReferenceDataLookup('product_sale_status');
+
+  // Professional styling configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+      border: '1px solid #f0f0f0',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #0ea5e9',
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: '#0ea5e9',
+      marginRight: 10,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
 
   if (!productSale) {
     return null;
@@ -123,33 +160,6 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
     });
   };
 
-  const getStatusColor = (status: string): string => {
-    const colorMap: Record<string, string> = {
-      'draft': 'default',
-      'pending': 'processing',
-      'confirmed': 'success',
-      'delivered': 'success',
-      'cancelled': 'error',
-      'refunded': 'warning',
-    };
-    return colorMap[status] || 'default';
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const displayStatus = productSale.status
     .replace('_', ' ')
     .replace(/\b\w/g, l => l.toUpperCase());
@@ -157,18 +167,25 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
   return (
     <>
       <Drawer
-        title="Product Sale Details"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ShoppingCartOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+            <span>Product Sale Details</span>
+          </div>
+        }
         placement="right"
-        width={550}
+        width={650}
         onClose={onClose}
-        open={visible}
+        open={open}
+        styles={{ body: { padding: 0, paddingTop: 24 } }}
         footer={
-        <Space style={{ float: 'right' }}>
-          <Button onClick={onClose}>Close</Button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" onClick={onClose}>Close</Button>
           
           {/* View Notification History - Always available if viewing details */}
           <Tooltip title="View notification history">
-            <Button 
+            <Button
+              size="large"
               icon={<BellOutlined />} 
               onClick={() => setShowNotificationHistory(true)}
             >
@@ -179,7 +196,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           {/* Change Status - Only if permission granted */}
           {permissions.canChangeStatus ? (
             <Tooltip title="Change sale status">
-              <Button 
+              <Button
+                size="large"
                 icon={<SwapOutlined />} 
                 onClick={() => setShowStatusTransition(true)}
               >
@@ -188,7 +206,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
             </Tooltip>
           ) : (
             <Tooltip title="Permission denied: Cannot change status">
-              <Button 
+              <Button
+                size="large"
                 icon={<SwapOutlined />}
                 disabled
               >
@@ -202,7 +221,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
             <>
               {permissions.canExport ? (
                 <Tooltip title="Generate invoice for this sale">
-                  <Button 
+                  <Button
+                    size="large"
                     icon={<FilePdfOutlined />} 
                     onClick={() => setShowInvoiceGeneration(true)}
                     title="Generate invoice from this sale"
@@ -212,7 +232,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
                 </Tooltip>
               ) : (
                 <Tooltip title="Permission denied: Cannot generate invoices">
-                  <Button 
+                  <Button
+                    size="large"
                     icon={<FilePdfOutlined />}
                     disabled
                     title="Permission denied"
@@ -225,7 +246,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
               {generatedInvoice && (
                 permissions.canExport ? (
                   <Tooltip title="Send generated invoice to customer email">
-                    <Button 
+                    <Button
+                      size="large"
                       icon={<MailOutlined />} 
                       onClick={() => setShowInvoiceEmail(true)}
                       title="Send invoice via email"
@@ -236,7 +258,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
                   </Tooltip>
                 ) : (
                   <Tooltip title="Permission denied: Cannot send invoices">
-                    <Button 
+                    <Button
+                      size="large"
                       icon={<MailOutlined />}
                       disabled
                       type="default"
@@ -252,7 +275,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           {/* Generate Contract - Only if permitted */}
           {!productSale.service_contract_id && (
             permissions.canCreate ? (
-              <Button 
+              <Button
+                size="large"
                 icon={<FileTextOutlined />} 
                 onClick={handleGenerateContract}
                 title="Generate a service contract from this sale"
@@ -261,7 +285,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
               </Button>
             ) : (
               <Tooltip title="Permission denied: Cannot generate contracts">
-                <Button 
+                <Button
+                  size="large"
                   icon={<FileTextOutlined />}
                   disabled
                   title="Permission denied"
@@ -275,7 +300,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           {/* Delete - Only if permitted */}
           {onDelete && (
             permissions.canDelete ? (
-              <Button 
+              <Button
+                size="large"
                 danger 
                 icon={<DeleteOutlined />} 
                 onClick={handleDelete}
@@ -285,7 +311,8 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
               </Button>
             ) : (
               <Tooltip title="Permission denied: Cannot delete sales">
-                <Button 
+                <Button
+                  size="large"
                   danger
                   icon={<DeleteOutlined />}
                   disabled
@@ -299,172 +326,216 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
           
           {/* Edit - Only if permitted */}
           {permissions.canEdit ? (
-            <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+            <Button size="large" type="primary" icon={<EditOutlined />} onClick={onEdit}>
               Edit
             </Button>
           ) : (
             <Tooltip title="Permission denied: Cannot edit sales">
-              <Button type="primary" icon={<LockOutlined />} disabled>
+              <Button size="large" type="primary" icon={<LockOutlined />} disabled>
                 Edit
               </Button>
             </Tooltip>
           )}
-        </Space>
+        </div>
       }
     >
-      {productSale ? (
-        <div>
-          {/* Key Metrics */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            <Col xs={12}>
-              <Statistic
-                title="Total Cost"
-                value={formatCurrency(productSale.total_cost || 0)}
-                prefix={<DollarOutlined />}
-                valueStyle={{ color: '#1890ff', fontSize: 18 }}
-              />
-            </Col>
-            <Col xs={12}>
-              <Statistic
-                title="Units"
-                value={productSale.units}
-                prefix={<ShoppingCartOutlined />}
-                valueStyle={{ fontSize: 18 }}
-              />
-            </Col>
-          </Row>
-
-          <Divider />
-
-          {/* Sale Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Sale Information</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Status">
-              <Tag color={getStatusColor(productSale.status)}>
-                {displayStatus}
-              </Tag>
-            </Descriptions.Item>
-            {productSale.delivery_date && (
-              <Descriptions.Item label="Delivery Date">
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarOutlined style={{ marginRight: 8 }} />
-                  {formatDate(productSale.delivery_date)}
-                </span>
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-
-          <Divider />
-
-          {/* Customer Reference */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Customer Reference</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Customer ID">
-              <span style={{ display: 'flex', alignItems: 'center' }}>
-                <UserOutlined style={{ marginRight: 8 }} />
-                <span className="font-mono text-xs">{productSale.customer_id}</span>
-              </span>
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Divider />
-
-          {/* Product Reference */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Product Reference</h3>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Product ID">
-              <span style={{ display: 'flex', alignItems: 'center' }}>
-                <ShoppingCartOutlined style={{ marginRight: 8 }} />
-                <span className="font-mono text-xs">{productSale.product_id}</span>
-              </span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Cost Per Unit">
-              {formatCurrency(productSale.cost_per_unit || 0)}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Divider />
-
-          {/* Warranty Information */}
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Warranty Information</h3>
-          <Descriptions column={1} size="small" bordered>
-            {productSale.warranty_expiry && (
-              <Descriptions.Item label="Warranty Expiry">
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarOutlined style={{ marginRight: 8 }} />
-                  {formatDate(productSale.warranty_expiry)}
-                </span>
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-
-          {/* Additional Information */}
-          {productSale.notes && (
-            <>
-              <Divider />
-              <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Notes</h3>
-              <div
-                style={{
-                  padding: 12,
-                  background: '#f5f5f5',
-                  borderRadius: 4,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {productSale.notes}
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {productSale ? (
+          <>
+            {/* 📊 Key Metrics Card */}
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <CheckCircleOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Key Metrics</h3>
               </div>
-            </>
-          )}
 
-          {/* Service Contract Link */}
-          {productSale.service_contract_id && (
-            <>
-              <Divider />
-              <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Service Contract</h3>
+              <Row gutter={24}>
+                <Col xs={12} sm={8}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                      Total Value
+                    </div>
+                    <Statistic
+                      value={productSale.total_cost || 0}
+                      prefix="$"
+                      valueStyle={{ color: '#0ea5e9', fontSize: 18, fontWeight: 600 }}
+                      formatter={(value) => {
+                        const num = value as number;
+                        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                        if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+                        return num.toLocaleString();
+                      }}
+                    />
+                  </div>
+                </Col>
+                <Col xs={12} sm={8}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                      Units Sold
+                    </div>
+                    <Statistic
+                      value={productSale.units || 0}
+                      valueStyle={{ color: '#10b981', fontSize: 18, fontWeight: 600 }}
+                    />
+                  </div>
+                </Col>
+                <Col xs={12} sm={8}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                      Cost Per Unit
+                    </div>
+                    <Statistic
+                      value={productSale.cost_per_unit || 0}
+                      prefix="$"
+                      valueStyle={{ color: '#8b5cf6', fontSize: 18, fontWeight: 600 }}
+                      formatter={(value) => (value as number).toLocaleString()}
+                    />
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Sale Information Card */}
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <InfoCircleOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Sale Information</h3>
+              </div>
               <Descriptions column={1} size="small" bordered>
-                <Descriptions.Item label="Contract ID">
-                  <a href={`/app/service-contracts/${productSale.service_contract_id}`} target="_blank" rel="noopener noreferrer">
-                    {productSale.service_contract_id}
-                  </a>
+                <Descriptions.Item label="Sale Number">
+                  <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>
+                    {productSale.sale_number || 'N/A'}
+                  </span>
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
-                  <Tag color="blue">Linked</Tag>
+                  <Tag color={getStatusColor(productSale.status)} style={{ fontSize: 13 }}>
+                    {productSale.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Action">
-                  <Button 
-                    type="link" 
-                    size="small"
-                    onClick={() => window.open(`/app/service-contracts/${productSale.service_contract_id}`, '_blank')}
-                  >
-                    View Contract Details
-                  </Button>
+                {productSale.delivery_date && (
+                  <Descriptions.Item label="Delivery Date">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <CalendarOutlined style={{ color: '#0ea5e9' }} />
+                      {formatDate(productSale.delivery_date)}
+                    </span>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+
+            {/* Customer & Product Reference Card */}
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <UserOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Customer & Product Reference</h3>
+              </div>
+              <Descriptions column={1} size="small" bordered>
+                <Descriptions.Item label="Customer ID">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <UserOutlined style={{ color: '#0ea5e9' }} />
+                    <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{productSale.customer_id}</span>
+                  </span>
+                </Descriptions.Item>
+                <Descriptions.Item label="Product ID">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ShoppingCartOutlined style={{ color: '#0ea5e9' }} />
+                    <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{productSale.product_id}</span>
+                  </span>
                 </Descriptions.Item>
               </Descriptions>
-            </>
-          )}
+            </Card>
 
-          {/* Metadata */}
-          {productSale.created_at && (
-            <>
-              <Divider />
-              <div style={{ fontSize: 12, color: '#999' }}>
+            {/* Warranty Information Card */}
+            {productSale.warranty_expiry && (
+              <Card style={sectionStyles.card} variant="borderless">
+                <div style={sectionStyles.header}>
+                  <SafetyOutlined style={sectionStyles.headerIcon} />
+                  <h3 style={sectionStyles.headerTitle}>Warranty Information</h3>
+                </div>
+                <Descriptions column={1} size="small" bordered>
+                  <Descriptions.Item label="Warranty Expiry">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <CalendarOutlined style={{ color: '#0ea5e9' }} />
+                      {formatDate(productSale.warranty_expiry)}
+                    </span>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            )}
+
+            {/* Service Contract Link Card */}
+            {productSale.service_contract_id && (
+              <Card style={sectionStyles.card} variant="borderless">
+                <div style={sectionStyles.header}>
+                  <FileTextOutlined style={sectionStyles.headerIcon} />
+                  <h3 style={sectionStyles.headerTitle}>Service Contract</h3>
+                </div>
+                <Descriptions column={1} size="small" bordered>
+                  <Descriptions.Item label="Contract ID">
+                    <a href={`/app/service-contracts/${productSale.service_contract_id}`} target="_blank" rel="noopener noreferrer">
+                      {productSale.service_contract_id}
+                    </a>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Status">
+                    <Tag color="blue">Linked</Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Action">
+                    <Button 
+                      type="link" 
+                      size="small"
+                      onClick={() => window.open(`/app/service-contracts/${productSale.service_contract_id}`, '_blank')}
+                    >
+                      View Contract Details
+                    </Button>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            )}
+
+            {/* Notes Card */}
+            {productSale.notes && (
+              <Card style={sectionStyles.card} variant="borderless">
+                <div style={sectionStyles.header}>
+                  <FileTextOutlined style={sectionStyles.headerIcon} />
+                  <h3 style={sectionStyles.headerTitle}>Notes</h3>
+                </div>
+                <div
+                  style={{
+                    padding: 16,
+                    background: '#f9fafb',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    color: '#374151',
+                  }}
+                >
+                  {productSale.notes}
+                </div>
+              </Card>
+            )}
+
+            {/* Metadata */}
+            {productSale.created_at && (
+              <div style={{ fontSize: 12, color: '#9ca3af', paddingTop: 8 }}>
                 <div>Created: {formatDate(productSale.created_at)}</div>
                 {productSale.updated_at && (
                   <div>Last Updated: {formatDate(productSale.updated_at)}</div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <Empty description="No sale selected" />
-      )}
+            )}
+          </>
+        ) : (
+          <Empty description="No sale selected" />
+        )}
+      </div>
       </Drawer>
 
       {/* Status Transition Modal */}
       <StatusTransitionModal
-        visible={showStatusTransition}
+        open={showStatusTransition}
         sale={productSale}
         onClose={() => setShowStatusTransition(false)}
         onSuccess={() => {
@@ -478,9 +549,11 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
       {/* Invoice Generation Modal */}
       {productSale && (
         <InvoiceGenerationModal
-          visible={showInvoiceGeneration}
+          open={showInvoiceGeneration}
           sale={productSale}
           saleItems={saleItems}
+          customers={[]}
+          products={[]}
           onClose={() => setShowInvoiceGeneration(false)}
           onSuccess={(invoice) => {
             setShowInvoiceGeneration(false);
@@ -496,7 +569,7 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
       {/* Invoice Email Modal */}
       {productSale && generatedInvoice && (
         <InvoiceEmailModal
-          visible={showInvoiceEmail}
+          open={showInvoiceEmail}
           invoice={generatedInvoice}
           sale={productSale}
           saleItems={saleItems}
@@ -511,7 +584,7 @@ export const ProductSaleDetailPanel: React.FC<ProductSaleDetailPanelProps> = ({
       {showNotificationHistory && (
         <Modal
           title="Notification History"
-          visible={showNotificationHistory}
+          open={showNotificationHistory}
           onCancel={() => setShowNotificationHistory(false)}
           footer={null}
           width={800}

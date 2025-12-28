@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { Drawer, Button, Space, Tag, Empty, Progress, Card, Alert, Spin, Tooltip, Table, message, Row, Col, Statistic, Divider, Descriptions, Modal } from 'antd';
 import { EditOutlined, LinkOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined, ShoppingOutlined, CalendarOutlined, DollarOutlined, RadarChartOutlined, CheckCircleOutlined, CreditCardOutlined, BarChartOutlined, PlusOutlined } from '@ant-design/icons';
 import { Deal, Customer } from '@/types/crm';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useService } from '@/modules/core/hooks/useService';
 import { CustomerService } from '@/modules/features/customers/services/customerService';
@@ -19,7 +20,7 @@ import { CreateProductSalesModal } from './CreateProductSalesModal';
 import { useProcessPayment, useUpdatePaymentStatus, useRecognizeRevenue, useCreateRevenueSchedule, useRevenueSchedule } from '../hooks';
 
 interface DealDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   deal: Deal | null;
   onClose: () => void;
   onEdit: () => void;
@@ -43,25 +44,6 @@ const statusConfig: Record<string, { emoji: string; label: string; color: string
 };
 
 // Helper functions
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return '—';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric'
-  });
-};
-
 const getDaysUntilClose = (dateString: string | undefined) => {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -78,7 +60,7 @@ const getStageProgress = (stage: string) => {
 };
 
 export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
-  visible,
+  open,
   deal,
   onClose,
   onEdit,
@@ -102,7 +84,7 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
 
   // Load customer details
   useEffect(() => {
-    if (!deal?.customer_id || !customerService || !visible) {
+    if (!deal?.customer_id || !customerService || !open) {
       return;
     }
 
@@ -124,11 +106,11 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
     };
 
     loadCustomerDetails();
-  }, [deal?.customer_id, visible, customerService]);
+  }, [deal?.customer_id, open, customerService]);
 
   // Load linked contracts
   useEffect(() => {
-    if (!deal?.id || !salesService || !visible) {
+    if (!deal?.id || !salesService || !open) {
       return;
     }
 
@@ -146,7 +128,7 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
     };
 
     loadLinkedContracts();
-  }, [deal?.id, visible, salesService]);
+  }, [deal?.id, open, salesService]);
 
   if (!deal) {
     return null;
@@ -205,16 +187,23 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
   return (
     <>
       <Drawer
-        title={`Deal Details - ${deal.title}`}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <DollarOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+            <span>Deal Details</span>
+          </div>
+        }
         placement="right"
         width={650}
         onClose={onClose}
-        open={visible}
+        open={open}
+        styles={{ body: { padding: 0, paddingTop: 24 } }}
         footer={
-          <Space style={{ float: 'right', width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={onClose}>Close</Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button size="large" onClick={onClose}>Close</Button>
             {deal?.status === 'won' && deal?.items && deal?.items.length > 0 && (
               <Button
+                size="large"
                 type="default"
                 icon={<ShoppingOutlined />}
                 onClick={() => setProductSalesModalVisible(true)}
@@ -224,6 +213,7 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
             )}
             {deal?.status === 'won' && (
               <Button
+                size="large"
                 type="default"
                 icon={<FileTextOutlined />}
                 onClick={() => setConvertModalVisible(true)}
@@ -231,12 +221,13 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
                 Convert to Contract
               </Button>
             )}
-            <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+            <Button size="large" type="primary" icon={<EditOutlined />} onClick={onEdit}>
               Edit Deal
             </Button>
-          </Space>
+          </div>
         }
       >
+        <div style={{ padding: '0 24px 24px 24px' }}>
         {/* 🎯 Key Metrics Card */}
         <Card style={infoCardStyle}>
           <Row gutter={16}>
@@ -754,17 +745,18 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
             </div>
           </Card>
         )}
+        </div>
       </Drawer>
 
       {/* Modals */}
       <ConvertToContractModal
-        visible={convertModalVisible}
+        open={convertModalVisible}
         deal={deal}
         onClose={() => setConvertModalVisible(false)}
         onSuccess={handleConversionSuccess}
       />
       <CreateProductSalesModal
-        visible={productSalesModalVisible}
+        open={productSalesModalVisible}
         deal={deal}
         onClose={() => setProductSalesModalVisible(false)}
         onSuccess={() => setProductSalesModalVisible(false)}

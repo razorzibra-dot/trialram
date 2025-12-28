@@ -35,7 +35,7 @@ export interface FilterPreset {
 }
 
 interface FilterPresetsModalProps {
-  visible: boolean;
+  open: boolean;
   currentFilters: ProductSaleFilters;
   onLoadPreset: (preset: FilterPreset) => void;
   onClose: () => void;

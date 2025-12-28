@@ -4,8 +4,9 @@
  * Extends BaseSupabaseService for common database operations
  */
 
-import { supabase, getSupabaseClient } from '@/services/supabase/client';
-import type { Product } from '@/types/masters';
+import { getSupabaseClient } from '@/services/supabase/client';
+import type { ProductFilters, Product } from '@/types/masters';
+import type { PaginatedResponse } from '@/modules/core/types';
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
 
 // Simple base service implementation since the import is missing
@@ -28,13 +29,6 @@ class BaseSupabaseService {
 
 // ✅ Product type is imported from '@/types/masters' at the top of the file
 
-export interface ProductFilters {
-  status?: string;
-  categoryId?: string;
-  tenantId?: string;
-  search?: string;
-}
-
 export class SupabaseProductService extends BaseSupabaseService {
   constructor() {
     super('products', true);
@@ -43,172 +37,106 @@ export class SupabaseProductService extends BaseSupabaseService {
   /**
    * Get all products with optional filtering
    */
-  async getProducts(filters?: ProductFilters): Promise<Product[]> {
-    console.log('[SupabaseProductService] ⚡ getProducts called', { filters });
+  async getProducts(filters: ProductFilters = {}): Promise<PaginatedResponse<Product>> {
+    const page = filters.page ?? 1;
+    const pageSize = filters.pageSize ?? 20;
+
     try {
-      this.log('Fetching products', filters);
-
-      console.log('[SupabaseProductService] Step 1: Getting tenant context...');
       const tenant = await this.ensureTenantContext();
-      console.log('[SupabaseProductService] Step 1: Tenant context:', { 
-        tenantId: tenant?.tenantId, 
-        userId: tenant?.userId,
-        role: tenant?.role 
-      });
-      
-      if (!tenant) {
-        console.error('[SupabaseProductService] ❌ No tenant context available');
-        return [];
-      }
-
-      console.log('[SupabaseProductService] Step 2: Getting Supabase client...');
+      const tenantId = (filters as any).tenantId || tenant?.tenantId;
       const client = getSupabaseClient();
 
-      console.log('[SupabaseProductService] Step 3: Building query...');
-      let query = client
-        .from('products')
-        .select('*');
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
 
-      // Apply filters
-      if (filters?.tenantId) {
-        console.log('[SupabaseProductService] Filtering by tenantId from filters:', filters.tenantId);
-        query = query.eq('tenant_id', filters.tenantId);
-      } else if (tenant.tenantId) {
-        // ✅ Only filter by tenant if user is not super admin
-        console.log('[SupabaseProductService] Filtering by tenantId from context:', tenant.tenantId);
-        query = query.eq('tenant_id', tenant.tenantId);
-      } else {
-        console.log('[SupabaseProductService] ⚠️ No tenant filter applied (super admin or no tenant)');
-      }
-      // ✅ Super admins (tenantId = null) can see all products
+      const buildQuery = (includeDeletedFilter: boolean) => {
+        let query = client
+          .from('products')
+          .select('*', { count: 'exact' });
 
-      if (filters?.status) {
-        console.log('[SupabaseProductService] Filtering by status:', filters.status);
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.categoryId) {
-        console.log('[SupabaseProductService] Filtering by categoryId:', filters.categoryId);
-        query = query.eq('category_id', filters.categoryId);
-      }
+        if (tenantId) {
+          query = query.eq('tenant_id', tenantId);
+        }
 
-      // ✅ Exclude deleted records (only if column exists)
-      console.log('[SupabaseProductService] Step 4: Adding deleted_at filter...');
-      try {
-        query = query.is('deleted_at', null);
-        console.log('[SupabaseProductService] ✅ deleted_at filter added');
-      } catch (deletedAtError) {
-        console.warn('[SupabaseProductService] ⚠️ deleted_at column may not exist yet, continuing without filter');
-      }
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
 
-      console.log('[SupabaseProductService] Step 5: Executing query...');
-      const { data, error } = await query.order('name', { ascending: true });
-      
-      console.log('[SupabaseProductService] Step 6: Query result:', {
-        hasData: !!data,
-        dataLength: data?.length,
-        hasError: !!error,
-        errorCode: error?.code,
-        errorMessage: error?.message
-      });
+        const categoryId = (filters as any).categoryId || filters.category;
+        if (categoryId) {
+          query = query.eq('category_id', categoryId);
+        }
+
+        if (filters.type) {
+          query = query.eq('type', filters.type);
+        }
+
+        if (filters.price_min !== undefined) {
+          query = query.gte('price', filters.price_min);
+        }
+
+        if (filters.price_max !== undefined) {
+          query = query.lte('price', filters.price_max);
+        }
+
+        if (filters.search) {
+          query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
+        }
+
+        if (includeDeletedFilter) {
+          try {
+            query = query.is('deleted_at', null);
+          } catch {
+            // Column may not exist yet; ignore filter
+          }
+        }
+
+        return query
+          .order('name', { ascending: true })
+          .range(start, end);
+      };
+
+      const { data, error, count } = await buildQuery(true);
 
       if (error) {
-        console.error('[SupabaseProductService] ❌ Query error:', error);
-        // ✅ Handle case where deleted_at column doesn't exist
         if (error.code === '42703' && error.message?.includes('deleted_at')) {
-          console.warn('[SupabaseProductService] 🔄 deleted_at column does not exist, retrying without filter');
-          // Retry without deleted_at filter
-          let retryQuery = client
-            .from('products')
-            .select('*');
-          
-          if (filters?.tenantId) {
-            retryQuery = retryQuery.eq('tenant_id', filters.tenantId);
-          } else if (tenant.tenantId) {
-            retryQuery = retryQuery.eq('tenant_id', tenant.tenantId);
-          }
-          
-          if (filters?.status) {
-            retryQuery = retryQuery.eq('status', filters.status);
-          }
-          if (filters?.categoryId) {
-            retryQuery = retryQuery.eq('category_id', filters.categoryId);
-          }
-          
-          console.log('[SupabaseProductService] 🔄 Retrying query without deleted_at...');
-          const { data: retryData, error: retryError } = await retryQuery.order('name', { ascending: true });
-          
-          console.log('[SupabaseProductService] 🔄 Retry result:', {
-            hasData: !!retryData,
-            dataLength: retryData?.length,
-            hasError: !!retryError
-          });
-          
-          if (retryError) {
-            console.error('[SupabaseProductService] ❌ Retry error:', retryError);
-            throw retryError;
-          }
-          
-          this.log('Products fetched (without deleted_at filter)', { count: retryData?.length });
-          console.log('[SupabaseProductService] ✅ Products fetched (retry):', {
-            count: retryData?.length,
-            sampleProduct: retryData?.[0] ? {
-              id: retryData[0].id,
-              name: retryData[0].name,
-              sku: retryData[0].sku,
-              tenant_id: retryData[0].tenant_id
-            } : null
-          });
-          return retryData?.map((p) => this.mapProductResponse(p)) || [];
+          const { data: retryData, error: retryError, count: retryCount } = await buildQuery(false);
+          if (retryError) throw retryError;
+
+          const mappedRetry = (retryData ?? []).map((p) => this.mapProductResponse(p));
+          const totalRetry = retryCount ?? mappedRetry.length;
+
+          return {
+            data: mappedRetry,
+            total: totalRetry,
+            page,
+            pageSize,
+            totalPages: Math.ceil(totalRetry / pageSize),
+          };
         }
+
         throw error;
       }
 
-      this.log('Products fetched', { count: data?.length, tenantId: tenant.tenantId });
-      console.log('[SupabaseProductService] ✅ Products fetched:', {
-        count: data?.length,
-        tenantId: tenant.tenantId,
-        sampleProduct: data?.[0] ? {
-          id: data[0].id,
-          name: data[0].name,
-          sku: data[0].sku,
-          tenant_id: data[0].tenant_id,
-          price: data[0].price,
-          status: data[0].status
-        } : null,
-        allProducts: data?.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
-      });
-      
-      console.log('[SupabaseProductService] Step 7: Mapping products...');
-      console.log('[SupabaseProductService] Raw DB product sample:', data?.[0] ? {
-        id: data[0].id,
-        name: data[0].name,
-        sku: data[0].sku,
-        code: data[0].code, // Check if it's 'code' instead of 'sku'
-        tenant_id: data[0].tenant_id,
-        allKeys: Object.keys(data[0])
-      } : null);
-      
-      const mappedProducts = data?.map((p) => this.mapProductResponse(p)) || [];
-      console.log('[SupabaseProductService] ✅ Mapped products:', {
-        count: mappedProducts.length,
-        sampleMapped: mappedProducts[0] ? {
-          id: mappedProducts[0].id,
-          name: mappedProducts[0].name,
-          sku: mappedProducts[0].sku,
-          tenant_id: mappedProducts[0].tenant_id,
-          price: mappedProducts[0].price,
-          status: mappedProducts[0].status
-        } : null
-      });
-      
-      console.log('[SupabaseProductService] Step 8: Returning products array, length:', mappedProducts.length);
-      return mappedProducts;
+      const mappedProducts = (data ?? []).map((p) => this.mapProductResponse(p));
+      const total = count ?? mappedProducts.length;
+
+      return {
+        data: mappedProducts,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
     } catch (error) {
       this.logError('Error fetching products', error);
-      console.error('[SupabaseProductService] ❌ Full error details:', error);
-      console.error('[SupabaseProductService] ❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      // Return empty array instead of throwing to prevent UI crash
-      return [];
+      return {
+        data: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+      };
     }
   }
 
@@ -261,9 +189,8 @@ export class SupabaseProductService extends BaseSupabaseService {
             price: data.price || 0,
             cost_price: (data as any).cost_price || (data as any).cost,
             currency: data.currency || 'USD',
-            // Advanced pricing
-            pricing_tiers: data.pricing_tiers,
-            discount_rules: data.discount_rules,
+            // ✅ REMOVED: pricing_tiers, discount_rules (not in database)
+            // ✅ REMOVED: specifications (belongs in product_specifications table)
             stock_quantity: data.stock_quantity || 0,
             unit: (data as any).unit,
             reorder_level: data.reorder_level,
@@ -275,8 +202,7 @@ export class SupabaseProductService extends BaseSupabaseService {
             supplier_id: (data as any).supplier_id, // ✅ NORMALIZED: Use FK only
             // ✅ REMOVED: supplier_name string (denormalized)
             image_url: data.image_url,
-            notes: (data as any).notes,
-            specifications: data.specifications,
+            // ✅ REMOVED: notes (not in database)
             tags: data.tags,
             tenant_id: data.tenant_id || tenant.tenantId,
             created_at: new Date().toISOString(),
@@ -335,8 +261,7 @@ export class SupabaseProductService extends BaseSupabaseService {
           supplier_id: (updates as any).supplier_id, // ✅ NORMALIZED: Use FK only
           // ✅ REMOVED: supplier_name string (denormalized)
           image_url: updates.image_url,
-          notes: (updates as any).notes,
-          specifications: updates.specifications,
+          // ✅ REMOVED: notes, specifications (not in database)
           tags: updates.tags,
           tenant_id: updates.tenant_id || tenant.tenantId,
           updated_at: new Date().toISOString(),
@@ -421,21 +346,29 @@ export class SupabaseProductService extends BaseSupabaseService {
   /**
    * Get low stock products
    */
-  async getLowStockProducts(tenantId: string): Promise<Product[]> {
+  async getLowStockProducts(tenantId?: string): Promise<Product[]> {
     try {
-      this.log('Fetching low stock products', { tenantId });
+      const tenant = tenantId ? { tenantId } : await this.ensureTenantContext();
+      const resolvedTenantId = tenantId || tenant?.tenantId;
 
-      const query = getSupabaseClient()
+      this.log('Fetching low stock products', { tenantId: resolvedTenantId });
+
+      let query = getSupabaseClient()
         .from('products')
-        .select(
-          `*,
-          category:product_categories(*)`
-        )
-        .eq('tenant_id', tenantId)
-        .eq('status', 'active')
-        .is('deleted_at', null);
+        .select('*')
+        .eq('status', 'active');
 
-      const { data, error } = await query;
+      if (resolvedTenantId) {
+        query = query.eq('tenant_id', resolvedTenantId);
+      }
+
+      try {
+        query = query.is('deleted_at', null);
+      } catch {
+        // Column may not exist; ignore filter
+      }
+
+      const { data, error } = await query.order('name');
 
       if (error) throw error;
 
@@ -493,7 +426,8 @@ export class SupabaseProductService extends BaseSupabaseService {
     try {
       this.log('Fetching product statistics', { tenantId });
 
-      const products = await this.getProducts({ tenantId });
+      const response = await this.getProducts({ pageSize: 10000, tenantId });
+      const products = response.data || [];
 
       const stats = {
         total: products.length,
@@ -505,10 +439,10 @@ export class SupabaseProductService extends BaseSupabaseService {
 
       if (products.length > 0) {
         stats.totalInventoryValue = products.reduce(
-          (sum, p) => sum + p.price * p.stock_quantity,
+          (sum, p) => sum + (p.price || 0) * (p.stock_quantity || 0),
           0
         );
-        stats.averagePrice = products.reduce((sum, p) => sum + p.price, 0) / products.length;
+        stats.averagePrice = products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length;
       }
 
       return stats;
@@ -725,12 +659,46 @@ export class SupabaseProductService extends BaseSupabaseService {
   private async ensureTenantContext() {
     const tenant = multiTenantService.getCurrentTenant();
     
+    console.log('[SupabaseProductService] ⚡ ensureTenantContext called');
+    console.log('[SupabaseProductService] 📋 Current tenant from multiTenantService:', tenant);
+    
     // ✅ Allow super admins (who may have null tenantId)
     if (!tenant) {
+      console.error('[SupabaseProductService] ❌ NO TENANT CONTEXT! multiTenantService.getCurrentTenant() returned null');
+      console.error('[SupabaseProductService] ❌ This means tenant context was not initialized by AuthContext');
+      console.error('[SupabaseProductService] ❌ Check if user is logged in and AuthContext.initializeAuth completed');
+      
+      // ⚠️ TEMPORARY: Try to bootstrap from localStorage
+      const userStr = localStorage.getItem('crm_user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          console.warn('[SupabaseProductService] 🔄 Found user in localStorage, attempting bootstrap:', user.email);
+          
+          // Create temporary tenant context
+          const tempTenant: any = {
+            userId: user.id,
+            tenantId: user.tenantId,
+            role: user.role
+          };
+          
+          console.warn('[SupabaseProductService] 🔄 Using temporary tenant context:', tempTenant);
+          return tempTenant;
+        } catch (e) {
+          console.error('[SupabaseProductService] ❌ Failed to parse localStorage user:', e);
+        }
+      }
+      
       this.logError('No tenant context available', new Error('Unauthorized'));
       throw new Error('Unauthorized');
     }
 
+    console.log('[SupabaseProductService] ✅ Tenant context found:', {
+      tenantId: tenant.tenantId,
+      userId: tenant.userId,
+      role: tenant.role
+    });
+    
     // ✅ Super admins can have null tenantId, that's okay
     if (tenant.tenantId) {
       await getSupabaseClient().auth.updateUser({

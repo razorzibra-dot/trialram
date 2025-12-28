@@ -188,7 +188,13 @@ class MockJobWorkService {
       final_price: finalPrice,
       base_price: priceCalc.base_price,
       receiver_engineer_id: jobWorkData.receiver_engineer_id,
+      priority: jobWorkData.priority || 'medium',
+      due_date: jobWorkData.due_date,
+      delivery_address: jobWorkData.delivery_address,
+      delivery_instructions: jobWorkData.delivery_instructions,
       comments: jobWorkData.comments,
+      internal_notes: jobWorkData.internal_notes,
+      compliance_requirements: jobWorkData.compliance_requirements,
       status: 'pending',
       tenant_id: tenant.tenantId,
       created_at: new Date().toISOString(),
@@ -225,12 +231,34 @@ class MockJobWorkService {
       throw new Error('Access denied');
     }
 
+    // Map only valid database columns (specifications is in separate table)
+    const updateData: Partial<JobWork> = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Only include fields that exist in job_works table
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.pieces !== undefined) updateData.pieces = updates.pieces;
+    if (updates.size !== undefined) updateData.size = updates.size;
+    if (updates.manual_price !== undefined) updateData.manual_price = updates.manual_price;
+    if (updates.receiver_engineer_id !== undefined) updateData.receiver_engineer_id = updates.receiver_engineer_id;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.due_date !== undefined) updateData.due_date = updates.due_date;
+    if (updates.delivery_address !== undefined) updateData.delivery_address = updates.delivery_address;
+    if (updates.delivery_instructions !== undefined) updateData.delivery_instructions = updates.delivery_instructions;
+    if (updates.comments !== undefined) updateData.comments = updates.comments;
+    if (updates.internal_notes !== undefined) updateData.internal_notes = updates.internal_notes;
+    if (updates.quality_check_passed !== undefined) updateData.quality_check_passed = updates.quality_check_passed;
+    if (updates.quality_notes !== undefined) updateData.quality_notes = updates.quality_notes;
+    if (updates.compliance_requirements !== undefined) updateData.compliance_requirements = updates.compliance_requirements;
+    // Note: specifications is NOT a column in job_works table - it's in job_work_specifications table
+
     // Auto-set completion/delivery timestamps
     if (updates.status === 'completed' && jobWork.status !== 'completed') {
-      updates.completed_at = new Date().toISOString();
+      updateData.completed_at = new Date().toISOString();
     }
     if (updates.status === 'delivered' && jobWork.status !== 'delivered') {
-      updates.delivered_at = new Date().toISOString();
+      updateData.delivered_at = new Date().toISOString();
     }
 
     // Recalculate price if pieces or manual price changed
@@ -240,12 +268,11 @@ class MockJobWorkService {
       const price = updates.manual_price || jobWork.manual_price || jobWork.default_price;
       finalPrice = price * pieces;
     }
+    updateData.final_price = finalPrice;
 
     this.mockJobWorks[jobWorkIndex] = {
       ...jobWork,
-      ...updates,
-      final_price: finalPrice,
-      updated_at: new Date().toISOString()
+      ...updateData
     };
 
     return this.mockJobWorks[jobWorkIndex];

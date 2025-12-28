@@ -11,6 +11,7 @@
 
 1. [System Overview](#1-system-overview)
 2. [RBAC (Role-Based Access Control) System](#2-rbac-role-based-access-control-system)
+   - [Centralized Permission Context Pattern](#-centralized-permission-context-pattern-critical-for-ui)
 3. [Service Layer Architecture](#3-service-layer-architecture)
 4. [Application Modules](#4-application-modules)
 5. [Layer Sync Rules](#5-layer-sync-rules)
@@ -743,6 +744,194 @@ export function usePermissions(): UsePermissionsReturn {
 - ❌ Hardcoding permission checks instead of using hooks
 - ❌ Not providing backward compatibility aliases
 
+---
+
+## 🔐 CENTRALIZED PERMISSION CONTEXT PATTERN (Critical for UI)
+
+### 2.9.1 Overview
+The application uses a **Centralized Permission Context** pattern in `AuthContext` to prevent duplicate permission evaluation API calls when multiple components mount on the same page. This ensures consistent permission handling across the entire UI.
+
+### 2.9.2 Why Centralization Matters
+**Problem**: Without centralization, each component that mounts can trigger identical permission lookups (e.g., `user_roles` → `role_permissions` → `permissions` nested queries), causing:
+- Multiple identical API calls on a single page load
+- Network bottlenecks and slower page rendering
+- Redundant database queries
+- Inconsistent permission state across components
+
+**Solution**: `AuthContext` caches and deduplicates permission evaluations so:
+- Multiple components use the same cached result
+- In-memory cache is keyed by user + tenant + element + action + recordId
+- Common element permissions are preloaded at login/session restore
+- Total API calls reduced from dozens to one or two per page load
+
+### 2.9.3 Architecture
+
+```
+Component/Hook
+  ↓
+  useAuth().evaluateElementPermission()  ← Use this for element-level checks
+  ↓
+AuthContext Cache
+  ├─→ Hit: Return cached boolean (instant)
+  └─→ Miss: Call elementPermissionService (backend)
+     ↓
+     elementPermissionService.evaluateElementPermission()
+     ↓
+     Supabase (user_roles → role_permissions → permissions)
+```
+
+### 2.9.4 When to Use AuthContext Permission Methods
+
+✅ **USE AuthContext** for:
+- UI element visibility checks (button visibility, form fields)
+- Action enablement checks (can user perform action)
+- Conditional rendering based on permissions
+- Bulk permission lookups on component mount
+- Any frontend permission evaluation that affects rendering
+
+❌ **DO NOT USE AuthContext** for:
+- Server-side permission checks (backend validates independently)
+- Permission creation/assignment (use rbacService directly)
+- Role management operations (use rbacService directly)
+- Audit logging permission changes (use rbacService directly)
+
+### 2.9.5 How to Implement Permission Checks in Components
+
+#### Pattern 1: Simple Permission Check (in-memory permissions)
+When `currentUser.permissions` is already loaded (during login/restore):
+
+```typescript
+import { useAuth } from '@/contexts/AuthContext';
+
+const MyComponent = () => {
+  const { user } = useAuth();
+  
+  // Direct check - instant, no API call
+  const canEditUsers = user?.permissions?.includes('crm:user:record:update');
+  
+  return (
+    <button disabled={!canEditUsers}>
+      Edit User
+    </button>
+  );
+};
+```
+
+#### Pattern 2: Element-Level Permission Check (with fallback to cache)
+Use when you need to evaluate specific element paths with caching:
+
+```typescript
+import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+
+const MyComponent = () => {
+  const { evaluateElementPermission } = useAuth();
+  const [canView, setCanView] = useState(false);
+  
+  useEffect(() => {
+    const check = async () => {
+      // This will:
+      // 1. Check in-memory cache first
+      // 2. Return cached result if found
+      // 3. Only call backend if cache miss
+      const result = await evaluateElementPermission('user:list', 'accessible');
+      setCanView(result);
+    };
+    check();
+  }, [evaluateElementPermission]);
+  
+  return canView ? <UserList /> : null;
+};
+```
+
+#### Pattern 3: Using Preloaded Element Permissions Hook
+For user management module, use `usePermissions()` hook which handles preloading:
+
+```typescript
+import { usePermissions } from '@/modules/features/user-management/hooks/usePermissions';
+
+const UsersPage = () => {
+  const {
+    canCreate,       // Preloaded at login
+    canEdit,         // Preloaded at login
+    canDelete,       // Uses cache or API
+    canViewUsers,    // Uses cache or API
+    isLoading,       // Permission loading state
+  } = usePermissions();
+  
+  if (isLoading) return <Spinner />;
+  
+  return (
+    <>
+      {canCreate && <CreateButton />}
+      {canEdit && <EditButton />}
+      {canDelete && <DeleteButton />}
+    </>
+  );
+};
+```
+
+#### Pattern 4: Conditional Rendering Component
+Use for simple permission-based rendering:
+
+```typescript
+import { PermissionControlled } from '@/components/common/PermissionControlled';
+
+const MyComponent = () => {
+  return (
+    <PermissionControlled
+      elementPath="user:record"
+      action="editable"
+      fallback={<span>No permission to edit</span>}
+    >
+      <EditForm />
+    </PermissionControlled>
+  );
+};
+```
+
+### 2.9.6 Cache Behavior & TTL
+
+**Cache Configuration** (in `AuthContext`):
+- **Type**: In-memory `Map` per session
+- **TTL**: Session lifetime (cleared on logout)
+- **Key Format**: `${userId}:${tenantId}:${elementPath}:${action}:${recordId}`
+- **Value**: Boolean (permission granted/denied)
+
+**When cache is cleared**:
+- On logout
+- On user/tenant change
+- On permission role assignment (manual clear needed)
+
+### 2.9.7 Rules for Future Implementation
+
+**When adding new permission checks to existing components**:
+
+1. ✅ **ALWAYS**: Check if `user.permissions` is sufficient (instant check)
+2. ✅ **ALWAYS**: Use `auth.evaluateElementPermission()` with fallback caching
+3. ✅ **ALWAYS**: Add frequently-checked element paths to preload list
+4. ✅ **ALWAYS**: Test with DevTools Network tab to verify cache hit
+5. ✅ **ALWAYS**: Log cache key format for debugging
+
+**When creating new components that need permissions**:
+
+1. ❌ **NEVER**: Import `elementPermissionService` directly
+2. ❌ **NEVER**: Create supabase queries directly in component files
+3. ❌ **NEVER**: Call `role_permissions` or `user_roles` tables from UI components
+4. ❌ **NEVER**: Store permissions in multiple places (use `user.permissions` from Auth)
+5. ❌ **NEVER**: Assume permissions are cached without checking `isLoading` state
+
+### 2.9.8 Key Files Reference
+
+**Core Files**:
+- `src/contexts/AuthContext.tsx` - Centralized cache and preloading
+- `src/services/rbac/elementPermissionService.ts` - Backend evaluation service
+- `src/components/common/PermissionControlled.tsx` - Wrapper component for conditional rendering
+- `src/hooks/useElementPermissions.ts` - Hook for element-level checks
+- `src/modules/features/user-management/hooks/usePermissions.ts` - Module-specific permission hook
+
+---
+
 ### 2.10 Permission Token Format & Multi-Layer Enforcement - CRITICAL
 
 **Canonical Pattern:** `<app>:<domain>:<resource>[:<scope>][:<action>]`  
@@ -1143,6 +1332,185 @@ src/modules/features/[module-name]/
 - RLS policies must match application-level access control
 - Cross-tenant access attempts must be logged
 - Security validations must be consistent across layers
+
+### 5.4 CRUD Service Implementation Pattern (CRITICAL - MANDATORY)
+
+**⚠️ ALWAYS follow this pattern when implementing CREATE/UPDATE operations**
+
+#### Pre-Implementation Checklist (MUST DO BEFORE CODING)
+
+Before implementing ANY CRUD operation for a module:
+
+1. **Read the Database Schema First**
+   - Check `supabase/COMPLETE_DATABASE_EXPORT.sql` OR `supabase/complete_database_schema.sql`
+   - Note ALL columns that exist in the table
+   - Note column data types and constraints
+   - Note which columns are auto-generated (id, created_at, updated_at, tenant_id)
+
+2. **Identify Field Categories**
+   - **Auto-generated fields** (NEVER send in create/update): `id`, `created_at`, `updated_at`, `deleted_at`
+   - **System-set fields** (set by service, not user input): `tenant_id`, `created_by`, `updated_by`
+   - **User-provided fields**: All other fields from the input type
+   - **Computed/virtual fields**: Fields that exist in types but NOT in database (e.g., `attachments` loaded separately)
+
+3. **Create a Field Mapping Table**
+   Document the mapping between TypeScript camelCase and database snake_case:
+   ```
+   | TypeScript Field | Database Column | In Create? | In Update? |
+   |------------------|-----------------|------------|------------|
+   | customerId       | customer_id     | YES        | NO         |
+   | startDate        | start_date      | YES        | YES        |
+   | attachments      | (separate table)| NO         | NO         |
+   ```
+
+#### ✅ CORRECT: Explicit Field Mapping (ALWAYS USE THIS)
+
+```typescript
+async createEntity(data: EntityCreateInput): Promise<Entity> {
+  // Step 1: Build insert object with ONLY valid database columns
+  const insertData = {
+    // User-provided fields (map camelCase → snake_case)
+    customer_id: data.customerId,
+    product_id: data.productId,
+    title: data.title,
+    description: data.description,
+    status: data.status || 'draft',
+    start_date: data.startDate,
+    end_date: data.endDate,
+    value: data.value,
+    // ... only fields that EXIST in the database table
+    
+    // System-set fields
+    created_by: (await supabaseClient.auth.getUser()).data.user?.id,
+    // tenant_id is set by RLS or explicitly if needed
+  };
+
+  const { data: result, error } = await supabaseClient
+    .from('entities')
+    .insert([insertData])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapEntityRow(result);
+}
+
+async updateEntity(id: string, data: EntityUpdateInput): Promise<Entity> {
+  // Step 1: Define EXPLICIT field mapping (only updateable fields)
+  const fieldMap: Record<string, string> = {
+    title: 'title',
+    description: 'description',
+    status: 'status',
+    startDate: 'start_date',
+    endDate: 'end_date',
+    value: 'value',
+    // ... only fields that CAN be updated
+    // DO NOT include: id, customer_id, created_at, created_by, tenant_id
+  };
+
+  // Step 2: Build update object from input using the map
+  const updateData: Record<string, unknown> = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && fieldMap[key]) {
+      updateData[fieldMap[key]] = value;
+    }
+  });
+
+  // Step 3: Add system fields
+  updateData.updated_by = (await supabaseClient.auth.getUser()).data.user?.id;
+  updateData.updated_at = new Date().toISOString();
+
+  const { data: result, error } = await supabaseClient
+    .from('entities')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapEntityRow(result);
+}
+```
+
+#### ❌ WRONG: Spreading Input Directly (NEVER DO THIS)
+
+```typescript
+// ❌ WRONG: Spreads ALL input fields including non-existent columns
+async createEntity(data: EntityCreateInput): Promise<Entity> {
+  const { data: result, error } = await supabaseClient
+    .from('entities')
+    .insert([{
+      ...data,  // ❌ DANGER: May include fields that don't exist in DB
+      created_by: userId,
+    }])
+    .select()
+    .single();
+}
+
+// ❌ WRONG: Using toDatabase() without column validation
+async updateEntity(id: string, data: EntityUpdateInput): Promise<Entity> {
+  const { data: result, error } = await supabaseClient
+    .from('entities')
+    .update({
+      ...toDatabase(data),  // ❌ DANGER: toDatabase doesn't know which columns exist
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+}
+```
+
+#### Common Pitfalls to Avoid
+
+| Pitfall | Problem | Solution |
+|---------|---------|----------|
+| Spreading input directly | Sends non-existent columns → 400 Bad Request | Use explicit field mapping |
+| Using generic toDatabase() | Doesn't filter out invalid columns | Use explicit field mapping per entity |
+| Including computed fields | Fields like `attachments` don't exist in main table | Exclude from insert/update, load separately |
+| Including read-only fields | Fields like `id`, `created_at` sent in update | Use fieldMap that excludes these |
+| Missing column in schema | Service sends field that DB doesn't have | Always verify against DB schema first |
+
+#### Field Category Reference
+
+| Category | Examples | In Create | In Update | Notes |
+|----------|----------|-----------|-----------|-------|
+| Auto-generated | id, created_at, updated_at | ❌ NO | ❌ NO | DB handles these |
+| System-set | tenant_id, created_by, updated_by | ✅ SET BY SERVICE | ✅ SET BY SERVICE | Service sets, not user input |
+| Immutable | customer_id, product_id | ✅ YES | ❌ NO | Set once, never change |
+| Mutable | title, status, description | ✅ YES | ✅ YES | User can modify |
+| Computed/Virtual | attachments, documents | ❌ NO | ❌ NO | Loaded from related tables |
+| Deprecated/Removed | old_field_name | ❌ NO | ❌ NO | May exist in types but not DB |
+
+#### Module-Specific Verified Patterns
+
+| Module | Create Pattern | Update Pattern | Status |
+|--------|---------------|----------------|--------|
+| Deals | Uses `toDatabase()` mapper | Uses `toDatabase()` mapper | ✅ Verified correct |
+| Products | Explicit field list | Explicit field list | ✅ Fixed: removed specifications, pricing_tiers, discount_rules, notes |
+| Product Sales | Explicit field list | Explicit field list | ✅ Fixed: removed sale_date, excluded attachments |
+| Job Works | Explicit field list | Explicit fieldMap | ✅ Fixed: excluded specifications from update |
+| Service Contracts | Explicit field list | Explicit fieldMap | ✅ Verified: matches enterprise schema |
+| Customers | Explicit field list | Explicit field list | ✅ Verified correct |
+| Tickets | Explicit field list | Explicit fieldMap | ✅ Verified correct |
+| Complaints | Explicit field list | Explicit field list | ✅ Verified correct |
+
+#### Verification Steps (MUST DO AFTER IMPLEMENTATION)
+
+1. **Compare service fields vs database columns**
+   - Every field in `insert()` must exist in the table
+   - Every field in `update()` must exist in the table
+   
+2. **Test the CRUD operations**
+   - Create: Should succeed without 400 errors
+   - Read: Should return all expected fields
+   - Update: Should succeed without 400 errors
+   - Delete: Should succeed (soft or hard delete)
+
+3. **Check for console errors**
+   - No "column X does not exist" errors
+   - No "Could not find column" errors
+   - No "400 Bad Request" on insert/update
 
 ---
 

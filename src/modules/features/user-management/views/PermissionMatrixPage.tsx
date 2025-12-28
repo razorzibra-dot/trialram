@@ -3,7 +3,6 @@
  * Comprehensive permission matrix view with role-permission mapping
  */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Table,
@@ -16,7 +15,6 @@ import {
   Row,
   Col,
   Tooltip,
-  Badge,
   Divider,
   Alert,
   Switch,
@@ -42,6 +40,7 @@ import { useService } from '@/modules/core/hooks/useService';
 import { usePermissions } from '../hooks';
 import { UserPermission } from '../guards/permissionGuards';
 import { Role, Permission } from '@/types/rbac';
+import { groupPermissionsByCategory } from '@/modules/features/user-management/utils/permissions';
 
 interface PermissionMatrixRow {
   key: string;
@@ -59,7 +58,6 @@ interface RBACService {
 }
 
 export const PermissionMatrixPage: React.FC = () => {
-  const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { canManageRoles, isLoading: permLoading } = usePermissions();
   const rbacService = useService<RBACService>('rbacService');
@@ -178,6 +176,7 @@ export const PermissionMatrixPage: React.FC = () => {
           .filter(row => row[roleId] === true)
           .map(row => row.permissionId);
 
+        // Notifications handled by hook
         await rbacService.updateRole(roleId, {
           name: role.name,
           description: role.description,
@@ -185,12 +184,11 @@ export const PermissionMatrixPage: React.FC = () => {
         });
       }
 
-      message.success('Changes saved successfully');
       setChanges(new Map());
       loadData();
     } catch (error: unknown) {
       const error_msg = error instanceof Error ? error.message : 'Failed to save changes';
-      message.error(error_msg);
+      console.error('Error saving changes:', error_msg);
     } finally {
       setSaving(false);
     }
@@ -237,13 +235,7 @@ export const PermissionMatrixPage: React.FC = () => {
   };
 
   // Group permissions by category
-  const groupedPermissions = permissions.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {} as Record<string, Permission[]>);
+  const groupedPermissions = groupPermissionsByCategory(permissions);
 
   // Calculate stats
   const totalPermissions = permissions.length;

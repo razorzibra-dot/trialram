@@ -72,14 +72,14 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
     visible: false,
     format: 'csv',
     selectedColumns: [
-      'sale_number',
+      'id',
       'customer_id',
       'product_id',
-      'quantity',
-      'unit_price',
-      'total_value',
+      'units',
+      'cost_per_unit',
+      'total_cost',
       'status',
-      'sale_date'
+      'delivery_date'
     ]
   });
 
@@ -140,29 +140,28 @@ export const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
       visible: false,
       format: 'csv',
       selectedColumns: [
-        'sale_number',
+        'id',
         'customer_id',
         'product_id',
-        'quantity',
-        'unit_price',
-        'total_value',
+        'units',
+        'cost_per_unit',
+        'total_cost',
         'status',
-        'sale_date'
+        'delivery_date'
       ]
     });
   };
 
   const columnOptions = [
-    { label: 'Sale #', value: 'sale_number' },
+    { label: 'Sale ID', value: 'id' },
     { label: 'Customer ID', value: 'customer_id' },
     { label: 'Product ID', value: 'product_id' },
-    { label: 'Quantity', value: 'quantity' },
-    { label: 'Unit Price', value: 'unit_price' },
-    { label: 'Total Value', value: 'total_value' },
+    { label: 'Units', value: 'units' },
+    { label: 'Cost Per Unit', value: 'cost_per_unit' },
+    { label: 'Total Cost', value: 'total_cost' },
     { label: 'Status', value: 'status' },
-    { label: 'Sale Date', value: 'sale_date' },
-    { label: 'Delivery Address', value: 'delivery_address' },
-    { label: 'Warranty Period', value: 'warranty_period' }
+    { label: 'Delivery Date', value: 'delivery_date' },
+    { label: 'Warranty Expiry', value: 'warranty_expiry' }
   ];
 
   return (

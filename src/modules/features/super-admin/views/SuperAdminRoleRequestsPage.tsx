@@ -397,42 +397,34 @@ const SuperAdminRoleRequestsPage: React.FC = () => {
     const handleApprove = async (comments: string, expiresAt?: string) => {
         if (!selectedRequest || !user) return;
 
-        try {
-            await reviewMutation.mutateAsync({
-                reviewData: {
-                    status: 'approved',
-                    reviewComments: comments,
-                    expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-                },
-                reviewerId: user.id,
-            });
-            message.success('Role request approved');
-            setReviewModalVisible(false);
-            setSelectedRequest(null);
-            refetch();
-        } catch (error: any) {
-            message.error(error.message || 'Failed to approve request');
-        }
+        // Notifications handled by reviewMutation hook
+        await reviewMutation.mutateAsync({
+            reviewData: {
+                status: 'approved',
+                reviewComments: comments,
+                expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+            },
+            reviewerId: user.id,
+        });
+        setReviewModalVisible(false);
+        setSelectedRequest(null);
+        refetch();
     };
 
     const handleReject = async (comments: string) => {
         if (!selectedRequest || !user) return;
 
-        try {
-            await reviewMutation.mutateAsync({
-                reviewData: {
-                    status: 'rejected',
-                    reviewComments: comments,
-                },
-                reviewerId: user.id,
-            });
-            message.success('Role request rejected');
-            setReviewModalVisible(false);
-            setSelectedRequest(null);
-            refetch();
-        } catch (error: any) {
-            message.error(error.message || 'Failed to reject request');
-        }
+        // Notifications handled by reviewMutation hook
+        await reviewMutation.mutateAsync({
+            reviewData: {
+                status: 'rejected',
+                reviewComments: comments,
+            },
+            reviewerId: user.id,
+        });
+        setReviewModalVisible(false);
+        setSelectedRequest(null);
+        refetch();
     };
 
     if (!canAccess) {
@@ -544,7 +536,7 @@ const SuperAdminRoleRequestsPage: React.FC = () => {
 
             {/* Modals and Drawers */}
             <DetailDrawer
-                visible={detailDrawerVisible}
+                open={detailDrawerVisible}
                 request={selectedRequest}
                 onClose={() => {
                     setDetailDrawerVisible(false);
@@ -553,7 +545,7 @@ const SuperAdminRoleRequestsPage: React.FC = () => {
             />
 
             <ReviewModal
-                visible={reviewModalVisible}
+                open={reviewModalVisible}
                 request={selectedRequest}
                 loading={reviewMutation.isPending}
                 onApprove={handleApprove}

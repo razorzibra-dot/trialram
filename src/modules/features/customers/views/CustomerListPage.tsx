@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Modal, Checkbox, Alert, Upload, Spin } from 'antd';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, Tooltip, Empty, Modal, Checkbox, Alert, Upload, Spin, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ClearOutlined, DeleteFilled, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { Users, Mail, Phone } from 'lucide-react';
@@ -15,10 +15,10 @@ import { CustomerFormPanel } from '../components/CustomerFormPanel';
 import { Customer } from '@/types/crm';
 import { CustomerFilters, CustomerStats } from '../services/customerService';
 import { useCustomers, useDeleteCustomer, useCustomerStats, useCustomerExport, useCustomerImport } from '../hooks/useCustomers';
-import { useIndustries } from '../hooks/useIndustries';
-import { useCompanySizes } from '../hooks/useCompanySizes';
-import { useActiveUsers } from '../hooks/useUsers';
+import { useActiveUsers } from '@/hooks/useActiveUsers'; // Shared hook for all modules
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -75,11 +75,13 @@ const CustomerListPage: React.FC = () => {
   const deleteCustomer = useDeleteCustomer();
   const exportCustomers = useCustomerExport();
   const importCustomers = useCustomerImport();
-  const { data: statsData, isLoading: statsLoading } = useCustomerStats();
+  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useCustomerStats();
   
-  // Fetch dynamic dropdown data
-  const { data: industries = [] } = useIndustries();
-  const { data: companySizes = [] } = useCompanySizes();
+  // Fetch dynamic dropdown data using consistent pattern
+  const currentTenant = useCurrentTenant();
+  const tenantId = currentTenant?.id;
+  const { options: industryOptions } = useReferenceDataByCategory(tenantId, 'industry');
+  const { options: companySizeOptions } = useReferenceDataByCategory(tenantId, 'company_size');
   const { data: users = [] } = useActiveUsers();
 
   // Real stats from service
@@ -97,6 +99,7 @@ const CustomerListPage: React.FC = () => {
 
   const handleRefresh = () => {
     refetch();
+    refetchStats();
     message.success('Data refreshed successfully');
   };
 
@@ -116,13 +119,9 @@ const CustomerListPage: React.FC = () => {
   };
 
   const handleDelete = async (customer: Customer) => {
-    try {
-      await deleteCustomer.mutateAsync(customer.id);
-      message.success(`Customer "${customer.company_name}" deleted successfully`);
-      refetch();
-    } catch (error) {
-      message.error('Failed to delete customer');
-    }
+    // Notifications handled by useDeleteCustomer hook
+    await deleteCustomer.mutateAsync(customer.id);
+    refetch();
   };
 
   const handleBulkDelete = async () => {
@@ -416,44 +415,45 @@ const CustomerListPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-          {hasPermission('crm:customer:record:update') && (
+          <Tooltip title="View Details">
             <Button
-              type="link"
+              type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              Edit
-            </Button>
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {hasPermission('crm:customer:record:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:customer:record:delete') && (
             <Popconfirm
               title="Delete Customer"
               description={`Are you sure you want to delete "${record.company_name}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -532,7 +532,17 @@ const CustomerListPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Top Industry"
-              value={Object.entries(stats.byIndustry).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'}
+              value={
+                (() => {
+                  const topIndustryKey = Object.entries(stats.byIndustry).sort(([,a], [,b]) => b - a)[0]?.[0];
+                  if (!topIndustryKey || topIndustryKey === 'unknown') return 'N/A';
+                  // Look up the label from reference data options (case-insensitive)
+                  const normalizedKey = topIndustryKey.toLowerCase();
+                  const industryOption = industryOptions.find(opt => opt.value?.toLowerCase() === normalizedKey);
+                  // If found in reference data, use the label; otherwise, capitalize the first letter
+                  return industryOption?.label || (topIndustryKey.charAt(0).toUpperCase() + topIndustryKey.slice(1));
+                })()
+              }
               description="Most common"
               icon={Users}
               color="warning"
@@ -590,9 +600,9 @@ const CustomerListPage: React.FC = () => {
                 allowClear
                 size="large"
               >
-                {industries.map(industry => (
-                  <Option key={industry.id} value={industry.key}>
-                    {industry.name}
+                {industryOptions.map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
                   </Option>
                 ))}
               </Select>
@@ -605,9 +615,9 @@ const CustomerListPage: React.FC = () => {
                 allowClear
                 size="large"
               >
-                {companySizes.map(size => (
-                  <Option key={size.id} value={size.key}>
-                    {size.name}
+                {companySizeOptions.map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
                   </Option>
                 ))}
               </Select>
@@ -693,7 +703,7 @@ const CustomerListPage: React.FC = () => {
 
       {/* Detail Panel (View) */}
       <CustomerDetailPanel
-        visible={drawerMode === 'view'}
+        open={drawerMode === 'view'}
         customer={selectedCustomer}
         onClose={() => setDrawerMode(null)}
         onEdit={() => setDrawerMode('edit')}
@@ -701,7 +711,7 @@ const CustomerListPage: React.FC = () => {
 
       {/* Form Panel (Create/Edit) */}
       <CustomerFormPanel
-        visible={drawerMode === 'create' || drawerMode === 'edit'}
+        open={drawerMode === 'create' || drawerMode === 'edit'}
         customer={drawerMode === 'edit' ? selectedCustomer : null}
         onClose={() => setDrawerMode(null)}
         onSuccess={() => {

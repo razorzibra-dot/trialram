@@ -36,13 +36,14 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { Customer } from '@/types/crm';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { PermissionControlled } from '@/components/common/PermissionControlled';
 import { PermissionSection } from '@/components/layout/PermissionSection';
 import { usePermission } from '@/hooks/useElementPermissions';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   customer: Customer | null;
   onClose: () => void;
   onEdit: () => void;
@@ -134,28 +135,7 @@ const getDaysAsCustomer = (createdAt: string | null | undefined): number => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-const formatCurrency = (value: number | null | undefined): string => {
-  if (!value) return '$0.00';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
 
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '—';
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return '—';
-  }
-};
 
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = (props) => {
   if (!props.customer) {
@@ -168,7 +148,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = (props) =
 const CustomerDetailPanelContent: React.FC<
   Omit<CustomerDetailPanelProps, 'customer'> & { customer: Customer }
 > = ({
-  visible,
+  open,
   customer,
   onClose,
   onEdit,
@@ -209,7 +189,7 @@ const CustomerDetailPanelContent: React.FC<
       placement="right"
       width={600}
       onClose={onClose}
-      open={visible}
+      open={open}
       styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

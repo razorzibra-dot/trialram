@@ -137,13 +137,13 @@ export function useStatusOptions(
 
 /**
  * Hook for loading and memoizing reference data by category
- * @param tenantId - Tenant ID
+ * @param tenantId - Tenant ID (optional - will return empty if not provided)
  * @param category - Category name (e.g., 'priority', 'severity', 'department')
  * @param staleTime - Cache stale time in milliseconds (default: 5 minutes)
  * @returns Object with reference data items, loading, error, and refetch
  */
 export function useReferenceDataByCategory(
-  tenantId: string,
+  tenantId: string | undefined,
   category: string,
   staleTime = 5 * 60 * 1000
 ) {
@@ -155,7 +155,11 @@ export function useReferenceDataByCategory(
   } = useReferenceData();
 
   const items = useMemo(
-    () => getRefDataByCategory(category),
+    () => {
+      // Skip only while tenantId is unresolved (undefined); allow null (super admin)
+      if (tenantId === undefined) return [];
+      return getRefDataByCategory(category);
+    },
     [category, getRefDataByCategory, tenantId, staleTime]
   );
 
@@ -171,8 +175,10 @@ export function useReferenceDataByCategory(
 
   return {
     items,
+    data: items, // Alias for backwards compatibility
     options,
     loading: isLoading,
+    isLoading,
     error,
     refetch: refreshReferenceData,
   };

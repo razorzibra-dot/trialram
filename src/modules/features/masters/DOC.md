@@ -21,9 +21,7 @@ masters/
 │   ├── ProductsDetailPanel.tsx      # Side drawer for product details
 │   ├── ProductsFormPanel.tsx        # Side drawer for create/edit product
 │   ├── CompaniesDetailPanel.tsx     # Side drawer for company details
-│   ├── CompaniesFormPanel.tsx       # Side drawer for create/edit company
-│   ├── ProductsList.tsx             # Products list component
-│   └── CompaniesList.tsx            # Companies list component
+│   └── CompaniesFormPanel.tsx       # Side drawer for create/edit company
 ├── hooks/                   # Custom React hooks
 │   ├── useProducts.ts            # React Query hooks for products
 │   └── useCompanies.ts           # React Query hooks for companies

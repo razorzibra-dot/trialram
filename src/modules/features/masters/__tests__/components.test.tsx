@@ -1,6 +1,6 @@
 /**
  * Masters Module - Component Tests
- * Tests for ProductsList, CompaniesLis, and Form components
+ * Tests for Form components
  * Verifies rendering, user interactions, and data binding
  */
 
@@ -8,8 +8,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ProductsList } from '../components/ProductsList';
-import { CompaniesList } from '../components/CompaniesList';
 import { ProductsFormPanel } from '../components/ProductsFormPanel';
 import { CompaniesFormPanel } from '../components/CompaniesFormPanel';
 
@@ -29,120 +27,9 @@ const createWrapper = () => {
   );
 };
 
-describe('ProductsList Component', () => {
-  it('should render products table', async () => {
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    // Wait for table to render
-    await waitFor(() => {
-      expect(screen.getByRole('table')).toBeDefined();
-    });
-  });
-
-  it('should display product columns', async () => {
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Name|name/i) || document.body.innerHTML.includes('Name')).toBeTruthy();
-    });
-  });
-
-  it('should support row selection', async () => {
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      const checkboxes = screen.queryAllByRole('checkbox');
-      expect(checkboxes.length).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  it('should provide bulk action buttons when rows selected', async () => {
-    const { container } = render(<ProductsList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      const table = screen.getByRole('table');
-      expect(table).toBeDefined();
-    });
-  });
-
-  it('should support filtering', async () => {
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    const searchInput = screen.queryByPlaceholderText(/search|Search/i);
-    if (searchInput) {
-      await userEvent.type(searchInput, 'test');
-      expect(searchInput).toHaveValue('test');
-    }
-  });
-
-  it('should support sorting', async () => {
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByRole('table')).toBeDefined();
-    });
-  });
-
-  it('should show loading state', async () => {
-    const { container } = render(<ProductsList />, { wrapper: createWrapper() });
-
-    // Initially should show loading or skeleton
-    expect(container.innerHTML.includes('loading') || container.innerHTML.includes('spin')).toBeDefined();
-  });
-
-  it('should show error state if data fails to load', async () => {
-    // This would require mocking the service to fail
-    render(<ProductsList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      // Either shows data or error message
-      expect(document.body).toBeDefined();
-    });
-  });
-});
-
-describe('CompaniesList Component', () => {
-  it('should render companies table', async () => {
-    render(<CompaniesList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByRole('table')).toBeDefined();
-    });
-  });
-
-  it('should display company columns', async () => {
-    render(<CompaniesList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Name|name|Company/i) || document.body.innerHTML.includes('Name')).toBeTruthy();
-    });
-  });
-
-  it('should support row selection for companies', async () => {
-    render(<CompaniesList />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      const checkboxes = screen.queryAllByRole('checkbox');
-      expect(checkboxes.length).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  it('should support filtering companies', async () => {
-    render(<CompaniesList />, { wrapper: createWrapper() });
-
-    const searchInput = screen.queryByPlaceholderText(/search|Search/i);
-    if (searchInput) {
-      await userEvent.type(searchInput, 'test company');
-      expect(searchInput).toHaveValue('test company');
-    }
-  });
-
-  it('should show loading state for companies', async () => {
-    const { container } = render(<CompaniesList />, { wrapper: createWrapper() });
-
-    expect(container.innerHTML.includes('loading') || container.innerHTML.includes('spin')).toBeDefined();
-  });
-});
+// NOTE: ProductsList and CompaniesList components have been removed
+// These tests are now obsolete as pages use inline Ant Design Tables
+// Keeping only Form component tests below
 
 describe('ProductsFormPanel Component', () => {
   it('should render form with required fields', async () => {

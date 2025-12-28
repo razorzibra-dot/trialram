@@ -9,7 +9,7 @@ import { AuditMetadataDTO, PaginatedResponseDTO, DistributionDTO, PriorityLevel 
 /**
  * Lead Status Enumeration
  */
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted' | 'lost';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted' | 'lost' | 'cancelled';
 
 /**
  * Lead Qualification Status Enumeration
@@ -26,7 +26,7 @@ export type LeadStage = 'awareness' | 'interest' | 'consideration' | 'intent' | 
  * Complete lead information for sales prospect management
  *
  * STANDARDIZED FIELD NAMES:
- * - Status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted' | 'lost'
+ * - Status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted' | 'lost' | 'cancelled'
  * - Qualification Status: 'new' | 'contacted' | 'qualified' | 'unqualified'
  * - Stage: 'awareness' | 'interest' | 'consideration' | 'intent' | 'evaluation' | 'purchase'
  * - Score: leadScore (0-100)
@@ -246,6 +246,9 @@ export interface DealDTO {
   /** Deal status */
   status: DealStatus;
 
+  /** Deal type: PRODUCT or SERVICE */
+  dealType: 'PRODUCT' | 'SERVICE';
+
   /** Deal source */
   source?: string;
 
@@ -284,6 +287,25 @@ export interface DealDTO {
 
   /** Audit metadata */
   audit: AuditMetadataDTO;
+}
+
+/** Deal Item DTO */
+export interface DealItemDTO {
+  id?: string;
+  dealId?: string;
+  productId?: string;
+  productName?: string;
+  productDescription?: string;
+  quantity: number;
+  unitPrice: number;
+  discount?: number;
+  discountType?: 'fixed' | 'percentage';
+  tax?: number;
+  taxRate?: number;
+  serviceId?: string;
+  duration?: string;
+  notes?: string;
+  lineTotal?: number;
 }
 
 /**
@@ -370,6 +392,10 @@ export interface CreateDealDTO {
   tags?: string[];
   competitorInfo?: string;
   opportunityId?: string;
+  /** Required: dealType must be provided on create */
+  dealType: 'PRODUCT' | 'SERVICE';
+  /** Optional line items */
+  items?: DealItemDTO[];
 }
 
 /**
@@ -391,6 +417,8 @@ export interface UpdateDealDTO {
   competitorInfo?: string;
   winLossReason?: string;
   opportunityId?: string;
+  /** Note: Changing dealType is not allowed via update; it must be set on create */
+  items?: DealItemDTO[];
 }
 
 /**

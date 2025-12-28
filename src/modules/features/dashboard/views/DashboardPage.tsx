@@ -23,6 +23,7 @@ import {
 import { PageHeader, StatCard } from '@/components/common';
 import { PermissionControlled } from '@/components/common/PermissionControlled';
 import { usePermission } from '@/hooks/useElementPermissions';
+import { formatCurrency } from '@/utils/formatters';
 import {
   RecentActivityWidget,
   TopCustomersWidget,
@@ -57,15 +58,6 @@ const DashboardPage: React.FC = () => {
   const canCreateCustomer = usePermission('crm:dashboard:button.newcustomer', 'visible');
   const canCreateDeal = usePermission('crm:dashboard:button.createdeal', 'visible');
   const canCreateTicket = usePermission('crm:dashboard:button.newticket', 'visible');
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   return (
     <>

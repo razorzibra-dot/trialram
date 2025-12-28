@@ -44,6 +44,9 @@ export interface BackendConfig {
     enableErrorTracking: boolean;
     debugFactory: boolean;
   };
+  businessRules?: {
+    leadConversionMinScore: number;
+  };
 }
 
 /**
@@ -92,6 +95,9 @@ export const backendConfig: BackendConfig = {
     enableMetrics: import.meta.env.VITE_ENABLE_PERFORMANCE_METRICS !== 'false',
     enableErrorTracking: import.meta.env.VITE_ENABLE_ERROR_TRACKING !== 'false',
     debugFactory: import.meta.env.VITE_DEBUG_SERVICE_FACTORY === 'true',
+  },
+  businessRules: {
+    leadConversionMinScore: parseInt(import.meta.env.VITE_LEAD_CONVERSION_MIN_SCORE || '55'),
   },
 };
 

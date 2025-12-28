@@ -171,17 +171,37 @@ class SupabaseRBACService {
       // Continue without permissions - roles will have empty permissions array
     }
 
-    // Map permissions to roles
+    // Map permissions to roles (store permission names, not IDs)
     const permissionsByRole = new Map<string, string[]>();
     if (rolePermissions) {
-      rolePermissions.forEach(rp => {
-        const roleId = rp.role_id;
-        const permissionId = rp.permission_id;
-        if (!permissionsByRole.has(roleId)) {
-          permissionsByRole.set(roleId, []);
-        }
-        permissionsByRole.get(roleId)!.push(permissionId);
-      });
+      // First, get all permission names for the permission IDs
+      const permissionIds = rolePermissions.map(rp => rp.permission_id);
+      const { data: permissionDetails, error: permError } = await supabase
+        .from('permissions')
+        .select('id, name')
+        .in('id', permissionIds);
+
+      if (permError) {
+        console.error('[RBAC] Error fetching permission details:', permError);
+      } else if (permissionDetails) {
+        // Create a map of permission_id -> permission_name
+        const permissionNamesById = new Map<string, string>();
+        permissionDetails.forEach(perm => {
+          permissionNamesById.set(perm.id, perm.name);
+        });
+
+        // Map permission names to roles
+        rolePermissions.forEach(rp => {
+          const roleId = rp.role_id;
+          const permissionName = permissionNamesById.get(rp.permission_id);
+          if (permissionName) {
+            if (!permissionsByRole.has(roleId)) {
+              permissionsByRole.set(roleId, []);
+            }
+            permissionsByRole.get(roleId)!.push(permissionName);
+          }
+        });
+      }
     }
 
     // Map database rows to Role interface (snake_case → camelCase)
@@ -707,8 +727,7 @@ class SupabaseRBACService {
           action,
           table_name: tableName,  // Use table_name instead of resource
           record_id: resourceId || null,  // Use record_id instead of resource_id
-          old_values: null,  // Store details in old_values for now (can be enhanced later)
-          new_values: details || null,  // Store details in new_values
+          changes: { after: details || {} },  // Store details in changes column
           ip_address: ipAddress,  // Will be NULL if invalid IP
           user_agent: navigator.userAgent,
           tenant_id: tenantId  // Use tenantId with fallback to null
@@ -813,6 +832,9 @@ class SupabaseRBACService {
    * Accepts either:
    * 1. An action string + optional context (for module-specific RBAC checks)
    * 2. An array of permission IDs (for traditional permission validation)
+   * 
+   * ✅ FIXED: Now properly queries role_permissions junction table instead of
+   * expecting permissions column in roles table
    */
   async validateRolePermissions(
     actionOrPermissions: string | string[],
@@ -822,8 +844,16 @@ class SupabaseRBACService {
     if (context || typeof actionOrPermissions === 'string') {
       // Action-based permission check
       const currentUser = authService.getCurrentUser();
+      console.log('[validateRolePermissions] 🔍 Checking permission for user:', {
+        email: currentUser?.email,
+        role: currentUser?.role,
+        tenantId: currentUser?.tenantId,
+        permissionsCount: currentUser?.permissions?.length || 0,
+        action: actionOrPermissions
+      });
+
       if (!currentUser) {
-        console.warn('[validateRolePermissions] No user found');
+        console.warn('[validateRolePermissions] ❌ No user found');
         return false;
       }
       
@@ -838,53 +868,86 @@ class SupabaseRBACService {
       }
       
       try {
+        console.log('[validateRolePermissions] 🔍 Querying user roles for tenant:', currentUser.tenantId);
+
         // Get user's roles for their tenant
         const { data: userRoles, error: roleError } = await supabase
           .from('user_roles')
           .select('role_id')
           .eq('user_id', currentUser.id)
-          .eq('tenant_id', currentUser.tenant_id);
-        
+          .eq('tenant_id', currentUser.tenantId);
+
+        console.log('[validateRolePermissions] 📋 User roles query result:', {
+          userRoles,
+          roleError,
+          userId: currentUser.id,
+          tenantId: currentUser.tenantId
+        });
+
         if (roleError) {
-          console.warn('[validateRolePermissions] Error fetching user roles:', roleError);
+          console.warn('[validateRolePermissions] ❌ Error fetching user roles:', roleError);
           return true; // Graceful degradation
         }
-        
+
         if (!userRoles || userRoles.length === 0) {
-          console.warn('[validateRolePermissions] User has no roles assigned');
+          console.warn('[validateRolePermissions] ❌ User has no roles assigned');
           return false;
         }
-        
+
         // Get the role IDs
         const roleIds = userRoles.map(ur => ur.role_id);
-        
-        // Fetch roles to get their permissions
-        const { data: roles, error: fetchRolesError } = await supabase
-          .from('roles')
-          .select('id, permissions')
-          .in('id', roleIds)
-          .eq('tenant_id', currentUser.tenant_id);
-        
-        if (fetchRolesError) {
-          console.warn('[validateRolePermissions] Error fetching roles:', fetchRolesError);
+        console.log('[validateRolePermissions] 🎯 Found role IDs:', roleIds);
+
+        // ✅ FIXED: Query role_permissions junction table to get permission names
+        // First, get all permission IDs for the user's roles
+        const { data: rolePermissions, error: rolePermsError } = await supabase
+          .from('role_permissions')
+          .select('permission_id')
+          .in('role_id', roleIds);
+
+        if (rolePermsError) {
+          console.warn('[validateRolePermissions] ❌ Error fetching role permissions:', rolePermsError);
           return true; // Graceful degradation
         }
-        
-        // Check if any of the user's roles have the required permission
-        const hasPermission = roles?.some(role => {
-          const permissions = Array.isArray(role.permissions) ? role.permissions : [];
-          return permissions.includes(permissionRequired);
-        });
-        
-        if (hasPermission) {
-          console.log(`[validateRolePermissions] User has permission "${permissionRequired}" for action "${action}"`);
-        } else {
-          console.warn(`[validateRolePermissions] User does not have permission "${permissionRequired}" for action "${action}"`);
+
+        if (!rolePermissions || rolePermissions.length === 0) {
+          console.warn('[validateRolePermissions] ❌ No permissions found for user roles');
+          return false;
         }
-        
-        return hasPermission || false;
+
+        // Get permission IDs
+        const permissionIds = rolePermissions.map(rp => rp.permission_id);
+        console.log('[validateRolePermissions] 🎯 Found permission IDs:', permissionIds.length);
+
+        // Fetch permission names from permissions table
+        const { data: permissions, error: permsError } = await supabase
+          .from('permissions')
+          .select('id, name')
+          .in('id', permissionIds);
+
+        if (permsError) {
+          console.warn('[validateRolePermissions] ❌ Error fetching permissions:', permsError);
+          return true; // Graceful degradation
+        }
+
+        // Get permission names
+        const permissionNames = permissions?.map(p => p.name) || [];
+        console.log('[validateRolePermissions] 📋 User has permissions:', permissionNames.length);
+        console.log('[validateRolePermissions] 🔍 Checking for permission:', permissionRequired);
+
+        // Check if user has the required permission
+        const hasPermission = permissionNames.includes(permissionRequired);
+
+        if (hasPermission) {
+          console.log(`[validateRolePermissions] ✅ User has permission "${permissionRequired}" for action "${action}"`);
+        } else {
+          console.warn(`[validateRolePermissions] ❌ User does not have permission "${permissionRequired}" for action "${action}"`);
+          console.log('[validateRolePermissions] 📋 Available permissions:', permissionNames.slice(0, 20), '...');
+        }
+
+        return hasPermission;
       } catch (error) {
-        console.error('[validateRolePermissions] Error validating permissions:', error);
+        console.error('[validateRolePermissions] ❌ Error validating permissions:', error);
         return true; // Graceful degradation
       }
     }
@@ -912,30 +975,13 @@ class SupabaseRBACService {
 
   /**
    * Map action string to required permission
-   * Converts action format like "crm:product-sale:record:create" to "crm:product:record:create"
-   * Updated to use {resource}:{action} format instead of manage_resource
+   * Action strings are already in the correct permission format
+   * e.g., "crm:product-sale:record:create" maps to "crm:product-sale:record:create"
    */
   private mapActionToPermission(action: string): string | null {
-    // Action format: "resource(:or_subresource):operation"
-    // e.g., "crm:product-sale:record:create" -> "crm:product:record:create"
-    const parts = action.split(':');
-    if (parts.length < 2) return null;
-    
-    const resource = parts[0];
-    const operation = parts[1];
-    
-    // Handle compound resources (e.g., "product_sales" -> "products")
-    const resourceMap: Record<string, string> = {
-      'product_sales': 'products',
-      'service_contracts': 'service_contracts',
-      'jobworks': 'jobworks',
-      'user_management': 'users',
-    };
-
-    const mappedResource = resourceMap[resource] || resource;
-
-    // Return {resource}:{action} format
-    return `${mappedResource}:${operation}`;
+    // Action strings are already in the correct permission format
+    // No mapping needed - return the action as-is
+    return action;
   }
 
   /**

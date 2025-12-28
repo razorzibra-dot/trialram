@@ -1,7 +1,7 @@
 /**
- * Lead Form Panel - Enterprise Design
- * Comprehensive lead capture and editing form with validation
- * Unified drawer panel for create/edit operations
+ * Lead Form Panel - Enterprise Enhanced Edition
+ * Professional create/edit form with card-based sections, validation, and rich UI
+ * ✨ Enterprise Grade UI/UX Enhancements
  */
 
 import React, { useEffect, useState } from 'react';
@@ -16,119 +16,111 @@ import {
   Row,
   Col,
   Card,
-  Divider,
   DatePicker,
   InputNumber,
   Tag,
-  Typography
 } from 'antd';
-import { SaveOutlined, CloseOutlined, UserOutlined, PhoneOutlined, MailOutlined, GlobalOutlined, CalculatorOutlined, UserAddOutlined } from '@ant-design/icons';
+import {
+  SaveOutlined,
+  CloseOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  GlobalOutlined,
+  ShoppingOutlined,
+  FileTextOutlined,
+  TagsOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
 import type { LeadDTO, CreateLeadDTO, UpdateLeadDTO } from '@/types/dtos';
-import { useCreateLead, useUpdateLead, useAutoCalculateLeadScore, useAutoAssignLead } from '../hooks/useLeads';
-import { useLeadSource } from '@/modules/features/customers/hooks/useLeadSource';
-import { useLeadRating } from '@/modules/features/customers/hooks/useLeadRating';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCreateLead, useUpdateLead } from '../hooks/useLeads';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
+import { useActiveUsers } from '@/hooks/useActiveUsers';
 
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
 interface LeadFormPanelProps {
-  visible: boolean;
+  open: boolean;
   lead?: LeadDTO | null;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
+// ✨ Professional styling configuration (consistent with other modules)
+const sectionStyles = {
+  card: {
+    marginBottom: 20,
+    borderRadius: 8,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottom: '2px solid #e5e7eb',
+  },
+  headerIcon: {
+    fontSize: 20,
+    color: '#0ea5e9',
+    marginRight: 10,
+    fontWeight: 600,
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: '#1f2937',
+    margin: 0,
+  },
+};
+
 export const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
-  visible,
+  open,
   lead,
   onClose,
   onSuccess
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const leadScore = Form.useWatch('leadScore', form);
   const isEdit = !!lead;
 
-  // Reference data hooks
-  const { data: leadSources } = useLeadSource();
-  const { data: leadRatings } = useLeadRating();
+  // ✅ Base permissions for create/update actions (synchronous - consistent pattern)
+  const { hasPermission } = useAuth();
+  const canCreateLead = hasPermission('crm:lead:record:create');
+  const canUpdateLead = hasPermission('crm:lead:record:update');
+  const finalCanSaveLead = isEdit ? canUpdateLead : canCreateLead;
 
   // Mutations
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
-  const autoCalculateScore = useAutoCalculateLeadScore();
-  const autoAssignLead = useAutoAssignLead();
 
-  // Qualification status options
-  const qualificationStatuses = [
-    { value: 'new', label: 'New' },
-    { value: 'contacted', label: 'Contacted' },
-    { value: 'qualified', label: 'Qualified' },
-    { value: 'unqualified', label: 'Unqualified' }
-  ];
+  // ✅ Database-driven dropdowns - consistent pattern
+  const currentTenant = useCurrentTenant();
+  const tenantId = currentTenant?.id;
+  
+  const { options: leadSourceOptions, isLoading: loadingLeadSources } = useReferenceDataByCategory(tenantId, 'lead_source');
+  const { options: qualificationOptions, isLoading: loadingQualifications } = useReferenceDataByCategory(tenantId, 'lead_qualification');
+  const { options: stageOptions, isLoading: loadingStages } = useReferenceDataByCategory(tenantId, 'lead_stage');
+  const { options: statusOptions, isLoading: loadingStatuses } = useReferenceDataByCategory(tenantId, 'lead_status');
+  const { options: companySizeOptions, isLoading: loadingCompanySizes } = useReferenceDataByCategory(tenantId, 'company_size');
+  const { options: industryOptions, isLoading: loadingIndustries } = useReferenceDataByCategory(tenantId, 'industry');
+  // ✅ Replace hardcoded arrays with database-driven reference data
+  const { options: budgetRangeOptions, isLoading: loadingBudgetRanges } = useReferenceDataByCategory(tenantId, 'budget_range');
+  const { options: timelineOptions, isLoading: loadingTimeline } = useReferenceDataByCategory(tenantId, 'decision_timeline');
 
-  // Lead stage options
-  const leadStages = [
-    { value: 'awareness', label: 'Awareness' },
-    { value: 'interest', label: 'Interest' },
-    { value: 'consideration', label: 'Consideration' },
-    { value: 'intent', label: 'Intent' },
-    { value: 'evaluation', label: 'Evaluation' },
-    { value: 'purchase', label: 'Purchase' }
-  ];
+  // Load active users for "Assigned To" dropdown
+  const { data: activeUsers = [], isLoading: loadingUsers } = useActiveUsers();
 
-  // Status options
-  const statusOptions = [
-    { value: 'new', label: 'New' },
-    { value: 'contacted', label: 'Contacted' },
-    { value: 'qualified', label: 'Qualified' },
-    { value: 'unqualified', label: 'Unqualified' },
-    { value: 'converted', label: 'Converted' },
-    { value: 'lost', label: 'Lost' }
-  ];
-
-  // Company size options
-  const companySizeOptions = [
-    { value: 'startup', label: 'Startup (1-10)' },
-    { value: 'small', label: 'Small (11-50)' },
-    { value: 'medium', label: 'Medium (51-200)' },
-    { value: 'large', label: 'Large (201-1000)' },
-    { value: 'enterprise', label: 'Enterprise (1000+)' }
-  ];
-
-  // Industry options
-  const industryOptions = [
-    { value: 'technology', label: 'Technology' },
-    { value: 'healthcare', label: 'Healthcare' },
-    { value: 'finance', label: 'Finance' },
-    { value: 'manufacturing', label: 'Manufacturing' },
-    { value: 'retail', label: 'Retail' },
-    { value: 'education', label: 'Education' },
-    { value: 'consulting', label: 'Consulting' },
-    { value: 'other', label: 'Other' }
-  ];
-
-  // Budget range options
-  const budgetRangeOptions = [
-    { value: 'under_25k', label: 'Under $25K' },
-    { value: '25k_50k', label: '$25K - $50K' },
-    { value: '50k_100k', label: '$50K - $100K' },
-    { value: '100k_250k', label: '$100K - $250K' },
-    { value: '250k_500k', label: '$250K - $500K' },
-    { value: 'over_500k', label: 'Over $500K' }
-  ];
-
-  // Timeline options
-  const timelineOptions = [
-    { value: 'immediate', label: 'Immediate (within 1 month)' },
-    { value: '1_3_months', label: '1-3 months' },
-    { value: '3_6_months', label: '3-6 months' },
-    { value: '6_12_months', label: '6-12 months' },
-    { value: 'over_12_months', label: 'Over 12 months' }
-  ];
+  // Removed hardcoded budgetRangeOptions and timelineOptions in favor of reference data
 
   useEffect(() => {
-    if (visible && lead) {
+    if (open && lead) {
       // Populate form with lead data
       form.setFieldsValue({
         firstName: lead.firstName,
@@ -153,7 +145,7 @@ export const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
         nextFollowUp: lead.nextFollowUp ? new Date(lead.nextFollowUp) : null,
         lastContact: lead.lastContact ? new Date(lead.lastContact) : null
       });
-    } else if (visible && !lead) {
+    } else if (open && !lead) {
       // Reset form for new lead
       form.resetFields();
       form.setFieldsValue({
@@ -163,7 +155,7 @@ export const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
         stage: 'awareness'
       });
     }
-  }, [visible, lead, form]);
+  }, [open, lead, form]);
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
@@ -176,17 +168,15 @@ export const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
 
       if (isEdit && lead) {
         await updateLead.mutateAsync({ id: lead.id, data: leadData });
-        message.success('Lead updated successfully');
       } else {
         await createLead.mutateAsync(leadData as CreateLeadDTO);
-        message.success('Lead created successfully');
       }
 
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Lead save error:', error);
-      // Error handling is done in the hooks
+      // Notifications handled by useCreateLead/useUpdateLead hooks
     } finally {
       setLoading(false);
     }
@@ -206,331 +196,478 @@ export const LeadFormPanel: React.FC<LeadFormPanelProps> = ({
   return (
     <Drawer
       title={
-        <Space>
-          <UserOutlined />
-          {isEdit ? 'Edit Lead' : 'Create New Lead'}
-        </Space>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>{isEdit ? 'Edit Lead' : 'Create New Lead'}</span>
+        </div>
       }
-      width={800}
-      open={visible}
+      placement="right"
+      width={600}
       onClose={handleClose}
-      maskClosable={false}
-      extra={
-        <Space>
-          {isEdit && (
-            <>
+      open={open}
+      forceRender
+      destroyOnClose={false}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          {/* Auto actions moved to grid to reduce confusion */}
+          <Space style={{ marginLeft: 'auto' }}>
+            <Button
+              size="large"
+              icon={<CloseOutlined />}
+              onClick={handleClose}
+            >
+              Cancel
+            </Button>
+            {finalCanSaveLead && (
               <Button
-                onClick={() => lead && autoCalculateScore.mutate(lead.id)}
-                loading={autoCalculateScore.isPending}
-                icon={<CalculatorOutlined />}
+                type="primary"
+                size="large"
+                icon={<SaveOutlined />}
+                loading={loading}
+                onClick={() => form.submit()}
               >
-                Auto Calculate Score
+                {isEdit ? 'Update Lead' : 'Create Lead'}
               </Button>
-              <Button
-                onClick={() => lead && autoAssignLead.mutate(lead.id)}
-                loading={autoAssignLead.isPending}
-                icon={<UserAddOutlined />}
-              >
-                Auto Assign
-              </Button>
-            </>
-          )}
-          <Button onClick={handleClose} icon={<CloseOutlined />}>
-            Cancel
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => form.submit()}
-            loading={loading}
-            icon={<SaveOutlined />}
-          >
-            {isEdit ? 'Update Lead' : 'Create Lead'}
-          </Button>
-        </Space>
+            )}
+          </Space>
+        </div>
       }
     >
       <Form
         form={form}
         layout="vertical"
+        requiredMark="optional"
         onFinish={handleSubmit}
         autoComplete="off"
+        style={{ padding: '0 24px 24px 24px' }}
       >
-        <div style={{ padding: '0 8px' }}>
-          {/* Personal Information */}
-          <Card
-            title={
-              <Space>
-                <UserOutlined />
-                Personal Information
-              </Space>
-            }
-            style={{ marginBottom: 16 }}
-          >
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="firstName"
-                  label="First Name"
-                  rules={[{ required: true, message: 'First name is required' }]}
+        {/* 📄 Personal Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Personal Information</h3>
+          </div>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="firstName"
+                label="First Name"
+                rules={[
+                  { required: true, message: 'First name is required' },
+                  { min: 2, message: 'First name must be at least 2 characters' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., John"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="lastName"
+                label="Last Name"
+                rules={[
+                  { required: true, message: 'Last name is required' },
+                  { min: 2, message: 'Last name must be at least 2 characters' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., Smith"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="email"
+                label="Email Address"
+                rules={[
+                  { required: true, message: 'Email is required' },
+                  { type: 'email', message: 'Please enter a valid email' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., john.smith@company.com"
+                  allowClear
+                  type="email"
+                  prefix={<MailOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="phone"
+                label="Phone"
+                rules={[{ required: true, message: 'Phone is required' }]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., +1 (555) 123-4567"
+                  allowClear
+                  prefix={<PhoneOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="mobile" label="Mobile">
+                <Input
+                  size="large"
+                  placeholder="e.g., +1 (555) 987-6543"
+                  allowClear
+                  prefix={<PhoneOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="jobTitle" label="Job Title">
+                <Input
+                  size="large"
+                  placeholder="e.g., Sales Director"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 🏢 Company Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <ShoppingOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Company Information</h3>
+          </div>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="companyName"
+                label="Company Name"
+                rules={[
+                  { required: true, message: 'Company name is required' },
+                  { min: 2, message: 'Company name must be at least 2 characters' },
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., Acme Corporation"
+                  allowClear
+                  prefix={<GlobalOutlined style={{ color: '#6b7280' }} />}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="industry" label="Industry">
+                <Select
+                  size="large"
+                  placeholder="Select industry"
+                  loading={loadingIndustries}
+                  disabled={loadingIndustries}
+                  allowClear
                 >
-                  <Input placeholder="Enter first name" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="lastName"
-                  label="Last Name"
-                  rules={[{ required: true, message: 'Last name is required' }]}
+                  {industryOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="companySize"
+                label="Company Size"
+                tooltip="Approximate number of employees"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select company size"
+                  loading={loadingCompanySizes}
+                  disabled={loadingCompanySizes}
+                  allowClear
                 >
-                  <Input placeholder="Enter last name" />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="email"
-                  label="Email"
-                  rules={[
-                    { type: 'email', message: 'Please enter a valid email' },
-                    { required: true, message: 'Email is required' }
-                  ]}
+                  {companySizeOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="budgetRange"
+                label="Budget Range"
+                tooltip="Estimated budget for the project"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select budget range"
+                  loading={loadingBudgetRanges}
+                  disabled={loadingBudgetRanges}
+                  allowClear
                 >
-                  <Input
-                    placeholder="Enter email address"
-                    prefix={<MailOutlined />}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="phone"
-                  label="Phone"
-                  rules={[{ required: true, message: 'Phone is required' }]}
+                  {budgetRangeOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="timeline"
+                label="Decision Timeline"
+                tooltip="Expected timeline for purchase decision"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select timeline"
+                  loading={loadingTimeline}
+                  disabled={loadingTimeline}
+                  allowClear
                 >
-                  <Input
-                    placeholder="Enter phone number"
-                    prefix={<PhoneOutlined />}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+                  {timelineOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="mobile" label="Mobile">
-                  <Input
-                    placeholder="Enter mobile number"
-                    prefix={<PhoneOutlined />}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="jobTitle" label="Job Title">
-                  <Input placeholder="Enter job title" />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
+        {/* 🎯 Lead Details & Qualification */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <TagsOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Lead Details & Qualification</h3>
+          </div>
 
-          {/* Company Information */}
-          <Card
-            title={
-              <Space>
-                <GlobalOutlined />
-                Company Information
-              </Space>
-            }
-            style={{ marginBottom: 16 }}
-          >
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="companyName"
-                  label="Company Name"
-                  rules={[{ required: true, message: 'Company name is required' }]}
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="source"
+                label="Lead Source"
+                tooltip="How this lead was acquired"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select lead source"
+                  loading={loadingLeadSources}
+                  disabled={loadingLeadSources}
+                  allowClear
                 >
-                  <Input placeholder="Enter company name" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="industry" label="Industry">
-                  <Select placeholder="Select industry" allowClear>
-                    {industryOptions.map(option => (
-                      <Option key={option.value} value={option.value}>
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+                  {leadSourceOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="campaign" label="Campaign">
+                <Input
+                  size="large"
+                  placeholder="e.g., Summer 2025 Campaign"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="companySize" label="Company Size">
-                  <Select placeholder="Select company size" allowClear>
-                    {companySizeOptions.map(option => (
-                      <Option key={option.value} value={option.value}>
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="budgetRange" label="Budget Range">
-                  <Select placeholder="Select budget range" allowClear>
-                    {budgetRangeOptions.map(option => (
-                      <Option key={option.value} value={option.value}>
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="timeline" label="Timeline">
-                  <Select placeholder="Select timeline" allowClear>
-                    {timelineOptions.map(option => (
-                      <Option key={option.value} value={option.value}>
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* Lead Details */}
-          <Card title="Lead Details" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="source" label="Lead Source">
-                  <Select placeholder="Select lead source" allowClear>
-                    {leadSources?.map(source => (
-                      <Option key={source.id} value={source.label}>
-                        {source.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="campaign" label="Campaign">
-                  <Input placeholder="Enter campaign name" />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name="leadScore"
-                  label={
-                    <Space>
-                      Lead Score
-                      {form.getFieldValue('leadScore') !== undefined && (
-                        <Tag color={getLeadScoreColor(form.getFieldValue('leadScore'))}>
-                          {form.getFieldValue('leadScore')}/100
-                        </Tag>
-                      )}
-                    </Space>
-                  }
-                  rules={[
-                    { type: 'number', min: 0, max: 100, message: 'Score must be between 0 and 100' }
-                  ]}
+          <Row gutter={16}>
+            <Col xs={24} sm={8}>
+              <Form.Item
+                name="leadScore"
+                label={
+                  <Space>
+                    Lead Score
+                    {leadScore !== undefined && (
+                      <Tag color={getLeadScoreColor(leadScore)}>
+                        {leadScore}/100
+                      </Tag>
+                    )}
+                  </Space>
+                }
+                rules={[
+                  { type: 'number', min: 0, max: 100, message: 'Score must be between 0 and 100' }
+                ]}
+                tooltip="Lead quality score from 0-100"
+              >
+                <InputNumber
+                  size="large"
+                  min={0}
+                  max={100}
+                  placeholder="0-100"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item
+                name="qualificationStatus"
+                label="Qualification Status"
+                tooltip="Current qualification status of the lead"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select status"
+                  loading={loadingQualifications}
+                  disabled={loadingQualifications}
                 >
-                  <InputNumber
-                    min={0}
-                    max={100}
-                    placeholder="0-100"
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item name="qualificationStatus" label="Qualification Status">
-                  <Select placeholder="Select qualification status">
-                    {qualificationStatuses.map(status => (
-                      <Option key={status.value} value={status.value}>
-                        {status.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item name="stage" label="Lead Stage">
-                  <Select placeholder="Select lead stage">
-                    {leadStages.map(stage => (
-                      <Option key={stage.value} value={stage.value}>
-                        {stage.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+                  {qualificationOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item
+                name="stage"
+                label="Lead Stage"
+                tooltip="Current stage in the buyer's journey"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select stage"
+                  loading={loadingStages}
+                  disabled={loadingStages}
+                >
+                  {stageOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="status" label="Status">
-                  <Select placeholder="Select status">
-                    {statusOptions.map(status => (
-                      <Option key={status.value} value={status.value}>
-                        {status.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="assignedTo" label="Assigned To">
-                  <Input placeholder="Enter assignee ID or name" />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="status" label="Status">
+                <Select
+                  size="large"
+                  placeholder="Select status"
+                  loading={loadingStatuses}
+                  disabled={loadingStatuses}
+                >
+                  {statusOptions.map(status => (
+                    <Option key={status.value} value={status.value}>
+                      {status.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="assignedTo"
+                label="Assigned To"
+                tooltip="Team member responsible for this lead"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select team member"
+                  loading={loadingUsers}
+                  disabled={loadingUsers}
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {activeUsers.map((user) => (
+                    <Select.Option key={user.id} value={user.id}>
+                      👤 {user.firstName} {user.lastName}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-          {/* Follow-up Information */}
-          <Card title="Follow-up Information" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item name="nextFollowUp" label="Next Follow-up">
-                  <DatePicker
-                    showTime
-                    format="YYYY-MM-DD HH:mm"
-                    placeholder="Select next follow-up date"
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="lastContact" label="Last Contact">
-                  <DatePicker
-                    showTime
-                    format="YYYY-MM-DD HH:mm"
-                    placeholder="Select last contact date"
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+        {/* 📅 Follow-up Information */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <CalendarOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Follow-up Information</h3>
+          </div>
 
-            <Form.Item name="notes" label="Notes">
-              <TextArea
-                rows={4}
-                placeholder="Enter any additional notes about this lead..."
-              />
-            </Form.Item>
-          </Card>
-        </div>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="nextFollowUp"
+                label="Next Follow-up"
+                tooltip="Schedule next follow-up date and time"
+              >
+                <DatePicker
+                  size="large"
+                  showTime
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder="Select next follow-up date"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="lastContact"
+                label="Last Contact"
+                tooltip="Date of last contact with lead"
+              >
+                <DatePicker
+                  size="large"
+                  showTime
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder="Select last contact date"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 📝 Additional Notes */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <FileTextOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Additional Notes</h3>
+          </div>
+
+          <Form.Item name="notes" label="Notes">
+            <TextArea
+              size="large"
+              rows={5}
+              placeholder="Add any additional notes about this lead..."
+              maxLength={1000}
+              showCount
+              style={{ fontFamily: 'inherit' }}
+            />
+          </Form.Item>
+        </Card>
       </Form>
     </Drawer>
   );

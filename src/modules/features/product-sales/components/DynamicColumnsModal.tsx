@@ -43,19 +43,19 @@ export interface ColumnConfig {
 
 // Default column configuration
 const DEFAULT_COLUMNS: ColumnConfig[] = [
-  { key: 'sale_number', title: 'Sale #', visible: true, order: 0 },
+  { key: 'id', title: 'Sale ID', visible: true, order: 0 },
   { key: 'customer_id', title: 'Customer ID', visible: true, order: 1 },
   { key: 'product_id', title: 'Product ID', visible: true, order: 2 },
-  { key: 'quantity', title: 'Quantity', visible: true, order: 3 },
-  { key: 'unit_price', title: 'Unit Price', visible: true, order: 4 },
-  { key: 'total_value', title: 'Total Value', visible: true, order: 5 },
+  { key: 'units', title: 'Units', visible: true, order: 3 },
+  { key: 'cost_per_unit', title: 'Cost Per Unit', visible: true, order: 4 },
+  { key: 'total_cost', title: 'Total Cost', visible: true, order: 5 },
   { key: 'status', title: 'Status', visible: true, order: 6 },
-  { key: 'sale_date', title: 'Sale Date', visible: true, order: 7 },
+  { key: 'delivery_date', title: 'Delivery Date', visible: true, order: 7 },
   { key: 'actions', title: 'Actions', visible: true, order: 8 } // Always visible
 ];
 
 interface DynamicColumnsModalProps {
-  visible: boolean;
+  open: boolean;
   onClose: () => void;
   onColumnsChange: (columns: ColumnConfig[]) => void;
 }
@@ -191,7 +191,7 @@ export const DynamicColumnsModal: React.FC<DynamicColumnsModalProps> = ({
   return (
     <Modal
       title="Manage Columns"
-      visible={visible}
+      open={visible}
       onCancel={onClose}
       width={600}
       centered

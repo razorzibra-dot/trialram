@@ -18,6 +18,8 @@ export interface SessionConfig {
   idleWarningTime: number;
   /** Check interval in milliseconds (default: 10000 = 10 seconds) */
   checkInterval: number;
+  /** Business rule: minimum lead score required to allow conversion (tenant/role configurable) */
+  leadConversionMinScore?: number;
 }
 
 class SessionManager {
@@ -35,7 +37,8 @@ class SessionManager {
     sessionTimeout: 7200, // 2 hours (increased from 1 hour)
     idleTimeout: 3600,    // 1 hour (increased from 30 minutes)
     idleWarningTime: 600, // 10 minutes before idle expiry (increased from 5)
-    checkInterval: 30000  // Check every 30 seconds (reduced frequency)
+    checkInterval: 30000, // Check every 30 seconds (reduced frequency)
+    leadConversionMinScore: 55
   };
 
   /**

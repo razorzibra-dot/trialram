@@ -12,7 +12,6 @@ export * from './hooks/useTickets';
 // Component exports
 export { TicketsDetailPanel } from './components/TicketsDetailPanel';
 export { TicketsFormPanel } from './components/TicketsFormPanel';
-export { TicketsList } from './components/TicketsList';
 
 // Routes
 export { ticketsRoutes } from './routes';

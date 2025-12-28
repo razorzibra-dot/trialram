@@ -3,15 +3,19 @@
  * Central export point for product module
  */
 
-// Hook exports
-export {
-  useProducts,
-  useProduct,
-  useCreateProduct,
-  useUpdateProduct,
-  useDeleteProduct,
-  useProductExport
-} from './hooks/useProducts';
+// NOTE: Product hooks have been moved to masters module
+// Use imports from '@/modules/features/masters/hooks/useProducts' instead
+// This consolidates product management and avoids duplication
+
+// Hook exports - NOW DEPRECATED, use masters module instead
+// export {
+//   useProducts,
+//   useProduct,
+//   useCreateProduct,
+//   useUpdateProduct,
+//   useDeleteProduct,
+//   useProductExport
+// } from './hooks/useProducts';
 
 // Routes
 export { productRoutes } from './routes';

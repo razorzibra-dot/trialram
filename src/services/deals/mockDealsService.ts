@@ -49,15 +49,6 @@ class MockDealsService {
         }
       ],
       contract_id: 'contract_001',
-      payment_terms: 'net_30',
-      payment_status: 'paid',
-      payment_due_date: '2024-03-01',
-      paid_amount: 150000,
-      outstanding_amount: 0,
-      payment_method: 'bank_transfer',
-      revenue_recognized: 150000,
-      revenue_recognition_status: 'completed',
-      revenue_recognition_method: 'immediate',
       tenant_id: 'tenant_1',
       created_at: '2024-01-15T10:00:00Z',
       updated_at: '2024-01-30T17:00:00Z',
@@ -106,44 +97,6 @@ class MockDealsService {
         }
       ],
       contract_id: 'contract_002',
-      payment_terms: 'net_60',
-      payment_status: 'partial',
-      payment_due_date: '2024-04-15',
-      paid_amount: 37500,
-      outstanding_amount: 37500,
-      payment_method: 'bank_transfer',
-      revenue_recognized: 37500,
-      revenue_recognition_status: 'in_progress',
-      revenue_recognition_method: 'installments',
-      recognition_schedule: [
-        {
-          id: 'rec_2_1',
-          deal_id: '2',
-          installment_number: 1,
-          amount: 37500,
-          recognized_amount: 37500,
-          recognition_date: '2024-02-15',
-          actual_recognition_date: '2024-02-15',
-          status: 'recognized',
-          description: 'Initial payment and delivery',
-          tenant_id: 'tenant_1',
-          created_at: '2024-02-15T14:00:00Z',
-          updated_at: '2024-02-15T14:00:00Z'
-        },
-        {
-          id: 'rec_2_2',
-          deal_id: '2',
-          installment_number: 2,
-          amount: 37500,
-          recognized_amount: 0,
-          recognition_date: '2024-04-15',
-          status: 'pending',
-          description: 'Final payment after installation completion',
-          tenant_id: 'tenant_1',
-          created_at: '2024-02-15T14:00:00Z',
-          updated_at: '2024-02-15T14:00:00Z'
-        }
-      ],
       tenant_id: 'tenant_1',
       created_at: '2024-01-10T09:15:00Z',
       updated_at: '2024-02-15T14:00:00Z',
@@ -166,10 +119,6 @@ class MockDealsService {
       notes: 'Lost deal - customer chose competitor with lower pricing',
       win_loss_reason: 'Pricing competition - customer selected lower-cost alternative',
       items: [],
-      payment_terms: 'cod',
-      payment_status: 'pending',
-      revenue_recognized: 0,
-      revenue_recognition_status: 'not_started',
       tenant_id: 'tenant_1',
       created_at: '2024-01-25T11:20:00Z',
       updated_at: '2024-02-20T10:00:00Z',
@@ -193,59 +142,6 @@ class MockDealsService {
       win_loss_reason: 'Superior technology and proven track record',
       items: [],
       contract_id: 'contract_003',
-      payment_terms: 'net_30',
-      payment_status: 'paid',
-      payment_due_date: '2024-03-01',
-      paid_amount: 200000,
-      outstanding_amount: 0,
-      payment_method: 'bank_transfer',
-      revenue_recognized: 200000,
-      revenue_recognition_status: 'completed',
-      revenue_recognition_method: 'milestone',
-      recognition_schedule: [
-        {
-          id: 'rec_4_1',
-          deal_id: '4',
-          installment_number: 1,
-          amount: 50000,
-          recognized_amount: 50000,
-          recognition_date: '2024-01-30',
-          actual_recognition_date: '2024-01-30',
-          status: 'recognized',
-          milestone: 'Contract signing',
-          tenant_id: 'tenant_1',
-          created_at: '2024-01-30T17:00:00Z',
-          updated_at: '2024-01-30T17:00:00Z'
-        },
-        {
-          id: 'rec_4_2',
-          deal_id: '4',
-          installment_number: 2,
-          amount: 75000,
-          recognized_amount: 75000,
-          recognition_date: '2024-03-15',
-          actual_recognition_date: '2024-03-15',
-          status: 'recognized',
-          milestone: 'Initial implementation complete',
-          tenant_id: 'tenant_1',
-          created_at: '2024-01-30T17:00:00Z',
-          updated_at: '2024-03-15T10:00:00Z'
-        },
-        {
-          id: 'rec_4_3',
-          deal_id: '4',
-          installment_number: 3,
-          amount: 75000,
-          recognized_amount: 75000,
-          recognition_date: '2024-05-15',
-          actual_recognition_date: '2024-05-15',
-          status: 'recognized',
-          milestone: 'Full deployment and training',
-          tenant_id: 'tenant_1',
-          created_at: '2024-01-30T17:00:00Z',
-          updated_at: '2024-05-15T14:00:00Z'
-        }
-      ],
       tenant_id: 'tenant_1',
       created_at: '2024-01-05T08:30:00Z',
       updated_at: '2024-01-30T17:00:00Z',
@@ -268,10 +164,6 @@ class MockDealsService {
       notes: 'Deal cancelled - customer decided to postpone cloud migration project',
       win_loss_reason: 'Project postponement due to internal budget constraints',
       items: [],
-      payment_terms: 'net_45',
-      payment_status: 'pending',
-      revenue_recognized: 0,
-      revenue_recognition_status: 'not_started',
       tenant_id: 'tenant_1',
       created_at: '2024-01-28T15:45:00Z',
       updated_at: '2024-02-10T11:00:00Z',
@@ -284,8 +176,10 @@ class MockDealsService {
     assigned_to?: string;
     customer_id?: string;
     search?: string;
-    payment_status?: string;
-    revenue_status?: string;
+    payment_status?: string; // legacy - ignored in mock
+    revenue_status?: string; // legacy - ignored in mock
+    stage?: string;
+    probability?: number;
   }): Promise<Deal[]> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -310,12 +204,8 @@ class MockDealsService {
       if (filters.customer_id) {
         deals = deals.filter(d => d.customer_id === filters.customer_id);
       }
-      if (filters.payment_status) {
-        deals = deals.filter(d => d.payment_status === filters.payment_status);
-      }
-      if (filters.revenue_status) {
-        deals = deals.filter(d => d.revenue_recognition_status === filters.revenue_status);
-      }
+      // NOTE: stage and probability filters removed - Deals have status (won/lost/cancelled), not pipeline stages.
+      // Pipeline stages belong to Opportunities. See types/crm.ts for reference.
       if (filters.search) {
         const search = filters.search.toLowerCase();
         deals = deals.filter(d =>
@@ -361,13 +251,62 @@ class MockDealsService {
       throw new Error('Insufficient permissions');
     }
 
+    // Validation: deal_type required
+    if (!('deal_type' in dealData) || (dealData as any).deal_type == null) {
+      throw new Error('deal_type is required and must be PRODUCT or SERVICE');
+    }
+
+    const dealType = (dealData as any).deal_type as 'PRODUCT' | 'SERVICE';
+
+    // Validate items and compute line totals
+    const items = (dealData as any).items as any[] | undefined;
+    if (!items || items.length === 0) {
+      throw new Error('At least one deal item is required');
+    }
+
+    let computedValue = 0;
+
+    const normalizedItems = items.map((it, idx) => {
+      const quantity = Number(it.quantity || 1);
+      const unitPrice = Number(it.unit_price || 0);
+      let discount = Number(it.discount || 0);
+      if (it.discount_type === 'percentage') {
+        discount = (unitPrice * quantity) * (Number(it.discount) / 100);
+      }
+      const tax = Number(it.tax || 0);
+      const lineTotal = (unitPrice * quantity) - discount + tax;
+
+      // Type-specific validations
+      if (dealType === 'PRODUCT') {
+        if (!it.product_id) throw new Error(`product_id required for PRODUCT items (item ${idx})`);
+        if (it.service_id) throw new Error(`service_id must be empty for PRODUCT items (item ${idx})`);
+      } else {
+        if (!it.service_id) throw new Error(`service_id required for SERVICE items (item ${idx})`);
+        if (it.product_id) throw new Error(`product_id must be empty for SERVICE items (item ${idx})`);
+      }
+
+      computedValue += lineTotal;
+
+      return {
+        ...it,
+        id: it.id || `${Date.now().toString()}_${idx}`,
+        deal_id: it.deal_id || null,
+        quantity,
+        unit_price: unitPrice,
+        discount,
+        line_total: lineTotal
+      };
+    });
+
     const newDeal: Deal = {
       ...dealData,
       id: Date.now().toString(),
       tenant_id: user.tenant_id,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+      updated_at: new Date().toISOString(),
+      items: normalizedItems,
+      value: Number((dealData as any).value || computedValue)
+    } as Deal;
 
     this.mockDeals.push(newDeal);
     return newDeal;
@@ -394,6 +333,54 @@ class MockDealsService {
     // Check permissions
     if (user.role === 'agent' && this.mockDeals[dealIndex].assigned_to !== user.id) {
       throw new Error('Access denied');
+    }
+
+    // Prevent changing deal_type
+    if ((updates as any).deal_type && (updates as any).deal_type !== this.mockDeals[dealIndex].deal_type) {
+      throw new Error('deal_type is immutable and cannot be changed after creation');
+    }
+
+    // If items provided, re-validate and recompute totals
+    if ((updates as any).items) {
+      const items = (updates as any).items as any[];
+      const dealType = this.mockDeals[dealIndex].deal_type as 'PRODUCT' | 'SERVICE';
+      let computedValue = 0;
+      const normalizedItems = items.map((it, idx) => {
+        const quantity = Number(it.quantity || 1);
+        const unitPrice = Number(it.unit_price || 0);
+        let discount = Number(it.discount || 0);
+        if (it.discount_type === 'percentage') {
+          discount = (unitPrice * quantity) * (Number(it.discount) / 100);
+        }
+        const tax = Number(it.tax || 0);
+        const lineTotal = (unitPrice * quantity) - discount + tax;
+
+        if (dealType === 'PRODUCT') {
+          if (!it.product_id) throw new Error(`product_id required for PRODUCT items (item ${idx})`);
+          if (it.service_id) throw new Error(`service_id must be empty for PRODUCT items (item ${idx})`);
+        } else {
+          if (!it.service_id) throw new Error(`service_id required for SERVICE items (item ${idx})`);
+          if (it.product_id) throw new Error(`product_id must be empty for SERVICE items (item ${idx})`);
+        }
+
+        computedValue += lineTotal;
+
+        return {
+          ...it,
+          id: it.id || `${Date.now().toString()}_${idx}`,
+          deal_id: id,
+          quantity,
+          unit_price: unitPrice,
+          discount,
+          line_total: lineTotal
+        };
+      });
+
+      updates = {
+        ...updates,
+        items: normalizedItems,
+        value: Number((updates as any).value || computedValue)
+      } as Partial<Deal>;
     }
 
     this.mockDeals[dealIndex] = {
@@ -456,7 +443,7 @@ class MockDealsService {
         status,
         count: statusDeals.length,
         value: statusDeals.reduce((sum, deal) => sum + deal.value, 0),
-        revenue: statusDeals.reduce((sum, deal) => sum + (deal.revenue_recognized || 0), 0)
+        revenue: 0
       };
     });
   }
@@ -506,9 +493,10 @@ class MockDealsService {
     const lostDeals = deals.filter(d => d.status === 'lost');
     const cancelledDeals = deals.filter(d => d.status === 'cancelled');
 
-    const totalRevenue = deals.reduce((sum, deal) => sum + (deal.revenue_recognized || 0), 0);
-    const paidAmount = deals.reduce((sum, deal) => sum + (deal.paid_amount || 0), 0);
-    const outstandingAmount = deals.reduce((sum, deal) => sum + (deal.outstanding_amount || 0), 0);
+    // Mock does not track payments/revenue at deal level anymore
+    const totalRevenue = 0;
+    const paidAmount = 0;
+    const outstandingAmount = 0;
 
     return {
       totalDeals: deals.length,
@@ -561,34 +549,8 @@ class MockDealsService {
     return this.getSalesAnalytics();
   }
 
-  async getDealStatuses(): Promise<string[]> {
-    return this.getStatuses();
-  }
-
-  async updateDealStage(id: string, stage: string): Promise<Deal> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('write')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const dealIndex = this.mockDeals.findIndex(d => 
-      d.id === id && d.tenant_id === user.tenant_id
-    );
-
-    if (dealIndex === -1) {
-      throw new Error('Deal not found');
-    }
-
-    this.mockDeals[dealIndex] = {
-      ...this.mockDeals[dealIndex],
-      stage,
-      updated_at: new Date().toISOString()
-    };
-
-    return this.mockDeals[dealIndex];
-  }
+  // NOTE: updateDealStage removed - Deals have status (won/lost/cancelled), not pipeline stages.
+  // Pipeline stages belong to Opportunities. See types/crm.ts for reference.
 
   async bulkUpdateDeals(ids: string[], updates: Record<string, unknown>): Promise<Deal[]> {
     const user = authService.getCurrentUser();
@@ -669,16 +631,14 @@ class MockDealsService {
     }
 
     if (format === 'csv') {
-      // CSV format
-      const headers = ['ID', 'Title', 'Customer ID', 'Value', 'Stage', 'Status', 'Probability', 'Assigned To ID'];
+      // CSV format - Deals have status (won/lost/cancelled), not pipeline stages
+      const headers = ['ID', 'Title', 'Customer ID', 'Value', 'Status', 'Assigned To ID'];
       const rows = deals.map(d => [
         d.id,
         d.title,
         d.customer_id,
         d.value,
-        d.stage,
         d.status,
-        d.probability,
         d.assigned_to
       ]);
 
@@ -760,60 +720,11 @@ class MockDealsService {
     reference_number?: string;
     notes?: string;
   }): Promise<Deal> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('write')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const dealIndex = this.mockDeals.findIndex(d =>
-      d.id === dealId && d.tenant_id === user.tenant_id
-    );
-
-    if (dealIndex === -1) {
-      throw new Error('Deal not found');
-    }
-
-    const deal = this.mockDeals[dealIndex];
-    const newPaidAmount = (deal.paid_amount || 0) + paymentData.amount;
-    const newOutstandingAmount = deal.value - newPaidAmount;
-
-    this.mockDeals[dealIndex] = {
-      ...deal,
-      paid_amount: newPaidAmount,
-      outstanding_amount: Math.max(0, newOutstandingAmount),
-      payment_status: newOutstandingAmount <= 0 ? 'paid' : 'partial',
-      payment_method: paymentData.payment_method,
-      updated_at: new Date().toISOString()
-    };
-
-    return this.mockDeals[dealIndex];
+    throw new Error('Payments are not supported by mockDealsService. Use the payments service for processing payments.');
   }
 
   async updatePaymentStatus(dealId: string, status: 'pending' | 'partial' | 'paid' | 'overdue'): Promise<Deal> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('write')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const dealIndex = this.mockDeals.findIndex(d =>
-      d.id === dealId && d.tenant_id === user.tenant_id
-    );
-
-    if (dealIndex === -1) {
-      throw new Error('Deal not found');
-    }
-
-    this.mockDeals[dealIndex] = {
-      ...this.mockDeals[dealIndex],
-      payment_status: status,
-      updated_at: new Date().toISOString()
-    };
-
-    return this.mockDeals[dealIndex];
+    throw new Error('Payment status updates are not supported by mockDealsService. Use the payments service to update payment status.');
   }
 
   // Revenue Recognition Methods
@@ -823,33 +734,7 @@ class MockDealsService {
     method: 'immediate' | 'installments' | 'milestone' | 'time_based';
     description?: string;
   }): Promise<Deal> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('write')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const dealIndex = this.mockDeals.findIndex(d =>
-      d.id === dealId && d.tenant_id === user.tenant_id
-    );
-
-    if (dealIndex === -1) {
-      throw new Error('Deal not found');
-    }
-
-    const deal = this.mockDeals[dealIndex];
-    const newRecognizedAmount = (deal.revenue_recognized || 0) + recognitionData.amount;
-
-    this.mockDeals[dealIndex] = {
-      ...deal,
-      revenue_recognized: newRecognizedAmount,
-      revenue_recognition_status: newRecognizedAmount >= deal.value ? 'completed' : 'in_progress',
-      revenue_recognition_method: recognitionData.method,
-      updated_at: new Date().toISOString()
-    };
-
-    return this.mockDeals[dealIndex];
+    throw new Error('Revenue recognition is not supported by mockDealsService. Use the revenue service to manage revenue recognition.');
   }
 
   async createRevenueSchedule(dealId: string, scheduleData: {
@@ -860,60 +745,11 @@ class MockDealsService {
       milestone?: string;
     }>;
   }): Promise<RevenueRecognitionSchedule[]> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('write')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const dealIndex = this.mockDeals.findIndex(d =>
-      d.id === dealId && d.tenant_id === user.tenant_id
-    );
-
-    if (dealIndex === -1) {
-      throw new Error('Deal not found');
-    }
-
-    const schedules: RevenueRecognitionSchedule[] = scheduleData.installments.map((installment, index) => ({
-      id: `rec_${dealId}_${index + 1}`,
-      deal_id: dealId,
-      installment_number: index + 1,
-      amount: installment.amount,
-      recognized_amount: 0,
-      recognition_date: installment.recognition_date,
-      status: 'pending',
-      description: installment.description,
-      milestone: installment.milestone,
-      tenant_id: user.tenant_id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }));
-
-    // Update deal with recognition schedule
-    this.mockDeals[dealIndex] = {
-      ...this.mockDeals[dealIndex],
-      recognition_schedule: schedules,
-      revenue_recognition_method: 'installments',
-      updated_at: new Date().toISOString()
-    };
-
-    return schedules;
+    throw new Error('Creating revenue schedules is not supported by mockDealsService. Use the revenue service for schedules.');
   }
 
   async getRevenueSchedule(dealId: string): Promise<RevenueRecognitionSchedule[]> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    const deal = this.mockDeals.find(d =>
-      d.id === dealId && d.tenant_id === user.tenant_id
-    );
-
-    if (!deal) {
-      throw new Error('Deal not found');
-    }
-
-    return deal.recognition_schedule || [];
+    throw new Error('Revenue schedules are not available from mockDealsService. Use the revenue service.');
   }
 
   // Contract Integration Methods

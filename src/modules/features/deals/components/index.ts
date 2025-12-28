@@ -4,7 +4,6 @@
  */
 
 // Deal components
-export * from './DealsList';
 export * from './DealDetailPanel';
 export * from './DealFormPanel';
 export * from './ConvertToContractModal';

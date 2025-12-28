@@ -395,7 +395,7 @@ export class ProductService extends BaseService implements IProductService {
   async getLowStockProducts(): Promise<Product[]> {
     try {
       // Get low stock products from factory service
-      const lowStockProducts = await factoryProductService.getLowStockProducts('');
+      const lowStockProducts = await factoryProductService.getLowStockProducts();
       return lowStockProducts || [];
     } catch (error) {
       // Graceful fallback if service doesn't support it

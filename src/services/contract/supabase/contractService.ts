@@ -261,7 +261,7 @@ export class SupabaseContractService extends BaseSupabaseService {
              title: data.title,
              description: data.description,
              customer_id: data.customer_id,
-             deal_id: data.deal_id,
+             // ❌ REMOVED: deal_id - NOT a column in contracts table
              type: data.type || 'service_agreement',
              status: data.status || 'draft',
              start_date: data.start_date,
@@ -273,6 +273,7 @@ export class SupabaseContractService extends BaseSupabaseService {
              renewal_terms: data.renewal_terms,
              terms: data.terms,
              value: data.value || 0,
+             total_value: data.value || 0, // ✅ Added: total_value exists in DB
              currency: data.currency || 'USD',
              payment_terms: data.payment_terms,
              delivery_terms: data.delivery_terms,
@@ -359,7 +360,7 @@ export class SupabaseContractService extends BaseSupabaseService {
          .update({
            title: updates.title,
            description: updates.description,
-           deal_id: updates.deal_id,
+           // ❌ REMOVED: deal_id - NOT a column in contracts table
            type: updates.type,
            status: updates.status,
            start_date: updates.start_date,
@@ -371,6 +372,7 @@ export class SupabaseContractService extends BaseSupabaseService {
            renewal_terms: updates.renewal_terms,
            terms: updates.terms,
            value: updates.value,
+           total_value: updates.value, // ✅ Added: total_value exists in DB
            currency: updates.currency,
            payment_terms: updates.payment_terms,
            delivery_terms: updates.delivery_terms,

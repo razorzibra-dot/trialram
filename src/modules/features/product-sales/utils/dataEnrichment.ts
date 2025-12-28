@@ -38,8 +38,8 @@ export function enrichProductSale(
   customers: Customer[],
   products: Product[]
 ): EnrichedProductSale {
-  const customer = customers.find(c => c.id === sale.customer_id);
-  const product = products.find(p => p.id === sale.product_id);
+  const customer = customers?.find(c => c.id === sale.customer_id);
+  const product = products?.find(p => p.id === sale.product_id);
 
   return {
     ...sale,
@@ -64,7 +64,10 @@ export function enrichProductSales(
   customers: Customer[],
   products: Product[]
 ): EnrichedProductSale[] {
-  return sales.map(sale => enrichProductSale(sale, customers, products));
+  if (!sales || !Array.isArray(sales)) return [];
+  const safeCustomers = customers || [];
+  const safeProducts = products || [];
+  return sales.map(sale => enrichProductSale(sale, safeCustomers, safeProducts));
 }
 
 /**
@@ -74,7 +77,7 @@ export function enrichProductSales(
  * @returns Customer name or empty string if not found
  */
 export function getCustomerName(customerId: string, customers: Customer[]): string {
-  return customers.find(c => c.id === customerId)?.name ?? '';
+  return customers?.find(c => c.id === customerId)?.name ?? '';
 }
 
 /**
@@ -84,7 +87,7 @@ export function getCustomerName(customerId: string, customers: Customer[]): stri
  * @returns Product name or empty string if not found
  */
 export function getProductName(productId: string, products: Product[]): string {
-  return products.find(p => p.id === productId)?.name ?? '';
+  return products?.find(p => p.id === productId)?.name ?? '';
 }
 
 /**
@@ -94,7 +97,7 @@ export function getProductName(productId: string, products: Product[]): string {
  * @returns Customer object or undefined
  */
 export function getCustomer(customerId: string, customers: Customer[]): Customer | undefined {
-  return customers.find(c => c.id === customerId);
+  return customers?.find(c => c.id === customerId);
 }
 
 /**
@@ -104,7 +107,7 @@ export function getCustomer(customerId: string, customers: Customer[]): Customer
  * @returns Product object or undefined
  */
 export function getProduct(productId: string, products: Product[]): Product | undefined {
-  return products.find(p => p.id === productId);
+  return products?.find(p => p.id === productId);
 }
 
 /**
@@ -113,6 +116,7 @@ export function getProduct(productId: string, products: Product[]): Product | un
  * @returns Map of ID to name
  */
 export function createCustomerNameMap(customers: Customer[]): Record<string, string> {
+  if (!customers || !Array.isArray(customers)) return {};
   return customers.reduce((map, customer) => {
     map[customer.id] = customer.name;
     return map;
@@ -125,6 +129,7 @@ export function createCustomerNameMap(customers: Customer[]): Record<string, str
  * @returns Map of ID to name
  */
 export function createProductNameMap(products: Product[]): Record<string, string> {
+  if (!products || !Array.isArray(products)) return {};
   return products.reduce((map, product) => {
     map[product.id] = product.name;
     return map;

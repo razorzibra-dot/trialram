@@ -6,7 +6,7 @@
  * @component
  * @example
  * <MastersErrorBoundary>
- *   <ProductsList />
+ *   <ProductsPage />
  * </MastersErrorBoundary>
  */
 

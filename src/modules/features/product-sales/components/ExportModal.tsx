@@ -23,7 +23,7 @@ import { ProductSale } from '@/types/productSales';
 import * as XLSX from 'xlsx';
 
 interface ExportModalProps {
-  visible: boolean;
+  open: boolean;
   data: ProductSale[];
   onClose: () => void;
 }
@@ -35,25 +35,22 @@ interface ExportColumn {
 }
 
 const EXPORT_COLUMNS: ExportColumn[] = [
-  { key: 'sale_number', label: 'Sale Number', default: true },
+  { key: 'id', label: 'Sale ID', default: true },
   { key: 'customer_id', label: 'Customer ID', default: true },
   { key: 'product_id', label: 'Product ID', default: true },
-  { key: 'quantity', label: 'Quantity', default: true },
-  { key: 'unit_price', label: 'Unit Price', default: true },
-  { key: 'total_value', label: 'Total Value', default: true },
+  { key: 'units', label: 'Units', default: true },
+  { key: 'cost_per_unit', label: 'Cost Per Unit', default: true },
+  { key: 'total_cost', label: 'Total Cost', default: true },
   { key: 'status', label: 'Status', default: true },
-  { key: 'sale_date', label: 'Sale Date', default: true },
-  { key: 'delivery_date', label: 'Delivery Date', default: false },
-  { key: 'warranty_period', label: 'Warranty Period', default: false },
-  { key: 'warranty_expiry_date', label: 'Warranty Expiry', default: false },
+  { key: 'delivery_date', label: 'Delivery Date', default: true },
+  { key: 'warranty_expiry', label: 'Warranty Expiry', default: false },
   { key: 'notes', label: 'Notes', default: false },
-  { key: 'invoice_url', label: 'Invoice', default: false },
   { key: 'created_at', label: 'Created At', default: false },
   { key: 'updated_at', label: 'Updated At', default: false },
 ];
 
 export const ExportModal: React.FC<ExportModalProps> = ({
-  visible,
+  open,
   data,
   onClose,
 }) => {
@@ -83,12 +80,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     if (value === null || value === undefined) return '';
 
     switch (key) {
-      case 'unit_price':
-      case 'total_value':
+      case 'cost_per_unit':
+      case 'total_cost':
         return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
-      case 'sale_date':
       case 'delivery_date':
-      case 'warranty_expiry_date':
+      case 'warranty_expiry':
       case 'created_at':
       case 'updated_at':
         return new Date(value).toLocaleDateString('en-US', {
@@ -96,8 +92,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           month: 'short',
           day: 'numeric',
         });
-      case 'warranty_period':
-        return `${value} months`;
       default:
         return String(value);
     }
@@ -202,7 +196,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   return (
     <Modal
       title="Export Product Sales"
-      open={visible}
+      open={open}
       onCancel={onClose}
       width={600}
       footer={

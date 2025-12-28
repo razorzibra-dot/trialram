@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ProductSale } from '@/types/productSales';
-import { productSalesRbacService } from '../services/productSalesRbacService';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Available actions with their permissions
@@ -48,6 +48,7 @@ export const useProductSalesPermissions = ({
   tenantId,
   autoLoad = true,
 }: UseProductSalesPermissionsProps): ProductSalesPermissions => {
+  const { evaluateElementPermission } = useAuth();
   const [permissions, setPermissions] = useState<ProductSalesPermissions>({
     canCreate: false,
     canView: false,
@@ -63,57 +64,61 @@ export const useProductSalesPermissions = ({
   });
 
   /**
-   * Load all permissions
+   * Load all permissions using centralized permission context
    */
   const loadPermissions = useCallback(async () => {
     try {
-      // Check individual permissions (no sale needed for create, view, etc.)
+      console.log('[useProductSalesPermissions] 🔍 Loading permissions using centralized context');
+
+      // Use centralized permission evaluation with caching
       const [
-        createResult,
-        viewResult,
-        editResult,
-        deleteResult,
-        changeStatusResult,
-        approveResult,
-        rejectResult,
-        bulkDeleteResult,
-        bulkUpdateStatusResult,
-        exportResult,
-        viewAuditResult,
+        canCreate,
+        canView,
+        canEdit,
+        canDelete,
+        canChangeStatus,
+        canApprove,
+        canReject,
+        canBulkDelete,
+        canBulkUpdateStatus,
+        canExport,
+        canViewAuditTrail,
       ] = await Promise.all([
-        productSalesRbacService.canCreateProductSale(tenantId),
-        productSalesRbacService.canViewProductSales(tenantId),
-        // For edit/delete/etc without a specific sale, we need to check the permission
-        // These will return true/false based on role permissions alone
-        productSalesRbacService.canEditProductSale({ id: 'temp' } as any, tenantId),
-        productSalesRbacService.canDeleteProductSale({ id: 'temp' } as any, tenantId),
-        productSalesRbacService.canChangeStatus({ id: 'temp' } as any, 'new', tenantId),
-        productSalesRbacService.canApproveProductSale({ id: 'temp' } as any, tenantId),
-        productSalesRbacService.canRejectProductSale({ id: 'temp' } as any, tenantId),
-        productSalesRbacService.canBulkDeleteProductSales(1, tenantId),
-        productSalesRbacService.canBulkUpdateStatus(1, 'new', tenantId),
-        productSalesRbacService.canExportProductSales(1, tenantId),
-        productSalesRbacService.canViewAuditTrail({ id: 'temp' } as any, tenantId),
+        evaluateElementPermission('crm:product-sales:list:button.create:visible', 'visible'),
+        evaluateElementPermission('crm:product-sales:list:view', 'visible'),
+        evaluateElementPermission('crm:product-sales:record.{id}:field.customer_id:editable', 'editable'),
+        evaluateElementPermission('crm:product-sale:record:delete', 'enabled'),
+        evaluateElementPermission('crm:product-sales:record.{id}:field.status:editable', 'editable'),
+        evaluateElementPermission('product_sales:approve', 'enabled'),
+        evaluateElementPermission('product_sales:reject', 'enabled'),
+        evaluateElementPermission('crm:product-sales:list:button.bulkdelete:visible', 'visible'),
+        evaluateElementPermission('product_sales:bulk_update_status', 'enabled'),
+        evaluateElementPermission('crm:product-sales:list:button.export:visible', 'visible'),
+        evaluateElementPermission('crm:product-sales:record.{id}:tab.history:accessible', 'accessible'),
       ]);
 
       setPermissions({
-        canCreate: createResult.allowed || false,
-        canView: viewResult.allowed || false,
-        canEdit: editResult.allowed || false,
-        canDelete: deleteResult.allowed || false,
-        canChangeStatus: changeStatusResult.allowed || false,
-        canApprove: approveResult.allowed || false,
-        canReject: rejectResult.allowed || false,
-        canBulkDelete: bulkDeleteResult.allowed || false,
-        canBulkUpdateStatus: bulkUpdateStatusResult.allowed || false,
-        canExport: exportResult.allowed || false,
-        canViewAuditTrail: viewAuditResult.allowed || false,
+        canCreate,
+        canView,
+        canEdit,
+        canDelete,
+        canChangeStatus,
+        canApprove,
+        canReject,
+        canBulkDelete,
+        canBulkUpdateStatus,
+        canExport,
+        canViewAuditTrail,
+      });
+
+      console.log('[useProductSalesPermissions] ✅ Permissions loaded:', {
+        canCreate, canView, canEdit, canDelete
       });
     } catch (error) {
       console.error('Failed to load product sales permissions:', error);
       // Keep default denied state
     }
-  }, [tenantId]);
+  }, [evaluateElementPermission]);
 
   /**
    * Load permissions on mount or when dependencies change
@@ -142,64 +147,71 @@ export const useProductSalesActionPermission = (
   sale?: ProductSale | null,
   tenantId?: string
 ): boolean => {
+  const { evaluateElementPermission } = useAuth();
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     const checkPermission = async () => {
       try {
-        let result;
+        console.log(`[useProductSalesActionPermission] 🔍 Checking ${action} permission using centralized context`);
+
+        let permissionPath: string;
+        let permissionAction: 'visible' | 'enabled' | 'editable' | 'accessible';
 
         switch (action) {
           case 'create':
-            result = await productSalesRbacService.canCreateProductSale(tenantId);
+            permissionPath = 'crm:product-sales:list:button.create:visible';
+            permissionAction = 'visible';
             break;
           case 'view':
-            result = await productSalesRbacService.canViewProductSales(tenantId);
+            permissionPath = 'crm:product-sales:list:view';
+            permissionAction = 'visible';
             break;
           case 'edit':
-            result = sale
-              ? await productSalesRbacService.canEditProductSale(sale, tenantId)
-              : { allowed: false };
+            permissionPath = 'crm:product-sales:record.{id}:field.customer_id:editable';
+            permissionAction = 'editable';
             break;
           case 'delete':
-            result = sale
-              ? await productSalesRbacService.canDeleteProductSale(sale, tenantId)
-              : { allowed: false };
+            permissionPath = 'crm:product-sale:record:delete';
+            permissionAction = 'enabled';
             break;
           case 'changeStatus':
-            result = sale
-              ? await productSalesRbacService.canChangeStatus(sale, 'new', tenantId)
-              : { allowed: false };
+            permissionPath = 'crm:product-sales:record.{id}:field.status:editable';
+            permissionAction = 'editable';
             break;
           case 'approve':
-            result = sale
-              ? await productSalesRbacService.canApproveProductSale(sale, tenantId)
-              : { allowed: false };
+            permissionPath = 'product_sales:approve';
+            permissionAction = 'enabled';
             break;
           case 'reject':
-            result = sale
-              ? await productSalesRbacService.canRejectProductSale(sale, tenantId)
-              : { allowed: false };
+            permissionPath = 'product_sales:reject';
+            permissionAction = 'enabled';
             break;
           case 'bulkDelete':
-            result = await productSalesRbacService.canBulkDeleteProductSales(tenantId);
+            permissionPath = 'crm:product-sales:list:button.bulkdelete:visible';
+            permissionAction = 'visible';
             break;
           case 'bulkUpdateStatus':
-            result = await productSalesRbacService.canBulkUpdateStatus(tenantId);
+            permissionPath = 'product_sales:bulk_update_status';
+            permissionAction = 'enabled';
             break;
           case 'export':
-            result = await productSalesRbacService.canExportProductSales(tenantId);
+            permissionPath = 'crm:product-sales:list:button.export:visible';
+            permissionAction = 'visible';
             break;
           case 'viewAuditTrail':
-            result = sale
-              ? await productSalesRbacService.canViewAuditTrail(sale, tenantId)
-              : { allowed: false };
+            permissionPath = 'crm:product-sales:record.{id}:tab.history:accessible';
+            permissionAction = 'accessible';
             break;
           default:
-            result = { allowed: false };
+            setAllowed(false);
+            return;
         }
 
-        setAllowed(result?.allowed || false);
+        const result = await evaluateElementPermission(permissionPath, permissionAction);
+        setAllowed(result);
+
+        console.log(`[useProductSalesActionPermission] ✅ ${action} permission:`, result);
       } catch (error) {
         console.error(`Failed to check ${action} permission:`, error);
         setAllowed(false);
@@ -207,7 +219,7 @@ export const useProductSalesActionPermission = (
     };
 
     checkPermission();
-  }, [action, sale, tenantId]);
+  }, [action, sale, tenantId, evaluateElementPermission]);
 
   return allowed;
 };

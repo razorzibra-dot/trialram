@@ -36,20 +36,16 @@ import {
 import { Customer } from '@/types/crm';
 import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
 import type { CreateCustomerData } from '../services/customerService';
-import { useIndustries } from '../hooks/useIndustries';
-import { useCompanySizes } from '../hooks/useCompanySizes';
-import { useActiveUsers } from '../hooks/useUsers';
-import { useCustomerStatus } from '../hooks/useCustomerStatus';
-import { useCustomerTypes } from '../hooks/useCustomerTypes';
-import { useLeadSource } from '../hooks/useLeadSource';
-import { useLeadRating } from '../hooks/useLeadRating';
+import { useActiveUsers } from '@/hooks/useActiveUsers'; // Shared hook for all modules
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 import { PermissionField } from '@/components/forms/PermissionField';
 import { PermissionSection } from '@/components/layout/PermissionSection';
 import { usePermission } from '@/hooks/useElementPermissions';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerFormPanelProps {
-  visible: boolean;
+  open: boolean;
   customer: Customer | null;
   onClose: () => void;
   onSuccess: () => void;
@@ -86,7 +82,7 @@ const sectionStyles = {
 
 
 export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
-  visible,
+  open,
   customer,
   onClose,
   onSuccess,
@@ -96,13 +92,17 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
 
-  const { data: industries = [], isLoading: industriesLoading } = useIndustries();
-  const { data: companySizes = [], isLoading: sizesLoading } = useCompanySizes();
   const { data: users = [], isLoading: usersLoading } = useActiveUsers();
-  const { data: statuses = [], isLoading: statusesLoading } = useCustomerStatus();
-  const { data: customerTypes = [], isLoading: typesLoading } = useCustomerTypes();
-  const { data: leadSources = [], isLoading: sourcesLoading } = useLeadSource();
-  const { data: leadRatings = [], isLoading: ratingsLoading } = useLeadRating();
+  
+  // Reference data using consistent pattern
+  const currentTenant = useCurrentTenant();
+  const tenantId = currentTenant?.id;
+  const { options: industryOptions, isLoading: industriesLoading } = useReferenceDataByCategory(tenantId, 'industry');
+  const { options: companySizeOptions, isLoading: sizesLoading } = useReferenceDataByCategory(tenantId, 'company_size');
+  const { options: statusOptions, isLoading: statusesLoading } = useReferenceDataByCategory(tenantId, 'customer_status');
+  const { options: customerTypeOptions, isLoading: typesLoading } = useReferenceDataByCategory(tenantId, 'customer_type');
+  const { options: leadSourceOptions, isLoading: sourcesLoading } = useReferenceDataByCategory(tenantId, 'lead_source');
+  const { options: leadRatingOptions, isLoading: ratingsLoading } = useReferenceDataByCategory(tenantId, 'lead_rating');
 
   const isEditMode = !!customer;
   const isLoadingDropdowns = industriesLoading || sizesLoading || usersLoading || statusesLoading || typesLoading || sourcesLoading || ratingsLoading;
@@ -136,15 +136,15 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
   const finalCanSaveForm = canSaveFormElement || canSaveForm;
 
   useEffect(() => {
-    if (visible && customer) {
+    if (open && customer) {
       form.setFieldsValue({
         ...customer,
         assignedTo: customer.assigned_to || undefined,
       });
-    } else if (visible) {
+    } else if (open) {
       form.resetFields();
     }
-  }, [visible, customer, form]);
+  }, [open, customer, form]);
 
   const handleSubmit = async () => {
     try {
@@ -168,17 +168,14 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
           id: customer.id,
           data: payload,
         });
-        message.success('Customer updated successfully');
       } else {
         await createCustomer.mutateAsync(payload as CreateCustomerData);
-        message.success('Customer created successfully');
       }
 
       onSuccess();
     } catch (error) {
-      if (error instanceof Error) {
-        message.error(error.message);
-      }
+      // Notifications handled by hooks
+      console.error('Customer form error:', error);
     } finally {
       setLoading(false);
     }
@@ -195,7 +192,7 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
       placement="right"
       width={600}
       onClose={onClose}
-      open={visible}
+      open={open}
       styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -274,9 +271,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                     tooltip="Status of the customer relationship"
                   >
                     <Select size="large" placeholder="Select status" loading={statusesLoading} disabled={statusesLoading}>
-                      {statuses.map((status) => (
-                        <Select.Option key={status.id} value={status.key}>
-                          {status.metadata?.emoji} {status.label}
+                      {statusOptions.map((option) => (
+                        <Select.Option key={option.value} value={option.value}>
+                          {option.label}
                         </Select.Option>
                       ))}
                     </Select>
@@ -398,9 +395,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                   disabled={industriesLoading}
                   allowClear
                 >
-                  {industries.map((industry) => (
-                    <Select.Option key={industry.id} value={industry.key}>
-                      🏭 {industry.name}
+                  {industryOptions.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -419,9 +416,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                   disabled={sizesLoading}
                   allowClear
                 >
-                  {companySizes.map((size) => (
-                    <Select.Option key={size.id} value={size.key}>
-                      📊 {size.name}
+                  {companySizeOptions.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -433,9 +430,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
             <Col xs={24} sm={12}>
               <Form.Item label="Customer Type" name="customer_type">
                 <Select size="large" placeholder="Select customer type" allowClear loading={typesLoading} disabled={typesLoading}>
-                  {customerTypes.map((type) => (
-                    <Select.Option key={type.id} value={type.key}>
-                      {type.metadata?.emoji} {type.label}
+                  {customerTypeOptions.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -551,9 +548,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                 tooltip="How this customer was acquired"
               >
                 <Select size="large" placeholder="Select source" allowClear loading={sourcesLoading} disabled={sourcesLoading}>
-                  {leadSources.map((source) => (
-                    <Select.Option key={source.id} value={source.key}>
-                      {source.metadata?.emoji} {source.label}
+                  {leadSourceOptions.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
                     </Select.Option>
                   ))}
                 </Select>
@@ -566,9 +563,9 @@ export const CustomerFormPanel: React.FC<CustomerFormPanelProps> = ({
                 tooltip="Quality rating of the lead opportunity"
               >
                 <Select size="large" placeholder="Select rating" allowClear loading={ratingsLoading} disabled={ratingsLoading}>
-                  {leadRatings.map((rating) => (
-                    <Select.Option key={rating.id} value={rating.key}>
-                      {rating.metadata?.emoji} {rating.label}
+                  {leadRatingOptions.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
                     </Select.Option>
                   ))}
                 </Select>

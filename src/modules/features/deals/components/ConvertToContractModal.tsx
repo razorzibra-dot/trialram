@@ -26,17 +26,18 @@ import { Deal } from '@/types/crm';
 import { ContractFormData } from '@/types/contracts';
 import { useService } from '@/modules/core/hooks/useService';
 import { SalesService } from '../services/salesService';
-import { useCreateContract } from '@/modules/features/contracts/hooks/useContracts';
+import { useCreateServiceContract } from '@/modules/features/service-contracts/hooks/useServiceContracts';
+import { useActiveUsers } from '@/hooks/useActiveUsers';
 
 interface ConvertToContractModalProps {
-  visible: boolean;
+  open: boolean;
   deal: Deal | null;
   onClose: () => void;
   onSuccess: (contractId: string) => void;
 }
 
 export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
-  visible,
+  open,
   deal,
   onClose,
   onSuccess,
@@ -48,11 +49,14 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
   const [prefilledData, setPrefilledData] = useState<Partial<ContractFormData> | null>(null);
 
   const salesService = useService<SalesService>('dealsService');
-  const createContract = useCreateContract();
+  const createContractMutation = useCreateServiceContract();
+
+  // Load active users for "Assigned To" dropdown
+  const { data: activeUsers = [], isLoading: loadingUsers } = useActiveUsers();
 
   // Validate deal and prefill contract data when modal opens
   useEffect(() => {
-    if (!visible || !deal || !salesService) {
+    if (!open || !deal || !salesService) {
       return;
     }
 
@@ -99,7 +103,7 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
     };
 
     validateAndPrefill();
-  }, [visible, deal, form, salesService]);
+  }, [open, deal, form, salesService]);
 
   const handleSubmit = async () => {
     try {
@@ -116,16 +120,14 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
       };
 
       // Create contract via mutation
-      const result = await createContract.mutateAsync(contractData);
+      const result = await createContractMutation.mutateAsync(contractData);
 
-      message.success('Contract created successfully from deal');
       onSuccess(result.id || result);
       form.resetFields();
       onClose();
     } catch (error) {
-      if (error instanceof Error && !error.message.includes('Please complete all required fields')) {
-        message.error((error as Error).message || 'Failed to create contract');
-      }
+      // Notifications handled by hooks
+      console.error('Contract creation error:', error);
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
   return (
     <Modal
       title="Convert Deal to Contract"
-      open={visible}
+      open={open}
       onCancel={onClose}
       width={700}
       footer={[
@@ -329,7 +331,19 @@ export const ConvertToContractModal: React.FC<ConvertToContractModalProps> = ({
               name="assigned_to"
               label="Assigned To"
             >
-              <Input placeholder="Assign to user" />
+              <Select
+                placeholder="Select team member"
+                loading={loadingUsers}
+                allowClear
+                showSearch
+                optionFilterProp="children"
+              >
+                {activeUsers.map((user) => (
+                  <Select.Option key={user.id} value={user.id}>
+                    👤 {user.firstName} {user.lastName}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
 
             {/* Priority */}

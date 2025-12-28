@@ -70,8 +70,10 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         user_id: newUser.id,
         action: 'create_super_admin',
         table_name: 'users',
-        record_id: newUser.id,
-        new_values: { email: data.email },
+        entity_id: newUser.id,
+        resource: 'user',
+        resource_id: newUser.id,
+        changes: { after: { email: data.email } },
         tenant_id: null, // Platform-wide action
         created_at: new Date().toISOString()
       });
@@ -131,8 +133,10 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         user_id: data.userId,
         action: 'promote_super_admin',
         table_name: 'users',
-        record_id: data.userId,
-        new_values: { reason: data.reason || 'No reason provided' },
+        entity_id: data.userId,
+        resource: 'user',
+        resource_id: data.userId,
+        changes: { after: { reason: data.reason || 'No reason provided' } },
         tenant_id: null,
         created_at: new Date().toISOString()
       });
@@ -229,8 +233,10 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         user_id: data.superAdminId,
         action: 'grant_tenant_access',
         table_name: 'super_user_tenant_access',
-        record_id: data.tenantId,
-        new_values: { accessLevel: data.accessLevel },
+        entity_id: data.tenantId,
+        resource: 'tenant',
+        resource_id: data.tenantId,
+        changes: { after: { accessLevel: data.accessLevel } },
         tenant_id: null,
         created_at: new Date().toISOString()
       });
@@ -262,8 +268,10 @@ export const supabaseAdminManagementService: ISuperAdminManagementService = {
         user_id: data.superAdminId,
         action: 'revoke_tenant_access',
         table_name: 'super_user_tenant_access',
-        record_id: data.tenantId,
-        new_values: { reason: data.reason || 'No reason provided' },
+        entity_id: data.tenantId,
+        resource: 'tenant',
+        resource_id: data.tenantId,
+        changes: { after: { reason: data.reason || 'No reason provided' } },
         tenant_id: null,
         created_at: new Date().toISOString()
       });

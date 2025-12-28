@@ -7,6 +7,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/utils/formatters';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -184,15 +185,6 @@ export const TopCustomersWidget: React.FC<TopCustomersWidgetProps> = ({
   customers,
   loading = false,
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   return (
     <Card>
       <CardHeader>

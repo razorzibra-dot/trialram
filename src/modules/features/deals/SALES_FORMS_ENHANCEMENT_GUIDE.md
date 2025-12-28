@@ -788,8 +788,11 @@ const product = await productService.getProduct(productId);
 
 ### Deal Service
 ```typescript
-const { data: stages } = useDealStages();
-// Returns: DealStage[]
+// NOTE: Deals have status (won/lost/cancelled), not pipeline stages.
+// Pipeline stages belong to Opportunities. See types/crm.ts.
+
+const { data: deals } = useDeals();
+// Returns: Deal[]
 
 const createDeal = useCreateDeal();
 // Returns: UseMutationResult

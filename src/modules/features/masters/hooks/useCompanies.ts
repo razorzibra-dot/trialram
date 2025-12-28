@@ -18,9 +18,6 @@ export const companyKeys = {
   details: () => [...companyKeys.all, 'detail'] as const,
   detail: (id: string) => [...companyKeys.details(), id] as const,
   stats: () => [...companyKeys.all, 'stats'] as const,
-  statuses: () => [...companyKeys.all, 'statuses'] as const,
-  sizes: () => [...companyKeys.all, 'sizes'] as const,
-  industries: () => [...companyKeys.all, 'industries'] as const,
 };
 
 /**
@@ -60,45 +57,6 @@ export const useCompanyStats = () => {
     queryKey: companyKeys.stats(),
     queryFn: () => companyService.getCompanyStats(),
     ...STATS_QUERY_CONFIG,
-  });
-};
-
-/**
- * Hook for fetching company statuses
- */
-export const useCompanyStatuses = () => {
-  const companyService = useService<CompanyService>('companyService');
-
-  return useQuery({
-    queryKey: companyKeys.statuses(),
-    queryFn: () => companyService.getCompanyStatuses(),
-    staleTime: 60 * 60 * 1000,
-  });
-};
-
-/**
- * Hook for fetching company sizes
- */
-export const useCompanySizes = () => {
-  const companyService = useService<CompanyService>('companyService');
-
-  return useQuery({
-    queryKey: companyKeys.sizes(),
-    queryFn: () => companyService.getCompanySizes(),
-    staleTime: 60 * 60 * 1000,
-  });
-};
-
-/**
- * Hook for fetching industries
- */
-export const useIndustries = () => {
-  const companyService = useService<CompanyService>('companyService');
-
-  return useQuery({
-    queryKey: companyKeys.industries(),
-    queryFn: () => companyService.getIndustries(),
-    staleTime: 60 * 60 * 1000,
   });
 };
 

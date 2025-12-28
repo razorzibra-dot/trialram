@@ -30,7 +30,7 @@ import {
 import { productSalesNotificationService } from '../services/productSalesNotificationService';
 
 interface NotificationPreferencesModalProps {
-  visible: boolean;
+  open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -248,9 +248,9 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
               items={notificationTypes.map(type => ({
                 key: type.key,
                 label: (
-                  <Tooltip title={type.description}>
+                  <CustomTooltip title={type.description}>
                     {type.label}
-                  </Tooltip>
+                  </CustomTooltip>
                 ),
                 children: (
                   <div style={{ paddingTop: 16 }}>
@@ -289,12 +289,12 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
   );
 };
 
-interface TooltipProps {
+interface CustomTooltipProps {
   title: string;
   children: React.ReactNode;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ title, children }) => (
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ title, children }) => (
   <div title={title}>{children}</div>
 );
 

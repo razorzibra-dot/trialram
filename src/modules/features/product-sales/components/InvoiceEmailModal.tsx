@@ -43,7 +43,7 @@ import { getCustomerName } from '../utils/dataEnrichment';
 import dayjs from 'dayjs';
 
 interface InvoiceEmailModalProps {
-  visible: boolean;
+  open: boolean;
   invoice: Invoice;
   sale: ProductSale;
   saleItems: ProductSaleItem[];
@@ -62,7 +62,7 @@ const DEFAULT_PAYMENT_TERMS = [
 ];
 
 export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
-  visible,
+  open,
   invoice,
   sale,
   saleItems,

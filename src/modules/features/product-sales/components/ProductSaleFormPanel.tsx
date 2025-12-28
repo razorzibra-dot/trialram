@@ -41,16 +41,21 @@ import {
   Tag,
   Badge,
   Statistic,
+  Typography,
 } from 'antd';
-import { LockOutlined, LinkOutlined, DeleteOutlined as DeleteIcon, PlusOutlined, FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+
+const { Title } = Typography;
+import { LockOutlined, LinkOutlined, DeleteOutlined as DeleteIcon, PlusOutlined, FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined, UserOutlined, CalendarOutlined, DollarOutlined, ShoppingCartOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { ProductSale, ProductSaleFormData } from '@/types/productSales';
 import { Customer } from '@/types/crm';
 import { Product } from '@/types/masters';
-import { useProductSalesPermissions } from '../hooks/useProductSalesPermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { useService } from '@/modules/core/hooks/useService';
-import { CustomerService } from '@/modules/features/customers/services/customerService';
 import { ProductService } from '@/modules/features/masters/services/productService';
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
+import { useCustomersDropdown } from '@/hooks/useCustomersDropdown';
+import { useProductsDropdown } from '@/hooks/useProductsDropdown';
 
 // Sale item type for line items table
 interface SaleLineItem {
@@ -77,30 +82,33 @@ interface FinancialConfig {
 }
 
 interface ProductSaleFormPanelProps {
-  visible: boolean;
+  open: boolean;
   productSale: ProductSale | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
-  visible,
+  open,
   productSale,
   onClose,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleItems, setSaleItems] = useState<SaleLineItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
+
+  // Load customers and products using shared dropdown hooks
+  const { data: customerOptions = [], isLoading: loadingCustomers } = useCustomersDropdown();
+  const { data: productOptions = [], isLoading: loadingProducts } = useProductsDropdown();
+
+  // ✅ Memoize extracted objects to prevent infinite re-renders
+  const customers = useMemo(() => customerOptions.map(opt => opt.customer), [customerOptions]);
+  const products = useMemo(() => productOptions.map(opt => opt.product), [productOptions]);
 
   // Enterprise-level state
   const [globalDiscountRate, setGlobalDiscountRate] = useState<number>(0);
@@ -113,16 +121,49 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
 
   const isEditMode = !!productSale;
   
+  // Professional styling configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 20,
+      color: '#0ea5e9',
+      marginRight: 10,
+      fontWeight: 600,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
+  
   // ✅ Get services using module service container (standardized pattern)
-  const customerService = useService<CustomerService>('customerService');
   const productService = useService<ProductService>('productService');
   const productSaleService = useService<any>('productSaleService');
   
-  // RBAC permission checking
-  const permissions = useProductSalesPermissions({
-    sale: productSale || undefined,
-    autoLoad: visible,
-  });
+  // ✅ Base permissions for create/update actions (synchronous - matches DealFormPanel pattern)
+  const { hasPermission } = useAuth();
+  const canCreateSale = hasPermission('crm:product-sale:record:create');
+  const canUpdateSale = hasPermission('crm:product-sale:record:update');
+  
+  // Determine if save button should be enabled based on mode
+  const finalCanSaveSale = isEditMode ? canUpdateSale : canCreateSale;
+  
+  // Load reference data for status dropdown - use context directly
+  const { getRefDataByCategory, isLoading: loadingStatuses } = useReferenceData();
+  const statusData = getRefDataByCategory('product_sale_status');
   
   /**
    * Generate auto-incremented sales number with tenant isolation
@@ -173,134 +214,57 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
       totalAmount,
     };
   }, [saleItems, globalDiscountRate, globalDiscountType, taxRate]);
-  
-  // Check if user has permission for this operation
-  useEffect(() => {
-    if (!visible) {
-      setPermissionError(null);
-      return;
-    }
-    
-    if (isEditMode && !permissions.canEdit) {
-      setPermissionError('You do not have permission to edit product sales.');
-    } else if (!isEditMode && !permissions.canCreate) {
-      setPermissionError('You do not have permission to create product sales.');
-    } else {
-      setPermissionError(null);
-    }
-  }, [visible, isEditMode, permissions.canCreate, permissions.canEdit]);
 
   // Generate auto sales number on form open (new mode only)
   useEffect(() => {
-    if (visible && !isEditMode && !autoGeneratedSaleNumber) {
+    if (open && !isEditMode && !autoGeneratedSaleNumber) {
       const newSalesNumber = generateSalesNumber();
       setAutoGeneratedSaleNumber(newSalesNumber);
       form.setFieldValue('sale_number', newSalesNumber);
     }
-  }, [visible, isEditMode, form, autoGeneratedSaleNumber]);
+  }, [open, isEditMode, form, autoGeneratedSaleNumber]);
 
-  // Load customers and products (matches Sales module pattern)
-  useEffect(() => {
-    if (visible && customerService) {
-      loadCustomers();
-    }
-  }, [visible, customerService]);
-
-  // Separate effect for loading customers
-  const loadCustomers = async () => {
-    try {
-      setLoadingCustomers(true);
-      console.log('[ProductSaleFormPanel] Loading customers...');
-      
-      if (!customerService) {
-        console.error('[ProductSaleFormPanel] customerService is undefined');
-        throw new Error('Customer service not initialized');
-      }
-      
-      const result = await customerService.getCustomers({ pageSize: 1000 });
-      console.log('[ProductSaleFormPanel] Received customers:', result);
-      
-      if (result?.data && Array.isArray(result.data)) {
-        console.log('[ProductSaleFormPanel] Setting customers:', result.data.length, 'items');
-        setCustomers(result.data);
-      } else if (Array.isArray(result)) {
-        setCustomers(result);
-      }
-      setLoadingCustomers(false);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load customers';
-      setError(errorMsg);
-      console.error('[ProductSaleFormPanel] Error loading customers:', err);
-      setLoadingCustomers(false);
-    }
-  };
-
-  // Load products separately
-  useEffect(() => {
-    if (visible && productService) {
-      loadProducts();
-    }
-  }, [visible, productService]);
-
-  const loadProducts = async () => {
-    try {
-      setLoadingProducts(true);
-      const result = await productService.getProducts({ pageSize: 1000, status: 'active' });
-      
-      if (result?.data && Array.isArray(result.data)) {
-        setProducts(result.data);
-      } else if (Array.isArray(result)) {
-        setProducts(result);
-      }
-      setLoadingProducts(false);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load products';
-      setError(errorMsg);
-      console.error('Error loading products:', err);
-      setLoadingProducts(false);
-    }
-  }
+  // Customers and products loaded via shared hooks (useCustomersDropdown, useProductsDropdown)
 
   // Populate form when editing
   useEffect(() => {
-    if (visible && productSale) {
+    if (open && productSale) {
       console.log('[ProductSaleFormPanel] 📝 Updating form for product sale:', productSale.id);
       
       const selectedCust = customers.find(c => c.id === productSale.customer_id);
       setSelectedCustomer(selectedCust || null);
       
-      // Initialize with single product as line item if not in edit mode with multiple items
+      // Initialize with single product as line item using correct database field names
       if (!saleItems.length) {
         const lineItem: SaleLineItem = {
           id: `item-${Date.now()}`,
           product_id: productSale.product_id,
-          product_name: productSale.product_name,
+          product_name: productSale.product_name || 'Product',
           product_sku: '',
-          quantity: productSale.quantity,
-          unit_price: productSale.unit_price,
+          quantity: productSale.units, // DB field: units
+          unit_price: productSale.cost_per_unit, // DB field: cost_per_unit
           discount: 0,
           tax: 0,
-          line_total: productSale.total_value,
+          line_total: productSale.total_cost, // DB field: total_cost
         };
         setSaleItems([lineItem]);
       }
       
+      // Note: sale_date is read-only (derived from created_at), show it but don't allow editing
       form.setFieldsValue({
-        sale_number: productSale.sale_number,
         customer_id: productSale.customer_id,
         status: productSale.status,
-        sale_date: productSale.sale_date ? dayjs(productSale.sale_date) : null,
+        sale_date: productSale.sale_date ? dayjs(productSale.sale_date) : dayjs(productSale.created_at),
         delivery_date: productSale.delivery_date ? dayjs(productSale.delivery_date) : null,
-        warranty_period: productSale.warranty_period,
         notes: productSale.notes,
       });
-    } else if (visible) {
+    } else if (open) {
       console.log('[ProductSaleFormPanel] Resetting form (new product sale)');
       form.resetFields();
       setSelectedCustomer(null);
       setSaleItems([]);
     }
-  }, [visible, productSale, form, customers]);
+  }, [open, productSale, form, customers]);
 
   // Handle customer selection - update form with customer details
   const handleCustomerChange = (customerId: string) => {
@@ -385,7 +349,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
       
       // Validate at least one product is selected
       if (saleItems.length === 0) {
-        message.error('Please add at least one product to the sale');
+        setError('Please add at least one product to the sale');
         return;
       }
 
@@ -395,7 +359,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
       // Find customer details
       const selectedCust = customers.find(c => c.id === values.customer_id);
       if (!selectedCust) {
-        message.error('Selected customer not found');
+        setError('Selected customer not found');
         setLoading(false);
         return;
       }
@@ -406,33 +370,29 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
       const primaryProduct = products.find(p => p.id === primaryItem.product_id);
 
       if (!primaryProduct) {
-        message.error('Primary product not found');
+        setError('Primary product not found');
         setLoading(false);
         return;
       }
 
-      // Prepare form data
+      // Prepare form data matching database schema
+      // Note: sale_date is NOT a database column - it's derived from created_at on read
       const formData: ProductSaleFormData = {
         customer_id: values.customer_id,
-        customer_name: selectedCust.company_name,
         product_id: primaryItem.product_id,
-        product_name: primaryItem.product_name,
-        quantity: primaryItem.quantity,
-        unit_price: primaryItem.unit_price,
-        total_value: calculateTotalFromItems,
-        status: values.status || 'pending',
-        sale_date: values.sale_date ? values.sale_date.format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
-        delivery_date: values.delivery_date ? values.delivery_date.format('YYYY-MM-DD') : '',
-        warranty_period: values.warranty_period || 12,
-        notes: values.notes,
+        units: primaryItem.quantity,
+        cost_per_unit: primaryItem.unit_price,
+        delivery_date: values.delivery_date ? values.delivery_date.format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
+        notes: values.notes || '',
+        attachments: [],
       };
 
       if (isEditMode && productSale) {
+        // Notifications handled by parent component
         await productSaleService.updateProductSale(productSale.id, formData);
-        message.success('Product sale updated successfully');
       } else {
+        // Notifications handled by parent component
         await productSaleService.createProductSale(formData);
-        message.success('Product sale created successfully');
       }
 
       form.resetFields();
@@ -441,7 +401,6 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to save product sale';
       setError(errorMsg);
-      message.error(errorMsg);
       console.error('Error saving product sale:', err);
     } finally {
       setLoading(false);
@@ -460,8 +419,9 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
   return (
     <Drawer
       title={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>{isEditMode ? '📝 Edit Product Sale' : '✨ Create New Product Sale'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ShoppingCartOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>{isEditMode ? 'Edit Product Sale' : 'Create New Product Sale'}</span>
           {!isEditMode && autoGeneratedSaleNumber && (
             <Tag color="blue" style={{ marginLeft: 16 }}>
               {autoGeneratedSaleNumber}
@@ -470,77 +430,60 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
         </div>
       }
       placement="right"
-      width={900}
+      width={600}
       onClose={handleClose}
-      open={visible}
+      open={open}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
-        <Space style={{ float: 'right' }}>
-          <Button onClick={handleClose}>Cancel</Button>
-          {permissionError ? (
-            <Tooltip title={permissionError}>
-              <Button
-                type="primary"
-                icon={<LockOutlined />}
-                disabled
-              >
-                {isEditMode ? 'Update' : 'Create'}
-              </Button>
-            </Tooltip>
-          ) : (
-            <Button
-              type="primary"
-              loading={loading}
-              onClick={handleSubmit}
-              disabled={dataLoading || saleItems.length === 0}
-            >
-              {isEditMode ? 'Update' : 'Create Sale'}
-            </Button>
-          )}
-        </Space>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="large" icon={<CloseOutlined />} onClick={handleClose}>Cancel</Button>
+          <Button
+            type="primary"
+            size="large"
+            loading={loading}
+            onClick={handleSubmit}
+            disabled={!finalCanSaveSale || dataLoading || saleItems.length === 0}
+            icon={!finalCanSaveSale ? <LockOutlined /> : <SaveOutlined />}
+          >
+            {isEditMode ? 'Update' : 'Create Sale'}
+          </Button>
+        </div>
       }
     >
-      {permissionError && (
-        <Alert
-          message="Permission Denied"
-          description={permissionError}
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-          closable
-        />
-      )}
-      {dataLoading ? (
-        <Spin size="large" spinning fullscreen />
-      ) : error ? (
-        <Alert
-          message="Error Loading Data"
-          description={error}
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-      ) : (
-        <Form
-          form={form}
-          layout="vertical"
-          requiredMark="optional"
-          autoComplete="off"
-          disabled={!!permissionError}
-        >
-          {/* ENTERPRISE: Sales Header with Auto-Generated Number */}
-          <Card 
-            size="small" 
-            style={{ marginBottom: 24, backgroundColor: '#f6f8fb', borderColor: '#1890ff' }}
-            title={<strong>📊 Sale Header Information</strong>}
+      <div style={{ padding: '0 24px 24px 24px' }}>
+        {dataLoading ? (
+          <Spin size="large" spinning fullscreen />
+        ) : error ? (
+          <Alert
+            message="Error Loading Data"
+            description={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        ) : (
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark="optional"
+            autoComplete="off"
+            disabled={!finalCanSaveSale}
           >
+            {/* Sales Header Information Card */}
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <FileTextOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Sale Header Information</h3>
+              </div>
             <Row gutter={16}>
               <Col xs={24} sm={12}>
                 <Form.Item
                   label={<strong>Sale Number (Auto-Generated)</strong>}
                   name="sale_number"
-                  rules={[{ required: true, message: 'Sale number is required' }]}
+                  tooltip="Auto-generated unique sales number"
                 >
                   <Input 
+                    size="large"
                     placeholder="Auto-generated" 
                     disabled
                     prefix={<FileTextOutlined />}
@@ -554,6 +497,8 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                   name="reference_number"
                 >
                   <Input 
+                    size="large"
+                    allowClear
                     placeholder="e.g., PO-12345 or Reference ID"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
@@ -566,6 +511,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                   name="quote_status"
                 >
                   <Select 
+                    size="large"
                     value={quoteStatus}
                     onChange={setQuoteStatus}
                     optionLabelProp="label"
@@ -591,6 +537,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                   name="payment_terms"
                 >
                   <Select 
+                    size="large"
                     value={paymentTerms}
                     onChange={setPaymentTerms}
                   >
@@ -607,9 +554,12 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
             </Row>
           </Card>
 
-          {/* Customer Section */}
-          <Divider style={{ margin: '20px 0' }} />
-          <h3 style={{ marginBottom: 16, fontWeight: 600 }}>Customer Information</h3>
+          {/* Customer Information Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <UserOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Customer Information</h3>
+            </div>
 
           {selectedCustomer && (
             <Alert
@@ -629,6 +579,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
             tooltip="Select a customer to link this sale. Required for sale creation."
           >
             <Select
+              size="large"
               placeholder="Select customer"
               loading={loadingCustomers}
               optionLabelProp="label"
@@ -657,7 +608,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
 
           {/* Customer Details Display */}
           {selectedCustomer && (
-            <Card size="small" style={{ marginBottom: 16, backgroundColor: '#fafafa' }}>
+            <Card size="small" style={{ marginBottom: 16, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
               <div style={{ fontSize: '12px', lineHeight: 1.8 }}>
                 <div><strong>Contact:</strong> {selectedCustomer.contact_name}</div>
                 <div><strong>Email:</strong> {selectedCustomer.email}</div>
@@ -668,19 +619,20 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
               </div>
             </Card>
           )}
+          </Card>
 
-          {/* ENTERPRISE: Products/Services Section */}
-          <Divider style={{ margin: '24px 0' }} />
-          <Card 
-            size="small" 
-            title={<strong>📦 Products/Services & Pricing</strong>}
-            style={{ marginBottom: 24 }}
-          >
+          {/* Products/Services Section Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <ShoppingCartOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Products/Services & Pricing</h3>
+            </div>
             {/* Product Selection */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Add Products to Sale</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Select
+                  size="large"
                   placeholder="Search and select product"
                   style={{ flex: 1 }}
                   loading={loadingProducts}
@@ -708,6 +660,7 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                 </Select>
                 <Button
                   type="primary"
+                  size="large"
                   icon={<PlusOutlined />}
                   onClick={handleAddProduct}
                   loading={loadingProducts}
@@ -837,13 +790,13 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
             />
           )}
 
-          {/* ENTERPRISE: Financial Summary Card */}
+          {/* Financial Summary Card */}
           {saleItems.length > 0 && (
-            <Card 
-              size="small" 
-              style={{ marginBottom: 24, backgroundColor: '#f0f5ff', borderColor: '#1890ff', borderWidth: 2 }}
-              title={<strong>💵 Financial Summary</strong>}
-            >
+            <Card style={sectionStyles.card} variant="borderless">
+              <div style={sectionStyles.header}>
+                <DollarOutlined style={sectionStyles.headerIcon} />
+                <h3 style={sectionStyles.headerTitle}>Financial Summary</h3>
+              </div>
               <Row gutter={24}>
                 <Col xs={12} sm={6}>
                   <Statistic
@@ -890,20 +843,26 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
             </Card>
           )}
 
-          {/* ENTERPRISE: Sale Details Section */}
-          <Card 
-            size="small" 
-            title={<strong>📅 Sale Details & Timeline</strong>}
-            style={{ marginBottom: 24 }}
-          >
+          {/* Sale Details & Timeline Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <CalendarOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Sale Details & Timeline</h3>
+            </div>
             <Row gutter={16}>
               <Col xs={24} sm={12}>
                 <Form.Item
                   label="Sale Date"
                   name="sale_date"
-                  rules={[{ required: true, message: 'Please select sale date' }]}
+                  tooltip="Sale date is automatically set when the record is created"
+                  initialValue={dayjs()}
                 >
-                  <DatePicker style={{ width: '100%' }} />
+                  <DatePicker 
+                    size="large"
+                    style={{ width: '100%' }} 
+                    disabled={true}
+                    placeholder="Auto-set on creation"
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -911,36 +870,28 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                   label="Delivery Date"
                   name="delivery_date"
                 >
-                  <DatePicker style={{ width: '100%' }} />
+                  <DatePicker size="large" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
                   label="Status"
                   name="status"
-                  initialValue="pending"
+                  initialValue="new"
                   rules={[{ required: true, message: 'Please select status' }]}
                 >
-                  <Select placeholder="Select status" optionLabelProp="label">
-                    <Select.Option value="draft" label={<Badge status="default" text="Draft" />}>
-                      Draft
-                    </Select.Option>
-                    <Select.Option value="pending" label={<Badge status="processing" text="Pending" />}>
-                      Pending
-                    </Select.Option>
-                    <Select.Option value="confirmed" label={<Badge status="processing" text="Confirmed" />}>
-                      Confirmed
-                    </Select.Option>
-                    <Select.Option value="delivered" label={<Badge status="success" text="Delivered" />}>
-                      Delivered
-                    </Select.Option>
-                    <Select.Option value="cancelled" label={<Badge status="error" text="Cancelled" />}>
-                      Cancelled
-                    </Select.Option>
-                    <Select.Option value="refunded" label={<Badge status="error" text="Refunded" />}>
-                      Refunded
-                    </Select.Option>
-                  </Select>
+                  <Select 
+                    size="large"
+                    placeholder="Select status" 
+                    loading={loadingStatuses}
+                    options={statusData.map(s => {
+                      const metadata = (s.metadata as Record<string, unknown>) || {};
+                      return {
+                        label: s.label,
+                        value: s.key,
+                      };
+                    })}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -949,18 +900,18 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
                   name="warranty_period"
                   initialValue={12}
                 >
-                  <InputNumber min={0} max={120} placeholder="Enter warranty period" style={{ width: '100%' }} />
+                  <InputNumber size="large" min={0} max={120} placeholder="Enter warranty period" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
             </Row>
           </Card>
 
-          {/* ENTERPRISE: Additional Information */}
-          <Card 
-            size="small" 
-            title={<strong>📝 Additional Information & Comments</strong>}
-            style={{ marginBottom: 24 }}
-          >
+          {/* Additional Information Card */}
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <FileTextOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Additional Information & Comments</h3>
+            </div>
             <Form.Item
               label="Internal Notes"
               name="notes"
@@ -969,12 +920,13 @@ export const ProductSaleFormPanel: React.FC<ProductSaleFormPanelProps> = ({
               <Input.TextArea 
                 rows={4} 
                 placeholder="Add internal notes, special instructions, or customer requirements..."
-                style={{ fontFamily: 'monospace' }}
+                style={{ fontFamily: 'inherit' }}
               />
             </Form.Item>
           </Card>
         </Form>
       )}
+      </div>
     </Drawer>
   );
 };

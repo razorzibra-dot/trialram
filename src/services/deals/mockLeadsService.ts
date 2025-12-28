@@ -1,5 +1,7 @@
 import { LeadDTO, CreateLeadDTO, UpdateLeadDTO, LeadFiltersDTO, LeadListResponseDTO, LeadConversionMetricsDTO } from '@/types/dtos';
-import { authService } from '../serviceFactory';
+import { authService, customerService } from '../serviceFactory';
+import backendConfig from '@/config/backendConfig';
+import { mapLeadToCustomerCreateInput } from './utils/leadToCustomerMapper';
 
 /**
  * Leads Service - Mock Implementation
@@ -376,7 +378,7 @@ class MockLeadsService {
   /**
    * Convert lead to customer
    */
-  async convertToCustomer(id: string, customerId: string): Promise<LeadDTO> {
+  async convertToCustomer(id: string, customerId?: string): Promise<LeadDTO> {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
@@ -392,14 +394,39 @@ class MockLeadsService {
       throw new Error('Lead not found');
     }
 
+    const lead = this.mockLeads[leadIndex];
+
+    // Enterprise validation: enforce minimum score unless override permission
+    const hasOverride = authService.hasPermission('crm:lead:convert:override');
+    const MIN_SCORE = backendConfig.businessRules?.leadConversionMinScore ?? 55;
+    if (!hasOverride && (lead.leadScore ?? 0) < MIN_SCORE) {
+      throw new Error(`Lead score must be at least ${MIN_SCORE} to convert`);
+    }
+
+    // If already converted to the same customer, keep behavior idempotent
+    if (lead.convertedToCustomer && lead.convertedCustomerId && (!customerId || lead.convertedCustomerId === customerId)) {
+      return lead;
+    }
+
+    let targetCustomerId = customerId;
+
+    if (!targetCustomerId) {
+      const customerPayload = mapLeadToCustomerCreateInput(lead);
+      const createdCustomer = await customerService.createCustomer(customerPayload);
+      targetCustomerId = createdCustomer.id;
+    }
+
     this.mockLeads[leadIndex] = {
-      ...this.mockLeads[leadIndex],
+      ...lead,
       convertedToCustomer: true,
-      convertedCustomerId: customerId,
+      convertedCustomerId: targetCustomerId,
       convertedAt: new Date().toISOString(),
-      status: 'converted',
+      status: 'won',
+      leadScore: 100,
+      qualificationStatus: 'qualified',
+      stage: 'purchase',
       audit: {
-        ...this.mockLeads[leadIndex].audit,
+        ...lead.audit,
         updatedAt: new Date().toISOString()
       }
     };

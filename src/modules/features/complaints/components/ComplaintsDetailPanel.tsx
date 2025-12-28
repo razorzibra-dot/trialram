@@ -5,45 +5,59 @@
 
 import React from 'react';
 import { Drawer, Card, Button, Descriptions, Tag, Space, Alert, Divider } from 'antd';
-import { EditOutlined, CloseOutlined } from '@ant-design/icons';
-import { MessageSquare, User, Calendar, Clock } from 'lucide-react';
+import { EditOutlined, CloseOutlined, InfoCircleOutlined, UserOutlined, ClockCircleOutlined, MessageOutlined } from '@ant-design/icons';
 import { Complaint } from '@/types/complaints';
 import { formatDate } from '@/modules/core/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 
 interface ComplaintsDetailPanelProps {
-  visible: boolean;
+  open: boolean;
   complaint: Complaint | null;
   onClose: () => void;
   onEdit: () => void;
 }
 
-const statusColors: Record<string, string> = {
-  new: 'blue',
-  in_progress: 'orange',
-  resolved: 'green',
-  closed: 'default',
-};
-
-const priorityColors: Record<string, string> = {
-  low: 'default',
-  medium: 'blue',
-  high: 'orange',
-  urgent: 'red',
-};
-
-const typeLabels: Record<string, string> = {
-  breakdown: 'Equipment Breakdown',
-  preventive: 'Preventive Maintenance',
-  software_update: 'Software Update',
-  optimize: 'Optimization',
-};
-
 export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
-  visible,
+  open,
   complaint,
   onClose,
   onEdit,
 }) => {
+  const { hasPermission } = useAuth();
+
+  // Database-driven lookups
+  const { getColor: getStatusColor, getLabel: getStatusLabel } = useReferenceDataLookup('complaint_status');
+  const { getColor: getPriorityColor, getLabel: getPriorityLabel } = useReferenceDataLookup('complaint_priority');
+  const { getLabel: getTypeLabel } = useReferenceDataLookup('complaint_type');
+
+  // Section styles configuration
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: '#0ea5e9',
+      marginRight: 10,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
+  };
+
   if (!complaint) {
     return null;
   }
@@ -54,21 +68,21 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
     <Drawer
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <MessageSquare style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <MessageOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
           <span>Complaint Details</span>
         </div>
       }
       placement="right"
-      width={600}
+      width={650}
       onClose={onClose}
-      open={visible}
+      open={open}
       styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button icon={<CloseOutlined />} onClick={onClose}>
+          <Button size="large" icon={<CloseOutlined />} onClick={onClose}>
             Close
           </Button>
-          <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+          <Button type="primary" size="large" icon={<EditOutlined />} onClick={onEdit}>
             Edit Complaint
           </Button>
         </div>
@@ -86,16 +100,11 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
         )}
 
         {/* Basic Information */}
-        <Card
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MessageSquare style={{ fontSize: 16, color: '#0ea5e9' }} />
-              <span>Basic Information</span>
-            </div>
-          }
-          style={{ marginBottom: 20 }}
-          variant="borderless"
-        >
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <InfoCircleOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Basic Information</h3>
+          </div>
           <Descriptions column={1} size="small">
             <Descriptions.Item label="Title">
               <strong>{complaint.title}</strong>
@@ -104,32 +113,27 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
               {complaint.description}
             </Descriptions.Item>
             <Descriptions.Item label="Type">
-              <Tag color="blue">{typeLabels[complaint.type] || complaint.type}</Tag>
+              <Tag color="blue">{getTypeLabel(complaint.type)}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={statusColors[complaint.status]}>
-                {complaint.status.replace('_', ' ').toUpperCase()}
+              <Tag color={getStatusColor(complaint.status)}>
+                {getStatusLabel(complaint.status)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Priority">
-              <Tag color={priorityColors[complaint.priority]}>
-                {complaint.priority.toUpperCase()}
+              <Tag color={getPriorityColor(complaint.priority)}>
+                {getPriorityLabel(complaint.priority)}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
         </Card>
 
         {/* Assignment Information */}
-        <Card
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <User style={{ fontSize: 16, color: '#0ea5e9' }} />
-              <span>Assignment & Timeline</span>
-            </div>
-          }
-          style={{ marginBottom: 20 }}
-          variant="borderless"
-        >
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Assignment & Timeline</h3>
+          </div>
           <Descriptions column={1} size="small">
             <Descriptions.Item label="Assigned Engineer">
               {complaint.assigned_engineer_id ? 'Assigned' : 'Unassigned'}
@@ -150,16 +154,11 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
 
         {/* Resolution */}
         {complaint.engineer_resolution && (
-          <Card
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Clock style={{ fontSize: 16, color: '#0ea5e9' }} />
-                <span>Resolution</span>
-              </div>
-            }
-            style={{ marginBottom: 20 }}
-            variant="borderless"
-          >
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <ClockCircleOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Resolution</h3>
+            </div>
             <div style={{
               padding: 12,
               backgroundColor: '#f6ffed',
@@ -174,15 +173,11 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
 
         {/* Comments */}
         {complaint.comments && complaint.comments.length > 0 && (
-          <Card
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MessageSquare style={{ fontSize: 16, color: '#0ea5e9' }} />
-                <span>Comments ({complaint.comments.length})</span>
-              </div>
-            }
-            variant="borderless"
-          >
+          <Card style={sectionStyles.card} variant="borderless">
+            <div style={sectionStyles.header}>
+              <MessageOutlined style={sectionStyles.headerIcon} />
+              <h3 style={sectionStyles.headerTitle}>Comments ({complaint.comments.length})</h3>
+            </div>
             <Space direction="vertical" style={{ width: '100%' }}>
               {complaint.comments.map((comment) => (
                 <div

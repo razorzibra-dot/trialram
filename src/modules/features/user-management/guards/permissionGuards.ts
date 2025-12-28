@@ -126,8 +126,8 @@ export function getPermissionGuard(userRole: UserRole): PermissionGuardResult {
   
   console.log('[getPermissionGuard] Individual permission checks:', {
     'UserPermission.USER_EDIT (crm:user:record:update)': check1,
-    'crm:user:record:update (string)': check2,
-    'crm:user:record:update (string)': check3
+    'crm:user:record:update (string) check2': check2,
+    'crm:user:record:update (string) check3': check3
   });
   
   const canEditCheck = check1 || check2 || check3;
@@ -195,10 +195,8 @@ export function getRolePermissions(userRole: UserRole): UserPermission[] {
     'crm:user:record:create': UserPermission.USER_CREATE,
     'crm:user:record:update': UserPermission.USER_EDIT,
     'crm:user:record:delete': UserPermission.USER_DELETE,
-    'crm:user:record:update': UserPermission.USER_EDIT, // manage includes all user operations
     'crm:role:record:update': UserPermission.USER_MANAGE_ROLES,
     'crm:role:permission:assign': UserPermission.USER_MANAGE_ROLES,
-    'crm:user:record:read': UserPermission.USER_LIST,
   };
   
   const mappedPerms = userPerms

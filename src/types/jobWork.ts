@@ -4,9 +4,11 @@ export interface JobWork {
 
   // Customer Relationship (normalized - IDs only, no denormalized names)
   customer_id: string;
+  customer_name?: string; // For display purposes, populated from JOIN
 
   // Product Relationship (normalized - IDs only, no denormalized names)
   product_id: string;
+  product_name?: string; // For display purposes, populated from JOIN
 
   // Job Specifications
   pieces: number;
@@ -22,6 +24,8 @@ export interface JobWork {
 
   // Assignment and Engineering (normalized - IDs only, no denormalized names)
   receiver_engineer_id: string;
+  assigned_to?: string; // Alias for receiver_engineer_id
+  assigned_to_name?: string; // For display purposes, populated from JOIN
   assigned_by?: string;
 
   // Status and Workflow

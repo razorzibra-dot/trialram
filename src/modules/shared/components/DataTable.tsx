@@ -124,6 +124,21 @@ export function DataTable<T extends Record<string, unknown>>({
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState(search?.value || '');
 
+  // Debug: log data received by DataTable
+  try {
+    console.log('[DataTable] render - data count:', Array.isArray(data) ? data.length : typeof data, 'sample ids:', (Array.isArray(data) ? (data as any[]).slice(0,5).map(d => d.id) : []));
+  } catch (e) {
+    // Ignore errors during debug logging
+  }
+
+  // Debug: log data received by DataTable
+  try {
+    console.log('[DataTable] render - data count:', Array.isArray(data) ? data.length : typeof data, 'sample ids:', (Array.isArray(data) ? (data as any[]).slice(0,5).map(d => d.id) : []));
+    } catch (e) {
+      // Ignore errors during debug logging
+      // Ignore logging errors
+    }
+
   // Get row key
   const getRowKey = (record: T, index: number): string => {
     if (typeof rowKey === 'function') {

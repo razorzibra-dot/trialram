@@ -5,7 +5,8 @@ const DEFAULT_SESSION_CONFIG: SessionConfig = {
   sessionTimeout: 3600,
   idleTimeout: 1800,
   idleWarningTime: 300,
-  checkInterval: 10000
+  checkInterval: 10000,
+  leadConversionMinScore: 55
 };
 
 const SESSION_PRESETS = {
@@ -13,28 +14,32 @@ const SESSION_PRESETS = {
     sessionTimeout: 28800,
     idleTimeout: 7200,
     idleWarningTime: 600,
-    checkInterval: 30000
+    checkInterval: 30000,
+    leadConversionMinScore: 55
   },
   
   production: {
     sessionTimeout: 3600,
     idleTimeout: 1800,
     idleWarningTime: 300,
-    checkInterval: 10000
+    checkInterval: 10000,
+    leadConversionMinScore: 55
   },
   
   highSecurity: {
     sessionTimeout: 1800,
     idleTimeout: 900,
     idleWarningTime: 180,
-    checkInterval: 5000
+    checkInterval: 5000,
+    leadConversionMinScore: 70
   },
   
   lowSecurity: {
     sessionTimeout: 86400,
     idleTimeout: 43200,
     idleWarningTime: 1800,
-    checkInterval: 60000
+    checkInterval: 60000,
+    leadConversionMinScore: 50
   }
 };
 

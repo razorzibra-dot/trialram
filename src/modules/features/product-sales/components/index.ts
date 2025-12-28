@@ -1,10 +1,8 @@
 /**
  * Product Sales Components
- * Exports all product sales panel components and list
+ * Exports all product sales panel components
  */
 
-export { ProductSalesList } from './ProductSalesList';
-export type { ProductSalesListProps } from './ProductSalesList';
 export { ProductSaleFormPanel } from './ProductSaleFormPanel';
 export { ProductSaleDetailPanel } from './ProductSaleDetailPanel';
 export { AdvancedFiltersModal } from './AdvancedFiltersModal';

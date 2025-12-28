@@ -482,7 +482,7 @@ const ConfigurationTestPage: React.FC = () => {
 
       {/* Result Panel */}
       <ConfigTestResultPanel
-        visible={isPanelVisible}
+        open={isPanelVisible}
         result={testResult}
         history={testHistory}
         loading={loading}

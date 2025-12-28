@@ -39,10 +39,8 @@ src/modules/features/masters/
 │   ├── useProducts.ts                  # Products data fetching & mutations
 │   └── useCompanies.ts                 # Companies data fetching & mutations
 ├── components/
-│   ├── ProductsList.tsx                # Products table with filtering
 │   ├── ProductsDetailPanel.tsx         # Product detail view (drawer)
 │   ├── ProductsFormPanel.tsx           # Product create/edit form
-│   ├── CompaniesList.tsx               # Companies table with filtering
 │   ├── CompaniesDetailPanel.tsx        # Company detail view (drawer)
 │   └── CompaniesFormPanel.tsx          # Company create/edit form
 ├── views/
@@ -294,17 +292,19 @@ export function useCreateProduct() {
 
 UI components with Ant Design:
 
-**ProductsList**:
-- Displays products in table format
-- Supports sorting, filtering, pagination
-- Bulk selection and operations
-- Export/Import buttons
-
 **ProductsFormPanel**:
 - Create/Edit form in drawer
 - Field validation with Ant Design rules
 - Tooltips documenting database constraints
 - Loading states during submission
+
+**ProductsDetailPanel**:
+- Read-only drawer showing product information and stock cues
+
+**ProductsPage**:
+- Main page component with inline Ant Design table
+- Breadcrumb navigation and statistics cards
+- Import, refresh, and create actions
 
 **CompaniesPage**:
 - Main page component
@@ -318,19 +318,14 @@ UI components with Ant Design:
 
 ```
 ProductsPage
-  ├── ProductsList (table)
-  │   ├── Bulk Actions
-  │   └── Detail/Edit Drawers
-  │       ├── ProductsDetailPanel
-  │       └── ProductsFormPanel
-  └── Statistics Cards
+  ├── ProductsDetailPanel (view drawer)
+  ├── ProductsFormPanel (create/edit drawer)
+  └── Statistics Cards + Filters
 
 CompaniesPage
-  ├── CompaniesList (table)
-  │   ├── Bulk Actions
-  │   └── Detail/Edit Drawers
-  │       ├── CompaniesDetailPanel
-  │       └── CompaniesFormPanel
+  ├── CompaniesDetailPanel (view drawer)
+  ├── CompaniesFormPanel (create/edit drawer)
+  └── Statistics Cards + Filters
   └── Statistics Cards
 ```
 

@@ -53,56 +53,63 @@ ON CONFLICT (user_id, role_id, tenant_id) DO NOTHING;
 -- 4. POPULATE ROLE_PERMISSIONS TABLE
 -- ============================================================================
 
--- Clear existing role_permissions
-DELETE FROM role_permissions;
+-- DISABLED: This DELETE conflicts with consolidated permissions migration
+-- Role permissions are now managed by 20251217000001_consolidated_permissions.sql
+-- DELETE FROM role_permissions;
 
--- Insert role_permissions for Administrator role
+-- Insert role_permissions for Administrator role (legacy - kept for backward compatibility)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Administrator'
-  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies');
+  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Insert role_permissions for Manager role
+-- Insert role_permissions for Manager role (legacy)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Manager'
-  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'manage_dashboard');
+  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'manage_dashboard')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Insert role_permissions for User role
+-- Insert role_permissions for User role (legacy)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'User'
-  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'manage_tickets');
+  AND p.name IN ('read', 'write', 'crm:customer:record:update', 'manage_tickets')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Insert role_permissions for Engineer role
+-- Insert role_permissions for Engineer role (legacy)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Engineer'
-  AND p.name IN ('read', 'write', 'manage_products', 'manage_job_works', 'manage_tickets');
+  AND p.name IN ('read', 'write', 'manage_products', 'manage_job_works', 'manage_tickets')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Insert role_permissions for Customer role
+-- Insert role_permissions for Customer role (legacy)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'Customer'
-  AND p.name IN ('read');
+  AND p.name IN ('read')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Insert role_permissions for super_admin role
+-- Insert role_permissions for super_admin role (legacy)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permissions p
 WHERE r.name = 'super_admin'
-  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies', 'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring');
+  AND p.name IN ('read', 'write', 'delete', 'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update', 'manage_contracts', 'crm:contract:service:update', 'manage_products', 'crm:product-sale:record:update', 'manage_job_works', 'manage_tickets', 'crm:support:complaint:update', 'manage_dashboard', 'crm:system:config:manage', 'manage_companies', 'crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage', 'system_monitoring')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- ============================================================================
 -- 5. DROP ALL OLD RLS POLICIES THAT DEPEND ON USERS.ROLE

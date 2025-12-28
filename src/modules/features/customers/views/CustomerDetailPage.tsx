@@ -46,8 +46,10 @@ import { DataTabErrorBoundary } from '@/components/errors/DataTabErrorBoundary';
 import { useCustomer, useDeleteCustomer } from '../hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSalesByCustomer } from '@/modules/features/deals/hooks/useDeals';
-import { useContractsByCustomer } from '@/modules/features/contracts/hooks/useContracts';
+import { useServiceContracts } from '@/modules/features/service-contracts/hooks/useServiceContracts';
 import { useTicketsByCustomer } from '@/modules/features/tickets/hooks/useTickets';
+import { formatCurrency, formatDate } from '@/utils/formatters';
+import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 
 // Mock data for related entities (will be replaced with real API calls)
 interface RelatedSale {
@@ -109,6 +111,13 @@ const CustomerDetailPage: React.FC = () => {
   const { contracts: relatedContracts = [], isLoading: contractsLoading, error: contractsError, refetch: refetchContracts } = useContractsByCustomer(id!);
   const { data: ticketsData, isLoading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTicketsByCustomer(id!);
 
+  // Database-driven lookups
+  const { getColor: getCustomerStatusColor, getLabel: getCustomerStatusLabel } = useReferenceDataLookup('customer_status');
+  const { getColor: getCustomerSizeColor } = useReferenceDataLookup('customer_size');
+  const { getColor: getServiceLevelColor } = useReferenceDataLookup('service_level');
+  const { getColor: getTicketPriorityColor } = useReferenceDataLookup('ticket_priority');
+  const { getColor: getTicketStatusColor } = useReferenceDataLookup('ticket_status');
+
   // Transform sales data to match the RelatedSale interface
   const relatedSales: RelatedSale[] = Array.isArray(salesData?.data)
     ? salesData.data.map((deal: SaleApiDTO) => ({
@@ -116,7 +125,7 @@ const CustomerDetailPage: React.FC = () => {
         sale_number: deal.id?.substring(0, 8).toUpperCase() || 'SAL-UNKNOWN',
         product_name: deal.title || 'Untitled Deal',
         amount: deal.value || 0,
-        status: deal.stage === 'closed_won' ? 'completed' : 'pending',
+        status: deal.status === 'won' ? 'completed' : deal.status === 'lost' ? 'cancelled' : 'pending',
         sale_date: deal.created_at || new Date().toISOString(),
       }))
     : [];
@@ -156,40 +165,13 @@ const CustomerDetailPage: React.FC = () => {
   };
 
   const getStatusTag = (status: string) => {
-    const statusConfig: Record<string, { color: string; text: string }> = {
-      active: { color: 'success', text: 'Active' },
-      inactive: { color: 'default', text: 'Inactive' },
-      prospect: { color: 'processing', text: 'Prospect' },
-    };
-    const config = statusConfig[status] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    return <Tag color={getCustomerStatusColor(status)}>{getCustomerStatusLabel(status)}</Tag>;
   };
 
   const getSizeTag = (size: string) => {
-    const sizeConfig: Record<string, { color: string }> = {
-      startup: { color: 'blue' },
-      small: { color: 'cyan' },
-      medium: { color: 'geekblue' },
-      enterprise: { color: 'purple' },
-    };
-    const config = sizeConfig[size] || { color: 'default' };
-    return <Tag color={config.color}>{size?.toUpperCase()}</Tag>;
+    return <Tag color={getCustomerSizeColor(size)}>{size?.toUpperCase()}</Tag>;
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
   // Sales table columns
   const salesColumns: ColumnsType<RelatedSale> = [
@@ -249,13 +231,7 @@ const CustomerDetailPage: React.FC = () => {
       dataIndex: 'service_level',
       key: 'service_level',
       render: (level: string) => {
-        const colors: Record<string, string> = {
-          basic: 'default',
-          standard: 'blue',
-          premium: 'gold',
-          enterprise: 'purple',
-        };
-        return <Tag color={colors[level]}>{level.toUpperCase()}</Tag>;
+        return <Tag color={getServiceLevelColor(level)}>{level.toUpperCase()}</Tag>;
       },
     },
     {
@@ -309,13 +285,7 @@ const CustomerDetailPage: React.FC = () => {
       dataIndex: 'priority',
       key: 'priority',
       render: (priority: string) => {
-        const colors: Record<string, string> = {
-          low: 'default',
-          medium: 'blue',
-          high: 'orange',
-          urgent: 'red',
-        };
-        return <Tag color={colors[priority]}>{priority.toUpperCase()}</Tag>;
+        return <Tag color={getTicketPriorityColor(priority)}>{priority.toUpperCase()}</Tag>;
       },
     },
     {
@@ -323,13 +293,7 @@ const CustomerDetailPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        const colors: Record<string, string> = {
-          open: 'processing',
-          'in-progress': 'blue',
-          resolved: 'success',
-          closed: 'default',
-        };
-        return <Tag color={colors[status]}>{status.toUpperCase()}</Tag>;
+        return <Tag color={getTicketStatusColor(status)}>{status.toUpperCase()}</Tag>;
       },
     },
     {

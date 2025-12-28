@@ -100,6 +100,9 @@ export const ServiceContractDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  
+  // Database-driven lookups
+  const { getColor: getStatusColor } = useReferenceDataLookup('service_contract_status');
 
   // ✅ Get service from module service container (standardized pattern)
   const serviceContractService = useService<any>('serviceContractService');
@@ -387,16 +390,6 @@ export const ServiceContractDetailPage: React.FC = () => {
 
   const handleDownloadContract = () => {
     message.success('Contract PDF downloaded');
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      active: 'success',
-      expired: 'error',
-      pending: 'warning',
-      cancelled: 'default',
-    };
-    return colors[status] || 'default';
   };
 
   const getActivityIcon = (type: string) => {

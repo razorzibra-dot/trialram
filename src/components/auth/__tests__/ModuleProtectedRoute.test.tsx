@@ -392,7 +392,7 @@ describe('ModuleProtectedRoute Component', () => {
       });
 
       render(
-        <ModuleProtectedRoute moduleName="sales">
+        <ModuleProtectedRoute moduleName="deals">
           <div>Module Content</div>
         </ModuleProtectedRoute>
       );
@@ -564,8 +564,8 @@ describe('ModuleProtectedRoute Component', () => {
       });
 
       rerender(
-        <ModuleProtectedRoute moduleName="sales">
-          <div>Sales Module</div>
+        <ModuleProtectedRoute moduleName="deals">
+          <div>Deals Module</div>
         </ModuleProtectedRoute>
       );
 

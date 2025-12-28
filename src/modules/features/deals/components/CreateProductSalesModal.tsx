@@ -27,14 +27,14 @@ import { SalesService } from '../services/salesService';
 import { productSaleService } from '@/services';
 
 interface CreateProductSalesModalProps {
-  visible: boolean;
+  open: boolean;
   deal: Deal | null;
   onClose: () => void;
   onSuccess: (createdCount: number) => void;
 }
 
 export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = ({
-  visible,
+  open,
   deal,
   onClose,
   onSuccess,
@@ -241,7 +241,7 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
     return (
       <Modal
         title="Create Product Sales Entries"
-        open={visible}
+        open={open}
         onCancel={onClose}
         footer={[
           <Button key="close" onClick={onClose}>
@@ -262,7 +262,7 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
   return (
     <Modal
       title="Create Product Sales Entries"
-      open={visible}
+      open={open}
       onCancel={onClose}
       width={900}
       footer={[
@@ -286,7 +286,7 @@ export const CreateProductSalesModal: React.FC<CreateProductSalesModalProps> = (
           <>
             <Alert
               message="Creating Product Sales from Deal"
-              description={`Deal: ${deal.title} | Customer ID: ${deal.customer_id} | Stage: ${deal.stage}`}
+              description={`Deal: ${deal.title} | Customer: ${deal.customer_name || deal.customer_id} | Status: ${deal.status?.toUpperCase()}`}
               type="info"
               icon={<CheckCircleOutlined />}
               showIcon

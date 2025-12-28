@@ -48,7 +48,12 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
 
       let query = getSupabaseClient()
         .from('job_works')
-        .select('*')
+        .select(`
+          *,
+          customer:customers(id, company_name, contact_name, email, phone),
+          assigned_user:users!job_works_receiver_engineer_id_fkey(id, name, email),
+          product:products(id, name, sku)
+        `)
         .eq('tenant_id', tenant.tenantId)
         .is('deleted_at', null);
 
@@ -111,7 +116,12 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
 
       const { data, error } = await getSupabaseClient()
         .from('job_works')
-        .select('*')
+        .select(`
+          *,
+          customer:customers(id, company_name, contact_name, email, phone),
+          assigned_user:users!job_works_receiver_engineer_id_fkey(id, name, email),
+          product:products(id, name, sku)
+        `)
         .eq('id', id)
         .eq('tenant_id', tenant.tenantId)
         .is('deleted_at', null)
@@ -160,7 +170,13 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
         manual_price: jobWorkData.manual_price,
         final_price: jobWorkData.final_price || 0,
         receiver_engineer_id: jobWorkData.receiver_engineer_id,
+        priority: jobWorkData.priority || 'medium',
+        due_date: jobWorkData.due_date,
+        delivery_address: jobWorkData.delivery_address,
+        delivery_instructions: jobWorkData.delivery_instructions,
         comments: jobWorkData.comments,
+        internal_notes: jobWorkData.internal_notes,
+        compliance_requirements: jobWorkData.compliance_requirements,
         status: 'pending',
         tenant_id: tenant.tenantId,
         created_by: tenant.userId,
@@ -211,8 +227,29 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
         throw new Error('Access denied');
       }
 
+      // Map only valid database columns (specifications is in separate job_work_specifications table)
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Only include fields that exist in job_works table
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.pieces !== undefined) updateData.pieces = updates.pieces;
+      if (updates.size !== undefined) updateData.size = updates.size;
+      if (updates.manual_price !== undefined) updateData.manual_price = updates.manual_price;
+      if (updates.receiver_engineer_id !== undefined) updateData.receiver_engineer_id = updates.receiver_engineer_id;
+      if (updates.priority !== undefined) updateData.priority = updates.priority;
+      if (updates.due_date !== undefined) updateData.due_date = updates.due_date;
+      if (updates.delivery_address !== undefined) updateData.delivery_address = updates.delivery_address;
+      if (updates.delivery_instructions !== undefined) updateData.delivery_instructions = updates.delivery_instructions;
+      if (updates.comments !== undefined) updateData.comments = updates.comments;
+      if (updates.internal_notes !== undefined) updateData.internal_notes = updates.internal_notes;
+      if (updates.quality_check_passed !== undefined) updateData.quality_check_passed = updates.quality_check_passed;
+      if (updates.quality_notes !== undefined) updateData.quality_notes = updates.quality_notes;
+      if (updates.compliance_requirements !== undefined) updateData.compliance_requirements = updates.compliance_requirements;
+      // Note: specifications is NOT a column in job_works table - it's in job_work_specifications table
+
       // Auto-set completion/delivery timestamps
-      const updateData = { ...updates };
       if (updates.status === 'completed' && currentJobWork.status !== 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
@@ -336,13 +373,25 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
 
   /**
    * Map Supabase response to JobWork type
+   * Extracts customer_name, assigned_to_name, and product_name from JOINed data
    */
   private mapJobWorkResponse(data: any): JobWork {
+    // Extract customer name from joined customer data
+    const customerName = data.customer?.company_name || data.customer?.contact_name || undefined;
+    
+    // Extract assigned user name from joined user data  
+    const assignedToName = data.assigned_user?.name || undefined;
+    
+    // Extract product name from joined product data
+    const productName = data.product?.name || undefined;
+
     return {
       id: data.id,
       job_ref_id: data.job_ref_id,
       customer_id: data.customer_id,
+      customer_name: customerName,
       product_id: data.product_id,
+      product_name: productName,
       pieces: parseFloat(data.pieces),
       size: data.size,
       default_price: parseFloat(data.default_price),
@@ -350,6 +399,8 @@ export class SupabaseJobWorkService extends BaseSupabaseService {
       final_price: parseFloat(data.final_price),
       base_price: data.base_price ? parseFloat(data.base_price) : parseFloat(data.default_price),
       receiver_engineer_id: data.receiver_engineer_id,
+      assigned_to: data.receiver_engineer_id,
+      assigned_to_name: assignedToName,
       comments: data.comments,
       status: data.status,
       tenant_id: data.tenant_id,

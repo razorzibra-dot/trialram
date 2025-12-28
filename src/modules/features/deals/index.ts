@@ -19,8 +19,6 @@ export type { ISalesService } from './services/salesService';
 // Hook exports (these are the main ones we want to expose)
 export * from './hooks/useDeals';
 
-// Component exports
-export * from './components/DealsList';
 
 // Routes
 export { dealsRoutes } from './routes';

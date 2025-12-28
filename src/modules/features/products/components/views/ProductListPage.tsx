@@ -4,14 +4,15 @@
  */
 
 import React, { useState } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Layout, Divider, List, Typography, Modal } from 'antd';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, Empty, Layout, Divider, List, Typography, Modal, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ClearOutlined, FilterOutlined, BranchesOutlined } from '@ant-design/icons';
 import { PageHeader, StatCard } from '@/components/common';
 import { Product, ProductFormData } from '@/types/masters';
-import { useProducts, useDeleteProduct, useCreateProduct, useUpdateProduct } from '../../hooks/useProducts';
+import { useProducts, useDeleteProduct, useCreateProduct, useUpdateProduct } from '@/modules/features/masters/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCategories } from '@/hooks/useReferenceDataOptions';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenantId } from '@/hooks/usePermission';
 import ProductComparisonModal from '../ProductComparisonModal';
 import SupplierManagementModal from '../SupplierManagementModal';
 import PurchaseOrdersModal from '../PurchaseOrdersModal';
@@ -48,10 +49,24 @@ const ProductListPage: React.FC = () => {
   const deleteProduct = useDeleteProduct();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
-  const { categories, loading: categoriesLoading } = useCategories('default-tenant'); // TODO: Get from auth context
+  const tenantId = useCurrentTenantId();
+  const { items: categoryItems, loading: categoriesLoading } = useReferenceDataByCategory(tenantId, 'product_category');
+  
+  // Convert reference data items to ProductCategory format
+  const categories = categoryItems.map(item => ({
+    id: item.id,
+    tenantId: item.tenantId,
+    name: item.label,
+    description: item.description,
+    isActive: item.isActive,
+    sortOrder: item.sortOrder,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    createdBy: item.createdBy,
+  } as ProductCategory));
 
   const products = productsData?.data || [];
-  const pagination = productsData || { total: 0, page: 1, limit: 10, totalPages: 0 };
+  const pagination = productsData || { total: 0, page: 1, pageSize: 10, totalPages: 0 };
 
   const handleRefresh = () => {
     refetch();
@@ -88,34 +103,23 @@ const ProductListPage: React.FC = () => {
   };
 
   const handleProductFormSubmit = async (data: ProductFormData) => {
-    try {
-      if (selectedProduct?.id) {
-        await updateProduct.mutateAsync({ id: selectedProduct.id, data });
-        message.success('Product updated successfully');
-      } else {
-        await createProduct.mutateAsync(data);
-        message.success('Product created successfully');
-      }
-      setProductFormModalVisible(false);
-      setSelectedProduct(null);
-      refetch();
-    } catch (error) {
-      message.error('Failed to save product');
+    if (selectedProduct?.id) {
+      await updateProduct.mutateAsync({ id: selectedProduct.id, data });
+    } else {
+      await createProduct.mutateAsync(data);
     }
+    setProductFormModalVisible(false);
+    setSelectedProduct(null);
+    refetch();
   };
 
   const handleView = (product: Product) => {
-    message.info(`View product: ${product.name}`);
+    // View logic handled in drawer
   };
 
   const handleDelete = async (product: Product) => {
-    try {
-      await deleteProduct.mutateAsync(product.id);
-      message.success(`Product "${product.name}" deleted successfully`);
-      refetch();
-    } catch (error) {
-      message.error('Failed to delete product');
-    }
+    await deleteProduct.mutateAsync(product.id);
+    refetch();
   };
 
   const handleSearch = (value: string) => {
@@ -308,51 +312,53 @@ const ProductListPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 200,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<BranchesOutlined />}
-            onClick={() => handleViewVariants(record)}
-            title="View Variants"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-          {hasPermission('crm:product:record:update') && (
+          <Tooltip title="View Variants">
             <Button
-              type="link"
+              type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              Edit
-            </Button>
+              icon={<BranchesOutlined />}
+              onClick={() => handleViewVariants(record)}
+            />
+          </Tooltip>
+          <Tooltip title="View Details">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {hasPermission('crm:product:record:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:product:record:delete') && (
             <Popconfirm
               title="Delete Product"
               description={`Are you sure you want to delete "${record.name}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -573,7 +579,7 @@ const ProductListPage: React.FC = () => {
             loading={productsLoading}
             pagination={{
               current: pagination.page || 1,
-              pageSize: pagination.limit || 10,
+              pageSize: pagination.pageSize || 10,
               total: pagination.total || 0,
               showSizeChanger: true,
               showQuickJumper: true,

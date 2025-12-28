@@ -1,12 +1,16 @@
 /**
  * Sales Pipeline Hooks
- * React Query hooks for sales pipeline analytics and management
+ * React Query hooks for sales analytics
  *
  * Pattern: Custom hooks providing data fetching, caching, and mutations
  * All hooks use React Query for efficient data management
+ * 
+ * NOTE: Deals have status (won/lost/cancelled), not pipeline stages.
+ * Pipeline stages belong to Opportunities. The "pipeline" here refers to
+ * analytics/statistics, not stage progression.
  *
- * Last Updated: 2025-01-30
- * Version: 1.0.0
+ * Last Updated: 2025-12-17
+ * Version: 1.1.0
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +18,6 @@ import { useSalesStore } from '../store/dealStore';
 import { ISalesService } from '../services/salesService';
 import { useService } from '@/modules/core/hooks/useService';
 import { STATS_QUERY_CONFIG } from '@/modules/core/constants/reactQueryConfig';
-import { handleError } from '@/modules/core/utils/errorHandler';
 
 /**
  * Query key factory for consistent cache management
@@ -24,17 +27,16 @@ export const pipelineKeys = {
   all: ['sales-pipeline'] as const,
   stats: () => [...pipelineKeys.all, 'stats'] as const,
   analytics: (period?: string) => [...pipelineKeys.all, 'analytics', period] as const,
-  stages: () => [...pipelineKeys.all, 'stages'] as const,
 } as const;
 
 /**
- * Fetch sales pipeline statistics
- * Provides stage-by-stage breakdown of deals
+ * Fetch sales statistics
+ * Provides status-based breakdown of deals (won/lost/cancelled)
  *
- * @returns Query result with pipeline stats
+ * @returns Query result with sales stats
  *
  * @example
- * const { data: pipelineStats } = useSalesPipeline();
+ * const { data: salesStats } = useSalesPipeline();
  */
 export const useSalesPipeline = () => {
   const service = useService<ISalesService>('dealsService');
@@ -66,45 +68,10 @@ export const useSalesAnalytics = (period?: string) => {
 
   return useQuery({
     queryKey: pipelineKeys.analytics(period),
-    queryFn: () => service.getSalesAnalytics(period),
+    queryFn: () => service.getSalesStats(),
     ...STATS_QUERY_CONFIG,
   });
 };
 
-/**
- * Fetch deal stages configuration
- * Provides available pipeline stages
- *
- * @returns Query result with stages data
- *
- * @example
- * const { data: stages } = useDealStages();
- */
-export const useDealStages = () => {
-  const service = useService<ISalesService>('dealsService');
-
-  return useQuery({
-    queryKey: pipelineKeys.stages(),
-    queryFn: () => service.getDealStages(),
-    ...STATS_QUERY_CONFIG,
-  });
-};
-
-/**
- * Fetch pipeline stages with metadata
- * Provides stages with order and display information
- *
- * @returns Query result with pipeline stages
- *
- * @example
- * const { data: pipelineStages } = usePipelineStages();
- */
-export const usePipelineStages = () => {
-  const service = useService<ISalesService>('dealsService');
-
-  return useQuery({
-    queryKey: [...pipelineKeys.stages(), 'with-metadata'],
-    queryFn: () => service.getPipelineStages(),
-    ...STATS_QUERY_CONFIG,
-  });
-};
+// NOTE: useDealStages and usePipelineStages removed - Deals have status (won/lost/cancelled), 
+// not pipeline stages. Pipeline stages belong to Opportunities. See types/crm.ts.

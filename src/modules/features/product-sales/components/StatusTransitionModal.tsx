@@ -24,14 +24,14 @@ import { ProductSaleStatus, getStatusLabel, getStatusDescription, getStatusColor
 import { useStatusTransition } from '../hooks/useStatusTransition';
 
 interface StatusTransitionModalProps {
-  visible: boolean;
+  open: boolean;
   sale: ProductSale | null;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
 export const StatusTransitionModal: React.FC<StatusTransitionModalProps> = ({
-  visible,
+  open,
   sale,
   onClose,
   onSuccess,
@@ -68,7 +68,7 @@ export const StatusTransitionModal: React.FC<StatusTransitionModalProps> = ({
   return (
     <Modal
       title="Change Sale Status"
-      open={visible}
+      open={open}
       onCancel={onClose}
       width={600}
       footer={

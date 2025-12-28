@@ -22,12 +22,13 @@ import {
 import { DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { ProductSaleFilters, PRODUCT_SALE_STATUSES } from '@/types/productSales';
-import { customerService, productService } from '@/services/serviceFactory';
+import { useCustomersDropdown } from '@/hooks/useCustomersDropdown';
+import { useProductsDropdown } from '@/hooks/useProductsDropdown';
 
 const { RangePicker } = DatePicker;
 
 interface AdvancedFiltersModalProps {
-  visible: boolean;
+  open: boolean;
   filters: ProductSaleFilters;
   onApply: (filters: ProductSaleFilters) => void;
   onClose: () => void;
@@ -49,48 +50,22 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [presets, setPresets] = useState<FilterPreset[]>([]);
   const [presetName, setPresetName] = useState('');
-  const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
-  const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Load customers and products
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [customersList, productsList] = await Promise.all([
-          customerService.getCustomers?.(),
-          productService.getProducts?.(),
-        ]);
+  // Load customers and products using shared hooks
+  const { data: customerOptions = [] } = useCustomersDropdown();
+  const { data: productOptions = [] } = useProductsDropdown();
 
-        if (customersList) {
-          setCustomers(
-            Array.isArray(customersList)
-              ? customersList.map((c: any) => ({
-                  id: c.id,
-                  name: c.company_name || c.name,
-                }))
-              : []
-          );
-        }
+  // Format for Select dropdown
+  const customers = customerOptions.map(opt => ({
+    id: opt.value,
+    name: opt.customer.company_name,
+  }));
+  const products = productOptions.map(opt => ({
+    id: opt.value,
+    name: opt.product.name,
+  }));
 
-        if (productsList) {
-          setProducts(
-            Array.isArray(productsList)
-              ? productsList.map((p: any) => ({
-                  id: p.id,
-                  name: p.name,
-                }))
-              : []
-          );
-        }
-      } catch (error) {
-        console.error('Error loading filter data:', error);
-      }
-    };
-
-    if (visible) {
-      loadData();
-    }
-  }, [visible]);
+  // Customers and products loaded via shared hooks
 
   // Load presets from localStorage
   useEffect(() => {

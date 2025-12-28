@@ -45,7 +45,7 @@ import {
 import { getCustomerName, getProductName, enrichProductSales } from '../utils/dataEnrichment';
 
 interface ReportsModalProps {
-  visible: boolean;
+  open: boolean;
   data: ProductSale[];
   analytics: ProductSalesAnalytics | null;
   customers: Customer[];
@@ -54,7 +54,7 @@ interface ReportsModalProps {
 }
 
 export const ReportsModal: React.FC<ReportsModalProps> = ({
-  visible,
+  open,
   data,
   analytics,
   customers,
@@ -474,7 +474,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
   return (
     <Modal
       title="Reports & Analytics"
-      visible={visible}
+      open={open}
       onCancel={onClose}
       width={900}
       footer={[

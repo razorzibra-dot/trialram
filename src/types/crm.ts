@@ -163,6 +163,9 @@ export interface Deal {
   value: number;
   currency: string;
 
+  // Deal Type: PRODUCT or SERVICE
+  deal_type: 'PRODUCT' | 'SERVICE';
+
   // Sales Process
   status: 'won' | 'lost' | 'cancelled';
   source?: string;
@@ -181,6 +184,7 @@ export interface Deal {
   tags?: string[];
   competitor_info?: string;
   win_loss_reason?: string; // Why won or lost
+  // ✅ stage and probability belong to opportunities table only, NOT deals
 
   // Products/Items (final)
   items?: DealItem[];
@@ -188,6 +192,10 @@ export interface Deal {
   // Relationships
   opportunity_id?: string; // Link to original opportunity if converted
   contract_id?: string; // Link to generated contract if deal is won
+
+  // Conversion traceability (idempotency checks)
+  converted_to_order_id?: string;
+  converted_to_contract_id?: string;
 
   // Payment Processing
   payment_terms?: string; // net_30, net_60, cod, etc.
@@ -219,7 +227,12 @@ export interface DealItem {
   quantity: number;
   unit_price: number;
   discount: number;
+  discount_type?: 'fixed' | 'percentage';
   tax: number;
+  tax_rate?: number;
+  service_id?: string;
+  duration?: string;
+  notes?: string;
   line_total: number;
 }
 

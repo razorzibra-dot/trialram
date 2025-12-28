@@ -4,7 +4,6 @@
  * ✅ Uses granular RBAC permission checks (Phase 3.1)
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Table,
@@ -12,22 +11,20 @@ import {
   Input,
   Space,
   Tag,
-  Modal,
+  Drawer,
   Form,
   Row,
   Col,
-  Checkbox,
   message,
   Empty,
   Spin,
   Tooltip,
   Badge,
-  Dropdown,
-  Tabs,
+  Popconfirm,
   Descriptions,
   Tree,
   Alert,
-  type MenuProps
+  
 } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
@@ -36,19 +33,15 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  CrownOutlined,
-  TeamOutlined,
-  UserOutlined,
-  MoreOutlined,
   CopyOutlined,
-  ExportOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   LockOutlined,
   UnlockOutlined,
   FileTextOutlined,
-  SettingOutlined
+  SettingOutlined,
+  InfoCircleOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -59,9 +52,8 @@ import { usePermissions } from '../hooks';
 import { UserPermission } from '../guards/permissionGuards';
 import { shouldShowTenantIdField } from '@/utils/tenantIsolation';
 import { Role, Permission, RoleTemplate } from '@/types/rbac';
+import { groupPermissionsByCategory } from '@/modules/features/user-management/utils/permissions';
 
-const { TextArea } = Input;
-const { TabPane } = Tabs;
 
 interface RoleFormData {
   name: string;
@@ -70,9 +62,8 @@ interface RoleFormData {
 }
 
 export const RoleManagementPage: React.FC = () => {
-  const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, user: currentUser } = useAuth();
-  const { canManageRoles, canManagePermissions, isLoading: permLoading, hasPermission } = usePermissions();
+  const { canManageRoles, isLoading: permLoading, hasPermission } = usePermissions();
   const rbacService = useService<any>('rbacService');
   const [form] = Form.useForm();
   const [templateForm] = Form.useForm();
@@ -88,6 +79,8 @@ export const RoleManagementPage: React.FC = () => {
   const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<Permission[]>([]);
+  const [loadingRolePermissions, setLoadingRolePermissions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
@@ -132,7 +125,6 @@ export const RoleManagementPage: React.FC = () => {
         );
         
         if (validPermissions.length > 0) {
-          console.log('[RoleManagement] useEffect: Setting permissions from role object:', validPermissions);
           setSelectedPermissions(validPermissions);
           // Only set form fields after a small delay to ensure Form component is mounted
           setTimeout(() => {
@@ -141,7 +133,7 @@ export const RoleManagementPage: React.FC = () => {
                 permissions: validPermissions
               });
             } catch (error) {
-              console.warn('[RoleManagement] Form not ready, skipping setFieldsValue:', error);
+              // Form not ready; skip silently
             }
           }, 0);
         }
@@ -152,7 +144,6 @@ export const RoleManagementPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('[RoleManagement] Starting to load data...');
       const [rolesData, permissionsData, templatesData] = await Promise.all([
         rbacService.getRoles(),
         rbacService.getPermissions(),
@@ -161,22 +152,13 @@ export const RoleManagementPage: React.FC = () => {
       setRoles(rolesData);
       setPermissions(permissionsData);
       setRoleTemplates(templatesData);
-      console.log('[RoleManagement] ✅ Data loaded successfully:', {
-        roles: rolesData.length,
-        permissions: permissionsData.length,
-        templates: templatesData.length,
-        permissionCategories: [...new Set(permissionsData.map(p => p.category))],
-        samplePermissions: permissionsData.slice(0, 5).map(p => ({ id: p.id, name: p.name, category: p.category }))
-      });
       
       if (permissionsData.length === 0) {
-        console.warn('[RoleManagement] ⚠️ No permissions loaded! This might be due to tenant isolation filtering.');
         message.warning('No permissions available. You may not have access to view permissions.');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       message.error(`Failed to load data: ${errorMessage}`);
-      console.error('[RoleManagement] ❌ Error loading data:', error);
       // Set empty arrays to prevent undefined errors
       setRoles([]);
       setPermissions([]);
@@ -188,19 +170,12 @@ export const RoleManagementPage: React.FC = () => {
 
   // Handle create role
   const handleCreate = () => {
-    console.log('[RoleManagement] Creating new role:', {
-      currentPermissionsCount: permissions.length,
-      loading,
-      permissions: permissions.slice(0, 3).map(p => p.name)
-    });
-    
     setEditingRole(null);
     setSelectedPermissions([]);
     setExpandedPermissions([]); // Clear expanded permissions when creating new role
     
     // If permissions aren't loaded, load them first before opening modal
     if (permissions.length === 0 && !loading) {
-      console.log('[RoleManagement] Permissions not loaded, loading before opening modal...');
       loadData().then(() => {
         // Open modal after permissions are loaded
         setIsModalVisible(true);
@@ -209,11 +184,10 @@ export const RoleManagementPage: React.FC = () => {
           try {
             form.resetFields();
           } catch (error) {
-            console.warn('[RoleManagement] Form not ready yet, will reset on next render');
+            // Form not ready yet; will reset on next render
           }
         }, 100);
       }).catch((error) => {
-        console.error('[RoleManagement] Failed to load permissions:', error);
         // Still open modal even if permissions fail to load
         setIsModalVisible(true);
       });
@@ -225,7 +199,7 @@ export const RoleManagementPage: React.FC = () => {
         try {
           form.resetFields();
         } catch (error) {
-          console.warn('[RoleManagement] Form not ready yet, will reset on next render');
+          // Form not ready yet; will reset on next render
         }
       }, 100);
     }
@@ -258,7 +232,6 @@ export const RoleManagementPage: React.FC = () => {
         .eq('role_id', role.id);
       
       if (rolePermissionsError) {
-        console.error('[RoleManagement] Error fetching role permissions:', rolePermissionsError);
         throw rolePermissionsError;
       }
       
@@ -327,15 +300,6 @@ export const RoleManagementPage: React.FC = () => {
       }
       // Otherwise, use the existing permissions list (already filtered by tenant)
       
-      console.log('[RoleManagement] Loading role for edit:', {
-        roleId: role.id,
-        roleName: role.name,
-        roleTenantId: role.tenant_id,
-        rolePermissionsCount: rolePermissions.length,
-        rolePermissions,
-        availablePermissionsCount: availablePermissionsForRole.length,
-        userIsSuperAdmin: isSuperAdmin(currentUser)
-      });
       
       // Filter to only include permissions that exist in the available permissions list
       // This prevents "Tree missing keys" warnings while preserving all valid permissions
@@ -345,21 +309,8 @@ export const RoleManagementPage: React.FC = () => {
       );
       
       // If some permissions are not in the available list, log a warning (but don't show message)
-      if (validPermissions.length < rolePermissions.length) {
-        const missingPermissions = rolePermissions.filter((p: string) => !availablePermissionIds.includes(p));
-        console.warn('[RoleManagement] Some role permissions are not in the available permissions list:', {
-          roleId: role.id,
-          roleName: role.name,
-          missingCount: missingPermissions.length,
-          missingPermissions
-        });
-      }
+      // If some permissions are not in the available list, ignore them for display
       
-      console.log('[RoleManagement] Setting permissions for edit:', {
-        validPermissions,
-        validPermissionsCount: validPermissions.length,
-        totalRolePermissions: rolePermissions.length
-      });
       
       setSelectedPermissions(validPermissions);
       form.setFieldsValue({
@@ -375,7 +326,6 @@ export const RoleManagementPage: React.FC = () => {
       // Only open modal after permissions are loaded
       setIsModalVisible(true);
     } catch (error) {
-      console.error('[RoleManagement] Error loading role permissions:', error);
       message.error('Failed to load role permissions. Please try again.');
       // Fallback to role.permissions if fetch fails
       const fallbackPermissions = role.permissions ?? [];
@@ -394,12 +344,67 @@ export const RoleManagementPage: React.FC = () => {
   // Handle delete role
   const handleDelete = async (roleId: string) => {
     try {
+      // Notifications handled by hook
       await rbacService.deleteRole(roleId);
-      message.success('Role deleted successfully');
       loadData();
     } catch (error: unknown) {
-      const message_text = error instanceof Error ? error.message : 'Failed to delete role';
-      message.error(message_text);
+      console.error('Failed to delete role:', error);
+    }
+  };
+
+  // Handle view role - fetch full permission details
+  const handleViewRole = async (role: Role) => {
+    setSelectedRole(role);
+    setLoadingRolePermissions(true);
+    
+    try {
+      // Fetch full permission details for this role
+      const { supabase } = await import('@/services/supabase/client');
+      
+      // Get permission IDs from role_permissions table
+      const { data: rolePermissionsData, error: rolePermissionsError } = await supabase
+        .from('role_permissions')
+        .select('permission_id')
+        .eq('role_id', role.id);
+      
+      if (rolePermissionsError) {
+        throw rolePermissionsError;
+      }
+      
+      const permissionIds = (rolePermissionsData || []).map((rp: any) => rp.permission_id).filter(Boolean);
+      
+      if (permissionIds.length > 0) {
+        // Fetch full permission details
+        const { data: fullPermissions, error: permError } = await supabase
+          .from('permissions')
+          .select('*')
+          .in('id', permissionIds)
+          .order('category', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (permError) {
+          throw permError;
+        }
+        
+        const mappedPermissions: Permission[] = (fullPermissions || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          category: p.category as 'core' | 'module' | 'administrative' | 'system',
+          resource: p.resource || '',
+          action: p.action || '',
+          is_system_permission: p.is_system_permission || false
+        }));
+        
+        setSelectedRolePermissions(mappedPermissions);
+      } else {
+        setSelectedRolePermissions([]);
+      }
+    } catch (error) {
+      message.error('Failed to load role permissions');
+      setSelectedRolePermissions([]);
+    } finally {
+      setLoadingRolePermissions(false);
     }
   };
 
@@ -430,11 +435,11 @@ export const RoleManagementPage: React.FC = () => {
       };
 
       if (editingRole) {
+        // Notifications handled by hook
         await rbacService.updateRole(editingRole.id, roleData);
-        message.success('Role updated successfully');
       } else {
+        // Notifications handled by hook
         await rbacService.createRole(roleData);
-        message.success('Role created successfully');
       }
       setIsModalVisible(false);
       form.resetFields();
@@ -442,7 +447,7 @@ export const RoleManagementPage: React.FC = () => {
       loadData();
     } catch (error: unknown) {
       const error_message = error instanceof Error ? error.message : 'Failed to save role';
-      message.error(error_message);
+      console.error('Error saving role:', error_message);
     } finally {
       setSubmitting(false);
     }
@@ -454,23 +459,23 @@ export const RoleManagementPage: React.FC = () => {
       setSubmitting(true);
       const template = roleTemplates.find(t => t.id === values.templateId);
       if (!template) {
-        message.error('Template not found');
+        console.error('Template not found');
         return;
       }
 
+      // Notifications handled by hook
       await rbacService.createRole({
         name: values.roleName,
         description: template.description,
         permissions: template.permissions ?? []
       });
-      message.success('Role created from template successfully');
       setIsTemplateModalVisible(false);
       templateForm.resetFields();
       setSelectedTemplateId(null);
       loadData();
     } catch (error: unknown) {
       const error_msg = error instanceof Error ? error.message : 'Failed to create role from template';
-      message.error(error_msg);
+      console.error('Error creating role from template:', error_msg);
     } finally {
       setSubmitting(false);
     }
@@ -483,22 +488,8 @@ export const RoleManagementPage: React.FC = () => {
     ? expandedPermissions 
     : (permissions.length > 0 ? permissions : []);
   
-  console.log('[RoleManagement] Building permission tree:', {
-    isModalVisible,
-    editingRole: editingRole?.name,
-    expandedPermissionsCount: expandedPermissions.length,
-    permissionsCount: permissions.length,
-    permissionsForTreeCount: permissionsForTree.length,
-    permissionsSample: permissions.slice(0, 3).map(p => ({ id: p.id, name: p.name, category: p.category }))
-  });
   
-  const groupedPermissions = permissionsForTree.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {} as Record<string, Permission[]>);
+  const groupedPermissions = groupPermissionsByCategory(permissionsForTree);
 
   // Convert permissions to tree data
   const permissionTreeData: DataNode[] = Object.entries(groupedPermissions).map(([category, perms]) => ({
@@ -515,53 +506,8 @@ export const RoleManagementPage: React.FC = () => {
     }))
   }));
   
-  console.log('[RoleManagement] Permission tree data:', {
-    categories: Object.keys(groupedPermissions),
-    totalNodes: permissionTreeData.length,
-    totalPermissions: permissionTreeData.reduce((sum, cat) => sum + (cat.children?.length || 0), 0)
-  });
 
-  // Action menu items
-  const getActionMenu = (role: Role): MenuProps['items'] => [
-    {
-      key: 'edit',
-      label: 'Edit Role',
-      icon: <EditOutlined />,
-      onClick: () => handleEdit(role),
-      disabled: role.is_system_role
-    },
-    {
-      key: 'duplicate',
-      label: 'Duplicate Role',
-      icon: <CopyOutlined />,
-      onClick: () => handleDuplicate(role)
-    },
-    {
-      key: 'view',
-      label: 'View Details',
-      icon: <FileTextOutlined />,
-      onClick: () => setSelectedRole(role)
-    },
-    {
-      type: 'divider'
-    },
-    {
-      key: 'delete',
-      label: 'Delete Role',
-      icon: <DeleteOutlined />,
-      danger: true,
-      disabled: role.is_system_role,
-      onClick: () => {
-        Modal.confirm({
-          title: 'Delete Role',
-          content: `Are you sure you want to delete the role "${role.name}"?`,
-          okText: 'Delete',
-          okType: 'danger',
-          onOk: () => handleDelete(role.id)
-        });
-      }
-    }
-  ];
+  // Action menu removed in favor of explicit buttons with tooltips and Popconfirm
 
   // Table columns
   const columns: ColumnsType<Role> = [
@@ -638,9 +584,18 @@ export const RoleManagementPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 100,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
-        <Space>
+        <Space size="small">
+          <Tooltip title="View Details">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewRole(record)}
+            />
+          </Tooltip>
           {canManageRoles && (
             <>
               <Tooltip title={record.is_system_role ? 'System roles cannot be edited' : 'Edit'}>
@@ -652,9 +607,27 @@ export const RoleManagementPage: React.FC = () => {
                   disabled={record.is_system_role}
                 />
               </Tooltip>
-              <Dropdown menu={{ items: getActionMenu(record) }} trigger={['click']}>
-                <Button type="text" size="small" icon={<MoreOutlined />} />
-              </Dropdown>
+              <Tooltip title="Duplicate">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => handleDuplicate(record)}
+                />
+              </Tooltip>
+              <Popconfirm
+                title="Delete Role"
+                description={`Are you sure you want to delete the role "${record.name}"?`}
+                onConfirm={() => handleDelete(record.id)}
+                okText="Delete"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+                disabled={record.is_system_role}
+              >
+                <Tooltip title={record.is_system_role ? 'System roles cannot be deleted' : 'Delete'}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={record.is_system_role} />
+                </Tooltip>
+              </Popconfirm>
             </>
           )}
         </Space>
@@ -836,295 +809,464 @@ export const RoleManagementPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Create/Edit Role Modal */}
-      <Modal
-        title={editingRole ? 'Edit Role' : 'Create New Role'}
+      {/* Create/Edit Role Drawer - Consistent Side Panel */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <SafetyOutlined style={{ color: '#0ea5e9', fontSize: 18 }} />
+            <span>{editingRole ? 'Edit Role' : 'Create New Role'}</span>
+          </div>
+        }
         open={isModalVisible}
-        onCancel={() => {
+        onClose={() => {
           setIsModalVisible(false);
           form.resetFields();
           setSelectedPermissions([]);
-          setExpandedPermissions([]); // Clear expanded permissions when modal closes
+          setExpandedPermissions([]);
         }}
-        footer={null}
         width={800}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="name"
-            label="Role Name"
-            rules={[
-              { required: true, message: 'Please enter role name' },
-              { min: 3, message: 'Role name must be at least 3 characters' }
-            ]}
-          >
-            <Input
-              prefix={<SafetyOutlined />}
-              placeholder="Enter role name"
+        styles={{ body: { padding: 0, paddingTop: 24 } }}
+        footer={
+          <Space style={{ width: '100%', justifyContent: 'flex-end', gap: 12 }}>
+            <Button
               size="large"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[
-              { required: true, message: 'Please enter description' },
-              { min: 10, message: 'Description must be at least 10 characters' }
-            ]}
+              onClick={() => {
+                setIsModalVisible(false);
+                form.resetFields();
+                setSelectedPermissions([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => form.submit()}
+              loading={submitting || loading}
+              icon={editingRole ? <EditOutlined /> : <PlusOutlined />}
+              disabled={
+                !canManageRoles ||
+                submitting ||
+                loading ||
+                (!editingRole && selectedPermissions.length === 0)
+              }
+            >
+              {editingRole ? 'Update Role' : 'Create Role'}
+            </Button>
+          </Space>
+        }
+      >
+        <div style={{ padding: '0 24px 24px 24px' }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            requiredMark="optional"
           >
-            <TextArea
-              placeholder="Enter role description"
-              rows={3}
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
+            {/* Basic Information Section */}
+            <Card style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+                <FileTextOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Basic Information</h3>
+              </div>
 
-          <Form.Item
-            label="Permissions"
-            required
-          >
-            <Card style={{ maxHeight: 400, overflow: 'auto' }}>
-              {permissionTreeData.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center' }}>
-                  {loading ? (
-                    <div style={{ padding: 50, textAlign: 'center' }}>
-                      <Spin size="large" />
-                      <div style={{ marginTop: 16 }}>Loading permissions...</div>
+              <Form.Item
+                name="name"
+                label="Role Name"
+                rules={[
+                  { required: true, message: 'Please enter role name' },
+                  { min: 3, message: 'Role name must be at least 3 characters' },
+                  { max: 100, message: 'Role name must not exceed 100 characters' }
+                ]}
+                tooltip="Unique role identifier. 3-100 characters."
+              >
+                <Input
+                  prefix={<SafetyOutlined />}
+                  placeholder="e.g., Senior Manager, Support Agent"
+                  size="large"
+                  maxLength={100}
+                  allowClear
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="description"
+                label="Description"
+                rules={[
+                  { required: true, message: 'Please enter description' },
+                  { min: 10, message: 'Description must be at least 10 characters' },
+                  { max: 500, message: 'Description must not exceed 500 characters' }
+                ]}
+                tooltip="Clear description of the role's purpose and responsibilities."
+              >
+                <Input.TextArea
+                  placeholder="Describe the role's responsibilities, scope, and key functions..."
+                  rows={3}
+                  maxLength={500}
+                  showCount
+                  allowClear
+                />
+              </Form.Item>
+            </Card>
+
+            {/* Permissions Section */}
+            <Card style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+                <LockOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Permissions</h3>
+              </div>
+
+              <Form.Item
+                label={
+                  <span>
+                    Assign Permissions <Tooltip title="Select which permissions this role will have"><InfoCircleOutlined style={{ marginLeft: 4 }} /></Tooltip>
+                  </span>
+                }
+                required
+              >
+                <Card style={{ maxHeight: 400, overflow: 'auto', borderRadius: 6 }}>
+                  {permissionTreeData.length === 0 ? (
+                    <div style={{ padding: 24, textAlign: 'center' }}>
+                      {loading ? (
+                        <div>
+                          <Spin size="large" />
+                          <div style={{ marginTop: 16, color: '#7A8691' }}>Loading permissions...</div>
+                        </div>
+                      ) : (
+                        <Empty
+                          description="No permissions available"
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        >
+                          <Button
+                            type="primary"
+                            icon={<ReloadOutlined />}
+                            onClick={loadData}
+                          >
+                            Reload Permissions
+                          </Button>
+                        </Empty>
+                      )}
                     </div>
                   ) : (
-                    <Empty
-                      description="No permissions available"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    >
-                      <Button
-                        type="primary"
-                        icon={<ReloadOutlined />}
-                        onClick={loadData}
-                      >
-                        Reload Permissions
-                      </Button>
-                    </Empty>
+                    <Tree
+                      key={editingRole?.id || 'new-role'}
+                      checkable
+                      defaultExpandAll
+                      checkedKeys={selectedPermissions.filter(key => {
+                        const existsInTree = permissionTreeData.some(category => 
+                          category.key === key || 
+                          (category.children || []).some(child => child.key === key)
+                        );
+                        return existsInTree;
+                      })}
+                      onCheck={(checkedKeys) => {
+                        const keys = checkedKeys as string[];
+                        const permissionsToCheck = (isModalVisible && editingRole && expandedPermissions.length > 0)
+                          ? expandedPermissions
+                          : permissions;
+                        const permissionIds = keys.filter(key =>
+                          permissionsToCheck.some(p => p.id === key)
+                        );
+                        setSelectedPermissions(permissionIds);
+                      }}
+                      treeData={permissionTreeData}
+                    />
                   )}
-                </div>
-              ) : (
-                <Tree
-                  key={editingRole?.id || 'new-role'} // Force re-render when editing different role
-                  checkable
-                  defaultExpandAll
-                  // ✅ FIX: Filter checkedKeys to only include keys that exist in treeData
-                  // This prevents "Tree missing keys" warnings
-                  checkedKeys={selectedPermissions.filter(key => {
-                    // Check if key exists in treeData (either as a permission ID or category)
-                    const existsInTree = permissionTreeData.some(category => 
-                      category.key === key || 
-                      (category.children || []).some(child => child.key === key)
-                    );
-                    return existsInTree;
-                  })}
-                  onCheck={(checkedKeys) => {
-                    const keys = checkedKeys as string[];
-                    // Filter out category keys, only keep permission IDs
-                    // Use expandedPermissions when editing, otherwise use regular permissions
-                    const permissionsToCheck = (isModalVisible && editingRole && expandedPermissions.length > 0)
-                      ? expandedPermissions
-                      : permissions;
-                    const permissionIds = keys.filter(key =>
-                      permissionsToCheck.some(p => p.id === key)
-                    );
-                    setSelectedPermissions(permissionIds);
-                  }}
-                  treeData={permissionTreeData}
-                />
-              )}
+                </Card>
+              </Form.Item>
+              <div style={{ marginTop: 12, color: '#7A8691', fontSize: 12 }}>
+                ✓ Selected: {selectedPermissions.length} permission{selectedPermissions.length !== 1 ? 's' : ''}
+              </div>
             </Card>
-            <div style={{ marginTop: 8, color: '#7A8691' }}>
-              Selected: {selectedPermissions.length} permissions
-            </div>
-          </Form.Item>
+          </Form>
+        </div>
+      </Drawer>
 
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button
-                onClick={() => {
-                  setIsModalVisible(false);
-                  form.resetFields();
-                  setSelectedPermissions([]);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting || loading}
-                icon={editingRole ? <EditOutlined /> : <PlusOutlined />}
-                disabled={
-                  !canManageRoles || 
-                  submitting || 
-                  loading ||
-                  (!editingRole && selectedPermissions.length === 0)
-                }
-              >
-                {editingRole ? 'Update Role' : 'Create Role'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Create from Template Modal */}
-      <Modal
-        title="Create Role from Template"
+      {/* Create from Template Drawer - Consistent Side Panel */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FileTextOutlined style={{ color: '#0ea5e9', fontSize: 18 }} />
+            <span>Create Role from Template</span>
+          </div>
+        }
         open={isTemplateModalVisible}
-        onCancel={() => {
+        onClose={() => {
           setIsTemplateModalVisible(false);
           templateForm.resetFields();
           setSelectedTemplateId(null);
         }}
-        footer={null}
         width={600}
-      >
-        <Form
-          form={templateForm}
-          layout="vertical"
-          onFinish={handleTemplateSubmit}
-        >
-          <Form.Item
-            name="templateId"
-            label="Select Template"
-            rules={[{ required: true, message: 'Please select a template' }]}
-          >
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {roleTemplates.map(template => (
-                <Card
-                  key={template.id}
-                  hoverable
-                  onClick={() => {
-                    setSelectedTemplateId(template.id);
-                    templateForm.setFieldsValue({ templateId: template.id });
-                  }}
-                  style={{
-                    border: selectedTemplateId === template.id
-                      ? '2px solid #1890ff'
-                      : '1px solid #d9d9d9'
-                  }}
-                >
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Space>
-                      <FileTextOutlined style={{ color: '#1890ff' }} />
-                      <span style={{ fontWeight: 500 }}>{template.name}</span>
-                      {template.is_default && <Tag color="blue">Default</Tag>}
-                    </Space>
-                    <div style={{ color: '#7A8691', fontSize: 12 }}>
-                      {template.description}
-                    </div>
-                    <div style={{ color: '#9EAAB7', fontSize: 12 }}>
-                      {template.permissions?.length ?? 0} permissions • {template.category}
-                    </div>
-                  </Space>
-                </Card>
-              ))}
-            </Space>
-          </Form.Item>
-
-          <Form.Item
-            name="roleName"
-            label="Role Name"
-            rules={[
-              { required: true, message: 'Please enter role name' },
-              { min: 3, message: 'Role name must be at least 3 characters' }
-            ]}
-          >
-            <Input
-              prefix={<SafetyOutlined />}
-              placeholder="Enter role name"
+        styles={{ body: { padding: 0, paddingTop: 24 } }}
+        footer={
+          <Space style={{ width: '100%', justifyContent: 'flex-end', gap: 12 }}>
+            <Button
               size="large"
-            />
-          </Form.Item>
+              onClick={() => {
+                setIsTemplateModalVisible(false);
+                templateForm.resetFields();
+                setSelectedTemplateId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => templateForm.submit()}
+              loading={submitting}
+              icon={<PlusOutlined />}
+            >
+              Create Role
+            </Button>
+          </Space>
+        }
+      >
+        <div style={{ padding: '0 24px 24px 24px' }}>
+          <Form
+            form={templateForm}
+            layout="vertical"
+            onFinish={handleTemplateSubmit}
+            requiredMark="optional"
+          >
+            {/* Template Selection */}
+            <Form.Item
+              name="templateId"
+              label={
+                <span>
+                  Select Template <Tooltip title="Choose a pre-configured role template"><InfoCircleOutlined style={{ marginLeft: 4 }} /></Tooltip>
+                </span>
+              }
+              rules={[{ required: true, message: 'Please select a template' }]}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {roleTemplates.length === 0 ? (
+                  <Empty description="No templates available" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ) : (
+                  roleTemplates.map(template => (
+                    <Card
+                      key={template.id}
+                      hoverable
+                      onClick={() => {
+                        setSelectedTemplateId(template.id);
+                        templateForm.setFieldsValue({ templateId: template.id });
+                      }}
+                      style={{
+                        border: selectedTemplateId === template.id
+                          ? '2px solid #0ea5e9'
+                          : '1px solid #d9d9d9',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space>
+                          <SafetyOutlined style={{ color: '#0ea5e9', fontSize: 16 }} />
+                          <span style={{ fontWeight: 500, fontSize: 14 }}>{template.name}</span>
+                          {template.is_default && (
+                            <Tag color="blue" style={{ marginLeft: 'auto' }}>Default</Tag>
+                          )}
+                        </Space>
+                        <div style={{ color: '#7A8691', fontSize: 12, marginLeft: 24 }}>
+                          {template.description}
+                        </div>
+                        <div style={{ color: '#9EAAB7', fontSize: 11, marginLeft: 24 }}>
+                          <Badge color="#1890ff" text={`${template.permissions?.length ?? 0} permissions`} />
+                          <span style={{ marginLeft: 16 }}>•</span>
+                          <span style={{ marginLeft: 16 }}>{template.category}</span>
+                        </div>
+                      </Space>
+                    </Card>
+                  ))
+                )}
+              </Space>
+            </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button
-                onClick={() => {
-                  setIsTemplateModalVisible(false);
-                  templateForm.resetFields();
-                  setSelectedTemplateId(null);
-                }}
-              >
-                Cancel
-              </Button>
+            {/* Role Name */}
+            <Form.Item
+              name="roleName"
+              label="New Role Name"
+              rules={[
+                { required: true, message: 'Please enter role name' },
+                { min: 3, message: 'Role name must be at least 3 characters' },
+                { max: 100, message: 'Role name must not exceed 100 characters' }
+              ]}
+              tooltip="Unique name for the new role created from this template."
+            >
+              <Input
+                prefix={<SafetyOutlined />}
+                placeholder="e.g., Senior Manager, Support Agent"
+                size="large"
+                maxLength={100}
+                allowClear
+              />
+            </Form.Item>
+          </Form>
+        </div>
+      </Drawer>
+
+      {/* Role Details Drawer - Consistent Side Panel */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <SafetyOutlined style={{ color: '#0ea5e9', fontSize: 20 }} />
+            <span>Role Details</span>
+          </div>
+        }
+        open={!!selectedRole}
+        onClose={() => {
+          setSelectedRole(null);
+          setSelectedRolePermissions([]);
+        }}
+        width={700}
+        styles={{ body: { padding: 0, paddingTop: 24 } }}
+        footer={
+          <Space style={{ width: '100%', justifyContent: 'flex-end', gap: 12 }}>
+            <Button
+              size="large"
+              onClick={() => {
+                setSelectedRole(null);
+                setSelectedRolePermissions([]);
+              }}
+            >
+              Close
+            </Button>
+            {canManageRoles && selectedRole && !selectedRole.is_system_role && (
               <Button
                 type="primary"
-                htmlType="submit"
-                loading={submitting}
-                icon={<PlusOutlined />}
+                size="large"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  const roleToEdit = selectedRole;
+                  setSelectedRole(null);
+                  setSelectedRolePermissions([]);
+                  handleEdit(roleToEdit);
+                }}
               >
-                Create Role
+                Edit Role
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Role Details Modal */}
-      <Modal
-        title="Role Details"
-        open={!!selectedRole}
-        onCancel={() => setSelectedRole(null)}
-        footer={[
-          <Button key="close" onClick={() => setSelectedRole(null)}>
-            Close
-          </Button>
-        ]}
-        width={700}
+            )}
+          </Space>
+        }
       >
         {selectedRole && (
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Descriptions bordered column={1}>
-              <Descriptions.Item label="Role Name">{selectedRole.name}</Descriptions.Item>
-              <Descriptions.Item label="Description">{selectedRole.description}</Descriptions.Item>
-              {/* ⚠️ SECURITY: Only show tenant_id to super admins */}
-              {shouldShowTenantIdField(currentUser) && (
-                <Descriptions.Item label="Tenant ID">
-                  {selectedRole.tenant_id || 'Platform'}
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="System Role">
-                {selectedRole.is_system_role ? (
-                  <Tag color="gold">Yes</Tag>
-                ) : (
-                  <Tag color="green">No</Tag>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Created">
-                {new Date(selectedRole.created_at).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Updated">
-                {new Date(selectedRole.updated_at).toLocaleString()}
-              </Descriptions.Item>
-            </Descriptions>
+          <div style={{ padding: '0 24px 24px 24px' }}>
+            {/* Basic Information Section */}
+            <Card style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+                <FileTextOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Basic Information</h3>
+              </div>
 
-            <Card title="Permissions" size="small">
-              <Space wrap>
-                {(selectedRole.permissions ?? []).map(permId => {
-                  const perm = permissions.find(p => p.id === permId);
-                  return perm ? (
-                    <Tag key={permId} color="blue" icon={<CheckCircleOutlined />}>
-                      {perm.name}
+              <Descriptions column={1} bordered={false}>
+                <Descriptions.Item 
+                  label={<span style={{ fontWeight: 500, color: '#6b7280' }}>Role Name</span>}
+                  contentStyle={{ color: '#1f2937', fontWeight: 500 }}
+                >
+                  <Space>
+                    {selectedRole.name}
+                    {selectedRole.is_system_role && (
+                      <Tag color="gold" icon={<LockOutlined />}>System</Tag>
+                    )}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item 
+                  label={<span style={{ fontWeight: 500, color: '#6b7280' }}>Description</span>}
+                  contentStyle={{ color: '#4b5563' }}
+                >
+                  {selectedRole.description}
+                </Descriptions.Item>
+                {/* ⚠️ SECURITY: Only show tenant_id to super admins */}
+                {shouldShowTenantIdField(currentUser) && (
+                  <Descriptions.Item 
+                    label={<span style={{ fontWeight: 500, color: '#6b7280' }}>Tenant</span>}
+                    contentStyle={{ color: '#1f2937' }}
+                  >
+                    <Tag color={selectedRole.tenant_id === 'platform' || !selectedRole.tenant_id ? 'purple' : 'blue'}>
+                      {selectedRole.tenant_id || 'Platform'}
                     </Tag>
-                  ) : null;
-                })}
-              </Space>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
             </Card>
-          </Space>
+
+            {/* Permissions Section */}
+            <Card style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <LockOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Permissions</h3>
+                </div>
+                <Badge 
+                  count={selectedRolePermissions.length} 
+                  style={{ backgroundColor: '#0ea5e9' }} 
+                  showZero 
+                />
+              </div>
+
+              {loadingRolePermissions ? (
+                <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <Spin tip="Loading permissions..." />
+                </div>
+              ) : selectedRolePermissions.length > 0 ? (
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  {Object.entries(groupPermissionsByCategory(selectedRolePermissions)).map(([category, perms]) => (
+                    <div key={category}>
+                      <div style={{ marginBottom: 8 }}>
+                        <Tag color="blue" style={{ fontWeight: 500 }}>
+                          {category.charAt(0).toUpperCase() + category.slice(1)}
+                        </Tag>
+                        <span style={{ marginLeft: 8, color: '#7A8691', fontSize: 12 }}>
+                          ({perms.length} permission{perms.length !== 1 ? 's' : ''})
+                        </span>
+                      </div>
+                      <Space wrap style={{ marginLeft: 16 }}>
+                        {perms.map(perm => (
+                          <Tooltip key={perm.id} title={perm.description || perm.name}>
+                            <Tag color="blue" icon={<CheckCircleOutlined />}>
+                              {perm.name}
+                            </Tag>
+                          </Tooltip>
+                        ))}
+                      </Space>
+                    </div>
+                  ))}
+                </Space>
+              ) : (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="No permissions assigned"
+                  style={{ padding: '16px 0' }}
+                />
+              )}
+            </Card>
+
+            {/* Activity Section */}
+            <Card style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }} variant="borderless">
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #e5e7eb' }}>
+                <CheckCircleOutlined style={{ fontSize: 18, color: '#0ea5e9', marginRight: 10, fontWeight: 600 }} />
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1f2937', margin: 0 }}>Activity</h3>
+              </div>
+
+              <Descriptions column={1} bordered={false}>
+                <Descriptions.Item 
+                  label={<span style={{ fontWeight: 500, color: '#6b7280' }}>Created</span>}
+                  contentStyle={{ color: '#4b5563' }}
+                >
+                  {new Date(selectedRole.created_at).toLocaleString()}
+                </Descriptions.Item>
+                <Descriptions.Item 
+                  label={<span style={{ fontWeight: 500, color: '#6b7280' }}>Last Updated</span>}
+                  contentStyle={{ color: '#4b5563' }}
+                >
+                  {new Date(selectedRole.updated_at).toLocaleString()}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </div>
         )}
-      </Modal>
+      </Drawer>
     </>
   );
 };

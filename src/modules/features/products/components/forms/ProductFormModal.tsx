@@ -32,7 +32,8 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 import type { Product, ProductFormData, PricingTier, DiscountRule } from '@/types/masters';
-import { useCategories } from '@/hooks/useReferenceDataOptions';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenantId } from '@/hooks/usePermission';
 import { PRODUCT_TYPES, CURRENCIES } from '@/types/masters';
 
 const { Option } = Select;
@@ -60,7 +61,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
   const [isVariant, setIsVariant] = useState(false);
   
-  const { categories, loading: categoriesLoading } = useCategories('default-tenant');
+  const tenantId = useCurrentTenantId();
+  const { options: categoryOptions, loading: categoriesLoading } = useReferenceDataByCategory(tenantId, 'product_category');
 
   useEffect(() => {
     if (visible && product) {
@@ -398,8 +400,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     showSearch
                     optionFilterProp="children"
                   >
-                    {categories.map((cat: any) => (
-                      <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                    {categoryOptions.map((opt: any) => (
+                      <Option key={opt.value} value={opt.value}>{opt.label}</Option>
                     ))}
                   </Select>
                 </Form.Item>

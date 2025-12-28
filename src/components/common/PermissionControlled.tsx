@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { elementPermissionService } from '@/services/serviceFactory';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 import { PermissionContext } from '@/types/rbac';
@@ -47,6 +47,7 @@ export const PermissionControlled: React.FC<PermissionControlledProps> = ({
 
   const currentUser = useCurrentUser();
   const currentTenant = useCurrentTenant();
+  const auth = useAuth();
 
   useEffect(() => {
     const evaluatePermission = async () => {
@@ -68,11 +69,8 @@ export const PermissionControlled: React.FC<PermissionControlledProps> = ({
           ...additionalContext
         };
 
-        const result = await elementPermissionService.evaluateElementPermission(
-          elementPath,
-          action,
-          permissionContext
-        );
+        const evalFn = auth.evaluateElementPermission;
+        const result = evalFn ? await evalFn(elementPath, action, permissionContext.recordId) : false;
 
         setHasPermission(result);
       } catch (err) {
@@ -171,11 +169,8 @@ export const usePermissionControlled = (
           ...context
         };
 
-        const result = await elementPermissionService.evaluateElementPermission(
-          elementPath,
-          action,
-          permissionContext
-        );
+        const evalFn = auth.evaluateElementPermission;
+        const result = evalFn ? await evalFn(elementPath, action, permissionContext.recordId) : false;
 
         setHasPermission(result);
       } catch (err) {

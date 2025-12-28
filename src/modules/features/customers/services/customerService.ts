@@ -454,19 +454,20 @@ export class CustomerService extends BaseService implements ICustomerService {
 
         // Calculate industry distribution
         customerArray.forEach(customer => {
-          const industry = (customer as any).industry || 'Unknown';
+          // Normalize industry to lowercase for consistent grouping
+          const industry = ((customer as any).industry || 'unknown').toLowerCase();
           stats.byIndustry[industry] = (stats.byIndustry[industry] || 0) + 1;
         });
 
         // Calculate size distribution
         customerArray.forEach(customer => {
-          const size = (customer as any).size || 'Unknown';
+          const size = ((customer as any).size || 'unknown').toLowerCase();
           stats.bySize[size] = (stats.bySize[size] || 0) + 1;
         });
 
         // Calculate status distribution
         customerArray.forEach(customer => {
-          const status = (customer as any).status || 'Unknown';
+          const status = ((customer as any).status || 'unknown').toLowerCase();
           stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
         });
 

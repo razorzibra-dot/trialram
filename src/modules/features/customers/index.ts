@@ -33,9 +33,6 @@ export {
   useBulkCustomerOperations
 } from './hooks/useCustomers';
 
-// Component exports
-export * from './components/CustomerList';
-
 // Routes
 export { customerRoutes } from './routes';
 import { customerRoutes } from './routes';

@@ -15,6 +15,7 @@ import {
   Input, 
   Select, 
   Popconfirm,
+  Tooltip,
   Alert,
   Empty,
   message,
@@ -42,6 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Product, ProductFilters, ProductFormData } from '@/types/masters';
 import { ProductsDetailPanel } from '../components/ProductsDetailPanel';
 import { ProductsFormPanel } from '../components/ProductsFormPanel';
+import { formatCurrency } from '@/utils/formatters';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -104,36 +106,30 @@ export const ProductsPage: React.FC = () => {
       setIsSaving(true);
       
       if (drawerMode === 'create') {
-        // Create new product
+        // Notifications handled by useCreateProduct hook
         await createProduct.mutateAsync(values as ProductFormData);
-        message.success('Product created successfully');
       } else if (drawerMode === 'edit' && selectedProduct) {
-        // Update existing product
+        // Notifications handled by useUpdateProduct hook
         await updateProduct.mutateAsync({
           id: selectedProduct.id,
           data: values,
         });
-        message.success('Product updated successfully');
       }
-      
+      await Promise.all([refetchProducts(), refetchStats()]);
       handleDrawerClose();
     } catch (error) {
       console.error('Error saving product:', error);
-      message.error(error instanceof Error ? error.message : 'Failed to save product');
+      // Notifications handled by hooks
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (product: Product) => {
-    try {
-      await deleteProduct.mutateAsync(product.id);
-      message.success(`Product "${product.name}" deleted successfully`);
-      refetchProducts();
-      refetchStats();
-    } catch (error) {
-      message.error('Failed to delete product');
-    }
+    // Notifications handled by useDeleteProduct hook
+    await deleteProduct.mutateAsync(product.id);
+    refetchProducts();
+    refetchStats();
   };
 
   const handleFileImport = (file: File) => {
@@ -168,13 +164,6 @@ export const ProductsPage: React.FC = () => {
       status: statusValue,
       page: 1 
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   const getStatusColor = (status: string) => {
@@ -233,9 +222,10 @@ export const ProductsPage: React.FC = () => {
     },
     {
       title: 'Category',
-      dataIndex: 'category',
+      dataIndex: 'categoryName',
       key: 'category',
       width: 120,
+      render: (_, record) => record.categoryName || (record as any).category || '—',
     },
     {
       title: 'Price',
@@ -289,44 +279,45 @@ export const ProductsPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            View
-          </Button>
-          {hasPermission('crm:product:record:update') && (
+          <Tooltip title="View Details">
             <Button
-              type="link"
+              type="text"
               size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              Edit
-            </Button>
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {hasPermission('crm:product:record:update') && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
           )}
           {hasPermission('crm:product:record:delete') && (
             <Popconfirm
               title="Delete Product"
               description={`Are you sure you want to delete "${record.name}"?`}
               onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>

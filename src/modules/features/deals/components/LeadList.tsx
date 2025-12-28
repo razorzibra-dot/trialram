@@ -12,15 +12,15 @@ import {
   Button,
   Tag,
   Popconfirm,
-  message,
+  Tooltip,
   Empty,
   Row,
   Col,
   Card,
   Typography,
-  Tooltip
+  Dropdown,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, MenuProps } from 'antd/es/table';
 import {
   SearchOutlined,
   EyeOutlined,
@@ -31,11 +31,19 @@ import {
   MailOutlined,
   StarOutlined,
   StarFilled,
-  FilterOutlined
+  FilterOutlined,
+  CalculatorOutlined,
+  UserAddOutlined,
+  SwapOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { LeadDTO } from '@/types/dtos';
-import { useLeads, useDeleteLead, useUpdateLeadScore } from '../hooks/useLeads';
+import { useLeads, useDeleteLead, useUpdateLeadScore, useAutoCalculateLeadScore, useAutoAssignLead, useConvertLeadToCustomer } from '../hooks/useLeads';
+import { useSessionConfig } from '@/contexts/SessionConfigContext';
+import backendConfig from '@/config/backendConfig';
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -53,6 +61,8 @@ export const LeadList: React.FC<LeadListProps> = ({
   onCreateLead
 }) => {
   const { hasPermission } = useAuth();
+  const { config } = useSessionConfig();
+  const conversionMinScore = config.leadConversionMinScore ?? backendConfig.businessRules?.leadConversionMinScore ?? 55;
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stageFilter, setStageFilter] = useState<string>('all');
@@ -74,6 +84,9 @@ export const LeadList: React.FC<LeadListProps> = ({
   const { data: leadsData, isLoading, refetch } = useLeads(filters);
   const deleteLead = useDeleteLead();
   const updateLeadScore = useUpdateLeadScore();
+  const autoCalculateScore = useAutoCalculateLeadScore();
+  const autoAssignLead = useAutoAssignLead();
+  const convertLead = useConvertLeadToCustomer();
 
   const handleSearch = (value: string) => {
     setSearchText(value);
@@ -92,21 +105,13 @@ export const LeadList: React.FC<LeadListProps> = ({
   };
 
   const handleDelete = async (lead: LeadDTO) => {
-    try {
-      await deleteLead.mutateAsync(lead.id);
-      message.success(`Lead "${lead.firstName} ${lead.lastName}" deleted successfully`);
-    } catch (error) {
-      message.error('Failed to delete lead');
-    }
+    // Notifications handled by useDeleteLead hook
+    await deleteLead.mutateAsync(lead.id);
   };
 
   const handleScoreUpdate = async (lead: LeadDTO, newScore: number) => {
-    try {
-      await updateLeadScore.mutateAsync({ id: lead.id, score: newScore });
-      message.success('Lead score updated successfully');
-    } catch (error) {
-      message.error('Failed to update lead score');
-    }
+    // Notifications handled by useUpdateLeadScore hook
+    await updateLeadScore.mutateAsync({ id: lead.id, score: newScore });
   };
 
   const getStatusColor = (status: string) => {
@@ -117,6 +122,7 @@ export const LeadList: React.FC<LeadListProps> = ({
       case 'unqualified': return 'red';
       case 'converted': return 'purple';
       case 'lost': return 'gray';
+      case 'cancelled': return 'red';
       default: return 'default';
     }
   };
@@ -148,6 +154,13 @@ export const LeadList: React.FC<LeadListProps> = ({
     if (score >= 50) return 'orange';
     return 'red';
   };
+
+  // ✅ Database-driven filter dropdowns for consistency
+  const currentTenant = useCurrentTenant();
+  const tenantId = currentTenant?.id;
+  const { options: statusOptionsRef, isLoading: loadingStatuses } = useReferenceDataByCategory(tenantId, 'lead_status');
+  const { options: stageOptionsRef, isLoading: loadingStages } = useReferenceDataByCategory(tenantId, 'lead_stage');
+  const { options: qualificationOptionsRef, isLoading: loadingQualifications } = useReferenceDataByCategory(tenantId, 'lead_qualification');
 
   const formatPhone = (phone?: string) => {
     if (!phone) return '-';
@@ -301,48 +314,86 @@ export const LeadList: React.FC<LeadListProps> = ({
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Lead">
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => onViewLead?.(record)}
-            />
-          </Tooltip>
-          {hasPermission('leads:update') && (
-            <Tooltip title="Edit Lead">
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => onEditLead?.(record)}
-              />
-            </Tooltip>
-          )}
-          {hasPermission('leads:delete') && (
-            <Popconfirm
-              title="Delete Lead"
-              description={`Are you sure you want to delete "${record.firstName} ${record.lastName}"?`}
-              onConfirm={() => handleDelete(record)}
-              okText="Yes"
-              cancelText="No"
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title="Delete Lead">
-                <Button
-                  type="link"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                />
+      width: 80,
+      align: 'center',
+      render: (_, record) => {
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'view',
+            icon: <EyeOutlined />,
+            label: 'View Details',
+            onClick: () => onViewLead?.(record),
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: 'Edit Lead',
+            onClick: () => onEditLead?.(record),
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            type: 'divider',
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            key: 'calculate',
+            icon: <CalculatorOutlined />,
+            label: 'Auto Calculate Score',
+            onClick: () => autoCalculateScore.mutate(record.id),
+            disabled: autoCalculateScore.isPending,
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            key: 'assign',
+            icon: <UserAddOutlined />,
+            label: 'Auto Assign',
+            onClick: () => autoAssignLead.mutate(record.id),
+            disabled: autoAssignLead.isPending,
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            type: 'divider',
+          },
+          hasPermission('crm:lead:record:update') && !record.convertedToCustomer && {
+            key: 'convert',
+            icon: <SwapOutlined />,
+            label: (
+              <Tooltip title={record.leadScore < conversionMinScore && !hasPermission('crm:lead:convert:override')
+                ? `Requires score ≥ ${conversionMinScore} or override permission`
+                : undefined
+              }>
+                {`Convert to Customer${record.leadScore < conversionMinScore && hasPermission('crm:lead:convert:override') ? ' (Override)' : ''}`}
               </Tooltip>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+            ),
+            onClick: () => convertLead.mutate({ leadId: record.id }),
+            disabled: convertLead.isPending || (record.leadScore < conversionMinScore && !hasPermission('crm:lead:convert:override')),
+          },
+          hasPermission('crm:lead:record:delete') && {
+            type: 'divider',
+          },
+          hasPermission('crm:lead:record:delete') && {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: 'Delete Lead',
+            danger: true,
+            onClick: () => {
+              // Show confirmation
+              const confirmed = window.confirm(
+                `Are you sure you want to delete "${record.firstName} ${record.lastName}"?`
+              );
+              if (confirmed) {
+                handleDelete(record);
+              }
+            },
+          },
+        ].filter(Boolean);
+
+        return (
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button
+              type="text"
+              size="small"
+              icon={<MoreOutlined style={{ fontSize: 16 }} />}
+            />
+          </Dropdown>
+        );
+      },
     },
   ];
 
@@ -367,14 +418,12 @@ export const LeadList: React.FC<LeadListProps> = ({
               onChange={handleStatusFilterChange}
               style={{ width: '100%' }}
               size="large"
+              loading={loadingStatuses}
             >
               <Option value="all">All Statuses</Option>
-              <Option value="new">New</Option>
-              <Option value="contacted">Contacted</Option>
-              <Option value="qualified">Qualified</Option>
-              <Option value="unqualified">Unqualified</Option>
-              <Option value="converted">Converted</Option>
-              <Option value="lost">Lost</Option>
+              {statusOptionsRef.map((opt) => (
+                <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+              ))}
             </Select>
           </Col>
           <Col xs={24} sm={12} lg={4}>
@@ -383,14 +432,12 @@ export const LeadList: React.FC<LeadListProps> = ({
               onChange={handleStageFilterChange}
               style={{ width: '100%' }}
               size="large"
+              loading={loadingStages}
             >
               <Option value="all">All Stages</Option>
-              <Option value="awareness">Awareness</Option>
-              <Option value="interest">Interest</Option>
-              <Option value="consideration">Consideration</Option>
-              <Option value="intent">Intent</Option>
-              <Option value="evaluation">Evaluation</Option>
-              <Option value="purchase">Purchase</Option>
+              {stageOptionsRef.map((opt) => (
+                <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+              ))}
             </Select>
           </Col>
           <Col xs={24} sm={12} lg={4}>
@@ -399,12 +446,12 @@ export const LeadList: React.FC<LeadListProps> = ({
               onChange={handleQualificationFilterChange}
               style={{ width: '100%' }}
               size="large"
+              loading={loadingQualifications}
             >
               <Option value="all">All Qualifications</Option>
-              <Option value="new">New</Option>
-              <Option value="contacted">Contacted</Option>
-              <Option value="qualified">Qualified</Option>
-              <Option value="unqualified">Unqualified</Option>
+              {qualificationOptionsRef.map((opt) => (
+                <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+              ))}
             </Select>
           </Col>
           <Col xs={24} sm={12} lg={4}>

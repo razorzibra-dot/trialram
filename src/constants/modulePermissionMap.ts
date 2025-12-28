@@ -7,7 +7,8 @@ import { PermissionTokens } from './permissionTokens';
 export const MODULE_PERMISSION_MAP: Record<string, string> = {
   dashboard: PermissionTokens.dashboard.panel.view,
   customers: PermissionTokens.customer.record.read,
-  sales: PermissionTokens.sales.deal.read,
+  deals: PermissionTokens.sales.deal.read,
+  leads: PermissionTokens.lead.record.read,
   contracts: PermissionTokens.contract.record.read,
   'service-contracts': PermissionTokens.contract.service.read,
   products: PermissionTokens.product.record.read,

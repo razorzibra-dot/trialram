@@ -48,16 +48,16 @@ BEGIN
     system_user_id
   ) ON CONFLICT (key) DO NOTHING;
 
-  -- Customers
+  -- Leads
   INSERT INTO navigation_items (key, label, parent_id, permission_name, is_section, sort_order, route_path, tenant_id, is_system_item, is_active, created_by, updated_by)
   VALUES (
-    '/tenant/customers',
-    'Customers',
+    '/tenant/leads',
+    'Leads',
     NULL,
-    'crm:customer:record:read',
+    'crm:lead:record:read',
     FALSE,
     2,
-    '/tenant/customers',
+    '/tenant/leads',
     default_tenant_id,
     TRUE,
     TRUE,
@@ -65,16 +65,16 @@ BEGIN
     system_user_id
   ) ON CONFLICT (key) DO NOTHING;
 
-  -- Sales
+  -- Deals
   INSERT INTO navigation_items (key, label, parent_id, permission_name, is_section, sort_order, route_path, tenant_id, is_system_item, is_active, created_by, updated_by)
   VALUES (
-    '/tenant/sales',
-    'Sales',
+    '/tenant/deals',
+    'Deals',
     NULL,
     'crm:deal:record:read',
     FALSE,
     3,
-    '/tenant/sales',
+    '/tenant/deals',
     default_tenant_id,
     TRUE,
     TRUE,
@@ -99,6 +99,23 @@ BEGIN
     system_user_id
   ) ON CONFLICT (key) DO NOTHING;
 
+  -- Customers
+  INSERT INTO navigation_items (key, label, parent_id, permission_name, is_section, sort_order, route_path, tenant_id, is_system_item, is_active, created_by, updated_by)
+  VALUES (
+    '/tenant/customers',
+    'Customers',
+    NULL,
+    'crm:customer:record:read',
+    FALSE,
+    5,
+    '/tenant/customers',
+    default_tenant_id,
+    TRUE,
+    TRUE,
+    system_user_id,
+    system_user_id
+  ) ON CONFLICT (key) DO NOTHING;
+
   -- Contracts
   INSERT INTO navigation_items (key, label, parent_id, permission_name, is_section, sort_order, route_path, tenant_id, is_system_item, is_active, created_by, updated_by)
   VALUES (
@@ -107,7 +124,7 @@ BEGIN
     NULL,
     'crm:contract:record:read',
     FALSE,
-    5,
+    6,
     '/tenant/contracts',
     default_tenant_id,
     TRUE,
@@ -124,7 +141,7 @@ BEGIN
     NULL,
     'crm:contract:service:read',
     FALSE,
-    6,
+    7,
     '/tenant/service-contracts',
     default_tenant_id,
     TRUE,
@@ -141,7 +158,7 @@ BEGIN
     NULL,
     'crm:support:ticket:read',
     FALSE,
-    7,
+    8,
     '/tenant/tickets',
     default_tenant_id,
     TRUE,
@@ -158,7 +175,7 @@ BEGIN
     NULL,
     'crm:support:complaint:read',
     FALSE,
-    8,
+    9,
     '/tenant/complaints',
     default_tenant_id,
     TRUE,
@@ -175,7 +192,7 @@ BEGIN
     NULL,
     'crm:job:work:read',
     FALSE,
-    9,
+    10,
     '/tenant/job-works',
     default_tenant_id,
     TRUE,
@@ -196,7 +213,7 @@ BEGIN
     NULL,
     'crm:master:data:read',
     TRUE,
-    10,
+    11,
     NULL,
     default_tenant_id,
     TRUE,
@@ -219,7 +236,7 @@ BEGIN
     admin_section_id,
     'crm:master:data:read',
     FALSE,
-    11,
+    12,
     '/tenant/masters',
     default_tenant_id,
     TRUE,
@@ -276,7 +293,7 @@ BEGIN
     admin_section_id,
     'crm:user:record:read',
     FALSE,
-    12,
+    13,
     '/tenant/users',
     default_tenant_id,
     TRUE,
@@ -350,7 +367,7 @@ BEGIN
     admin_section_id,
     'crm:system:config:manage',
     FALSE,
-    13,
+    14,
     '/tenant/configuration',
     default_tenant_id,
     TRUE,
@@ -407,7 +424,7 @@ BEGIN
     admin_section_id,
     'crm:notification:channel:manage',
     FALSE,
-    14,
+    15,
     '/tenant/notifications',
     default_tenant_id,
     TRUE,
@@ -424,7 +441,7 @@ BEGIN
     admin_section_id,
     'crm:audit:log:read',
     FALSE,
-    15,
+    16,
     '/tenant/logs',
     default_tenant_id,
     TRUE,

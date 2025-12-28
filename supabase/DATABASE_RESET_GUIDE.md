@@ -80,7 +80,7 @@ The consolidated script creates **15 core tables** with proper relationships:
 - **customers** - Individual customer contacts
 - **products** - Product catalog
 - **sales** - Sales transactions
-- **sale_items** - Line items in sales
+- **sale_items** - Line items in sales (Product Sales / Orders module)
 - **contracts** - Legal agreements
 - **service_contracts** - Service agreements
 - **job_works** - Project/job management
@@ -88,6 +88,10 @@ The consolidated script creates **15 core tables** with proper relationships:
 - **complaints** - Customer complaints
 - **notifications** - User notifications
 - **audit_logs** - Comprehensive audit trail
+
+> Note: This project contains both `sale_items` (originally created for the Product Sales / Orders module) and `deal_items` (created later for the CRM Deals pipeline). The two tables are distinct; `sale_items` is the canonical storage for product-order line items while `deal_items` holds CRM deal line items. A nullable `deal_id` column may exist on `sale_items` for integration/compatibility but application code should prefer `deal_items` when operating on the Deals module.
+>
+> See `supabase/TABLE_OWNERSHIP.md` for full details and migration notes.
 
 ### Security Features
 

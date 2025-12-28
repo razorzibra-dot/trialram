@@ -89,6 +89,7 @@ export interface SalesState {
   setFilters: (filters: Partial<SalesFilters>) => void;
   clearFilters: () => void;
   setStats: (stats: DealStats | null) => void;
+  setViewMode: (mode: 'table' | 'kanban' | 'cards') => void;
   
   // Pagination
   setPagination: (pagination: Partial<SalesState['pagination']>) => void;
@@ -129,6 +130,13 @@ export const useSalesStore = create<SalesState>()(
         // Data Actions
         setDeals: (deals) => {
           set((state) => {
+            // Debug: log incoming deals
+            try {
+              console.log('[dealStore] setDeals called with count:', Array.isArray(deals) ? deals.length : 0, 'sample ids:', (Array.isArray(deals) ? deals : []).map(d => d?.id).slice(0,5));
+            } catch (e) {
+              // Ignore errors during debug logging
+            }
+
             // Filter out null/undefined deals, preserve all fields from service layer
             state.deals = (Array.isArray(deals) ? deals : [])
               .filter((deal) => deal && typeof deal === 'object' && deal.id)
@@ -143,14 +151,10 @@ export const useSalesStore = create<SalesState>()(
                   title: deal.title || 'Untitled Deal',
                   value: dealValue,
                   amount: dealValue, // Alias for value
-                  stage: deal.stage || 'lead',
-                  status: deal.status || 'open',
+                  status: deal.status || 'won',
                   
                   // IMPORTANT: Preserve date fields from service layer
                   expected_close_date: deal.expected_close_date || '',
-                  actual_close_date: deal.actual_close_date || '',
-                  last_activity_date: deal.last_activity_date || '',
-                  next_activity_date: deal.next_activity_date || '',
                   
                   // Preserve customer info
                   customer_id: deal.customer_id || '',
@@ -174,9 +178,8 @@ export const useSalesStore = create<SalesState>()(
                   updated_at: deal.updated_at || new Date().toISOString(),
                   created_by: deal.created_by || '',
                   
-                  // Preserve other fields
+                  // ✅ Preserve other fields (stage and probability belong to opportunities, not deals)
                   currency: deal.currency || 'USD',
-                  probability: Number(deal.probability) || 50,
                 };
               });
           });
@@ -255,6 +258,12 @@ export const useSalesStore = create<SalesState>()(
         setStats: (stats) => {
           set((state) => {
             state.stats = stats;
+          });
+        },
+
+        setViewMode: (mode: 'table' | 'kanban' | 'cards') => {
+          set((state) => {
+            state.viewMode = mode;
           });
         },
 

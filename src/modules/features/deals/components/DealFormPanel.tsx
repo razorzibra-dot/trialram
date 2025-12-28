@@ -7,21 +7,21 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, DatePicker, Card, Alert, Spin, Row, Col, Tag, Tooltip } from 'antd';
+import { Drawer, Form, Input, Select, Button, Space, message, InputNumber, DatePicker, Card, Alert, Row, Col } from 'antd';
 import { 
-  LinkOutlined, DeleteOutlined as DeleteIcon, PlusOutlined, DollarOutlined, 
+  DeleteOutlined as DeleteIcon, PlusOutlined, DollarOutlined, 
   CalendarOutlined, UserOutlined, ShoppingCartOutlined, FileTextOutlined,
-  CheckCircleOutlined, RadarChartOutlined, TeamOutlined, BgColorsOutlined 
+  CheckCircleOutlined, BgColorsOutlined, SaveOutlined, CloseOutlined, TagsOutlined
 } from '@ant-design/icons';
-import { Deal, Customer, SaleItem } from '@/types/crm';
+import { Deal, Customer, DealItem } from '@/types/crm';
 import { Product } from '@/types/masters';
 import dayjs from 'dayjs';
-import { useCreateDeal, useUpdateDeal, useDealStages } from '../hooks/useDeals';
+import { useCreateDeal, useUpdateDeal } from '../hooks/useDeals';
 import { useService } from '@/modules/core/hooks/useService';
-import { CustomerService } from '@/modules/features/customers/services/customerService';
-import { PermissionField } from '@/components/forms/PermissionField';
-import { PermissionSection } from '@/components/layout/PermissionSection';
-import { usePermission } from '@/hooks/useElementPermissions';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCustomersDropdown } from '@/hooks/useCustomersDropdown';
+import { useProductsDropdown } from '@/hooks/useProductsDropdown';
+import { useActiveUsers } from '@/hooks/useActiveUsers'; // Shared hook for all modules
 
 // Product Service Interface
 interface ProductServiceInterface {
@@ -30,24 +30,15 @@ interface ProductServiceInterface {
 }
 
 interface DealFormPanelProps {
-  visible: boolean;
+  open: boolean;
   deal: Deal | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 // ✨ Configuration objects for professional styling
-const stageConfig: Record<string, { emoji: string; label: string }> = {
-  'lead': { emoji: '🎯', label: 'Lead' },
-  'qualified': { emoji: '✅', label: 'Qualified' },
-  'proposal': { emoji: '📄', label: 'Proposal' },
-  'negotiation': { emoji: '🤝', label: 'Negotiation' },
-  'closed_won': { emoji: '🎉', label: 'Closed Won' },
-  'closed_lost': { emoji: '❌', label: 'Closed Lost' },
-};
-
+// NOTE: stage belongs to opportunities table, not deals
 const statusConfig: Record<string, { emoji: string; label: string; bgColor: string; textColor: string }> = {
-  'open': { emoji: '🔵', label: 'Open', bgColor: '#e6f4ff', textColor: '#0050b3' },
   'won': { emoji: '✅', label: 'Won', bgColor: '#f6ffed', textColor: '#274a0a' },
   'lost': { emoji: '❌', label: 'Lost', bgColor: '#fff1f0', textColor: '#58181c' },
   'cancelled': { emoji: '⏸️', label: 'Cancelled', bgColor: '#f5f5f5', textColor: '#262626' },
@@ -62,104 +53,51 @@ const sourceConfig: Record<string, { emoji: string; label: string }> = {
 };
 
 export const DealFormPanel: React.FC<DealFormPanelProps> = ({
-  visible,
+  open,
   deal,
   onClose,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
+  // Load customers and products using shared dropdown hooks
+  const { data: customerOptions = [], isLoading: loadingCustomers } = useCustomersDropdown();
+  const { data: productOptions = [], isLoading: loadingProducts } = useProductsDropdown();
+  const { data: users = [], isLoading: usersLoading } = useActiveUsers();
+
+  // ✅ Memoize extracted objects to prevent infinite re-renders
+  const customers = useMemo(() => customerOptions.map(opt => opt.customer), [customerOptions]);
+  const products = useMemo(() => productOptions.map(opt => opt.product), [productOptions]);
+
   // Product state
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [saleItems, setSaleItems] = useState<DealItem[]>([]);
+  const [dealType, setDealType] = useState<'PRODUCT' | 'SERVICE'>(deal?.deal_type || 'PRODUCT');
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
 
   // Get services
   const createDeal = useCreateDeal();
   const updateDeal = useUpdateDeal();
-  const { data: stages = [], isLoading: loadingStages } = useDealStages();
-  const customerService = useService<CustomerService>('customerService');
   const productService = useService<ProductServiceInterface>('productService');
 
   const isEditMode = !!deal;
 
-  // Element-level permissions for sales deal form
-  const canEditDealOverview = usePermission('crm:sales:deal:form:section.overview', 'accessible');
-  const canEditCustomerInfo = usePermission('crm:sales:deal:form:section.customer', 'accessible');
-  const canEditFinancialInfo = usePermission('crm:sales:deal:form:section.financial', 'accessible');
-  const canEditProducts = usePermission('crm:sales:deal:form:section.products', 'accessible');
-  const canEditPipeline = usePermission('crm:sales:deal:form:section.pipeline', 'accessible');
-  const canEditCampaign = usePermission('crm:sales:deal:form:section.campaign', 'accessible');
-  const canEditNotes = usePermission('crm:sales:deal:form:section.notes', 'accessible');
-  const canSaveDeal = usePermission('crm:sales:deal:form:button.save', 'enabled');
-  const canAddProducts = usePermission('crm:sales:deal:form:button.addproduct', 'enabled');
+  // ✅ Base deal permissions for create/update actions
+  const { hasPermission } = useAuth();
+  const canCreateDeal = hasPermission('crm:sales:deal:create');
+  const canUpdateDeal = hasPermission('crm:sales:deal:update');
 
-  // Load customers and products
-  useEffect(() => {
-    if (visible && customerService) {
-      loadCustomers();
-    }
-  }, [visible, customerService]);
+  // Determine if save button should be enabled based on mode
+  const finalCanSaveDeal = isEditMode ? canUpdateDeal : canCreateDeal;
 
-  useEffect(() => {
-    if (visible && productService) {
-      loadProducts();
-    }
-  }, [visible, productService]);
+  // ✅ Permission check for adding products
+  const canAddProducts = hasPermission('crm:sales:deal:create') || hasPermission('crm:sales:deal:update');
 
-  const loadCustomers = async () => {
-    try {
-      setLoadingCustomers(true);
-      if (!customerService) {
-        throw new Error('Customer service not initialized');
-      }
-      
-      const result = await customerService.getCustomers({ pageSize: 1000 });
-      if (result?.data && Array.isArray(result.data)) {
-        setCustomers(result.data);
-      } else {
-        setCustomers([]);
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      if (!errorMsg.includes('Unauthorized') && !errorMsg.includes('Tenant context not initialized')) {
-        message.error(`Failed to load customers: ${errorMsg}`);
-      }
-      setCustomers([]);
-    } finally {
-      setLoadingCustomers(false);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      setLoadingProducts(true);
-      if (!productService) {
-        setProducts([]);
-        return;
-      }
-      
-      const result = await productService.getProducts({ pageSize: 1000, status: 'active' });
-      if (result?.data && Array.isArray(result.data)) {
-        setProducts(result.data);
-      } else {
-        setProducts([]);
-      }
-    } catch (error) {
-      console.error('[SalesDealFormPanel] Error loading products:', error);
-      setProducts([]);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
+  // Customers and products loaded via shared hooks
 
   // Update form values when deal changes
   useEffect(() => {
-    if (visible && deal) {
+    if (open && deal) {
       const selectedCust = customers.find(c => c.id === deal.customer_id);
       setSelectedCustomer(selectedCust || null);
 
@@ -171,13 +109,11 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
 
       const formValues = {
         title: deal.title || '',
+        deal_type: (deal as any).deal_type || 'PRODUCT',
         customer_id: deal.customer_id || undefined,
         value: deal.value || 0,
-        stage: deal.stage ? String(deal.stage).toLowerCase() : 'lead',
         assigned_to: deal.assigned_to || undefined,
         expected_close_date: deal.expected_close_date ? dayjs(deal.expected_close_date) : undefined,
-        actual_close_date: deal.actual_close_date ? dayjs(deal.actual_close_date) : undefined,
-        probability: deal.probability || 50,
         description: deal.description || '',
         notes: deal.notes || '',
         status: deal.status || undefined,
@@ -187,12 +123,13 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
       };
       
       form.setFieldsValue(formValues);
-    } else if (visible) {
+      setDealType((deal as any).deal_type || 'PRODUCT');
+    } else if (open) {
       form.resetFields();
       setSelectedCustomer(null);
       setSaleItems([]);
     }
-  }, [visible, deal, form]);
+  }, [open, deal, form]);
 
   const handleCustomerChange = (customerId: string) => {
     const customer = customers.find(c => c.id === customerId);
@@ -200,38 +137,65 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
   };
 
   const handleAddProduct = () => {
-    if (!selectedProductId) {
-      message.warning('Please select a product');
-      return;
+    // Support adding product or service items depending on dealType
+    if (dealType === 'PRODUCT') {
+      if (!selectedProductId) {
+        message.warning('Please select a product');
+        return;
+      }
+
+      if (saleItems.find(item => item.product_id === selectedProductId)) {
+        message.warning('This product is already in the deal. Update the quantity instead.');
+        return;
+      }
+
+      const selectedProduct = products.find(p => p.id === selectedProductId);
+      if (!selectedProduct) {
+        message.error('Product not found');
+        return;
+      }
+
+      const newItem: DealItem = {
+        id: `item-${Date.now()}`,
+        deal_id: deal?.id || 'temp',
+        product_id: selectedProduct.id,
+        product_name: selectedProduct.name,
+        product_description: selectedProduct.description,
+        quantity: 1,
+        unit_price: selectedProduct.price || 0,
+        discount: 0,
+        tax: 0,
+        line_total: selectedProduct.price || 0,
+      };
+
+      setSaleItems([...saleItems, newItem]);
+      setSelectedProductId(undefined);
+      message.success(`${selectedProduct.name} added to deal`);
+    } else {
+      // SERVICE: prompt for service name and optional price
+      const svcName = window.prompt('Enter service name');
+      if (!svcName) return;
+      const svcPriceRaw = window.prompt('Enter service price (optional)', '0');
+      const svcPrice = Number(svcPriceRaw || 0);
+
+      const newItem: DealItem = {
+        id: `svc-${Date.now()}`,
+        deal_id: deal?.id || 'temp',
+        product_id: undefined,
+        product_name: svcName,
+        product_description: '',
+        quantity: 1,
+        unit_price: svcPrice,
+        discount: 0,
+        tax: 0,
+        line_total: svcPrice,
+        // @ts-expect-error - service_id is supported at DB level
+        service_id: `svc-${Date.now()}`,
+      } as unknown as DealItem;
+
+      setSaleItems([...saleItems, newItem]);
+      message.success(`${svcName} (service) added to deal`);
     }
-
-    if (saleItems.find(item => item.product_id === selectedProductId)) {
-      message.warning('This product is already in the deal. Update the quantity instead.');
-      return;
-    }
-
-    const selectedProduct = products.find(p => p.id === selectedProductId);
-    if (!selectedProduct) {
-      message.error('Product not found');
-      return;
-    }
-
-    const newItem: SaleItem = {
-      id: `item-${Date.now()}`,
-      sale_id: deal?.id || 'temp',
-      product_id: selectedProduct.id,
-      product_name: selectedProduct.name,
-      product_description: selectedProduct.description,
-      quantity: 1,
-      unit_price: selectedProduct.price || 0,
-      discount: 0,
-      tax: 0,
-      line_total: selectedProduct.price || 0,
-    };
-
-    setSaleItems([...saleItems, newItem]);
-    setSelectedProductId(undefined);
-    message.success(`${selectedProduct.name} added to deal`);
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -282,92 +246,122 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
       const tagsArray = values.tags
         ? values.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag)
         : [];
-
-      const stageValue = String(values.stage || 'lead').toLowerCase();
+      
+      // ✅ Map expected_close_date to close_date for database (close_date is NOT NULL in schema)
+      const closeDate = values.expected_close_date 
+        ? values.expected_close_date.format('YYYY-MM-DD')
+        : new Date().toISOString().split('T')[0]; // Default to today if not provided
       
       const dealData = {
         title: values.title,
-        description: values.description,
+        description: values.description || undefined,
         value: dealValue,
-        stage: stageValue,
-        status: values.status || null,
+        status: values.status || 'won',
+        deal_type: dealType,
         customer_id: values.customer_id,
-        assigned_to: values.assigned_to || null,
+        assigned_to: values.assigned_to || undefined,
+        close_date: closeDate, // ✅ REQUIRED NOT NULL field
         expected_close_date: values.expected_close_date 
-          ? values.expected_close_date.toISOString() 
+          ? values.expected_close_date.format('YYYY-MM-DD')
           : undefined,
-        actual_close_date: values.actual_close_date
-          ? values.actual_close_date.toISOString()
-          : undefined,
-        probability: values.probability,
-        notes: values.notes || null,
-        source: values.source || null,
-        campaign: values.campaign || null,
-        tags: tagsArray,
-        items: saleItems,
+        notes: values.notes || undefined,
+        source: values.source || undefined,
+        campaign: values.campaign || undefined,
+        tags: tagsArray && tagsArray.length > 0 ? tagsArray : undefined,
+        // Include items in payload; service will insert them separately in a transaction
+        items: saleItems.map(item => ({
+          product_id: (item as any).product_id || null,
+          product_name: item.product_name,
+          product_description: item.product_description || '',
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          discount: (item as any).discount || 0,
+          discount_type: (item as any).discount_type || 'fixed',
+          tax: (item as any).tax || 0,
+          tax_rate: (item as any).tax_rate || 0,
+          service_id: (item as any).service_id || null,
+          duration: (item as any).duration || null,
+          notes: (item as any).notes || null,
+          line_total: item.line_total
+        })),
       };
 
       if (isEditMode && deal?.id) {
-        await updateDeal.mutateAsync({ id: deal.id, ...dealData });
-        message.success('Deal updated successfully');
+        await updateDeal.mutateAsync({ id: deal.id, data: dealData });
       } else {
         await createDeal.mutateAsync(dealData);
-        message.success('Deal created successfully');
       }
 
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Form submission error:', error);
-      message.error('Failed to save deal');
+      // Notifications handled by useCreateDeal/useUpdateDeal hooks
     }
   };
 
-  // ✨ Section card styling
-  const sectionCardStyle = {
-    marginBottom: 20,
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-    borderRadius: 8,
-    border: '1px solid #f0f0f0',
-  };
-
-  const sectionHeaderStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottom: '2px solid #0ea5e9',
-    color: '#1f2937',
-    fontWeight: 600,
-    fontSize: 14,
-  };
-
-  const iconStyle = {
-    marginRight: 8,
-    color: '#0ea5e9',
-    fontSize: 16,
+  // ✨ Professional styling configuration (consistent with other modules)
+  const sectionStyles = {
+    card: {
+      marginBottom: 20,
+      borderRadius: 8,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottom: '2px solid #e5e7eb',
+    },
+    headerIcon: {
+      fontSize: 20,
+      color: '#0ea5e9',
+      marginRight: 10,
+      fontWeight: 600,
+    },
+    headerTitle: {
+      fontSize: 15,
+      fontWeight: 600,
+      color: '#1f2937',
+      margin: 0,
+    },
   };
 
   return (
     <Drawer
-      title={isEditMode ? `Edit Deal - ${deal?.title}` : 'Create New Deal'}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <DollarOutlined style={{ fontSize: 20, color: '#0ea5e9' }} />
+          <span>{isEditMode ? 'Edit Deal' : 'Create New Deal'}</span>
+        </div>
+      }
       placement="right"
-      width={650}
+      width={600}
       onClose={onClose}
-      open={visible}
+      open={open}
+      styles={{ body: { padding: 0, paddingTop: 24 } }}
       footer={
-        <Space style={{ float: 'right', width: '100%', justifyContent: 'flex-end' }}>
-          <Button onClick={onClose}>Cancel</Button>
-          {canSaveDeal && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button
+            size="large"
+            icon={<CloseOutlined />}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          {finalCanSaveDeal && (
             <Button
               type="primary"
+              size="large"
+              icon={<SaveOutlined />}
               onClick={handleSubmit}
               loading={createDeal.isPending || updateDeal.isPending}
             >
               {isEditMode ? 'Update Deal' : 'Create Deal'}
             </Button>
           )}
-        </Space>
+        </div>
       }
     >
       <Form
@@ -375,49 +369,58 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
         layout="vertical"
         requiredMark="optional"
         autoComplete="off"
+        style={{ padding: '0 24px 24px 24px' }}
       >
-        {/* 🎯 Deal Title Section */}
-        <PermissionSection
-          elementPath="crm:sales:deal:form:section.overview"
-          title="Deal Overview"
-          icon={<FileTextOutlined style={{ fontSize: 16, color: '#0ea5e9' }} />}
-        >
-          <Card style={sectionCardStyle}>
-            <div style={sectionHeaderStyle}>
-              <FileTextOutlined style={iconStyle} />
-              Deal Overview
-            </div>
-            <Row gutter={16}>
-              <Col xs={24}>
-                <PermissionField
-                  elementPath="crm:sales:deal:form:field.title"
-                  fieldName="title"
+        {/* 📄 Deal Overview */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <FileTextOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Deal Overview</h3>
+          </div>
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item
+                label="Deal Title"
+                name="title"
+                rules={[
+                  { required: true, message: 'Deal title is required' },
+                  { min: 3, message: 'Deal title must be at least 3 characters' },
+                  { max: 255, message: 'Deal title cannot exceed 255 characters' }
+                ]}
+              >
+                <Input
+                  size="large"
+                  placeholder="e.g., Enterprise SaaS Implementation - Acme Corp"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item
+                label="Deal Type"
+                name="deal_type"
+                rules={[{ required: true, message: 'Deal type is required' }]}
+                tooltip="Select whether this deal is for products or services"
+              >
+                <Select
+                  size="large"
+                  value={dealType}
+                  onChange={(val: 'PRODUCT' | 'SERVICE') => setDealType(val)}
+                  disabled={isEditMode}
                 >
-                  <Form.Item
-                    label="Deal Title"
-                    name="title"
-                    rules={[
-                      { required: true, message: 'Deal title is required' },
-                      { min: 3, message: 'Deal title must be at least 3 characters' },
-                      { max: 255, message: 'Deal title cannot exceed 255 characters' }
-                    ]}
-                  >
-                    <Input
-                      size="large"
-                      placeholder="e.g., Enterprise SaaS Implementation - Acme Corp"
-                    />
-                  </Form.Item>
-                </PermissionField>
-              </Col>
-            </Row>
-          </Card>
-        </PermissionSection>
+                  <Select.Option value="PRODUCT">Product</Select.Option>
+                  <Select.Option value="SERVICE">Service</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
         {/* 👥 Customer Information */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <UserOutlined style={iconStyle} />
-            Customer Information
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <UserOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Customer Information</h3>
           </div>
           
           {selectedCustomer && (
@@ -501,10 +504,10 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
         </Card>
 
         {/* 💰 Financial Information */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <DollarOutlined style={iconStyle} />
-            Financial Information
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <DollarOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Financial Information</h3>
           </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -531,31 +534,14 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Win Probability (%)"
-                name="probability"
-                initialValue={50}
-                rules={[{ type: 'number', message: 'Please enter 0-100' }]}
-                tooltip="Probability of closing this deal successfully"
-              >
-                <InputNumber 
-                  size="large"
-                  min={0} 
-                  max={100} 
-                  style={{ width: '100%' }}
-                  placeholder="50"
-                />
-              </Form.Item>
-            </Col>
           </Row>
         </Card>
 
         {/* 🛒 Products/Services */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <ShoppingCartOutlined style={iconStyle} />
-            Products & Services
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <ShoppingCartOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Products & Services</h3>
           </div>
           
           <div style={{ marginBottom: 16 }}>
@@ -685,49 +671,21 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
           )}
         </Card>
 
-        {/* 📅 Pipeline & Timeline */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <RadarChartOutlined style={iconStyle} />
-            Sales Pipeline & Timeline
+        {/* 📅 Important Dates */}
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <CalendarOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Important Dates</h3>
           </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
-                label="Deal Stage"
-                name="stage"
-                initialValue="lead"
-                rules={[{ required: true, message: 'Stage is required' }]}
-                tooltip="Select the current stage in your sales pipeline"
-              >
-                <Select size="large" loading={loadingStages} placeholder="Select stage" allowClear>
-                  {stages
-                    .filter((stage: any) => stage && stage.id)
-                    .map((stage: any) => {
-                      const config = stageConfig[stage.id?.toLowerCase()] || { emoji: '📌', label: stage.name };
-                      return (
-                        <Select.Option key={stage.id} value={stage.id}>
-                          <span>{config.emoji} {stage.name || stage.id}</span>
-                        </Select.Option>
-                      );
-                    })}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
                 label="Expected Close Date"
                 name="expected_close_date"
-                tooltip="When do you expect to close this deal?"
-              >
-                <DatePicker size="large" style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Actual Close Date"
-                name="actual_close_date"
-                tooltip="When the deal was actually closed (if applicable)"
+                rules={[
+                  { required: true, message: 'Expected close date is required' }
+                ]}
+                tooltip="When do you expect to close this deal? (Required)"
               >
                 <DatePicker size="large" style={{ width: '100%' }} />
               </Form.Item>
@@ -736,9 +694,13 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
               <Form.Item
                 label="Deal Status"
                 name="status"
-                tooltip="Current status of the deal"
+                initialValue="won"
+                rules={[
+                  { required: true, message: 'Status is required' }
+                ]}
+                tooltip="Current status of the deal (won, lost, cancelled)"
               >
-                <Select size="large" placeholder="Select status" allowClear>
+                <Select size="large" placeholder="Select status">
                   {Object.entries(statusConfig).map(([key, config]) => (
                     <Select.Option key={key} value={key}>
                       <span>{config.emoji} {config.label}</span>
@@ -751,10 +713,10 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
         </Card>
 
         {/* 🎯 Campaign & Source */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <BgColorsOutlined style={iconStyle} />
-            Campaign & Source Information
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <TagsOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Campaign & Source Information</h3>
           </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -782,6 +744,7 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                 <Input 
                   size="large"
                   placeholder="e.g., Q1 Enterprise Outreach"
+                  allowClear
                 />
               </Form.Item>
             </Col>
@@ -789,10 +752,10 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
         </Card>
 
         {/* 📝 Tags & Notes */}
-        <Card style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <CheckCircleOutlined style={iconStyle} />
-            Tags & Additional Notes
+        <Card style={sectionStyles.card} variant="borderless">
+          <div style={sectionStyles.header}>
+            <FileTextOutlined style={sectionStyles.headerIcon} />
+            <h3 style={sectionStyles.headerTitle}>Tags & Additional Notes</h3>
           </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -804,6 +767,7 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                 <Input 
                   size="large"
                   placeholder="e.g., urgent, vip, enterprise"
+                  allowClear
                 />
               </Form.Item>
             </Col>
@@ -813,8 +777,18 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                 name="assigned_to"
                 tooltip="Sales representative responsible for this deal"
               >
-                <Select size="large" placeholder="Select team member" allowClear>
-                  {/* TODO: Load from user service */}
+                <Select 
+                  size="large" 
+                  placeholder="Select team member" 
+                  allowClear
+                  loading={usersLoading}
+                  disabled={usersLoading}
+                >
+                  {users.map((user) => (
+                    <Select.Option key={user.id} value={user.id}>
+                      👤 {user.firstName} {user.lastName}
+                    </Select.Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -832,6 +806,7 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                   rows={3}
                   showCount
                   maxLength={1000}
+                  style={{ fontFamily: 'inherit' }}
                 />
               </Form.Item>
             </Col>
@@ -847,6 +822,7 @@ export const DealFormPanel: React.FC<DealFormPanelProps> = ({
                   rows={4}
                   showCount
                   maxLength={2000}
+                  style={{ fontFamily: 'inherit' }}
                 />
               </Form.Item>
             </Col>

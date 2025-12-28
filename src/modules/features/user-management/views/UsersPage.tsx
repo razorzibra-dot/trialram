@@ -7,6 +7,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 import {
   Row,
   Col,
@@ -20,13 +22,12 @@ import {
   Modal,
   Avatar,
   Tooltip,
-  Dropdown,
+  Popconfirm,
   Input,
   message,
   Empty,
   Select,
   DatePicker,
-  type MenuProps,
   type ColumnsType,
   type RangePickerProps
 } from 'antd';
@@ -41,7 +42,7 @@ import {
   PhoneOutlined,
   ClockCircleOutlined,
   LockOutlined,
-  MoreOutlined,
+  EyeOutlined,
   CrownOutlined,
   SafetyOutlined,
   TeamOutlined,
@@ -91,6 +92,11 @@ export const UsersPage: React.FC = () => {
   const { tenants: allTenants } = useTenants();
   const { roles: allRoles } = useUserRoles();
 
+  // ✅ Database-driven dropdowns - no hardcoded values
+  const currentTenant = useCurrentTenant();
+  const { data: userStatuses = [], isLoading: loadingStatuses } = useReferenceDataByCategory(currentTenant?.id, 'user_status');
+  const allStatuses = userStatuses.map(s => s.key as UserStatus);
+
   // State for UI
   const [searchText, setSearchText] = useState('');
   const [filterRole, setFilterRole] = useState<string | undefined>(undefined);
@@ -108,7 +114,6 @@ export const UsersPage: React.FC = () => {
   const updateUser = useUpdateUser(selectedUser?.id || '');
   const deleteUser = useDeleteUser();
   const resetPassword = useResetPassword();
-  const allStatuses: UserStatus[] = ['active', 'inactive', 'suspended'];
 
   // Filter users based on search text and filters
   const filteredUsers = useMemo(() => {
@@ -200,51 +205,33 @@ export const UsersPage: React.FC = () => {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
-        try {
-          await deleteUser.mutateAsync(userId);
-          message.success('User deleted successfully');
-          refetch();
-        } catch (error: unknown) {
-          const error_msg = error instanceof Error ? error.message : 'Failed to delete user';
-          message.error(error_msg);
-        }
+        // Notifications handled by useDeleteUser hook
+        await deleteUser.mutateAsync(userId);
+        refetch();
       }
     });
   };
 
   // Handle reset password
   const handleResetPassword = async (userId: string) => {
-    try {
-      await resetPassword.mutateAsync(userId);
-      message.success('Password reset email sent to user');
-    } catch (error: unknown) {
-      const error_msg = error instanceof Error ? error.message : 'Failed to reset password';
-      message.error(error_msg);
-    }
+    // Notifications handled by useResetPassword hook
+    await resetPassword.mutateAsync(userId);
   };
 
   // Handle form save (create or update)
   const handleFormSave = async (values: CreateUserDTO | UpdateUserDTO) => {
-    try {
-      if (drawerMode === 'edit' && selectedUser) {
-        // Ensure we have a valid user ID before updating
-        if (!selectedUser.id) {
-          message.error('Invalid user ID');
-          return;
-        }
-        // Use the hook with the current selectedUser.id
-        // The hook will be re-created when selectedUser changes due to useMemo
-        await updateUser.mutateAsync(values as UpdateUserDTO);
-        message.success('User updated successfully');
-      } else if (drawerMode === 'create') {
-        await createUser.mutateAsync(values as CreateUserDTO);
-        message.success('User created successfully');
+    if (drawerMode === 'edit' && selectedUser) {
+      if (!selectedUser.id) {
+        // Validation message - user guidance
+        return;
       }
-      closeDrawer();
-    } catch (error: unknown) {
-      const error_msg = error instanceof Error ? error.message : 'Failed to save user';
-      message.error(error_msg);
+      // Notifications handled by useUpdateUser hook
+      await updateUser.mutateAsync(values as UpdateUserDTO);
+    } else if (drawerMode === 'create') {
+      // Notifications handled by useCreateUser hook
+      await createUser.mutateAsync(values as CreateUserDTO);
     }
+    closeDrawer();
   };
 
   // ⚠️ NOTE: These switch cases are for UI display only (icons/colors), not security checks.
@@ -392,18 +379,53 @@ export const UsersPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 100,
+      width: 180,
+      align: 'center',
       render: (_, record) => (
-        <UserActionButtons
-          user={record}
-          canEditUsers={canEditUsers}
-          canDeleteUsers={canDeleteUsers}
-          canResetPasswords={canResetPasswords}
-          handleEdit={handleEdit}
-          handleView={handleView}
-          handleDelete={handleDelete}
-          handleResetPassword={handleResetPassword}
-        />
+        <Space size="small">
+          <Tooltip title="View Profile">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
+          {canEditUsers && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+            </Tooltip>
+          )}
+          {canResetPasswords && (
+            <Tooltip title="Reset Password">
+              <Button
+                type="text"
+                size="small"
+                icon={<LockOutlined />}
+                onClick={() => handleResetPassword(record.id)}
+              />
+            </Tooltip>
+          )}
+          {canDeleteUsers && (
+            <Popconfirm
+              title="Delete User"
+              description={`Are you sure you want to delete user ${record.fullName || record.email}?`}
+              onConfirm={() => handleDelete(record.id)}
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Delete">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          )}
+        </Space>
       )
     }
   ];
@@ -565,6 +587,7 @@ export const UsersPage: React.FC = () => {
                 style={{ width: 150 }}
                 value={filterStatus}
                 onChange={setFilterStatus}
+                loading={loadingStatuses}
                 allowClear
                 options={allStatuses.map(status => ({ 
                   label: status.charAt(0).toUpperCase() + status.slice(1), 
@@ -656,101 +679,3 @@ export const UsersPage: React.FC = () => {
 };
 
 export default UsersPage;
-
-interface UserActionButtonsProps {
-  user: UserDTO;
-  canEditUsers: boolean;
-  canDeleteUsers: boolean;
-  canResetPasswords: boolean;
-  handleEdit: (user: UserDTO) => void;
-  handleView: (user: UserDTO) => void;
-  handleDelete: (userId: string) => void;
-  handleResetPassword: (userId: string) => void;
-}
-
-const UserActionButtons: React.FC<UserActionButtonsProps> = ({
-  user,
-  canEditUsers,
-  canDeleteUsers,
-  canResetPasswords,
-  handleEdit,
-  handleView,
-  handleDelete,
-  handleResetPassword
-}) => {
-  // Use element permissions with fallback to record-level permissions
-  // If element-level permission is true, use it; otherwise fall back to record-level permission
-  const elementEditPermission = usePermission(`crm:user.${user.id}:button.edit`, 'visible');
-  const elementResetPermission = usePermission(`crm:user.${user.id}:button.resetpassword`, 'visible');
-  const elementDeletePermission = usePermission(`crm:user.${user.id}:button.delete`, 'visible');
-  
-  // Element-level permission takes precedence if true, otherwise fall back to record-level
-  const canEditButton = elementEditPermission || canEditUsers;
-  const canResetButton = elementResetPermission || canResetPasswords;
-  const canDeleteButton = elementDeletePermission || canDeleteUsers;
-
-  const menuItems: MenuProps['items'] = [
-    {
-      key: 'view',
-      label: 'View Profile',
-      onClick: () => handleView(user),
-    },
-  ];
-
-  if (canEditButton) {
-    menuItems.push({
-      key: 'edit',
-      label: 'Edit User',
-      icon: <EditOutlined />,
-      onClick: () => handleEdit(user),
-      disabled: !canEditUsers,
-    });
-  }
-
-  if (canResetButton) {
-    menuItems.push({
-      key: 'reset',
-      label: 'Reset Password',
-      icon: <LockOutlined />,
-      onClick: () => handleResetPassword(user.id),
-      disabled: !canResetPasswords,
-    });
-  }
-
-  if (canDeleteButton) {
-    if (menuItems.length > 0) {
-      menuItems.push({ type: 'divider' });
-    }
-    menuItems.push({
-      key: 'delete',
-      label: 'Delete User',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => handleDelete(user.id),
-      disabled: !canDeleteUsers,
-    });
-  }
-
-  const hasMenuActions = menuItems.length > 1 || Boolean(menuItems.find((item) => item.key !== 'view'));
-
-  return (
-    <Space>
-      {canEditUsers && (
-        <Tooltip title="Edit">
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(user)}
-            disabled={!canEditButton}
-          />
-        </Tooltip>
-      )}
-      {hasMenuActions && (
-        <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-          <Button type="text" size="small" icon={<MoreOutlined />} />
-        </Dropdown>
-      )}
-    </Space>
-  );
-};

@@ -180,14 +180,16 @@ class SupabaseReferenceDataService {
   }
 
   /**
-   * Get all active categories
+   * Get all active categories from reference_data table with category='product_category'
+   * Consistency: Uses reference_data table like all other reference types
    * RLS automatically filters by tenant_id via session
    */
   async getCategories(tenantId?: string): Promise<ProductCategory[]> {
     try {
       let query = supabase
-        .from('product_categories')
+        .from('reference_data')
         .select('*')
+        .eq('category', 'product_category')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -198,7 +200,19 @@ class SupabaseReferenceDataService {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data?.map(mapProductCategory) || [];
+      
+      // Map reference_data rows to ProductCategory format
+      return data?.map(row => ({
+        id: row.id,
+        tenantId: row.tenant_id,
+        name: row.label,
+        description: row.description,
+        isActive: row.is_active,
+        sortOrder: row.sort_order,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        createdBy: row.created_by,
+      })) || [];
     } catch (error) {
       console.error('Error getting categories:', error);
       return [];
@@ -556,8 +570,9 @@ class SupabaseReferenceDataService {
         .eq('is_active', true);
 
       let categoriesQuery = supabase
-        .from('product_categories')
+        .from('reference_data')
         .select('*')
+        .eq('category', 'product_category')
         .eq('is_active', true);
 
       let suppliersQuery = supabase
@@ -580,10 +595,23 @@ class SupabaseReferenceDataService {
         suppliersQuery,
       ]);
 
+      // Map reference_data rows to ProductCategory format for categories
+      const categories = categoriesRes.data?.map(row => ({
+        id: row.id,
+        tenantId: row.tenant_id,
+        name: row.label,
+        description: row.description,
+        isActive: row.is_active,
+        sortOrder: row.sort_order,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        createdBy: row.created_by,
+      })) || [];
+
       return {
         statusOptions: statusRes.data?.map(mapStatusOption) || [],
         referenceData: refDataRes.data?.map(mapReferenceData) || [],
-        categories: categoriesRes.data?.map(mapProductCategory) || [],
+        categories,
         suppliers: suppliersRes.data?.map(mapSupplier) || [],
       };
     } catch (error) {

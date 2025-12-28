@@ -131,7 +131,7 @@ export const useConvertLeadToCustomer = () => {
   const { success, error } = useNotification();
 
   return useMutation({
-    mutationFn: async ({ leadId, customerId }: { leadId: string; customerId: string }) => {
+    mutationFn: async ({ leadId, customerId }: { leadId: string; customerId?: string }) => {
       return await leadsService.convertToCustomer(leadId, customerId);
     },
     onSuccess: (convertedLead) => {

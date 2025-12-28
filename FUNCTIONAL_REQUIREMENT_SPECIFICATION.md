@@ -286,53 +286,116 @@ The CRM system is built on a modern, scalable architecture featuring:
 
 ### 4.3 SALES & DEAL MANAGEMENT
 
-#### 4.3.1 Sales Pipeline Management
+#### 4.3.1 Opportunity Pipeline Management
 
 **REQ-SALES-001: Pipeline Configuration**
 - Customizable sales stages configuration
 - Probability assignment per stage
 - Automated stage progression rules
 - Pipeline visualization and reporting
-- Deal conversion tracking
+- Opportunity conversion tracking to Deals
 
-**REQ-SALES-002: Deal Management**
-- Deal creation and management
-- Deal value and probability tracking
+#### 4.3.2 Deal Type Classification & Conversion
+
+**REQ-SALES-002: Deal Type System**
+- Two deal types: `PRODUCT` and `SERVICE`
+- Deal type selection at creation (mandatory)
+- Deal type determines post-close conversion flow
+- Deal type immutable once created
+- Deal type constrains available deal_items (products for PRODUCT deals, services for SERVICE deals)
+
+**REQ-SALES-003: Product Deal Workflow**
+- Deal type = `PRODUCT`
+- Associated with product sales flow
+- When deal is closed (status = 'won'):
+  - Automatically convert to Product Sales Order entry
+  - Create sales_orders record with reference to deal
+  - Trigger inventory tracking and fulfillment workflow
+  - Generate invoice for products sold
+  - Update product inventory levels
+- Deal items must reference products (product_id FK)
+- Support multiple deal items (line-item products)
+- Track stock availability during deal lifecycle
+
+**REQ-SALES-004: Service Deal Workflow**
+- Deal type = `SERVICE`
+- Associated with service contract flow
+- When deal is closed (status = 'won'):
+  - Automatically convert to Service Contract entry
+  - Create service_contracts record with reference to deal
+  - Trigger service delivery planning workflow
+  - Generate contract template based on service specifications
+  - Manage service timelines and SLA tracking
+- Deal items reference services (service catalog items)
+- Single primary service with optional add-ons per deal
+- Support service subscription or one-time engagement models
+
+**REQ-SALES-005: Deal Management**
+- Deal creation with mandatory type selection
+- Deal value tracking (product total price or service fee)
 - Expected close date management
 - Competitor information tracking
 - Deal source and campaign attribution
+- Deal status: `won`, `lost`, `cancelled`
+- Post-close workflow automation based on deal type
+- Win/loss reason tracking
 
-**REQ-SALES-003: Sales Activities**
+**REQ-SALES-006: Deal Items Management**
+- Line items within deals (products or services)
+- For PRODUCT deals:
+  - product_id (FK to products table)
+  - quantity (number of units)
+  - unit_price from product catalog
+  - discount (% or fixed amount)
+  - tax (calculated or fixed)
+  - total_price = (unit_price * quantity * (1 - discount)) + tax
+- For SERVICE deals:
+  - service_id (FK to services or product_services table)
+  - service_type (standard, custom, maintenance, etc.)
+  - duration (months, years, one-time)
+  - unit_price (monthly fee or total fee)
+  - discount applied
+  - tax calculated
+- Validation: deal_items must match deal_type
+
+**REQ-SALES-007: Sales Activities**
 - Activity logging and tracking
 - Follow-up task management
 - Meeting scheduling integration
 - Email and call logging
 - Sales presentation management
+- Activity linked to deal and associated with sales rep
 
-#### 4.3.2 Sales Forecasting
+#### 4.3.3 Sales Forecasting
 
 **REQ-SALES-010: Forecasting Features**
-- Pipeline-based revenue forecasting
+- Pipeline-based revenue forecasting (opportunity-level)
 - Historical trend analysis
 - Seasonal adjustment capabilities
 - Forecast accuracy tracking
-- Multi-scenario planning
+- Deal conversion ratio analysis by type
+- Revenue projection by deal type (products vs services)
 
 **REQ-SALES-011: Sales Analytics**
-- Sales performance metrics
-- Team and individual performance tracking
-- Conversion rate analysis
-- Sales cycle time tracking
+- Sales performance metrics (rep and team-level)
+- Deal conversion rates by type
+- Average deal cycle time
+- Deal value trends
+- Product sales vs service sales split
 - Revenue achievement tracking
+- Win/loss analysis by deal type
 
-#### 4.3.3 Sales Reporting
+#### 4.3.4 Sales Reporting
 
 **REQ-SALES-020: Standard Reports**
-- Pipeline reports (value, quantity, stage)
+- Pipeline reports (opportunities by stage)
+- Deal reports (by type, status, assigned rep)
 - Sales rep performance reports
-- Forecast vs actual reports
+- Deal-to-Order conversion reports (PRODUCT deals)
+- Deal-to-Contract conversion reports (SERVICE deals)
 - Deal loss analysis
 - Customer acquisition reports
+- Revenue reports by deal type
 
 **REQ-SALES-021: Custom Reports**
 - Custom report builder
@@ -340,6 +403,7 @@ The CRM system is built on a modern, scalable architecture featuring:
 - Report sharing and collaboration
 - Dashboard integration
 - Export capabilities (PDF, Excel, CSV)
+- Deal performance dashboards by type
 
 ### 4.4 PRODUCT CATALOG & SALES
 

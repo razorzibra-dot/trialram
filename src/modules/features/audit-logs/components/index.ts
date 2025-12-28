@@ -1,1 +1,1 @@
-export { AuditLogsList } from './AuditLogsList';
+// AuditLogsList removed - LogsPage uses inline Ant Design Table

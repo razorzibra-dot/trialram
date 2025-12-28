@@ -87,22 +87,8 @@ describe('Deals Module - Multi-Tenant Safety', () => {
     });
   });
 
-  describe('Tenant Data Isolation - getDealStages', () => {
-    it('should return stages for specific tenant', async () => {
-      const stages1 = await (mockDealsService as any).getDealStages({
-        tenantId: tenant1Id,
-      });
-
-      const stages2 = await (mockDealsService as any).getDealStages({
-        tenantId: tenant2Id,
-      });
-
-      expect(Array.isArray(stages1)).toBe(true);
-      expect(Array.isArray(stages2)).toBe(true);
-      expect(stages1.length).toBeGreaterThan(0);
-      expect(stages2.length).toBeGreaterThan(0);
-    });
-  });
+  // NOTE: getDealStages test removed - Deals have status (won/lost/cancelled),
+  // not pipeline stages. Pipeline stages belong to Opportunities. See types/crm.ts.
 
   // Bulk Operation Tenant Safety
 

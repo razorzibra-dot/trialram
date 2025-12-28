@@ -40,7 +40,6 @@ const JobWorksPage = lazy(() => import('@/modules/features/jobworks/views/JobWor
 const CustomersPage = lazy(() => import('@/modules/features/customers/views/CustomerListPage'));
 const CompaniesPage = lazy(() => import('@/modules/features/masters/views/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
 const ProductsPage = lazy(() => import('@/modules/features/masters/views/ProductsPage').then(m => ({ default: m.ProductsPage })));
-const ContractsPage = lazy(() => import('@/modules/features/contracts/views/ContractsPage'));
 
 // Lazy load additional modular pages
 const UsersPage = lazy(() => import('@/modules/features/user-management/views/UsersPage'));
@@ -122,9 +121,10 @@ function getModuleNameFromPath(path?: string): string | null {
     'dashboard': 'dashboard',
     'customers': 'customers',
     'deals': 'deals',
+    'leads': 'deals', // Leads share Deals module permissions
     'sales': 'deals', // Backward compatibility: map /sales path to deals module
     'product-sales': 'product-sales',
-    'contracts': 'contracts',
+    'contracts': 'service-contracts', // Alias: contracts → service-contracts module
     'service-contracts': 'service-contracts',
     'products': 'products',
     'tickets': 'tickets',

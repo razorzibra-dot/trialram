@@ -40,4 +40,26 @@ export const serviceContractsRoutes: RouteObject[] = [
       },
     ],
   },
+  // Alias route for backward compatibility: /tenant/contracts → service-contracts
+  {
+    path: 'contracts',
+    children: [
+      {
+        index: true,
+        element: (
+          <RouteWrapper>
+            <ServiceContractsPage />
+          </RouteWrapper>
+        ),
+      },
+      {
+        path: ':id',
+        element: (
+          <RouteWrapper>
+            <ServiceContractDetailPage />
+          </RouteWrapper>
+        ),
+      },
+    ],
+  },
 ];

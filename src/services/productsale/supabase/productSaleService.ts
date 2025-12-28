@@ -27,7 +27,12 @@ class SupabaseProductSaleService {
   ): Promise<ProductSalesResponse> {
     try {
       const tenantId = multiTenantService.getCurrentTenantId();
-      let query = supabaseClient.from('product_sales').select('*', { count: 'exact' });
+      // Use nested select to join customer and product data
+      let query = supabaseClient.from('product_sales').select(`
+        *,
+        customer:customers(id, company_name, contact_name, email, phone),
+        product:products(id, name, sku, price)
+      `, { count: 'exact' });
 
       // Apply tenant filter
       query = addTenantFilter(query, tenantId);
@@ -141,7 +146,11 @@ class SupabaseProductSaleService {
       const { data, error } = await retryQuery(async () =>
         supabaseClient
           .from('product_sales')
-          .select('*')
+          .select(`
+            *,
+            customer:customers(id, company_name, contact_name, email, phone),
+            product:products(id, name, sku, price)
+          `)
           .eq('id', id)
           .eq('tenant_id', tenantId)
           .single()
@@ -165,12 +174,12 @@ class SupabaseProductSaleService {
       const tenantId = multiTenantService.getCurrentTenantId();
       const userId = multiTenantService.getCurrentUserId();
 
-      // Calculate warranty expiry
+      // Calculate warranty expiry from delivery date
       const deliveryDate = new Date(data.delivery_date);
       const warrantyExpiry = new Date(deliveryDate);
       warrantyExpiry.setFullYear(warrantyExpiry.getFullYear() + 1);
 
-      // Determine status
+      // Determine status based on warranty
       const now = new Date();
       let status: 'new' | 'renewed' | 'expired' = 'new';
       if (warrantyExpiry < now) {
@@ -183,6 +192,7 @@ class SupabaseProductSaleService {
         units: data.units,
         cost_per_unit: data.cost_per_unit,
         total_cost: data.units * data.cost_per_unit,
+        // Note: sale_date is NOT a database column - it's derived from created_at on read
         delivery_date: data.delivery_date,
         warranty_expiry: warrantyExpiry.toISOString().split('T')[0],
         status,
@@ -228,10 +238,19 @@ class SupabaseProductSaleService {
 
       if (fetchError || !existing) throw new Error('Product sale not found');
 
-      const updateData: any = {
-        ...data,
+      // Map only valid database columns (excluding attachments which is handled separately)
+      const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString()
       };
+
+      // Only include fields that exist in the database
+      // Note: sale_date is NOT a database column - it's derived from created_at on read
+      if (data.customer_id !== undefined) updateData.customer_id = data.customer_id;
+      if (data.product_id !== undefined) updateData.product_id = data.product_id;
+      if (data.units !== undefined) updateData.units = data.units;
+      if (data.cost_per_unit !== undefined) updateData.cost_per_unit = data.cost_per_unit;
+      if (data.delivery_date !== undefined) updateData.delivery_date = data.delivery_date;
+      if (data.notes !== undefined) updateData.notes = data.notes;
 
       // Recalculate total cost and warranty if necessary
       if (data.units || data.cost_per_unit) {
@@ -496,10 +515,13 @@ class SupabaseProductSaleService {
     return {
       id: row.id,
       customer_id: row.customer_id,
+      customer_name: row.customer?.company_name || row.customer?.contact_name || row.customer_name,
       product_id: row.product_id,
+      product_name: row.product?.name || row.product_name,
       units: row.units,
       cost_per_unit: row.cost_per_unit,
       total_cost: row.total_cost,
+      sale_date: row.sale_date || row.created_at, // Fallback to created_at for backwards compatibility
       delivery_date: row.delivery_date,
       warranty_expiry: row.warranty_expiry,
       status: row.status,

@@ -11,6 +11,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Table, Tag, Space, Button, Popconfirm, Spin, Empty, Tooltip, Checkbox } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import { ProductSale } from '@/types/productSales';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { useProductSalesStore } from '../store/productSalesStore';
 import { useProductSales } from '../hooks/useProductSales';
 import { useDeleteProductSale, useBulkDeleteProductSales } from '../hooks/useDeleteProductSale';
@@ -81,33 +82,6 @@ export const ProductSalesList: React.FC<ProductSalesListProps> = ({
   const permissions = useProductSalesPermissions({ autoLoad: true });
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
-
-  /**
-   * Format currency value
-   */
-  const formatCurrency = useCallback((amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }, []);
-
-  /**
-   * Format date to readable string
-   */
-  const formatDate = useCallback((dateString: string): string => {
-    try {
-      return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(new Date(dateString));
-    } catch {
-      return dateString;
-    }
-  }, []);
 
   /**
    * Get status badge color
@@ -207,39 +181,45 @@ export const ProductSalesList: React.FC<ProductSalesListProps> = ({
           />
         ),
       },
-      // Sale ID
+      // Sale #
       {
         key: 'id',
-        title: 'Sale ID',
+        title: 'Sale #',
         dataIndex: 'id',
-        width: 120,
+        width: 100,
         sorter: true,
         render: (id: string) => (
-          <Tooltip title={id}>
-            <span className="font-mono text-xs">{id.substring(0, 8)}...</span>
+          <Tooltip title={`Full ID: ${id}`}>
+            <span className="font-mono text-xs text-blue-600">#{id.substring(0, 8)}</span>
           </Tooltip>
         ),
       },
-      // Customer ID
+      // Customer Name
       {
-        key: 'customer_id',
+        key: 'customer_name',
         title: 'Customer',
-        dataIndex: 'customer_id',
-        width: 150,
+        dataIndex: 'customer_name',
+        width: 180,
         sorter: true,
-        render: (customerId: string) => (
-          <span className="font-mono text-xs">{customerId.substring(0, 12)}...</span>
+        ellipsis: true,
+        render: (customerName: string, record: ProductSale) => (
+          <Tooltip title={record.customer_id}>
+            <span className="font-medium">{customerName || 'Unknown Customer'}</span>
+          </Tooltip>
         ),
       },
-      // Product ID
+      // Product Name
       {
-        key: 'product_id',
+        key: 'product_name',
         title: 'Product',
-        dataIndex: 'product_id',
-        width: 150,
+        dataIndex: 'product_name',
+        width: 180,
         sorter: true,
-        render: (productId: string) => (
-          <span className="font-mono text-xs">{productId.substring(0, 12)}...</span>
+        ellipsis: true,
+        render: (productName: string, record: ProductSale) => (
+          <Tooltip title={record.product_id}>
+            <span className="font-medium">{productName || 'Unknown Product'}</span>
+          </Tooltip>
         ),
       },
       // Quantity

@@ -15,6 +15,7 @@ import {
   Timeline,
   Space
 } from 'antd';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import type { ColumnsType } from 'antd/es/table';
 import {
   LineChart,
@@ -50,23 +51,6 @@ interface ProductSalesAnalyticsDashboardProps {
 }
 
 const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96'];
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(amount);
-};
-
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-};
 
 export const ProductSalesAnalyticsDashboard: React.FC<ProductSalesAnalyticsDashboardProps> = ({
   analytics,
@@ -132,17 +116,19 @@ export const ProductSalesAnalyticsDashboard: React.FC<ProductSalesAnalyticsDashb
       title: 'Sale #',
       dataIndex: 'id',
       key: 'id',
-      render: (text: string) => <strong>{text}</strong>
+      render: (text: string) => <strong>#{text?.substring(0, 8)}</strong>
     },
     {
-      title: 'Customer ID',
-      dataIndex: 'customer_id',
-      key: 'customer_id'
+      title: 'Customer',
+      dataIndex: 'customer_name',
+      key: 'customer_name',
+      render: (text: string) => text || 'N/A'
     },
     {
-      title: 'Product ID',
-      dataIndex: 'product_id',
-      key: 'product_id'
+      title: 'Product',
+      dataIndex: 'product_name',
+      key: 'product_name',
+      render: (text: string) => text || 'N/A'
     },
     {
       title: 'Warranty Expires',

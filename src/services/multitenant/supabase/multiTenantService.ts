@@ -98,16 +98,11 @@ class MultiTenantService {
         return null;
       }
 
-      // Check if user is a super admin by querying user_roles
-      const { data: userRoles, error: roleError } = await supabaseClient
-        .from('user_roles')
-        .select(`
-          roles!inner(name)
-        `)
-        .eq('user_id', userId)
-        .eq('roles.name', 'super_admin');
-
-      const isSuperAdmin = !roleError && userRoles && userRoles.length > 0;
+      // Check if user is a super admin using cached auth data instead of database query
+      // This avoids duplicate API calls since user data is already cached during login
+      const { authService } = await import('@/services/serviceFactory');
+      const currentUser = authService.getCurrentUser();
+      const isSuperAdmin = currentUser?.isSuperAdmin === true || currentUser?.role === 'super_admin';
 
       // ⭐ CRITICAL: Check if user is a super admin (tenant_id = null or has super_admin role)
       if (user.tenant_id === null || isSuperAdmin) {

@@ -3,15 +3,6 @@
  * Central export point for customer module
  */
 
-// Store exports
-export { 
-  useCustomerStore, 
-  useCustomerFilters, 
-  useCustomerPagination,
-  useCustomerSelection
-} from './store/customerStore';
-export type { CustomerFilters, CustomerState } from './store/customerStore';
-
 // Service type exports only
 export type { 
   CreateCustomerData, 
@@ -36,6 +27,8 @@ export {
 // Routes
 export { customerRoutes } from './routes';
 import { customerRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { customerService } from '@/services/serviceFactory';
 
 // Module configuration
 export const customerModule = {
@@ -52,12 +45,8 @@ export const customerModule = {
     });
     
     try {
-      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { CustomerService } = await import('./services/customerService');
-      
-      // Register layered customer service (which internally routes via service factory)
-      registerServiceInstance('customerService', new CustomerService());
-      
+      // Register factory-backed customer service once
+      registerServiceInstance('customerService', customerService);
       console.log('[customerModule.initialize] Customer module initialized successfully', {
         timestamp: new Date().toISOString()
       });
@@ -73,11 +62,8 @@ export const customerModule = {
   
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-    
     // Remove customer service
     serviceContainer.remove('customerService');
-    
     console.log('Customer module cleaned up');
   },
 };

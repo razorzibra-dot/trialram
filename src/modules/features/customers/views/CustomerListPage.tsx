@@ -1,905 +1,961 @@
 /**
- * Customer List Page - Enterprise Design
- * Main page for displaying and managing customers
- * Unified grid control with side drawer panels for CRUD operations
+ * Customer List Page - Enterprise Design (Matching Lead Module)
+ * Comprehensive customer listing with filtering, sorting, and bulk operations
+ * ✨ Exact styling match with Lead module for consistency
  */
 
-import React, { useState, useRef } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, Tooltip, Empty, Modal, Checkbox, Alert, Upload, Spin, message } from 'antd';
+import React, { useState, useMemo } from 'react';
+import {
+  Input,
+  Select,
+  Space,
+  Button,
+  Tag,
+  Tooltip,
+  Empty,
+  Row,
+  Col,
+  Card,
+  Typography,
+  Dropdown,
+  Divider,
+  Checkbox,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ClearOutlined, DeleteFilled, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
-import { Users, Mail, Phone } from 'lucide-react';
-import { PageHeader, StatCard } from '@/components/common';
-import { CustomerDetailPanel } from '../components/CustomerDetailPanel';
-import { CustomerFormPanel } from '../components/CustomerFormPanel';
+import type { MenuProps } from 'antd';
+import {
+  SearchOutlined,
+  EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  PlusOutlined,
+  MoreOutlined,
+  GlobalOutlined,
+  HomeOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  TagOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import { Trash2 } from 'lucide-react';
 import { Customer } from '@/types/crm';
-import { CustomerFilters, CustomerStats } from '../services/customerService';
-import { useCustomers, useDeleteCustomer, useCustomerStats, useCustomerExport, useCustomerImport } from '../hooks/useCustomers';
-import { useActiveUsers } from '@/hooks/useActiveUsers'; // Shared hook for all modules
 import { useAuth } from '@/contexts/AuthContext';
+import { CUSTOMER_PERMISSIONS } from '../constants/permissions';
+import { useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers';
 import { useReferenceDataByCategory } from '@/hooks/useReferenceDataOptions';
 import { useCurrentTenant } from '@/hooks/useCurrentTenant';
+import { useAssignedToOptions } from '@/hooks/useAssignedToOptions';
+import { formatDate } from '@/utils/formatters';
+import CustomerFormDrawer from '../components/CustomerFormDrawer';
+import CustomerDetailDrawer from '../components/CustomerDetailDrawer';
+import { useConfirmDelete } from '@/components/modals/useConfirmDelete';
+import { PageHeader, StatsGrid, RefreshButton, PageLoader, AccessDenied, EnterpriseTable } from '@/components/common';
+import { useModuleData } from '@/contexts/ModuleDataContext';
+import { useEntityMutationWithRefresh } from '@/hooks/useEntityMutationWithRefresh';
+import { useTableSelection } from '@/hooks/useTableSelection';
+import { useBatchDelete } from '@/hooks/useBatchDelete';
+import { BatchActionsToolbar } from '@/components/common/BatchActionsToolbar';
+import { ImportExportToolbar } from '@/components/common/ImportExportToolbar';
+import { useExport, type ExportColumn } from '@/hooks/useExport';
+import { useImport, type ImportColumn } from '@/hooks/useImport';
+import { useService } from '@/modules/core/hooks/useService';
 
+const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
-const CustomerListPage: React.FC = () => {
+const statusColors: Record<string, string> = {
+  active: 'green',
+  inactive: 'red',
+  prospect: 'blue',
+  suspended: 'orange',
+};
+
+interface CustomerListPageEnhancedProps {
+  onViewCustomer?: (customer: Customer) => void;
+  onEditCustomer?: (customer: Customer) => void;
+  onCreateCustomer?: () => void;
+}
+
+export const CustomerListPageEnhanced: React.FC<CustomerListPageEnhancedProps> = ({
+  onViewCustomer,
+  onEditCustomer,
+  onCreateCustomer
+}) => {
   const { hasPermission } = useAuth();
-  const [filters, setFilters] = useState<Partial<CustomerFilters>>({
-    page: 1,
-    pageSize: 20,
-  });
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [industryFilter, setIndustryFilter] = useState<string>('');
-  const [sizeFilter, setSizeFilter] = useState<string>('');
-  const [assignedFilter, setAssignedFilter] = useState<string>('');
-  
-  // Drawer states
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'view' | null>(null);
-
-  // Bulk operations states
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-
-  // Export/Import states
-  const [isExportModalVisible, setIsExportModalVisible] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
-  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreviewData, setImportPreviewData] = useState<any[]>([]);
-  const [showImportPreview, setShowImportPreview] = useState(false);
-  const [importResults, setImportResults] = useState<any>(null);
-
-  // Queries
-  const {
-    data: customerResponse,
-    isLoading: customersLoading,
-    refetch
-  } = useCustomers(filters as CustomerFilters);
-  const customers = customerResponse?.data || [];
-  const pagination = customerResponse
-    ? {
-        page: customerResponse.page,
-        pageSize: customerResponse.pageSize,
-        total: customerResponse.total,
-        totalPages: customerResponse.totalPages,
-      }
-    : {
-        page: filters.page ?? 1,
-        pageSize: filters.pageSize ?? 20,
-        total: 0,
-        totalPages: 0,
-      };
-  const deleteCustomer = useDeleteCustomer();
-  const exportCustomers = useCustomerExport();
-  const importCustomers = useCustomerImport();
-  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useCustomerStats();
-  
-  // Fetch dynamic dropdown data using consistent pattern
   const currentTenant = useCurrentTenant();
   const tenantId = currentTenant?.id;
-  const { options: industryOptions } = useReferenceDataByCategory(tenantId, 'industry');
-  const { options: companySizeOptions } = useReferenceDataByCategory(tenantId, 'company_size');
-  const { data: users = [] } = useActiveUsers();
+  const { data: moduleData, isLoading: moduleLoading, error, refresh } = useModuleData();
+  const customerService = useService('customerService') as any; // Service with batchDelete method
 
-  // Real stats from service
-  const defaultStats: CustomerStats = {
-    totalCustomers: 0,
-    activeCustomers: 0,
-    inactiveCustomers: 0,
-    prospectCustomers: 0,
-    byIndustry: {},
-    bySize: {},
-    byStatus: {},
-    recentlyAdded: 0,
-  };
-  const stats: CustomerStats = statsData ?? defaultStats;
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [industryFilter, setIndustryFilter] = useState<string>('all');
+  const [sizeFilter, setSizeFilter] = useState<string>('all');
+  const [assignedToFilter, setAssignedToFilter] = useState<string>('all');
 
-  const handleRefresh = () => {
-    refetch();
-    refetchStats();
-    message.success('Data refreshed successfully');
-  };
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const handleCreate = () => {
-    setSelectedCustomer(null);
-    setDrawerMode('create');
-  };
+  const canUpdate = hasPermission(CUSTOMER_PERMISSIONS.UPDATE);
+  const canDelete = hasPermission(CUSTOMER_PERMISSIONS.DELETE);
+  const canCreate = hasPermission(CUSTOMER_PERMISSIONS.CREATE);
+  const canRead = hasPermission(CUSTOMER_PERMISSIONS.VIEW);
 
-  const handleEdit = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setDrawerMode('edit');
-  };
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  const handleView = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setDrawerMode('view');
-  };
+  // Ensure current page stays within valid range when data changes (e.g., after deletions)
+  // Moved below filteredCustomers definition to avoid temporal dead zone
 
-  const handleDelete = async (customer: Customer) => {
-    // Notifications handled by useDeleteCustomer hook
-    await deleteCustomer.mutateAsync(customer.id);
-    refetch();
-  };
+  // Queries and mutations
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
+  const { confirmDelete } = useConfirmDelete();
+  
+  // Use generic mutation handler with automatic refresh
+  const { handleCreate, handleUpdate, handleDelete: handleDeleteMutation } = useEntityMutationWithRefresh({
+    createMutation: createCustomer,
+    updateMutation: updateCustomer,
+    deleteMutation: deleteCustomer,
+    refresh,
+    entityName: 'Customer',
+  });
 
-  const handleBulkDelete = async () => {
-    if (!hasPermission('crm:customer:record:delete')) {
-      message.error('You do not have permission to delete customers');
-      return;
+  // Reference data
+  const { options: statusOptionsRef, isLoading: loadingStatus } = useReferenceDataByCategory(tenantId, 'customer_status');
+  const { options: industryOptionsRef, isLoading: loadingIndustry } = useReferenceDataByCategory(tenantId, 'industry');
+  const { options: sizeOptionsRef, isLoading: loadingSizes } = useReferenceDataByCategory(tenantId, 'company_size');
+  const { options: typeOptionsRef, isLoading: loadingTypes } = useReferenceDataByCategory(tenantId, 'customer_type');
+  const assignedToOptions = useAssignedToOptions('customers');
+  const customersResponse = moduleData?.moduleData?.customers;
+  
+  const customersList = useMemo(() => {
+    if (!customersResponse) return [] as Customer[];
+    if (Array.isArray(customersResponse)) return customersResponse as Customer[];
+    if (typeof customersResponse === 'object' && 'data' in customersResponse) {
+      return (customersResponse as { data?: Customer[] }).data || [];
     }
+    return [] as Customer[];
+  }, [customersResponse]);
 
-    const customersToDelete = customers?.filter(c => selectedRowKeys.includes(c.id)) || [];
-    
-    Modal.confirm({
-      title: 'Bulk Delete Customers',
-      icon: <DeleteFilled />,
-      content: (
-        <div>
-          <p>Are you sure you want to delete <strong>{selectedRowKeys.length}</strong> customer(s)?</p>
-          {customersToDelete.length > 0 && (
-            <div style={{ marginTop: 16, maxHeight: 200, overflowY: 'auto' }}>
-              <p style={{ fontSize: 12, color: '#8c8c8c' }}>Selected customers:</p>
-              {customersToDelete.map(c => (
-                <div key={c.id} style={{ fontSize: 12, padding: '4px 0' }}>
-                  • {c.company_name}
-                </div>
-              ))}
-            </div>
-          )}
-          <Alert 
-            message="This action cannot be undone"
-            type="warning"
-            style={{ marginTop: 16 }}
-            showIcon
-          />
-        </div>
-      ),
-      okText: 'Delete',
-      okButtonProps: { danger: true },
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          setIsBulkDeleting(true);
-          const failedIds: string[] = [];
-          
-          for (const customerId of selectedRowKeys as string[]) {
-            try {
-              await deleteCustomer.mutateAsync(customerId);
-            } catch (error) {
-              failedIds.push(customerId);
-            }
-          }
-          
-          if (failedIds.length === 0) {
-            message.success(`Successfully deleted ${selectedRowKeys.length} customer(s)`);
-            setSelectedRowKeys([]);
-            refetch();
-          } else {
-            message.warning(`Deleted ${selectedRowKeys.length - failedIds.length} customer(s), but ${failedIds.length} failed`);
-            setSelectedRowKeys(failedIds as React.Key[]);
-            refetch();
-          }
-        } catch (error) {
-          message.error('Failed to bulk delete customers');
-        } finally {
-          setIsBulkDeleting(false);
-        }
-      },
+  // Apply filters to compute visible customers
+  const filteredCustomers = useMemo(() => {
+    const normalize = (val?: string) => (val || '').toLowerCase().trim();
+    const search = normalize(searchText);
+    const statusFilterNorm = normalize(statusFilter);
+    const industryFilterNorm = normalize(industryFilter);
+    const sizeFilterNorm = normalize(sizeFilter);
+    const assignedFilter = assignedToFilter;
+
+    return customersList.filter((customer) => {
+      const company = normalize(customer.companyName);
+      const contact = normalize(customer.contactName);
+      const email = normalize(customer.email);
+      const status = normalize(customer.status);
+      const industry = normalize(customer.industry);
+      const size = normalize(customer.size);
+
+      const matchesSearch = search.length === 0
+        || company.includes(search)
+        || contact.includes(search)
+        || email.includes(search);
+
+      const matchesStatus = statusFilterNorm === 'all' || status === statusFilterNorm;
+      const matchesIndustry = industryFilterNorm === 'all' || industry === industryFilterNorm;
+      const matchesSize = sizeFilterNorm === 'all' || size === sizeFilterNorm;
+      const matchesAssignedTo = assignedFilter === 'all' || (customer.assignedTo as string | undefined) === assignedFilter;
+
+      return matchesSearch && matchesStatus && matchesIndustry && matchesSize && matchesAssignedTo;
     });
-  };
+  }, [customersList, searchText, statusFilter, industryFilter, sizeFilter, assignedToFilter]);
 
-  // Export handler
-  const handleExport = async () => {
-    if (!hasPermission('crm:customer:record:read')) {
-      message.error('You do not have permission to export customers');
-      return;
-    }
+  // Table selection hook
+  const {
+    selectedIds,
+    selectedCount,
+    isSelected,
+    toggleSelection,
+    toggleAll,
+    clearSelection,
+    isAllSelected,
+    isPartiallySelected,
+  } = useTableSelection<Customer>({
+    items: filteredCustomers,
+    getId: (customer) => customer.id,
+    disabled: moduleLoading,
+  });
 
-    try {
-      await exportCustomers.mutateAsync(exportFormat);
-      setIsExportModalVisible(false);
-      message.success(`Customers exported successfully as ${exportFormat.toUpperCase()}`);
-    } catch (error) {
-      message.error('Failed to export customers');
-    }
-  };
+  // Batch delete hook
+  const { batchDelete, isDeleting, progress } = useBatchDelete<Customer>({
+    service: customerService,
+    entityName: 'customer',
+    entityNamePlural: 'customers',
+    onSuccess: async () => {
+      clearSelection();
+      await refresh();
+    },
+  });
 
-  // Import handlers
-  const handleImportFileSelect = (file: File) => {
-    setImportFile(file);
-    
-    // Read file to preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        if (file.name.endsWith('.json')) {
-          const data = JSON.parse(content);
-          const preview = Array.isArray(data) ? data.slice(0, 5) : [data];
-          setImportPreviewData(preview);
-        } else if (file.name.endsWith('.csv')) {
-          // Simple CSV preview - first 5 lines
-          const lines = content.split('\n').slice(0, 6);
-          setImportPreviewData(lines.map((line, idx) => ({ row: idx, data: line })));
+  // Export configuration
+  const exportColumns: ExportColumn[] = useMemo(() => [
+    { field: 'companyName', header: 'Company Name' },
+    { field: 'contactName', header: 'Contact Name' },
+    { field: 'email', header: 'Email' },
+    { field: 'phone', header: 'Phone' },
+    { field: 'mobile', header: 'Mobile' },
+    { field: 'status', header: 'Status' },
+    { field: 'industry', header: 'Industry' },
+    { field: 'size', header: 'Company Size' },
+    { field: 'website', header: 'Website' },
+    { field: 'address', header: 'Address' },
+    { field: 'city', header: 'City' },
+    { field: 'state', header: 'State' },
+    { field: 'country', header: 'Country' },
+    { field: 'postalCode', header: 'Postal Code' },
+    {
+      field: 'createdAt',
+      header: 'Created Date',
+      transform: (value) => value ? formatDate(value) : '',
+    },
+  ], []);
+
+  // Export hook
+  const { exportData, isExporting } = useExport({
+    entityName: 'Customers',
+    columns: exportColumns,
+    onSuccess: () => {
+      // Optionally clear selection after export
+    },
+  });
+
+  // Import configuration
+  const importColumns: ImportColumn[] = useMemo(() => [
+    {
+      field: 'companyName',
+      csvHeader: 'Company Name',
+      required: true,
+      validate: (value) => {
+        if (!value || value.length < 2) {
+          return 'Company name must be at least 2 characters';
         }
-        setShowImportPreview(true);
-      } catch (error) {
-        message.error('Invalid file format');
-        setImportFile(null);
-      }
+        return null;
+      },
+    },
+    {
+      field: 'contactName',
+      csvHeader: 'Contact Name',
+    },
+    {
+      field: 'email',
+      csvHeader: 'Email',
+      required: true,
+      validate: (value) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return 'Invalid email format';
+        }
+        return null;
+      },
+    },
+    {
+      field: 'phone',
+      csvHeader: 'Phone',
+    },
+    {
+      field: 'mobile',
+      csvHeader: 'Mobile',
+    },
+    {
+      field: 'status',
+      csvHeader: 'Status',
+      transform: (value) => value?.toLowerCase() || 'active',
+      validate: (value) => {
+        const validStatuses = ['active', 'inactive', 'prospect', 'suspended'];
+        if (!validStatuses.includes(value)) {
+          return `Status must be one of: ${validStatuses.join(', ')}`;
+        }
+        return null;
+      },
+    },
+    {
+      field: 'industry',
+      csvHeader: 'Industry',
+    },
+    {
+      field: 'size',
+      csvHeader: 'Company Size',
+    },
+    {
+      field: 'website',
+      csvHeader: 'Website',
+    },
+    {
+      field: 'address',
+      csvHeader: 'Address',
+    },
+    {
+      field: 'city',
+      csvHeader: 'City',
+    },
+    {
+      field: 'state',
+      csvHeader: 'State',
+    },
+    {
+      field: 'country',
+      csvHeader: 'Country',
+    },
+    {
+      field: 'postalCode',
+      csvHeader: 'Postal Code',
+    },
+  ], []);
+
+  // Import hook
+  const { importData, isImporting, progress: importProgress } = useImport({
+    entityName: 'Customer',
+    service: customerService,
+    columns: importColumns,
+    onSuccess: async (result) => {
+      await refresh();
+    },
+  });
+
+  // Handle export
+  const handleExport = (format: 'csv' | 'excel' | 'json', scope: 'selected' | 'filtered' | 'all') => {
+    let dataToExport: Customer[] = [];
+    
+    if (scope === 'selected' && selectedCount > 0) {
+      dataToExport = customersList.filter(c => selectedIds.includes(c.id));
+    } else if (scope === 'filtered') {
+      dataToExport = filteredCustomers;
+    } else {
+      dataToExport = customersList;
+    }
+
+    void exportData(dataToExport, format);
+  };
+
+  // Handle import
+  const handleImport = async (file: File) => {
+    await importData(file);
+  };
+
+  const stats = useMemo(() => {
+    const totalCustomers = customersList.length;
+    const activeCustomers = customersList.filter(c => c.status === 'active').length;
+    const inactiveCustomers = customersList.filter(c => c.status === 'inactive').length;
+    const prospectCustomers = customersList.filter(c => c.status === 'prospect').length;
+    return {
+      totalCustomers,
+      activeCustomers,
+      inactiveCustomers,
+      prospectCustomers,
     };
-    reader.readAsText(file);
-    
-    return false; // Prevent default upload behavior
-  };
+  }, [customersList]);
 
-  const handleImportConfirm = async () => {
-    if (!importFile) {
-      message.error('Please select a file to import');
-      return;
-    }
-
-    if (!hasPermission('crm:customer:record:create')) {
-      message.error('You do not have permission to import customers');
-      return;
-    }
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const content = e.target?.result as string;
-          const result = await importCustomers.mutateAsync(content);
-          
-          setImportResults(result);
-          setShowImportPreview(false);
-          
-          if (result.errors && result.errors.length > 0) {
-            message.warning(
-              `Import completed: ${result.success} imported, ${result.errors.length} failed`
-            );
-          } else {
-            message.success('Customers imported successfully');
-          }
-          
-          // Refresh the table
-          refetch();
-          setIsImportModalVisible(false);
-          setImportFile(null);
-        } catch (error) {
-          message.error('Failed to import customers');
-        }
-      };
-      reader.readAsText(importFile);
-    } catch (error) {
-      message.error('Failed to process import file');
-    }
-  };
-
-  const handleImportCancel = () => {
-    setIsImportModalVisible(false);
-    setImportFile(null);
-    setImportPreviewData([]);
-    setShowImportPreview(false);
-    setImportResults(null);
-  };
+  const statusOptions = statusOptionsRef.length ? statusOptionsRef : [
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+    { label: 'Prospect', value: 'prospect' },
+  ];
 
   const handleSearch = (value: string) => {
     setSearchText(value);
-    setFilters({ ...filters, search: value, page: 1 });
   };
 
   const handleStatusFilterChange = (value: string) => {
     setStatusFilter(value);
-    const statusValue: 'active' | 'inactive' | 'prospect' | undefined = value === 'all' ? undefined : (value as 'active' | 'inactive' | 'prospect');
-    setFilters({ ...filters, status: statusValue, page: 1 });
   };
 
   const handleIndustryFilterChange = (value: string) => {
     setIndustryFilter(value);
-    setFilters({ ...filters, industry: value || undefined, page: 1 });
   };
 
   const handleSizeFilterChange = (value: string) => {
     setSizeFilter(value);
-    setFilters({ ...filters, size: value || undefined, page: 1 });
   };
 
-  const handleAssignedFilterChange = (value: string) => {
-    setAssignedFilter(value);
-    setFilters({ ...filters, assignedTo: value || undefined, page: 1 });
+  const handleAssignedToFilterChange = (value: string) => {
+    setAssignedToFilter(value);
   };
 
-  const handleClearFilters = () => {
-    setSearchText('');
-    setStatusFilter('all');
-    setIndustryFilter('');
-    setSizeFilter('');
-    setAssignedFilter('');
-    setSelectedRowKeys([]);
-    setFilters({ page: 1, pageSize: 20 });
+  const handleDelete = async (customer: Customer) => {
+    await handleDeleteMutation(customer.id);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'green';
-      case 'inactive': return 'default';
-      case 'prospect': return 'blue';
-      default: return 'default';
+  const handleCreateCustomer = () => {
+    setSelectedCustomer(null);
+    setIsEditMode(false);
+    setIsFormOpen(true);
+    onCreateCustomer?.();
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsEditMode(true);
+    setIsFormOpen(true);
+    onEditCustomer?.(customer);
+  };
+
+  const handleViewCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDetailOpen(true);
+    onViewCustomer?.(customer);
+  };
+
+  const handleFormSubmit = async (values: Record<string, unknown>) => {
+    try {
+      if (isEditMode && selectedCustomer) {
+        await handleUpdate(selectedCustomer.id, values as any);
+      } else {
+        await handleCreate(values as any);
+      }
+      
+      // Close form AFTER refresh completes
+      setIsFormOpen(false);
+    } catch (error) {
+      // Keep form open on error so user can retry
     }
   };
 
+  const getStatusColor = (status: string) => statusColors[status] || 'default';
+
   // Table columns
   const columns: ColumnsType<Customer> = [
+    // Checkbox column for batch selection
     {
-      title: 'Customer',
-      key: 'company_name',
-      dataIndex: 'company_name',
-      width: 250,
-      render: (text, record) => (
-        <div>
-          <div style={{ fontWeight: 500, marginBottom: 4 }}>{text}</div>
-          <div style={{ fontSize: 12, color: '#8c8c8c' }}>{record.contact_name}</div>
+      title: (
+        <Checkbox
+          checked={isAllSelected}
+          indeterminate={isPartiallySelected}
+          onChange={toggleAll}
+          disabled={moduleLoading || !canDelete}
+        />
+      ),
+      key: 'selection',
+      width: 50,
+      align: 'center' as const,
+      render: (_, record) => (
+        <Checkbox
+          checked={isSelected(record)}
+          onChange={() => toggleSelection(record)}
+          disabled={moduleLoading || !canDelete}
+        />
+      ),
+    },
+    {
+      title: 'Company',
+      key: 'companyName',
+      dataIndex: 'companyName',
+      width: 220,
+      sorter: true,
+      render: (_, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserOutlined style={{ color: '#1890ff', fontSize: 16 }} />
+          <div>
+            <div style={{ fontWeight: 600, color: '#1f2937' }}>
+              {record.companyName}
+            </div>
+            {record.contactName && (
+              <div style={{ fontSize: 12, color: '#6b7280' }}>
+                {record.contactName}
+              </div>
+            )}
+          </div>
         </div>
       ),
     },
     {
       title: 'Contact',
       key: 'contact',
+      dataIndex: 'email',
       width: 200,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          {record.email && (
-            <div style={{ fontSize: 12, display: 'flex', alignItems: 'center' }}>
-              <Mail size={12} style={{ marginRight: 6 }} />
-              {record.email}
-            </div>
-          )}
-          {record.phone && (
-            <div style={{ fontSize: 12, color: '#8c8c8c', display: 'flex', alignItems: 'center' }}>
-              <Phone size={12} style={{ marginRight: 6 }} />
-              {record.phone}
-            </div>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: 'Industry',
-      key: 'industry',
-      dataIndex: 'industry',
-      width: 120,
-      render: (industry) => (
-        <Tag color="blue">{industry || 'Not specified'}</Tag>
-      ),
-    },
-    {
-      title: 'Company Size',
-      key: 'size',
-      dataIndex: 'size',
-      width: 110,
-      render: (size) => (
-        <Tag color="purple">{size || 'Not specified'}</Tag>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+            <MailOutlined style={{ color: '#1890ff' }} />
+            <span style={{ fontSize: 12 }}>{record.email || '-'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <PhoneOutlined style={{ color: '#52c41a' }} />
+            <span style={{ fontSize: 12 }}>{record.phone || record.mobile || '-'}</span>
+          </div>
+        </div>
       ),
     },
     {
       title: 'Status',
       key: 'status',
       dataIndex: 'status',
-      width: 100,
-      render: (status) => (
+      width: 120,
+      filters: statusOptions.map(o => ({ text: o.label, value: o.value as string })),
+      onFilter: (value, record) => record.status === value,
+      render: (status: string) => (
         <Tag color={getStatusColor(status)}>
-          {status?.toUpperCase()}
+          {status?.replace('_', ' ').toUpperCase()}
         </Tag>
+      ),
+      sorter: true,
+    },
+    {
+      title: 'Industry',
+      key: 'industry',
+      dataIndex: 'industry',
+      width: 140,
+      render: (industry: string) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <GlobalOutlined style={{ color: '#6366f1' }} />
+          {industry || '-'}
+        </span>
+      ),
+    },
+    {
+      title: 'Company Size',
+      key: 'size',
+      dataIndex: 'size',
+      width: 130,
+      render: (size: string) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <HomeOutlined style={{ color: '#f59e0b' }} />
+          {size || '-'}
+        </span>
       ),
     },
     {
       title: 'Assigned To',
-      key: 'assigned_to',
-      dataIndex: 'assigned_to',
-      width: 130,
-      render: (assignedTo: string) => (
-        <span>{assignedTo ? users.find(u => u.id === assignedTo)?.firstName : 'Unassigned'}</span>
-      ),
+      key: 'assignedTo',
+      dataIndex: 'assignedTo',
+      width: 160,
+      render: (_: string, record) => {
+        const id = record.assignedTo as string | undefined;
+        const friendly = assignedToOptions.labelMap[id || ''] || (record as any).assignedToName;
+        return (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <TeamOutlined />
+            {friendly || id || 'Unassigned'}
+          </span>
+        );
+      },
     },
     {
-      title: 'Created',
-      key: 'created_at',
-      dataIndex: 'created_at',
-      width: 120,
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+      title: 'Last Contact',
+      key: 'lastContactDate',
+      dataIndex: 'lastContactDate',
+      width: 140,
+      render: (date: string) => {
+        if (!date) return '-';
+        return formatDate(date);
+      },
+      sorter: true,
+    },
+    {
+      title: 'Next Follow-up',
+      key: 'nextFollowUpDate',
+      dataIndex: 'nextFollowUpDate',
+      width: 160,
+      render: (date: string) => {
+        if (!date) return '-';
+        const followUpDate = new Date(date);
+        const now = new Date();
+        const isOverdue = followUpDate < now;
+
+        return (
+          <Tooltip title={formatDate(date)}>
+            <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>
+              {formatDate(date)}
+              {isOverdue && ' (Overdue)'}
+            </span>
+          </Tooltip>
+        );
+      },
+      sorter: true,
     },
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 160,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Details">
+      fixed: 'right' as const,
+      width: 80,
+      align: 'center' as const,
+      render: (_, record) => {
+        const menuItems: MenuProps['items'] = [] as MenuProps['items'];
+
+        menuItems.push({
+          key: 'view',
+          icon: <EyeOutlined />,
+          label: 'View Details',
+          onClick: () => handleViewCustomer(record),
+        });
+
+        if (canUpdate) {
+          menuItems.push({
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: 'Edit Customer',
+            onClick: () => handleEditCustomer(record),
+          });
+          menuItems.push({ type: 'divider' } as MenuProps['items'][number]);
+        }
+
+        if (canDelete) {
+          menuItems.push({
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: 'Delete Customer',
+            danger: true,
+            onClick: async () => {
+              const confirmed = await confirmDelete({
+                title: 'Delete Customer',
+                description: `Are you sure you want to delete "${record.companyName}"? This action cannot be undone.`,
+                okText: 'Delete',
+                cancelText: 'Cancel',
+              });
+              if (confirmed) {
+                await handleDelete(record);
+              }
+            },
+          });
+        }
+
+        return (
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
             <Button
               type="text"
               size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
+              icon={<MoreOutlined style={{ fontSize: 16 }} />}
             />
-          </Tooltip>
-          {hasPermission('crm:customer:record:update') && (
-            <Tooltip title="Edit">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
-          )}
-          {hasPermission('crm:customer:record:delete') && (
-            <Popconfirm
-              title="Delete Customer"
-              description={`Are you sure you want to delete "${record.company_name}"?`}
-              onConfirm={() => handleDelete(record)}
-              okText="Delete"
-              cancelText="Cancel"
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title="Delete">
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                />
-              </Tooltip>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+          </Dropdown>
+        );
+      },
     },
   ];
 
+
+  // Auto-correct pagination when filtered data length changes (e.g., after deleting last page items)
+  React.useEffect(() => {
+    const total = filteredCustomers.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (page > totalPages) {
+      setPage(totalPages);
+    } else if (page < 1) {
+      setPage(1);
+    }
+  }, [filteredCustomers.length, pageSize, page]);
+
+  const pagedCustomers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredCustomers.slice(start, end);
+  }, [filteredCustomers, page, pageSize]);
+
+  // Loading state
+  if (moduleLoading) {
+    return <PageLoader message="Loading customers..." tip="Fetching customer data and statistics" />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <AccessDenied
+        variant="result"
+        title="Error Loading Customers"
+        description={`Failed to load customers: ${error.message}`}
+        showHomeButton={true}
+      />
+    );
+  }
+
+  // Permission check
+  if (!canRead) {
+    return (
+      <AccessDenied
+        variant="result"
+        resource="customers"
+        showHomeButton={true}
+      />
+    );
+  }
+
   return (
     <>
+      {/* Page Header with Breadcrumbs */}
       <PageHeader
-        title="Customers"
-        description="Manage your customer relationships and interactions"
+        title="Customer Management"
+        description="Manage customer accounts and relationships"
         breadcrumb={{
           items: [
             { title: 'Dashboard', path: '/tenant/dashboard' },
-            { title: 'Customers' }
-          ]
+            { title: 'Customers' },
+          ],
         }}
         extra={
-          <>
-            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-              Refresh
-            </Button>
-            {hasPermission('crm:customer:record:read') && (
-              <Button icon={<DownloadOutlined />} onClick={() => setIsExportModalVisible(true)}>
-                Export
+          <Space>
+            <RefreshButton
+              tooltip="Reload customers and stats"
+              onRefresh={() => { void refresh(); }}
+            />
+            {canCreate && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateCustomer}
+              >
+                New Customer
               </Button>
             )}
-            {hasPermission('crm:customer:record:create') && (
-              <Button icon={<UploadOutlined />} onClick={() => setIsImportModalVisible(true)}>
-                Import
-              </Button>
-            )}
-            {hasPermission('crm:customer:record:create') && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-                Add Customer
-              </Button>
-            )}
-          </>
+          </Space>
         }
       />
 
-      <div style={{ padding: 24 }}>
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <StatCard
-              title="Total Customers"
-              value={stats.totalCustomers}
-              description="All customers"
-              icon={Users}
-              color="primary"
-              loading={statsLoading}
+      {/* Filters */}
+      <Card style={{ marginBottom: 16 }}>
+        {/* Statistics */}
+        <StatsGrid
+          items={[
+            {
+              title: 'Total Customers',
+              value: stats?.totalCustomers ?? 0,
+              description: 'All customers in system',
+              icon: <TeamOutlined />,
+              color: 'primary',
+              loading: moduleLoading,
+            },
+            {
+              title: 'Active',
+              value: stats?.activeCustomers ?? 0,
+              description: 'Currently active customers',
+              icon: <CheckCircleOutlined />,
+              color: 'success',
+              loading: moduleLoading,
+            },
+            {
+              title: 'Prospects',
+              value: stats?.prospectCustomers ?? 0,
+              description: 'Potential conversions',
+              icon: <TagOutlined />,
+              color: 'warning',
+              loading: moduleLoading,
+            },
+            {
+              title: 'Inactive',
+              value: stats?.inactiveCustomers ?? 0,
+              description: 'Needs re-engagement',
+              icon: <ClockCircleOutlined />,
+              color: 'error',
+              loading: moduleLoading,
+            },
+          ]}
+          colProps={{ xs: 24, sm: 12, md: 12, lg: 6 }}
+        />
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8}>
+            <Search
+              placeholder="Search company, contact, email"
+              prefix={<SearchOutlined />}
+              allowClear
+              value={searchText}
+              onChange={(e) => handleSearch(e.target.value)}
+              size="large"
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <StatCard
-              title="Active Customers"
-              value={stats.activeCustomers}
-              description={`${stats.totalCustomers > 0 ? ((stats.activeCustomers / stats.totalCustomers) * 100).toFixed(1) : 0}% of total`}
-              icon={Users}
-              color="success"
-              loading={statsLoading}
-            />
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Status"
+              style={{ width: '100%' }}
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              size="large"
+            >
+              <Option value="all">All Status</Option>
+              {statusOptions.map(o => (
+                <Option key={o.value} value={o.value}>{o.label}</Option>
+              ))}
+            </Select>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <StatCard
-              title="Prospects"
-              value={stats.prospectCustomers}
-              description="Potential customers"
-              icon={Users}
-              color="info"
-              loading={statsLoading}
-            />
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Industry"
+              style={{ width: '100%' }}
+              value={industryFilter}
+              onChange={handleIndustryFilterChange}
+              size="large"
+              loading={loadingIndustry}
+            >
+              <Option value="all">All Industries</Option>
+              {industryOptionsRef.map(o => (
+                <Option key={o.value} value={o.value}>{o.label}</Option>
+              ))}
+            </Select>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <StatCard
-              title="Top Industry"
-              value={
-                (() => {
-                  const topIndustryKey = Object.entries(stats.byIndustry).sort(([,a], [,b]) => b - a)[0]?.[0];
-                  if (!topIndustryKey || topIndustryKey === 'unknown') return 'N/A';
-                  // Look up the label from reference data options (case-insensitive)
-                  const normalizedKey = topIndustryKey.toLowerCase();
-                  const industryOption = industryOptions.find(opt => opt.value?.toLowerCase() === normalizedKey);
-                  // If found in reference data, use the label; otherwise, capitalize the first letter
-                  return industryOption?.label || (topIndustryKey.charAt(0).toUpperCase() + topIndustryKey.slice(1));
-                })()
-              }
-              description="Most common"
-              icon={Users}
-              color="warning"
-              loading={statsLoading}
-            />
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Company Size"
+              style={{ width: '100%' }}
+              value={sizeFilter}
+              onChange={handleSizeFilterChange}
+              size="large"
+              loading={loadingSizes}
+            >
+              <Option value="all">All Sizes</Option>
+              {sizeOptionsRef.map(o => (
+                <Option key={o.value} value={o.value}>{o.label}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="Assigned To"
+              style={{ width: '100%' }}
+              value={assignedToFilter}
+              onChange={handleAssignedToFilterChange}
+              size="large"
+              loading={assignedToOptions.loading}
+            >
+              <Option value="all">All Owners</Option>
+              {assignedToOptions.options.map(o => (
+                <Option key={o.value} value={o.value}>{o.label}</Option>
+              ))}
+            </Select>
           </Col>
         </Row>
+      </Card>
 
-        {/* Customers Table */}
-        <Card
-          style={{
-            borderRadius: 8,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          {/* Search and Filters */}
-          <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical">
-            <Space.Compact style={{ width: '100%' }}>
-              <Search
-                placeholder="Search customers by name, email, or phone..."
-                allowClear
-                enterButton={<SearchOutlined />}
-                size="large"
-                onSearch={handleSearch}
-                style={{ flex: 1 }}
-              />
-              <Button 
-                icon={<ClearOutlined />} 
-                onClick={handleClearFilters}
-                size="large"
-                title="Clear all filters"
-              >
-                Clear
-              </Button>
-            </Space.Compact>
-            <Space style={{ width: '100%' }} wrap>
-              <Select
-                value={statusFilter}
-                onChange={handleStatusFilterChange}
-                style={{ width: 130 }}
-                placeholder="Status"
-                size="large"
-              >
-                <Option value="all">All Status</Option>
-                <Option value="active">Active</Option>
-                <Option value="inactive">Inactive</Option>
-                <Option value="prospect">Prospect</Option>
-              </Select>
-              
-              <Select
-                value={industryFilter}
-                onChange={handleIndustryFilterChange}
-                style={{ width: 140 }}
-                placeholder="Industry"
-                allowClear
-                size="large"
-              >
-                {industryOptions.map(option => (
-                  <Option key={option.value} value={option.value}>
-                    {option.label}
-                  </Option>
-                ))}
-              </Select>
-              
-              <Select
-                value={sizeFilter}
-                onChange={handleSizeFilterChange}
-                style={{ width: 130 }}
-                placeholder="Company Size"
-                allowClear
-                size="large"
-              >
-                {companySizeOptions.map(option => (
-                  <Option key={option.value} value={option.value}>
-                    {option.label}
-                  </Option>
-                ))}
-              </Select>
-              
-              <Select
-                value={assignedFilter}
-                onChange={handleAssignedFilterChange}
-                style={{ width: 150 }}
-                placeholder="Assigned To"
-                allowClear
-                size="large"
-              >
-                {users.map(user => (
-                  <Option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
-                  </Option>
-                ))}
-              </Select>
-            </Space>
-          </Space>
+      {/* Table */}
+      <Card>
+        {/* Import/Export Toolbar */}
+        <div style={{ marginBottom: 16 }}>
+          <ImportExportToolbar
+            onImport={handleImport}
+            onExport={handleExport}
+            isImporting={isImporting}
+            isExporting={isExporting}
+            selectedCount={selectedCount}
+            totalCount={filteredCustomers.length}
+            canImport={canCreate}
+            canExport={canRead}
+            importFormats={['.csv', '.json']}
+            exportFormats={['csv', 'json']}
+          />
+        </div>
 
-          {/* Bulk Operations Toolbar */}
-          {selectedRowKeys.length > 0 && (
-            <Alert
-              message={`${selectedRowKeys.length} customer(s) selected`}
-              type="info"
-              style={{ marginBottom: 16 }}
-              action={
-                <Space size="small">
-                  <Button 
-                    type="primary" 
-                    danger
-                    size="small"
-                    icon={<DeleteFilled />}
-                    onClick={handleBulkDelete}
-                    loading={isBulkDeleting}
-                    disabled={!hasPermission('crm:customer:record:delete')}
-                  >
-                    Delete Selected
-                  </Button>
-                  <Button 
-                    size="small"
-                    onClick={() => setSelectedRowKeys([])}
-                  >
-                    Clear Selection
-                  </Button>
-                </Space>
-              }
-            />
-          )}
+        {/* Batch Actions Toolbar */}
+        <BatchActionsToolbar
+          selectedCount={selectedCount}
+          totalCount={filteredCustomers.length}
+          onClearSelection={clearSelection}
+          selectionMessage={() => ''}
+          actions={[
+            {
+              label: 'Delete',
+              icon: Trash2,
+              onClick: async () => {
+                void batchDelete(selectedIds); // Fire and forget, notification handled by hook
+              },
+              variant: 'destructive',
+              loading: isDeleting,
+              disabled: !canDelete || isDeleting,
+              tooltip: canDelete ? 'Delete selected customers' : 'No permission to delete',
+              confirmTitle: 'Delete Customers',
+              confirmMessage: (
+                <div>
+                  <p>
+                    <strong>You are about to delete {selectedCount} customer{selectedCount === 1 ? '' : 's'}.</strong>
+                  </p>
+                  <p style={{ marginTop: 12, color: '#666', fontSize: 13 }}>
+                    This action cannot be undone. All associated data and history will be permanently removed.
+                  </p>
+                </div>
+              ),
+            },
+          ]}
+          className="mb-4"
+        />
 
-          {/* Table */}
-          <Table
+        {customersList.length === 0 && !moduleLoading ? (
+          <Empty description="No customers found" />
+        ) : (
+          <EnterpriseTable<Customer>
             columns={columns}
-            dataSource={customers || []}
-            loading={customersLoading}
+            dataSource={pagedCustomers}
+            rowKey="id"
+            loading={moduleLoading || loadingStatus || loadingIndustry || loadingSizes || loadingTypes || assignedToOptions.loading}
             pagination={{
-              current: filters.page || 1,
-              pageSize: filters.pageSize || 20,
-              total: pagination?.total || 0,
+              current: page,
+              pageSize,
+              total: filteredCustomers.length,
               showSizeChanger: true,
               showQuickJumper: true,
-              onChange: (page, pageSize) => {
-                setFilters({ ...filters, page, pageSize });
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage);
+                setPageSize(nextPageSize || 20);
               },
+              showTotal: (total) => `Total ${total} customers`
             }}
-            rowKey="id"
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys),
-              selections: [
-                Table.SELECTION_ALL,
-                Table.SELECTION_INVERT,
-                Table.SELECTION_NONE,
-              ],
-            }}
-            locale={{
-              emptyText: <Empty description="No customers found" style={{ marginTop: 48, marginBottom: 48 }} />,
-            }}
+            scroll={{ x: 'max-content' }}
+            locale={{ emptyText: <Empty description="No data" /> }}
+            enableAutoScrollTop={true}
+            scrollTopBehavior="smooth"
+            scrollOffset={16}
           />
-        </Card>
-      </div>
+        )}
+      </Card>
 
-      {/* Detail Panel (View) */}
-      <CustomerDetailPanel
-        open={drawerMode === 'view'}
+      {/* Form Drawer */}
+      <CustomerFormDrawer
+        open={isFormOpen}
         customer={selectedCustomer}
-        onClose={() => setDrawerMode(null)}
-        onEdit={() => setDrawerMode('edit')}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedCustomer(null);
+          setIsEditMode(false);
+        }}
+        onSuccess={() => {
+          setIsFormOpen(false);
+          setSelectedCustomer(null);
+          setIsEditMode(false);
+          void refresh();
+        }}
+        onSubmit={handleFormSubmit}
+        statusOptions={statusOptions}
+        industryOptions={industryOptionsRef}
+        sizeOptions={sizeOptionsRef}
+        typeOptions={typeOptionsRef}
+        assignedToOptions={assignedToOptions.options}
+        isLoading={createCustomer.isPending || updateCustomer.isPending}
       />
 
-      {/* Form Panel (Create/Edit) */}
-      <CustomerFormPanel
-        open={drawerMode === 'create' || drawerMode === 'edit'}
-        customer={drawerMode === 'edit' ? selectedCustomer : null}
-        onClose={() => setDrawerMode(null)}
-        onSuccess={() => {
-          setDrawerMode(null);
-          refetch();
+      {/* Detail Drawer */}
+      <CustomerDetailDrawer
+        open={isDetailOpen}
+        customer={selectedCustomer}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onEdit={() => {
+          setIsDetailOpen(false);
+          handleEditCustomer(selectedCustomer!);
+        }}
+        onDelete={async () => {
+          setIsDetailOpen(false);
+          if (selectedCustomer) {
+            await handleDelete(selectedCustomer);
+          }
         }}
       />
-
-      {/* Export Modal */}
-      <Modal
-        title="Export Customers"
-        open={isExportModalVisible}
-        onOk={handleExport}
-        onCancel={() => setIsExportModalVisible(false)}
-        okText="Export"
-        cancelText="Cancel"
-        width={500}
-      >
-        <div style={{ marginBottom: 16 }}>
-          <p>Select the format for your export:</p>
-          <Select
-            value={exportFormat}
-            onChange={(value) => setExportFormat(value as 'csv' | 'json')}
-            style={{ width: '100%' }}
-            size="large"
-          >
-            <Option value="csv">
-              <div>
-                <div style={{ fontWeight: 500 }}>CSV Format</div>
-                <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                  Compatible with Excel and other spreadsheet applications
-                </div>
-              </div>
-            </Option>
-            <Option value="json">
-              <div>
-                <div style={{ fontWeight: 500 }}>JSON Format</div>
-                <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                  Structured format for data import or API usage
-                </div>
-              </div>
-            </Option>
-          </Select>
-        </div>
-        <Alert
-          message={`You will export ${customers?.length || 0} customer records`}
-          type="info"
-          showIcon
-        />
-      </Modal>
-
-      {/* Import Modal */}
-      <Modal
-        title="Import Customers"
-        open={isImportModalVisible}
-        onOk={showImportPreview ? handleImportConfirm : undefined}
-        onCancel={handleImportCancel}
-        okText={showImportPreview ? 'Confirm Import' : undefined}
-        cancelText="Cancel"
-        width={600}
-        footer={
-          showImportPreview
-            ? [
-                <Button key="cancel" onClick={handleImportCancel}>
-                  Cancel
-                </Button>,
-                <Button
-                  key="submit"
-                  type="primary"
-                  loading={importCustomers.isPending}
-                  onClick={handleImportConfirm}
-                >
-                  Confirm Import
-                </Button>,
-              ]
-            : [
-                <Button key="cancel" onClick={handleImportCancel}>
-                  Cancel
-                </Button>,
-              ]
-        }
-      >
-        {!showImportPreview ? (
-          <div>
-            <p style={{ marginBottom: 16 }}>
-              Upload a CSV or JSON file with customer data:
-            </p>
-            <Upload
-              accept=".csv,.json"
-              maxCount={1}
-              beforeUpload={handleImportFileSelect}
-              onRemove={() => {
-                setImportFile(null);
-                setImportPreviewData([]);
-              }}
-            >
-              <Button icon={<UploadOutlined />}>
-                Select File
-              </Button>
-            </Upload>
-            <Alert
-              message="Supported formats: CSV, JSON"
-              type="info"
-              style={{ marginTop: 16 }}
-              showIcon
-            />
-            <Alert
-              message="Required fields: company_name, email, phone"
-              type="warning"
-              style={{ marginTop: 8 }}
-              showIcon
-            />
-          </div>
-        ) : (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <h4>Preview</h4>
-              <div
-                style={{
-                  backgroundColor: '#fafafa',
-                  padding: 12,
-                  borderRadius: 4,
-                  maxHeight: 300,
-                  overflowY: 'auto',
-                  border: '1px solid #e0e0e0',
-                }}
-              >
-                {importPreviewData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '8px 0',
-                      borderBottom: '1px solid #e8e8e8',
-                      fontSize: 12,
-                    }}
-                  >
-                    {typeof item === 'string' ? (
-                      <code>{item}</code>
-                    ) : (
-                      <code>{JSON.stringify(item)}</code>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <Alert
-              message="Please verify the data above is correct before confirming"
-              type="warning"
-              showIcon
-            />
-          </div>
-        )}
-
-        {importResults && (
-          <div style={{ marginTop: 16 }}>
-            <Alert
-              message={`Import Results: ${importResults.successCount} imported, ${
-                importResults.errors?.length || 0
-              } failed`}
-              type={importResults.errors?.length > 0 ? 'warning' : 'success'}
-              showIcon
-            />
-            {importResults.errors && importResults.errors.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <h4>Errors:</h4>
-                <div
-                  style={{
-                    backgroundColor: '#fff7e6',
-                    padding: 12,
-                    borderRadius: 4,
-                    maxHeight: 200,
-                    overflowY: 'auto',
-                    border: '1px solid #ffe7ba',
-                  }}
-                >
-                  {importResults.errors.map((error: any, idx: number) => (
-                    <div key={idx} style={{ padding: '4px 0', fontSize: 12 }}>
-                      • {typeof error === 'string' ? error : error.message}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </>
   );
 };
 
-export default CustomerListPage;
+export default CustomerListPageEnhanced;

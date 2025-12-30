@@ -16,6 +16,8 @@ import backendConfig, { isSupabaseConfigured } from '@/config/backendConfig';
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 import { validateTenantAccess } from '@/utils/tenantValidation';
 import { doesPermissionGrant, normalizePermissionToken } from '@/utils/permissionMatcher';
+import { rbacService } from '../../serviceFactory';
+import { getValidUserRolesFromDatabaseRoles } from '@/utils/roleMapping';
 
 class SupabaseAuthService {
   private tokenKey = 'crm_auth_token';
@@ -747,11 +749,8 @@ class SupabaseAuthService {
 
     try {
       // ✅ Database-driven: Fetch roles from RBAC service (applies tenant isolation)
-      const { rbacService } = await import('../../serviceFactory');
       const roles = await rbacService.getRoles();
-      
       // Extract role names (already normalized in database)
-      const { getValidUserRolesFromDatabaseRoles } = await import('@/utils/roleMapping');
       return getValidUserRolesFromDatabaseRoles(roles);
     } catch (error) {
       console.error('[AuthService] Error fetching available roles:', error);

@@ -20,6 +20,8 @@
 // Routes
 export { productRoutes } from './routes';
 import { productRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { productService } from '@/services/serviceFactory';
 
 // Module configuration
 export const productModule = {
@@ -36,9 +38,6 @@ export const productModule = {
     });
 
     try {
-      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { productService } = await import('@/services/serviceFactory');
-
       // Register product service from factory
       registerServiceInstance('productService', productService);
 
@@ -57,11 +56,8 @@ export const productModule = {
 
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-
     // Remove product service
     serviceContainer.remove('productService');
-
     console.log('Product module cleaned up');
   },
 };

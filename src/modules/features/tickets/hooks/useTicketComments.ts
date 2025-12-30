@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TicketComment } from '@/types/crm';
 import { ticketCommentService } from '@/services/serviceFactory';
+import { createEntityHooks } from '@/hooks/factories/createEntityHooks';
 import { useNotification } from '@/hooks/useNotification';
 
 // Query Keys
@@ -15,6 +16,66 @@ export const ticketCommentKeys = {
   comment: (commentId: string) => [...ticketCommentKeys.all, 'comment', commentId] as const,
   threaded: (ticketId: string) => [...ticketCommentKeys.all, 'threaded', ticketId] as const,
 };
+
+// Factory-based CRUD keys (distinct namespace to avoid collisions)
+const ticketCommentCrudKeys = {
+  all: ['ticket-comments', 'crud'] as const,
+  list: (filters: unknown) => [...ticketCommentCrudKeys.all, 'list', filters] as const,
+  detail: (id: string) => [...ticketCommentCrudKeys.all, 'detail', id] as const,
+};
+
+// Adapter to fit GenericCrudService contract for factory hooks
+const ticketCommentCrudAdapter = {
+  async getAll(filters: Record<string, any> = {}) {
+    const ticketId = filters.ticketId || filters?.customFilters?.ticketId;
+    if (!ticketId) {
+      return { data: [], total: 0 };
+    }
+    const data = await ticketCommentService.getComments(ticketId, filters);
+    return { data, total: data.length };
+  },
+  async getById(id: string) {
+    const comment = await ticketCommentService.getComment(id);
+    if (!comment) throw new Error('Comment not found');
+    return comment;
+  },
+  async create(data: Partial<TicketComment>) {
+    if (!data.ticket_id || !data.content) {
+      throw new Error('ticket_id and content are required');
+    }
+    return ticketCommentService.createComment({
+      ticket_id: data.ticket_id,
+      content: String(data.content),
+      parent_id: data.parent_id,
+    });
+  },
+  async update(id: string, data: Partial<TicketComment>) {
+    if (data.content === undefined || data.content === null) {
+      throw new Error('content is required');
+    }
+    return ticketCommentService.updateComment(id, String(data.content));
+  },
+  async delete(id: string) {
+    await ticketCommentService.deleteComment(id);
+  },
+};
+
+// Factory-generated CRUD hooks (in addition to specialized ones)
+const commentCrudHooks = createEntityHooks<TicketComment>({
+  entityName: 'Ticket Comment',
+  service: ticketCommentCrudAdapter as any,
+  queryKeys: {
+    all: ticketCommentCrudKeys.all as unknown as string[],
+    list: (filters: unknown) => ticketCommentCrudKeys.list(filters) as unknown as string[],
+    detail: (id: string) => ticketCommentCrudKeys.detail(id) as unknown as string[],
+  },
+});
+
+export const useTicketCommentsCrud = commentCrudHooks.useEntities;
+export const useTicketCommentCrud = commentCrudHooks.useEntity;
+export const useCreateTicketCommentCrud = commentCrudHooks.useCreateEntity;
+export const useUpdateTicketCommentCrud = commentCrudHooks.useUpdateEntity;
+export const useDeleteTicketCommentCrud = commentCrudHooks.useDeleteEntity;
 
 /**
  * Hook for fetching comments for a specific ticket

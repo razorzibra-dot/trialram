@@ -1,7 +1,7 @@
 export interface Customer {
   id: string;
-  company_name: string;
-  contact_name: string;
+  companyName: string;
+  contactName: string;
   email?: string;
   phone?: string;
   mobile?: string;
@@ -12,27 +12,27 @@ export interface Customer {
   industry?: string;
   size?: 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
   status: 'active' | 'inactive' | 'prospect' | 'suspended';
-  customer_type?: 'individual' | 'business' | 'enterprise';
-  credit_limit?: number;
-  payment_terms?: string;
-  tax_id?: string;
-  annual_revenue?: number;
-  total_sales_amount?: number;
-  total_orders?: number;
-  average_order_value?: number;
-  last_purchase_date?: string;
+  customerType?: 'individual' | 'business' | 'enterprise';
+  creditLimit?: number;
+  paymentTerms?: string;
+  taxId?: string;
+  annualRevenue?: number;
+  totalSalesAmount?: number;
+  totalOrders?: number;
+  averageOrderValue?: number;
+  lastPurchaseDate?: string;
   tags: CustomerTag[];
   notes?: string;
-  assigned_to?: string;
+  assignedTo?: string;
   source?: string;
   rating?: string;
-  last_contact_date?: string;
-  next_follow_up_date?: string;
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  deleted_at?: string;
+  lastContactDate?: string;
+  nextFollowUpDate?: string;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  deletedAt?: string;
 }
 
 export interface CustomerTag {
@@ -43,41 +43,41 @@ export interface CustomerTag {
 
 export interface CustomerInteraction {
   id: string;
-  customer_id: string;
+  customerId: string;
   type: 'call' | 'meeting' | 'email' | 'note' | 'visit' | 'demo' | 'presentation' | 'follow_up' | 'other';
   direction?: 'inbound' | 'outbound'; // For calls/emails
   subject: string;
   description?: string;
-  interaction_date: string;
-  duration_minutes?: number;
+  interactionDate: string;
+  durationMinutes?: number;
   outcome?: 'successful' | 'unsuccessful' | 'pending' | 'cancelled';
-  outcome_notes?: string;
-  contact_person?: string; // Customer contact involved
-  performed_by: string;
-  performed_by_name?: string; // For display
+  outcomeNotes?: string;
+  contactPerson?: string; // Customer contact involved
+  performedBy: string;
+  performedByName?: string; // For display
   participants?: string[]; // Other participants (user IDs)
   location?: string; // For meetings/visits
   attachments?: CustomerInteractionAttachment[];
   tags?: string[];
-  follow_up_required?: boolean;
-  follow_up_date?: string;
-  next_action?: string;
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
+  followUpRequired?: boolean;
+  followUpDate?: string;
+  nextAction?: string;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
 }
 
 export interface CustomerInteractionAttachment {
   id: string;
-  interaction_id: string;
+  interactionId: string;
   filename: string;
-  original_filename?: string;
-  file_path?: string;
-  file_url?: string;
-  content_type: string;
-  file_size: number;
-  uploaded_by: string;
+  originalFilename?: string;
+  filePath?: string;
+  fileUrl?: string;
+  contentType: string;
+  fileSize: number;
+  uploadedBy: string;
   uploaded_by_name?: string;
   created_at: string;
 }

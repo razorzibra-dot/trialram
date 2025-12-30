@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Spin } from 'antd';
+import { Row, Col, Card, Button, Table, Input, Select, Space, Tag, Popconfirm, message, Empty, Spin, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { PageHeader, StatCard } from '@/components/common';
@@ -25,8 +25,11 @@ type DrawerMode = 'create' | 'edit' | 'view' | null;
 export const ComplaintsPage: React.FC = () => {
   const { hasPermission } = useAuth();
   const { data: stats, isLoading: statsLoading } = useComplaintStats();
-  const { data: complaintsData, isLoading: complaintsLoading } = useComplaints();
+  const { data: paginatedData, isLoading: complaintsLoading } = useComplaints();
   const deleteComplaint = useDeleteComplaint();
+
+  // Extract complaints array from paginated response
+  const complaintsData = paginatedData?.data || [];
 
   // Database-driven color lookups
   const { getColor: getStatusColor } = useReferenceDataLookup('complaint_status');
@@ -49,7 +52,6 @@ export const ComplaintsPage: React.FC = () => {
         (complaint) =>
           complaint.title.toLowerCase().includes(search) ||
           complaint.description?.toLowerCase().includes(search) ||
-          complaint.customer_name?.toLowerCase().includes(search) ||
           complaint.id.includes(search)
       );
     }
@@ -129,11 +131,11 @@ export const ComplaintsPage: React.FC = () => {
     },
     {
       title: 'Customer',
-      dataIndex: 'customer_name',
-      key: 'customer_name',
+      dataIndex: 'customerId',
+      key: 'customerId',
       width: 150,
-      render: (text: string) => text || <span style={{ color: '#999' }}>Unassigned</span>,
-      sorter: (a: Complaint, b: Complaint) => (a.customer_name || '').localeCompare(b.customer_name || ''),
+      render: (customerId: string) => customerId || <span style={{ color: '#999' }}>Unknown</span>,
+      sorter: (a: Complaint, b: Complaint) => (a.customerId || '').localeCompare(b.customerId || ''),
     },
     {
       title: 'Type',
@@ -161,7 +163,6 @@ export const ComplaintsPage: React.FC = () => {
       filters: [
         { text: 'New', value: 'new' },
         { text: 'In Progress', value: 'in_progress' },
-        { text: 'Resolved', value: 'resolved' },
         { text: 'Closed', value: 'closed' },
       ],
       onFilter: (value: string | number | boolean, record: Complaint) => record.status === value,
@@ -187,21 +188,21 @@ export const ComplaintsPage: React.FC = () => {
     },
     {
       title: 'Assigned To',
-      dataIndex: 'assigned_engineer_name',
-      key: 'assigned_engineer_name',
+      dataIndex: 'assignedEngineerId',
+      key: 'assignedEngineerId',
       width: 130,
-      render: (text: string) => text || <span style={{ color: '#999' }}>Unassigned</span>,
-      sorter: (a: Complaint, b: Complaint) => (a.assigned_engineer_name || '').localeCompare(b.assigned_engineer_name || ''),
+      render: (engineerId: string) => engineerId ? `Engineer ${engineerId.substring(0, 8)}` : <span style={{ color: '#999' }}>Unassigned</span>,
+      sorter: (a: Complaint, b: Complaint) => (a.assignedEngineerId || '').localeCompare(b.assignedEngineerId || ''),
     },
     {
       title: 'Created',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 130,
-      render: (created_at: string) => dayjs(created_at).format('MMM DD, YYYY'),
+      render: (createdAt: string) => dayjs(createdAt).format('MMM DD, YYYY'),
       sorter: (a: Complaint, b: Complaint) => {
-        const dateA = new Date(a.created_at).getTime();
-        const dateB = new Date(b.created_at).getTime();
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
         return dateA - dateB;
       },
     },
@@ -295,7 +296,7 @@ export const ComplaintsPage: React.FC = () => {
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="In Progress"
-              value={stats?.in_progress || 0}
+              value={stats?.inProgress || 0}
               description="Being addressed"
               icon={Clock}
               color="info"
@@ -339,7 +340,6 @@ export const ComplaintsPage: React.FC = () => {
                   <Option value="all">All Statuses</Option>
                   <Option value="new">New</Option>
                   <Option value="in_progress">In Progress</Option>
-                  <Option value="resolved">Resolved</Option>
                   <Option value="closed">Closed</Option>
                 </Select>
               </Col>

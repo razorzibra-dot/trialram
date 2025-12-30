@@ -136,24 +136,24 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
           </div>
           <Descriptions column={1} size="small">
             <Descriptions.Item label="Assigned Engineer">
-              {complaint.assigned_engineer_id ? 'Assigned' : 'Unassigned'}
+              {complaint.assignedEngineerId ? 'Assigned' : 'Unassigned'}
             </Descriptions.Item>
             <Descriptions.Item label="Created Date">
-              {formatDate(complaint.created_at)}
+              {formatDate(complaint.createdAt)}
             </Descriptions.Item>
             <Descriptions.Item label="Last Updated">
-              {formatDate(complaint.updated_at)}
+              {formatDate(complaint.updatedAt)}
             </Descriptions.Item>
-            {complaint.closed_at && (
+            {complaint.closedAt && (
               <Descriptions.Item label="Closed Date">
-                {formatDate(complaint.closed_at)}
+                {formatDate(complaint.closedAt)}
               </Descriptions.Item>
             )}
           </Descriptions>
         </Card>
 
         {/* Resolution */}
-        {complaint.engineer_resolution && (
+        {complaint.engineerResolution && (
           <Card style={sectionStyles.card} variant="borderless">
             <div style={sectionStyles.header}>
               <ClockCircleOutlined style={sectionStyles.headerIcon} />
@@ -166,7 +166,7 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
               border: '1px solid #b7eb8f',
               color: '#52c41a'
             }}>
-              {complaint.engineer_resolution}
+              {complaint.engineerResolution}
             </div>
           </Card>
         )}
@@ -190,13 +190,13 @@ export const ComplaintsDetailPanel: React.FC<ComplaintsDetailPanelProps> = ({
                   }}
                 >
                   <div style={{ marginBottom: 8, fontWeight: 500 }}>
-                    Comment by User {comment.user_id}
+                    Comment by User {comment.userId}
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     {comment.content}
                   </div>
                   <div style={{ fontSize: 12, color: '#666' }}>
-                    {formatDate(comment.created_at)}
+                    {formatDate(comment.createdAt)}
                   </div>
                 </div>
               ))}

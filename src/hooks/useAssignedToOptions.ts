@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { roleService } from '@/services/roleService';
+import { userService } from '@/services/serviceFactory';
 import { useTenantContext } from './useTenantContext';
 
 export interface AssignedToOption {
@@ -23,20 +23,30 @@ export interface AssignedToOption {
   role?: string;
 }
 
+export interface AssignedToOptionsResult {
+  options: AssignedToOption[];
+  labelMap: Record<string, string>;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+}
+
 /**
  * Hook to get assignable users for a module
  * @param moduleName - Module name ('leads', 'deals', 'tickets', etc.)
  * @returns Formatted options for Select components
  */
-export const useAssignedToOptions = (moduleName: string) => {
-  const { currentTenant } = useTenantContext();
+export const useAssignedToOptions = (moduleName: string): AssignedToOptionsResult => {
+  const { tenant, tenantId } = useTenantContext();
   const [options, setOptions] = useState<AssignedToOption[]>([]);
+  const [labelMap, setLabelMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadOptions = useCallback(async () => {
-    if (!currentTenant?.id || !moduleName) {
+    if (!tenantId || !moduleName) {
       setOptions([]);
+      setLabelMap({});
       setLoading(false);
       return;
     }
@@ -44,36 +54,37 @@ export const useAssignedToOptions = (moduleName: string) => {
     try {
       setLoading(true);
       setError(null);
+      // Load active tenant users (tenant isolation enforced in service)
+      const allUsers = await userService.getUsers({ status: ['active'] as any });
 
-      console.log('[useAssignedToOptions] Loading assignable users:', {
-        tenantId: currentTenant.id,
-        moduleName
-      });
+      // Filter to internal roles (exclude customer-facing roles)
+      const internalUsers = allUsers.filter(u => u.role !== 'customer');
 
-      // Get assignable users from role service
-      const users = await roleService.getAssignableUsers(currentTenant.id, moduleName);
+      // Format for Select component and build label map
+      const formattedOptions: AssignedToOption[] = internalUsers
+        .map(user => ({
+          value: user.id,
+          label: user.name || user.email,
+          role: user.role
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
 
-      // Format for Select component
-      const formattedOptions: AssignedToOption[] = users.map(user => ({
-        value: user.id,
-        label: user.name || user.email,
-        role: user.role
-      }));
-
-      console.log('[useAssignedToOptions] Loaded options:', {
-        count: formattedOptions.length,
-        roles: [...new Set(users.map(u => u.role))]
-      });
+      const map = formattedOptions.reduce<Record<string, string>>((acc, opt) => {
+        acc[String(opt.value)] = opt.label;
+        return acc;
+      }, {});
 
       setOptions(formattedOptions);
+      setLabelMap(map);
     } catch (err) {
       console.error('[useAssignedToOptions] Error loading options:', err);
       setError(err instanceof Error ? err.message : 'Failed to load assignable users');
       setOptions([]);
+      setLabelMap({});
     } finally {
       setLoading(false);
     }
-  }, [currentTenant?.id, moduleName]);
+  }, [tenantId, moduleName]);
 
   useEffect(() => {
     loadOptions();
@@ -81,6 +92,7 @@ export const useAssignedToOptions = (moduleName: string) => {
 
   return {
     options,
+    labelMap,
     loading,
     error,
     refresh: loadOptions
@@ -91,13 +103,13 @@ export const useAssignedToOptions = (moduleName: string) => {
  * Hook variant: Return users with full details (for advanced use cases)
  */
 export const useAssignableUsersDetailed = (moduleName: string) => {
-  const { currentTenant } = useTenantContext();
+  const { tenantId } = useTenantContext();
   const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; role: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
-    if (!currentTenant?.id || !moduleName) {
+    if (!tenantId || !moduleName) {
       setUsers([]);
       setLoading(false);
       return;
@@ -106,8 +118,9 @@ export const useAssignableUsersDetailed = (moduleName: string) => {
     try {
       setLoading(true);
       setError(null);
-      const assignableUsers = await roleService.getAssignableUsers(currentTenant.id, moduleName);
-      setUsers(assignableUsers);
+      const allUsers = await userService.getUsers({ status: ['active'] as any });
+      const internalUsers = allUsers.filter(u => u.role !== 'customer');
+      setUsers(internalUsers.map(u => ({ id: u.id, name: u.name || u.email, email: u.email, role: u.role as string })));
     } catch (err) {
       console.error('[useAssignableUsersDetailed] Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -115,7 +128,7 @@ export const useAssignableUsersDetailed = (moduleName: string) => {
     } finally {
       setLoading(false);
     }
-  }, [currentTenant?.id, moduleName]);
+  }, [tenantId, moduleName]);
 
   useEffect(() => {
     loadUsers();

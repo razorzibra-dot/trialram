@@ -1,9 +1,9 @@
 ---
-title: Customer Forms Enhancement Guide
-description: Enterprise-grade professional UI/UX enhancement for Customer module forms with card-based sections, advanced validation, and comprehensive visual hierarchy improvements
-lastUpdated: 2025-01-31
+title: Customer Forms Enhancement Guide (Legacy)
+description: Legacy reference for the retired Customer module drawers; components have been removed and this document is kept for historical context only
+lastUpdated: 2025-02-05
 version: 2.0
-status: production
+status: archived
 author: Zencoder AI
 relatedDocuments:
   - ../../../CONTRACT_FORMS_ENHANCEMENT_SUMMARY.md
@@ -14,9 +14,11 @@ relatedDocuments:
 
 ## Overview
 
-This document describes the **enterprise-grade professional enhancement** of the Customer module forms. The enhancement transforms both the **CustomerFormPanel** (create/edit) and **CustomerDetailPanel** (view-only) components into production-ready, visually sophisticated interfaces that meet modern SaaS standards.
+This document captures the legacy enhancement plan for the Customer module drawers. **CustomerFormPanel** (create/edit) and **CustomerDetailPanel** (view-only) have been removed from runtime and replaced by `GenericEntityPage`/`GenericAnalyticsPage` flows. The content below is retained for historical reference only and is not an active implementation guide.
 
-### What Was Enhanced
+> Legacy notice: Do not build new UI from this document. Current customer workflows live in `views/CustomerListPage.tsx` (inline generic CRUD) and `views/CustomerAnalyticsPage.tsx` (generic analytics renderer).
+
+### What Was Enhanced (Legacy Reference)
 
 | Component | Before | After |
 |-----------|--------|-------|

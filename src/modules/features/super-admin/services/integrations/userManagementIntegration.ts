@@ -13,6 +13,7 @@
  */
 
 import { getUserService } from '@/services/serviceFactory';
+import { isPlatformRoleByName } from '@/utils/roleMapping';
 /**
  * Mock implementation
  * The actual superUserService was archived in cleanup
@@ -47,7 +48,6 @@ export async function validateUserForSuperUserAssignment(
 
     // ⚠️ DATABASE-DRIVEN: Check if role is a platform role using database flags
     // Instead of hardcoded role names, check if role is platform-level
-    const { isPlatformRoleByName } = await import('@/utils/roleMapping');
     const isPlatformRole = await isPlatformRoleByName(user.role);
     if (!isPlatformRole) {
       return {
@@ -229,7 +229,6 @@ export const integrationChecks = {
         userExists = true;
         userActive = user.status === 'active';
         // ⚠️ DATABASE-DRIVEN: Check if role is platform role using database flags
-        const { isPlatformRoleByName } = await import('@/utils/roleMapping');
         userHasCorrectRole = await isPlatformRoleByName(user.role);
       } catch (error) {
         // User doesn't exist

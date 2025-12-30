@@ -10,6 +10,8 @@ import {
   Supplier,
   AllReferenceData,
 } from '@/types/referenceData.types';
+import { pageDataService, PageDataRequirements } from '@/services/page/PageDataService';
+import backendConfig from '@/config/backendConfig';
 
 /**
  * ✅ PHASE 1.5: DYNAMIC DATA LOADING - LAYER 6 (React Context)
@@ -84,12 +86,18 @@ interface ReferenceDataContextType {
 
 const ReferenceDataContext = createContext<ReferenceDataContextType | undefined>(undefined);
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_TTL = backendConfig.cache?.referenceTtlMs ?? 5 * 60 * 1000; // configurable TTL
 
 interface ReferenceDataProviderProps {
   children: React.ReactNode;
   cacheTTL?: number;
 }
+
+// Persisted caches across component remounts (e.g., React 18 StrictMode double render)
+const tenantCache: Map<string, { data: CacheState; timestamp: number }> = new Map();
+const inFlightFetches: Map<string, Promise<CacheState>> = new Map();
+
+const getTenantCacheKey = (tenantId: string | null | undefined) => tenantId ?? 'system';
 
 export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
   children,
@@ -113,31 +121,106 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
     error: null,
   });
 
+  // Prevent duplicate fetches (e.g., React 18 StrictMode double-invocation in dev)
+  const isFetchingRef = useRef(false);
+
   // Refs for debouncing and cleanup
   const refreshTimerRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
+  const prewarmDoneRef = useRef(false);
 
   /**
    * Fetch all reference data from service (Layer 5: Factory routes to correct backend)
    */
   const fetchAllReferenceData = useCallback(async () => {
-    // Allow super admins (tenantId can be null) to load shared reference data
+    // Wait for tenant resolution; undefined means not ready yet
+    if (tenantId === undefined) return;
+
+    const cacheKey = getTenantCacheKey(tenantId);
+
+    // Try persisted sessionStorage cache first (survives F5)
+    try {
+      const persistedRaw = sessionStorage.getItem(`refDataCache:${cacheKey}`);
+      if (persistedRaw) {
+        const persisted = JSON.parse(persistedRaw) as { data: CacheState; timestamp: number };
+        if (persisted && Date.now() - persisted.timestamp < cacheTTL) {
+          tenantCache.set(cacheKey, persisted);
+          if (isMountedRef.current) {
+            setCache(persisted.data);
+            setMetadata((prev) => ({ ...prev, lastRefresh: persisted.timestamp, isLoading: false, error: null }));
+          }
+          // Use persisted data immediately and return without network fetch
+          return;
+        }
+      }
+    } catch (e) {
+      // Ignore JSON/Storage errors; proceed to normal flow
+    }
+
+    // Reuse fresh cache across StrictMode remounts
+    const cached = tenantCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < cacheTTL) {
+      if (isMountedRef.current) {
+        setCache(cached.data);
+        setMetadata((prev) => ({ ...prev, lastRefresh: cached.timestamp, isLoading: false, error: null }));
+      }
+      return;
+    }
+
+    // Return in-flight fetch if already running for this tenant
+    const inFlight = inFlightFetches.get(cacheKey);
+    if (inFlight) {
+      const data = await inFlight;
+      if (isMountedRef.current) {
+        setCache(data);
+        setMetadata((prev) => ({ ...prev, lastRefresh: Date.now(), isLoading: false, error: null }));
+      }
+      return;
+    }
+
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     if (!isMountedRef.current) return;
 
     setMetadata((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      // Call getAllReferenceData which returns all 4 data types
-      const data = await referenceDataService.getAllReferenceData(tenantId);
+    const fetchPromise = (async () => {
+      try {
+        // Call getAllReferenceData which returns all 4 data types
+        const data = await referenceDataService.getAllReferenceData(tenantId);
 
-      if (isMountedRef.current) {
-        setCache({
+        const nextCache: CacheState = {
           statusOptions: data.statusOptions || [],
           referenceData: data.referenceData || [],
           categories: data.categories || [],
           suppliers: data.suppliers || [],
-        });
+        };
 
+        const snapshot = { data: nextCache, timestamp: Date.now() };
+        tenantCache.set(cacheKey, snapshot);
+        try {
+          sessionStorage.setItem(`refDataCache:${cacheKey}`, JSON.stringify(snapshot));
+        } catch {
+          // Ignore sessionStorage errors (quota exceeded, private mode, etc.)
+        }
+        return nextCache;
+      } catch (error) {
+        console.error('[ReferenceDataContext] Error fetching data:', error);
+        throw error;
+      } finally {
+        isFetchingRef.current = false;
+        inFlightFetches.delete(cacheKey);
+      }
+    })();
+
+    inFlightFetches.set(cacheKey, fetchPromise);
+
+    try {
+      const resolved = await fetchPromise;
+
+      if (isMountedRef.current) {
+        setCache(resolved);
         setMetadata((prev) => ({
           ...prev,
           lastRefresh: Date.now(),
@@ -146,8 +229,6 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
         }));
       }
     } catch (error) {
-      console.error('[ReferenceDataContext] Error fetching data:', error);
-
       if (isMountedRef.current) {
         setMetadata((prev) => ({
           ...prev,
@@ -156,7 +237,7 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
         }));
       }
     }
-  }, [tenantId]);
+  }, [cacheTTL, tenantId]);
 
   /**
     * Initialize context on mount - only load data when authenticated and tenant context is available
@@ -265,6 +346,28 @@ export const ReferenceDataProvider: React.FC<ReferenceDataProviderProps> = ({
       console.error('[ReferenceDataContext] Error refreshing reference data:', error);
     }
   }, [tenantId]);
+
+  /**
+   * After reference data is loaded, pre-warm common pages so navigating to them
+   * does not trigger additional API calls (customers/users batched ahead of time).
+   */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (tenantId === undefined) return;
+    if (prewarmDoneRef.current) return;
+
+    // Only start pre-warm after first successful load
+    if (metadata.lastRefresh > 0) {
+      prewarmDoneRef.current = true;
+      const requirements: PageDataRequirements = {
+        session: true,
+        module: { customers: true, users: true },
+      };
+      pageDataService
+        .preloadPages([{ route: '/tenant/customers', requirements }])
+        .catch((e) => console.warn('[ReferenceDataContext] Pre-warm failed:', e));
+    }
+  }, [isAuthenticated, tenantId, metadata.lastRefresh]);
 
   /**
    * QUERY METHODS - Read-only operations

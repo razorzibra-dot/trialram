@@ -1,977 +1,536 @@
+/**
+ * Customer Service
+ * Layer 3: Business logic layer extending GenericCrudService
+ * 
+ * Provides customer-specific business logic on top of GenericCrudService:
+ * - Tags management (customer_tag_mapping table)
+ * - Stats aggregation
+ * - Interaction history
+ * - Lifecycle hooks for validation
+ */
+
+import { GenericCrudService } from '@/services/core/GenericCrudService';
 import { Customer, CustomerTag } from '@/types/crm';
-import { supabase, getSupabaseClient } from '@/services/supabase/client';
+import { CustomerRepository, CustomerRow } from './CustomerRepository';
+import { getSupabaseClient } from '@/services/supabase/client';
+import { serviceFactory } from '@/services/serviceFactory';
+import { QueryFilters } from '@/types/generic';
 
-import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
+/**
+ * Database row for customer_tag_mapping table
+ */
+interface CustomerTagMappingRow {
+  customer_id: string;
+  tag_id: string;
+  created_at?: string;
+}
 
-// Stub implementations for missing query builders
-const addTenantFilter = (query: any, tenantId: string) => query.eq('tenant_id', tenantId);
-const handleSupabaseError = (error: any) => error;
-const retryQuery = async (fn: () => Promise<any>) => fn();
+/**
+ * Database row for customer_tags table
+ */
+interface CustomerTagRow {
+  id: string;
+  name: string;
+  color?: string;
+  tenant_id: string;
+  created_at: string;
+}
 
-class SupabaseCustomerService {
+/**
+ * CustomerService
+ * 
+ * Extends GenericCrudService to provide customer-specific operations:
+ * - CRUD operations via GenericRepository (inherited)
+ * - Tags management (add, remove, get)
+ * - Stats updates after mutations
+ * - Interaction history
+ */
+export class CustomerService extends GenericCrudService<Customer, Partial<Customer>, Partial<Customer>, QueryFilters, CustomerRow> {
+  private listInFlight: Map<string, Promise<{ data: Customer[]; total: number }>> = new Map();
+  private listCache: Map<string, { data: { data: Customer[]; total: number }; timestamp: number }> = new Map();
+  private detailInFlight: Map<string, Promise<Customer | null>> = new Map();
+  private detailCache: Map<string, { data: Customer | null; timestamp: number }> = new Map();
+  private cacheTtlMs = 60 * 1000; // 1 minute short-lived cache to avoid duplicate GETs
+
+  constructor() {
+    const repository = new CustomerRepository();
+    super(repository);
+  }
+
   /**
-   * Get all customers with filtering
+   * Lifecycle hook: Called before creating a customer
+   * Validates business rules
    */
-  async getCustomers(filters?: {
-    status?: string;
-    industry?: string;
-    size?: string;
-    assigned_to?: string;
-    assignedTo?: string;
-    search?: string;
-    tags?: string[];
-  }): Promise<Customer[]> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-      const userId = multiTenantService.getCurrentUserId();
-
-      console.log('[SupabaseCustomerService] getCustomers called with tenantId:', tenantId, 'filters:', filters);
-
-      let query = getSupabaseClient()
-        .from('customers')
-        .select(`
-          *,
-          company:companies!customers_company_id_fkey (
-            id,
-            name,
-            industry,
-            size,
-            website,
-            city,
-            country,
-            plan
-          ),
-          customer_tag_mapping:customer_tag_mapping!customer_tag_mapping_customer_id_fkey (
-            tag_id,
-            customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
-              id,
-              name,
-              color
-            )
-          )
-        `);
-
-      // Apply tenant filter
-      query = addTenantFilter(query, tenantId);
-
-      // Apply status filter
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      // Apply industry filter
-      if (filters?.industry) {
-        query = query.eq('industry', filters.industry);
-      }
-
-      // Apply size filter
-      if (filters?.size) {
-        query = query.eq('size', filters.size);
-      }
-
-      // Apply assigned_to filter (role-based for agents)
-      const assignedFilter = filters?.assigned_to || filters?.assignedTo;
-      if (assignedFilter) {
-        query = query.eq('assigned_to', assignedFilter);
-      }
-
-      // Apply search filter
-      if (filters?.search) {
-        const searchLower = filters.search.toLowerCase();
-        query = query.or(
-          `company_name.ilike.%${searchLower}%,contact_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,city.ilike.%${searchLower}%,country.ilike.%${searchLower}%`
-        );
-      }
-
-      console.log('[SupabaseCustomerService] Executing Supabase query...');
-      const { data, error } = await retryQuery(async () => query);
-
-      console.log('[SupabaseCustomerService] Query result - data rows:', data?.length || 0, 'error:', error);
-
-      if (error) throw handleSupabaseError(error);
-
-      // Map database rows to Customer interface
-      const mappedCustomers = (data || []).map(row => this.mapToCustomer(row));
-
-      console.log('[SupabaseCustomerService] Mapped customers count:', mappedCustomers.length);
-
-      // Filter by tags if provided
-      if (filters?.tags && filters.tags.length > 0) {
-        const filtered = mappedCustomers.filter(customer =>
-          filters.tags!.some(tagId => 
-            customer.tags.some(tag => tag.id === tagId)
-          )
-        );
-        console.log('[SupabaseCustomerService] After tag filter count:', filtered.length);
-        return filtered;
-      }
-
-      console.log('[SupabaseCustomerService] Returning customers:', mappedCustomers.length);
-      return mappedCustomers;
-    } catch (error) {
-      console.error('[SupabaseCustomerService] Error fetching customers:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch customers');
+  protected async beforeCreate(data: Partial<Customer>): Promise<void> {
+    // Validate required fields
+    if (!data.companyName?.trim()) {
+      throw new Error('Company name is required');
+    }
+    if (!data.contactName?.trim()) {
+      throw new Error('Contact name is required');
+    }
+    if (data.email && !this.isValidEmail(data.email)) {
+      throw new Error('Invalid email format');
     }
   }
 
   /**
-   * Get single customer by ID
+   * Lifecycle hook: Called after creating a customer
+   * Note: Tags are already saved via the repository (tags field in database)
+   * Clears cache to ensure fresh data on next load
    */
-  async getCustomer(id: string): Promise<Customer> {
+  protected async afterCreate(entity: Customer): Promise<void> {
+    // Tags are already in the database via the create operation
+    // Clear cache to avoid stale lists after create
     try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const { data, error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .select(`
-            *,
-            company:companies!customers_company_id_fkey (
-              id,
-              name,
-              industry,
-              size,
-              website,
-              city,
-              country,
-              plan
-            ),
-            customer_tag_mapping:customer_tag_mapping!customer_tag_mapping_customer_id_fkey (
-              tag_id,
-              customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
-                id,
-                name,
-                color
-              )
-            )
-          `)
-          .eq('id', id)
-          .eq('tenant_id', tenantId)
-          .single()
-      );
-
-      if (error) throw handleSupabaseError(error);
-      if (!data) throw new Error('Customer not found');
-
-      return this.mapToCustomer(data);
-    } catch (error) {
-      console.error('Error fetching customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch customer');
+      this.listCache.clear();
+      this.listInFlight.clear();
+      console.log('[CustomerService] Cache cleared after create');
+    } catch {
+      // Ignore cache clear errors
     }
   }
 
   /**
-   * Validate customer data according to business rules
+   * Lifecycle hook: Called before updating a customer
+   * Validates business rules
    */
-  private validateCustomerData(customerData: Omit<Customer, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>, tenantId: string): void {
-    const errors: string[] = [];
-
-    // Required field validations
-    if (!customerData.company_name?.trim()) {
-      errors.push('Company name is required');
-    } else if (customerData.company_name.length > 255) {
-      errors.push('Company name must be less than 255 characters');
-    }
-
-    if (!customerData.contact_name?.trim()) {
-      errors.push('Contact name is required');
-    } else if (customerData.contact_name.length > 255) {
-      errors.push('Contact name must be less than 255 characters');
-    }
-
-    // Email validation
-    if (!customerData.email?.trim()) {
-      errors.push('Email is required');
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(customerData.email)) {
-        errors.push('Invalid email format');
-      } else if (customerData.email.length > 255) {
-        errors.push('Email must be less than 255 characters');
-      }
-    }
-
-    // Phone validation
-    if (customerData.phone && customerData.phone.length > 50) {
-      errors.push('Phone number must be less than 50 characters');
-    }
-
-    if (customerData.mobile && customerData.mobile.length > 50) {
-      errors.push('Mobile number must be less than 50 characters');
-    }
-
-    // Website URL validation
-    if (customerData.website) {
-      try {
-        new URL(customerData.website);
-        if (customerData.website.length > 500) {
-          errors.push('Website URL must be less than 500 characters');
-        }
-      } catch {
-        errors.push('Invalid website URL format');
-      }
-    }
-
-    // Address validation
-    if (customerData.address && customerData.address.length > 500) {
-      errors.push('Address must be less than 500 characters');
-    }
-
-    if (customerData.city && customerData.city.length > 100) {
-      errors.push('City must be less than 100 characters');
-    }
-
-    if (customerData.country && customerData.country.length > 100) {
-      errors.push('Country must be less than 100 characters');
-    }
-
-    // Industry validation
-    if (customerData.industry && customerData.industry.length > 100) {
-      errors.push('Industry must be less than 100 characters');
-    }
-
-    // Size enum validation
-    if (customerData.size && !['startup', 'small', 'medium', 'enterprise'].includes(customerData.size)) {
-      errors.push('Size must be one of: startup, small, medium, enterprise');
-    }
-
-    // Status enum validation
-    if (customerData.status && !['active', 'inactive', 'prospect'].includes(customerData.status)) {
-      errors.push('Status must be one of: active, inactive, prospect');
-    }
-
-    // Customer type enum validation
-    if (customerData.customer_type && !['business', 'individual'].includes(customerData.customer_type)) {
-      errors.push('Customer type must be one of: business, individual');
-    }
-
-    // Credit limit validation
-    if (customerData.credit_limit !== undefined && customerData.credit_limit !== null && customerData.credit_limit !== '') {
-      const creditLimit = Number(customerData.credit_limit);
-      if (isNaN(creditLimit) || creditLimit < 0) {
-        errors.push('Credit limit must be a positive number');
-      } else if (creditLimit > 999999999.99) {
-        errors.push('Credit limit cannot exceed 999,999,999.99');
-      }
-    }
-
-    // Payment terms validation
-    if (customerData.payment_terms && customerData.payment_terms.length > 100) {
-      errors.push('Payment terms must be less than 100 characters');
-    }
-
-    // Tax ID validation
-    if (customerData.tax_id && customerData.tax_id.length > 50) {
-      errors.push('Tax ID must be less than 50 characters');
-    }
-
-    // Notes validation
-    if (customerData.notes && customerData.notes.length > 2000) {
-      errors.push('Notes must be less than 2000 characters');
-    }
-
-    // Source validation
-    if (customerData.source && customerData.source.length > 100) {
-      errors.push('Source must be less than 100 characters');
-    }
-
-    // Rating validation
-    if (customerData.rating && customerData.rating.length > 50) {
-      errors.push('Rating must be less than 50 characters');
-    }
-
-    // Tags validation
-    if (customerData.tags && customerData.tags.length > 10) {
-      errors.push('Cannot assign more than 10 tags to a customer');
-    }
-
-    if (errors.length > 0) {
-      throw new Error(`Validation failed: ${errors.join(', ')}`);
+  protected async beforeUpdate(existing: Customer, data: Partial<Customer>): Promise<void> {
+    if (data.email && !this.isValidEmail(data.email)) {
+      throw new Error('Invalid email format');
     }
   }
 
   /**
-   * Create new customer
+   * Lifecycle hook: Called after updating a customer
+   * Note: Tags are already saved via the repository (tags field in database)
+   * No additional tag processing needed here
    */
-  async createCustomer(
-    customerData: Omit<Customer, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>
-  ): Promise<Customer> {
+  protected async afterUpdate(entity: Customer): Promise<void> {
+    // Tags are already in the database via the update operation
+    // No additional processing needed
+  }
+
+  /**
+   * Override update to avoid pre-fetching existing entity.
+   * This reduces duplicate GETs during save flows while preserving validation.
+   */
+  async update(id: string, data: Partial<Customer>, _context?: any): Promise<Customer> {
+    // Inline minimal validation (mirror beforeUpdate logic without requiring existing entity)
+    if (data.email && !this.isValidEmail(data.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Perform update directly in repository (returns updated row via select())
+    const updated = await this.repository.update(id, data);
+
+    // Post-update hook
+    await this.afterUpdate?.(updated);
+
+    // Invalidate list caches to avoid stale lists after edit
     try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-      const userId = multiTenantService.getCurrentUserId();
+      this.listCache.clear();
+      this.listInFlight.clear();
+      console.log('[CustomerService] Cache cleared after update');
+    } catch {
+      // Ignore cache clear errors
+    }
 
-      // Validate customer data
-      this.validateCustomerData(customerData, tenantId);
+    // Update detail cache to satisfy immediate reads without extra network calls
+    try {
+      this.detailCache.set(id, { data: updated, timestamp: Date.now() });
+    } catch {
+      // Ignore cache update errors
+    }
 
-      // Check email uniqueness within tenant
-      const { data: existingCustomer, error: checkError } = await getSupabaseClient()
-        .from('customers')
-        .select('id')
-        .eq('email', customerData.email)
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
+    return updated;
+  }
 
-      if (existingCustomer && !checkError) {
-        throw new Error('Email address already exists for this tenant');
-      }
+  /**
+   * Override delete to clear cache after deletion
+   */
+  async delete(id: string, context?: any): Promise<void> {
+    // Call parent delete method
+    await super.delete(id, context);
 
-      const now = new Date().toISOString();
-
-      const insertData = {
-        company_name: customerData.company_name,
-        contact_name: customerData.contact_name,
-        email: customerData.email,
-        phone: customerData.phone,
-        mobile: customerData.mobile,
-        address: customerData.address,
-        city: customerData.city,
-        country: customerData.country,
-        website: customerData.website,
-        industry: customerData.industry,
-        size: customerData.size,
-        status: customerData.status,
-        customer_type: customerData.customer_type,
-        credit_limit: customerData.credit_limit,
-        payment_terms: customerData.payment_terms,
-        tax_id: customerData.tax_id,
-        source: customerData.source,
-        rating: customerData.rating,
-        notes: customerData.notes,
-        assigned_to: customerData.assigned_to || userId,
-        created_by: userId,
-        tenant_id: tenantId,
-        created_at: now,
-        updated_at: now
-      };
-
-      const { data, error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .insert([insertData])
-          .select(`
-            *,
-            customer_tag_mapping (
-              tag_id,
-              customer_tags (
-                id,
-                name,
-                color
-              )
-            )
-          `)
-          .single()
-      );
-
-      if (error) throw handleSupabaseError(error);
-      if (!data) throw new Error('Failed to create customer');
-
-      return this.mapToCustomer(data);
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to create customer');
+    // Clear cache to avoid stale lists after delete
+    try {
+      this.listCache.clear();
+      this.listInFlight.clear();
+      this.detailCache.delete(id);
+      this.detailInFlight.delete(id);
+      console.log('[CustomerService] Cache cleared after delete');
+    } catch {
+      // Ignore cache clear errors
     }
   }
 
   /**
-   * Update existing customer
+   * Override batchDelete to clear cache after batch deletion
+   * Implements cache invalidation per Rule 3A/1A
    */
-  async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
+  async batchDelete(ids: string[], context?: any): Promise<import('@/services/core/GenericCrudService').BatchDeleteResult> {
+    console.log('[CustomerService] Starting batch delete for', ids.length, 'customers');
+    
+    // Call parent batch delete method
+    const result = await super.batchDelete(ids, context);
+    
+    // Clear ALL caches after batch delete (CRITICAL for fresh data)
     try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      // Validate ownership
-      const { data: existing, error: fetchError } = await getSupabaseClient()
-        .from('customers')
-        .select('*')
-        .eq('id', id)
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (fetchError || !existing) throw new Error('Customer not found');
-
-      // Validate updates if they contain customer data fields
-      const existingCustomer = this.mapToCustomer(existing);
-      const updatedData = { ...existingCustomer, ...updates };
-
-      // Only validate if email or other key fields are being updated
-      if (updates.email || updates.company_name || updates.contact_name ||
-          updates.phone || updates.website || updates.size || updates.status ||
-          updates.customer_type || updates.credit_limit) {
-        this.validateCustomerData(updatedData, tenantId);
-
-        // Check email uniqueness if email is being updated
-        if (updates.email && updates.email !== existingCustomer.email) {
-          const { data: emailCheck, error: emailError } = await getSupabaseClient()
-            .from('customers')
-            .select('id')
-            .eq('email', updates.email)
-            .eq('tenant_id', tenantId)
-            .neq('id', id)
-            .maybeSingle();
-
-          if (emailCheck && !emailError) {
-            throw new Error('Email address already exists for this tenant');
-          }
-        }
-      }
-
-      // ✅ FIXED: Use explicit field mapping instead of spreading
-      // This prevents sending virtual fields like 'tags' (CustomerTag[] objects)
-      // that don't match the DB schema (tags is VARCHAR[] in DB)
-      const fieldMap: Record<string, string> = {
-        company_name: 'company_name',
-        contact_name: 'contact_name',
-        email: 'email',
-        phone: 'phone',
-        mobile: 'mobile',
-        website: 'website',
-        address: 'address',
-        city: 'city',
-        country: 'country',
-        industry: 'industry',
-        size: 'size',
-        status: 'status',
-        customer_type: 'customer_type',
-        credit_limit: 'credit_limit',
-        payment_terms: 'payment_terms',
-        tax_id: 'tax_id',
-        source: 'source',
-        rating: 'rating',
-        notes: 'notes',
-        assigned_to: 'assigned_to',
-        last_contact_date: 'last_contact_date',
-        next_follow_up_date: 'next_follow_up_date',
-        // Exclude: tags (virtual - handled via customer_tag_mapping table)
-        // Exclude: id, tenant_id, created_at, created_by (immutable)
-      };
-
-      const updateData: Record<string, unknown> = {};
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined && fieldMap[key]) {
-          updateData[fieldMap[key]] = value;
-        }
+      this.listCache.clear();
+      this.listInFlight.clear();
+      
+      // Clear detail cache for all deleted IDs
+      result.successIds.forEach(id => {
+        this.detailCache.delete(id);
+        this.detailInFlight.delete(id);
       });
-      updateData.updated_at = new Date().toISOString();
-
-      const { data, error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .update(updateData)
-          .eq('id', id)
-          .eq('tenant_id', tenantId)
-          .select(`
-            *,
-            customer_tag_mapping (
-              tag_id,
-              customer_tags (
-                id,
-                name,
-                color
-              )
-            )
-          `)
-          .single()
-      );
-
-      if (error) throw handleSupabaseError(error);
-      if (!data) throw new Error('Failed to update customer');
-
-      return this.mapToCustomer(data);
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to update customer');
-    }
-  }
-
-  /**
-   * Delete customer
-   */
-  async deleteCustomer(id: string): Promise<void> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const { error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .delete()
-          .eq('id', id)
-          .eq('tenant_id', tenantId)
-      );
-
-      if (error) throw handleSupabaseError(error);
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to delete customer');
-    }
-  }
-
-  /**
-   * Bulk delete customers
-   */
-  async bulkDeleteCustomers(ids: string[]): Promise<void> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const { error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .delete()
-          .eq('tenant_id', tenantId)
-          .in('id', ids)
-      );
-
-      if (error) throw handleSupabaseError(error);
-    } catch (error) {
-      console.error('Error bulk deleting customers:', error);
-      throw error instanceof Error ? error : new Error('Failed to delete customers');
-    }
-  }
-
-  /**
-   * Bulk update customers
-   */
-  async bulkUpdateCustomers(ids: string[], updates: Partial<Customer>): Promise<void> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-
-      // Remove fields that shouldn't be updated
-      delete updateData.id;
-      delete updateData.tenant_id;
-      delete updateData.created_at;
-
-      const { error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .update(updateData)
-          .eq('tenant_id', tenantId)
-          .in('id', ids)
-      );
-
-      if (error) throw handleSupabaseError(error);
-    } catch (error) {
-      console.error('Error bulk updating customers:', error);
-      throw error instanceof Error ? error : new Error('Failed to update customers');
-    }
-  }
-
-  /**
-   * Get all customer tags
-   */
-  async getTags(): Promise<CustomerTag[]> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const { data, error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customer_tags')
-          .select('*')
-          .eq('tenant_id', tenantId)
-      );
-
-      if (error) throw handleSupabaseError(error);
-
-      return (data || []).map(row => ({
-        id: row.id,
-        name: row.name,
-        color: row.color
-      }));
-    } catch (error) {
-      console.error('Error fetching tags:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch tags');
-    }
-  }
-
-  /**
-   * Create new customer tag
-   */
-  async createTag(name: string, color: string): Promise<CustomerTag> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      const { data, error } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customer_tags')
-          .insert([
-            {
-              name,
-              color,
-              tenant_id: tenantId,
-              created_at: new Date().toISOString()
-            }
-          ])
-          .select()
-          .single()
-      );
-
-      if (error) throw handleSupabaseError(error);
-      if (!data) throw new Error('Failed to create tag');
-
-      return {
-        id: data.id,
-        name: data.name,
-        color: data.color
-      };
-    } catch (error) {
-      console.error('Error creating tag:', error);
-      throw error instanceof Error ? error : new Error('Failed to create tag');
-    }
-  }
-
-  /**
-   * Add a tag to a customer
-   */
-  async addTagToCustomer(customerId: string, tagId: string): Promise<void> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      // Verify customer exists and belongs to tenant
-      const { data: customer, error: customerError } = await getSupabaseClient()
-        .from('customers')
-        .select('id')
-        .eq('id', customerId)
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (customerError || !customer) throw new Error('Customer not found');
-
-      // Insert tag mapping
-      const { error } = await getSupabaseClient()
-        .from('customer_tag_mapping')
-        .insert([{ customer_id: customerId, tag_id: tagId }]);
-
-      // Ignore duplicate key errors (tag already linked)
-      if (error && !error.message.includes('duplicate')) {
-        throw handleSupabaseError(error);
-      }
-    } catch (error) {
-      console.error('Error adding tag to customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to add tag');
-    }
-  }
-
-  /**
-   * Remove a tag from a customer
-   */
-  async removeTagFromCustomer(customerId: string, tagId: string): Promise<void> {
-    try {
-      const { error } = await getSupabaseClient()
-        .from('customer_tag_mapping')
-        .delete()
-        .eq('customer_id', customerId)
-        .eq('tag_id', tagId);
-
-      if (error) throw handleSupabaseError(error);
-    } catch (error) {
-      console.error('Error removing tag from customer:', error);
-      throw error instanceof Error ? error : new Error('Failed to remove tag');
-    }
-  }
-
-  /**
-   * Set tags for a customer (replaces all existing tags)
-   */
-  async setCustomerTags(customerId: string, tagIds: string[]): Promise<void> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      // Verify customer exists and belongs to tenant
-      const { data: customer, error: customerError } = await getSupabaseClient()
-        .from('customers')
-        .select('id')
-        .eq('id', customerId)
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (customerError || !customer) throw new Error('Customer not found');
-
-      // Delete existing tag mappings
-      const { error: deleteError } = await getSupabaseClient()
-        .from('customer_tag_mapping')
-        .delete()
-        .eq('customer_id', customerId);
-
-      if (deleteError) throw handleSupabaseError(deleteError);
-
-      // Insert new tag mappings
-      if (tagIds.length > 0) {
-        const mappings = tagIds.map(tagId => ({
-          customer_id: customerId,
-          tag_id: tagId
-        }));
-
-        const { error: insertError } = await getSupabaseClient()
-          .from('customer_tag_mapping')
-          .insert(mappings);
-
-        if (insertError) throw handleSupabaseError(insertError);
-      }
-    } catch (error) {
-      console.error('Error setting customer tags:', error);
-      throw error instanceof Error ? error : new Error('Failed to set tags');
-    }
-  }
-
-  /**
-   * Export customers as CSV or JSON
-   */
-  async exportCustomers(format: 'csv' | 'json' = 'csv'): Promise<string> {
-    try {
-      const customers = await this.getCustomers();
-
-      if (format === 'csv') {
-        const headers = [
-          'Company Name', 'Contact Name', 'Email', 'Phone', 'Address',
-          'City', 'Country', 'Industry', 'Size', 'Status', 'Tags', 'Notes', 'Created At'
-        ];
-
-        const csvData = customers.map(c => [
-          c.company_name,
-          c.contact_name,
-          c.email,
-          c.phone,
-          c.address,
-          c.city,
-          c.country,
-          c.industry,
-          c.size,
-          c.status,
-          c.tags.map(t => t.name).join('; '),
-          c.notes || '',
-          new Date(c.created_at).toLocaleDateString()
-        ]);
-
-        return [headers, ...csvData].map(row =>
-          row.map(field => `"${field}"`).join(',')
-        ).join('\r\n');
-      } else {
-        return JSON.stringify(customers, null, 2);
-      }
-    } catch (error) {
-      console.error('Error exporting customers:', error);
-      throw error instanceof Error ? error : new Error('Failed to export customers');
-    }
-  }
-
-  /**
-   * Import customers from CSV
-   */
-  async importCustomers(csvData: string): Promise<{ success: number; errors: string[] }> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-      const userId = multiTenantService.getCurrentUserId();
-
-      const lines = csvData.split('\r\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      const dataLines = lines.slice(1);
-
-      let success = 0;
-      const errors: string[] = [];
-
-      for (let i = 0; i < dataLines.length; i++) {
-        try {
-          const values = dataLines[i].split(',').map(v => v.replace(/"/g, '').trim());
-
-          if (values.length !== headers.length) {
-            errors.push(`Row ${i + 2}: Invalid number of columns`);
-            continue;
-          }
-
-          // Extract values
-          const email = values[headers.indexOf('Email')] || values[2];
-          if (!email || !email.includes('@')) {
-            errors.push(`Row ${i + 2}: Invalid email address`);
-            continue;
-          }
-
-          const customerData = {
-            company_name: values[headers.indexOf('Company Name')] || values[0],
-            contact_name: values[headers.indexOf('Contact Name')] || values[1],
-            email,
-            phone: values[headers.indexOf('Phone')] || values[3],
-            address: values[headers.indexOf('Address')] || values[4],
-            city: values[headers.indexOf('City')] || values[5],
-            country: values[headers.indexOf('Country')] || values[6],
-            industry: values[headers.indexOf('Industry')] || values[7],
-            size: values[headers.indexOf('Size')] || 'small',
-            status: 'active',
-            tenant_id: tenantId,
-            assigned_to: userId,
-            notes: values[headers.indexOf('Notes')] || '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-
-          const { error } = await getSupabaseClient()
-            .from('customers')
-            .insert([customerData]);
-
-          if (error) throw error;
-          success++;
-        } catch (error) {
-          errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      }
-
-      return { success, errors };
-    } catch (error) {
-      console.error('Error importing customers:', error);
-      throw error instanceof Error ? error : new Error('Failed to import customers');
-    }
-  }
-
-  /**
-   * Get list of industries
-   */
-  async getIndustries(): Promise<string[]> {
-    return [
-      'Technology',
-      'Manufacturing',
-      'Software',
-      'Retail',
-      'Healthcare',
-      'Finance',
-      'Education',
-      'Other'
-    ];
-  }
-
-  /**
-   * Get list of company sizes
-   */
-  async getSizes(): Promise<string[]> {
-    return ['startup', 'small', 'medium', 'enterprise'];
-  }
-
-  /**
-   * Get customer statistics
-   */
-  async getCustomerStats(): Promise<{
-    totalCustomers: number;
-    activeCustomers: number;
-    prospectCustomers: number;
-    inactiveCustomers: number;
-    byIndustry: Record<string, number>;
-    bySize: Record<string, number>;
-    byStatus: Record<string, number>;
-  }> {
-    try {
-      const tenantId = multiTenantService.getCurrentTenantId();
-
-      // Fetch all customers for the tenant
-      const { data: customerRows, error: customerError } = await retryQuery(async () =>
-        getSupabaseClient()
-          .from('customers')
-          .select('id, status, industry, size')
-          .eq('tenant_id', tenantId)
-      );
-
-      if (customerError) throw handleSupabaseError(customerError);
-
-      const customers = customerRows || [];
-
-      // Calculate statistics
-      const byStatus: Record<string, number> = {};
-      const byIndustry: Record<string, number> = {};
-      const bySize: Record<string, number> = {};
-
-      customers.forEach(customer => {
-        const statusKey = (customer.status || 'unknown').toLowerCase();
-        // Normalize industry to lowercase for consistent grouping
-        const industryKey = (customer.industry || 'unknown').toLowerCase();
-        const sizeKey = ((customer.size as string | undefined) || 'unknown').toLowerCase();
-
-        byStatus[statusKey] = (byStatus[statusKey] || 0) + 1;
-        byIndustry[industryKey] = (byIndustry[industryKey] || 0) + 1;
-        bySize[sizeKey] = (bySize[sizeKey] || 0) + 1;
+      
+      console.log('[CustomerService] Cache cleared after batch delete:', {
+        successCount: result.successCount,
+        failureCount: result.failureCount,
       });
-
-      return {
-        totalCustomers: customers.length,
-        activeCustomers: customers.filter(c => c.status === 'active').length,
-        prospectCustomers: customers.filter(c => c.status === 'prospect').length,
-        inactiveCustomers: customers.filter(c => c.status === 'inactive').length,
-        byIndustry,
-        bySize,
-        byStatus
-      };
     } catch (error) {
-      console.error('[SupabaseCustomerService] Error fetching customer stats:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch customer statistics');
+      console.error('[CustomerService] Error clearing cache after batch delete:', error);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Override findOne to include tags
+   */
+  async findOne(id: string): Promise<Customer | null> {
+    const cacheKey = id;
+    const cached = this.detailCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
+      return cached.data;
+    }
+
+    const inFlight = this.detailInFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
+      // Rely on repository mapping (customers.tags array column) to populate tags
+      const customer = await this.repository.findById(id);
+      this.detailCache.set(cacheKey, { data: customer, timestamp: Date.now() });
+      return customer;
+    })();
+
+    this.detailInFlight.set(cacheKey, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      this.detailInFlight.delete(cacheKey);
     }
   }
 
   /**
-   * Map database row to Customer interface
+   * Override findMany to include tags for each customer
    */
-  private mapToCustomer(row: any): Customer {
-    // Extract tags from the junction table
-    const tagMappings = row.customer_tag_mapping || [];
-    const tags = tagMappings
-      .map((mapping: any) => mapping.customer_tags)
-      .filter((tag: any) => tag != null)
-      .map((tag: any) => ({
+  async findMany(filters?: Record<string, any>): Promise<{ data: Customer[]; total: number }> {
+    const cacheKey = JSON.stringify(filters || {});
+    const cached = this.listCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
+      return cached.data;
+    }
+
+    const inFlight = this.listInFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
+      // Call repository directly; tags come from customers.tags (string[]) mapped to CustomerTag
+      const result = await this.repository.findMany(filters);
+      this.listCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
+    })();
+
+    this.listInFlight.set(cacheKey, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      this.listInFlight.delete(cacheKey);
+    }
+  }
+
+  /**
+   * Get tags for a specific customer
+   */
+  private async getCustomerTags(customerId: string): Promise<CustomerTag[]> {
+    const authService = serviceFactory.getService('auth');
+    const tenantId = typeof authService?.getCurrentTenant === 'function'
+      ? authService.getCurrentTenant()?.id
+      : undefined;
+
+    // If tenantId is unavailable (e.g., mock auth), do not filter by tenant to avoid zero results
+    const tenantFilter = tenantId ? { tenant_id: tenantId } : {};
+    
+    const { data, error } = await getSupabaseClient()
+      .from('customer_tag_mapping')
+      .select(`
+        customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
+          id,
+          name,
+          color
+        )
+      `)
+      .eq('customer_id', customerId);
+
+    if (error) throw error;
+
+    return (data || [])
+      .map(row => row.customer_tags)
+      .filter(Boolean)
+      .flatMap((tag) => (Array.isArray(tag) ? tag : [tag]))
+      .map((tag) => ({
         id: tag.id,
         name: tag.name,
         color: tag.color
       }));
+  }
 
-    const company = row.company || row.companies || null;
-    const contactName =
-      row.contact_name ||
-      row.email ||
-      'Unknown contact';
+  /**
+   * Get tags for multiple customers (batch operation)
+   */
+  private async getCustomerTagsMap(customerIds: string[]): Promise<Map<string, CustomerTag[]>> {
+    const { data, error } = await getSupabaseClient()
+      .from('customer_tag_mapping')
+      .select(`
+        customer_id,
+        customer_tags:customer_tags!customer_tag_mapping_tag_id_fkey (
+          id,
+          name,
+          color
+        )
+      `)
+      .in('customer_id', customerIds);
 
-    const companyName =
-      row.company_name ||
-      company?.name ||
-      contactName;
+    if (error) throw error;
 
-    const industry = row.industry || company?.industry || 'General';
-    const size = row.size || company?.size || 'small';
+    const tagsMap = new Map<string, CustomerTag[]>();
+    
+    (data || []).forEach(row => {
+      const customerId = row.customer_id;
+      const tag = row.customer_tags;
+      
+      if (!tagsMap.has(customerId)) {
+        tagsMap.set(customerId, []);
+      }
+      
+      if (tag) {
+        const tagEntries = Array.isArray(tag) ? tag : [tag];
+        tagEntries.forEach((t) => {
+          tagsMap.get(customerId)!.push({
+            id: t.id,
+            name: t.name,
+            color: t.color
+          });
+        });
+      }
+    });
+
+    return tagsMap;
+  }
+
+  /**
+   * Update customer tags (replace all)
+   */
+  private async updateCustomerTags(customerId: string, tagIds: string[]): Promise<void> {
+    const authService = serviceFactory.getService('auth');
+    const tenantId = authService.getCurrentTenant()?.id;
+
+    // Delete existing mappings
+    await getSupabaseClient()
+      .from('customer_tag_mapping')
+      .delete()
+      .eq('customer_id', customerId);
+
+    // Insert new mappings
+    if (tagIds.length > 0) {
+      const mappings = tagIds.map(tagId => ({
+        customer_id: customerId,
+        tag_id: tagId
+      }));
+
+      const { error } = await getSupabaseClient()
+        .from('customer_tag_mapping')
+        .insert(mappings);
+
+      if (error) throw error;
+    }
+  }
+
+  /**
+   * Get all available tags for tenant
+   */
+  async getAllTags(): Promise<CustomerTag[]> {
+    const authService = serviceFactory.getService('auth');
+    const tenantId = authService.getCurrentTenant()?.id;
+
+    const { data, error } = await getSupabaseClient()
+      .from('customer_tags')
+      .select('id, name, color')
+      .eq('tenant_id', tenantId)
+      .order('name');
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      color: row.color
+    }));
+  }
+
+  /**
+   * Create a new tag
+   */
+  async createTag(name: string, color?: string): Promise<CustomerTag> {
+    const authService = serviceFactory.getService('auth');
+    const tenantId = authService.getCurrentTenant()?.id;
+    const userId = authService.getCurrentUser()?.id;
+
+    const { data, error } = await getSupabaseClient()
+      .from('customer_tags')
+      .insert({
+        name,
+        color: color || '#3B82F6',
+        tenant_id: tenantId,
+        created_by: userId
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return {
-      id: row.id,
-      company_name: companyName,
-      contact_name: contactName,
-      email: row.email,
-      phone: row.phone,
-      mobile: row.mobile,
-      website: row.website || company?.website,
-      address: row.address,
-      city: row.city || company?.city,
-      country: row.country || company?.country,
-      industry,
-      size,
-      status: (row.status || 'active') as Customer['status'],
-      customer_type: (row.customer_type || 'business') as Customer['customer_type'],
-      credit_limit: row.credit_limit,
-      payment_terms: row.payment_terms,
-      tax_id: row.tax_id,
-      annual_revenue: row.annual_revenue,
-      total_sales_amount: row.total_sales_amount,
-      total_orders: row.total_orders,
-      average_order_value: row.average_order_value,
-      last_purchase_date: row.last_purchase_date,
-      tags,
-      notes: row.notes,
-      assigned_to: row.assigned_to,
-      source: row.source,
-      rating: row.rating,
-      last_contact_date: row.last_contact_date,
-      next_follow_up_date: row.next_follow_up_date,
-      tenant_id: row.tenant_id,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      created_by: row.created_by,
-      deleted_at: row.deleted_at
+      id: data.id,
+      name: data.name,
+      color: data.color
     };
+  }
+
+  /**
+   * Delete a tag
+   */
+  async deleteTag(tagId: string): Promise<void> {
+    // First delete all mappings
+    await getSupabaseClient()
+      .from('customer_tag_mapping')
+      .delete()
+      .eq('tag_id', tagId);
+
+    // Then delete the tag
+    const { error } = await getSupabaseClient()
+      .from('customer_tags')
+      .delete()
+      .eq('id', tagId);
+
+    if (error) throw error;
+  }
+
+  /**
+   * Get customer statistics
+   * 
+   * These fields were removed from the customers table and moved to the customer_summary
+   * materialized view. This view aggregates data from sales/deals to compute these metrics.
+   */
+  async getCustomerStats(customerId?: string): Promise<{
+    // Per-customer sales stats (when customerId is provided)
+    totalSalesAmount?: number;
+    totalOrders?: number;
+    averageOrderValue?: number;
+    lastPurchaseDate?: string | null;
+    // Aggregate customer counts (when no customerId is provided)
+    totalCustomers?: number;
+    activeCustomers?: number;
+    inactiveCustomers?: number;
+    prospectCustomers?: number;
+    byIndustry?: Record<string, number>;
+    bySize?: Record<string, number>;
+    byStatus?: Record<string, number>;
+    recentlyAdded?: number;
+  }> {
+    const authService = serviceFactory.getService('auth');
+    if (customerId) {
+      const { data, error } = await getSupabaseClient()
+        .from('customer_summary')
+        .select('total_sales_amount, total_orders, average_order_value, last_purchase_date')
+        .eq('id', customerId)
+        .single();
+
+      if (error) {
+        // If customer not in summary view yet (no sales), return zeros
+        if (error.code === 'PGRST116') {
+          return {
+            totalSalesAmount: 0,
+            totalOrders: 0,
+            averageOrderValue: 0,
+            lastPurchaseDate: null
+          };
+        }
+        throw error;
+      }
+
+      return {
+        totalSalesAmount: data.total_sales_amount || 0,
+        totalOrders: data.total_orders || 0,
+        averageOrderValue: data.average_order_value || 0,
+        lastPurchaseDate: data.last_purchase_date || null
+      };
+    }
+
+    // Aggregate stats across all customers for the tenant
+    const { data, error } = await getSupabaseClient()
+      .from('customers')
+      .select('status, industry, size, created_at', { count: 'exact' });
+
+    if (error) throw error;
+
+    const customers = data || [];
+    const stats = {
+      totalCustomers: customers.length,
+      activeCustomers: customers.filter((c: any) => c.status === 'active').length,
+      inactiveCustomers: customers.filter((c: any) => c.status === 'inactive').length,
+      prospectCustomers: customers.filter((c: any) => c.status === 'prospect').length,
+      byIndustry: {} as Record<string, number>,
+      bySize: {} as Record<string, number>,
+      byStatus: {} as Record<string, number>,
+      recentlyAdded: 0,
+    };
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    customers.forEach((c: any) => {
+      const industry = (c.industry || 'unknown').toLowerCase();
+      const size = (c.size || 'unknown').toLowerCase();
+      const status = (c.status || 'unknown').toLowerCase();
+
+      stats.byIndustry[industry] = (stats.byIndustry[industry] || 0) + 1;
+      stats.bySize[size] = (stats.bySize[size] || 0) + 1;
+      stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
+
+      if (c.created_at && new Date(c.created_at) >= thirtyDaysAgo) {
+        stats.recentlyAdded += 1;
+      }
+    });
+
+    return stats;
+  }
+
+  /**
+   * Email validation helper
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }
 
-export { SupabaseCustomerService };
-export const supabaseCustomerService = new SupabaseCustomerService();
+// Export singleton instance
+export const customerService = new CustomerService();

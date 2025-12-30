@@ -3,10 +3,7 @@
  * Handles authentication, login, and demo accounts
  */
 
-export { LoginPage } from './views/LoginPage';
-export { RegistrationPage } from './views/RegistrationPage';
-export { NotFoundPage } from './views/NotFoundPage';
-export { DemoAccountsPage } from './views/DemoAccountsPage';
+// Views are lazy-loaded; avoid static re-exports to preserve chunking
 
 export const authModule = {
   name: 'auth',

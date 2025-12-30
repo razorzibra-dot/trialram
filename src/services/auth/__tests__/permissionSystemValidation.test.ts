@@ -3,6 +3,14 @@
  * Validates database permissions table structure, categories, fallback system, and action-to-permission mapping
  */
 
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
+const {
+  READ: CUSTOMER_READ,
+  UPDATE: CUSTOMER_UPDATE,
+  DELETE: CUSTOMER_DELETE,
+} = CUSTOMER_PERMISSIONS;
+
 describe('Permission System Validation', () => {
   describe('2.2.1: Verify database permissions table structure', () => {
     const EXPECTED_PERMISSIONS_COLUMNS = [
@@ -88,7 +96,7 @@ describe('Permission System Validation', () => {
 
       // Module permissions: Feature-specific (crm:customer:record:update, crm:sales:deal:update, etc.)
       const modulePermissions = [
-        'crm:customer:record:update',
+        CUSTOMER_UPDATE,
         'crm:sales:deal:update',
         'manage_tickets',
         'manage_contracts',
@@ -124,7 +132,7 @@ describe('Permission System Validation', () => {
     it('should have fallback permissions for admin', () => {
       const adminPermissions = [
         'read', 'write', 'delete',
-        'crm:user:record:update', 'crm:role:record:update', 'crm:customer:record:update', 'crm:sales:deal:update',
+        'crm:user:record:update', 'crm:role:record:update', CUSTOMER_UPDATE, 'crm:sales:deal:update',
         'manage_tickets', 'manage_contracts', 'manage_products', 'view_dashboard',
       ];
       expect(adminPermissions.length).toBeGreaterThan(0);
@@ -135,7 +143,7 @@ describe('Permission System Validation', () => {
     it('should have fallback permissions for manager', () => {
       const managerPermissions = [
         'read', 'write',
-        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        CUSTOMER_UPDATE, 'crm:sales:deal:update', 'manage_tickets',
         'manage_contracts', 'manage_products', 'view_dashboard',
       ];
       expect(managerPermissions.length).toBeGreaterThan(0);
@@ -147,7 +155,7 @@ describe('Permission System Validation', () => {
     it('should have fallback permissions for agent (user)', () => {
       const agentPermissions = [
         'read', 'write',
-        'crm:customer:record:update', 'manage_tickets', 'view_dashboard',
+        CUSTOMER_UPDATE, 'manage_tickets', 'view_dashboard',
       ];
       expect(agentPermissions.length).toBeGreaterThan(0);
       expect(agentPermissions).toContain('read');
@@ -213,9 +221,9 @@ describe('Permission System Validation', () => {
     it('should handle resource:action permission format', () => {
       // Permissions can be in format: "resource:action" or "resource.action"
       const permissionFormats = [
-        'crm:customer:record:read',
+        CUSTOMER_READ,
         'customers:write',
-        'crm:customer:record:delete',
+        CUSTOMER_DELETE,
         'sales.read',
         'sales.write',
       ];
@@ -234,7 +242,7 @@ describe('Permission System Validation', () => {
       // Permission cache should store user permissions for performance
       const cacheStructure = {
         userId: 'user-123',
-        permissions: new Set(['read', 'write', 'crm:customer:record:update']),
+        permissions: new Set(['read', 'write', CUSTOMER_UPDATE]),
       };
 
       expect(cacheStructure.userId).toBeDefined();
@@ -260,10 +268,10 @@ describe('Permission System Validation', () => {
     it('should map resource-specific actions to permissions', () => {
       const resourceActionMap: Record<string, Record<string, string>> = {
         'customers': {
-          'read': 'crm:customer:record:update',
-          'create': 'crm:customer:record:update',
-          'update': 'crm:customer:record:update',
-          'delete': 'crm:customer:record:update',
+          'read': CUSTOMER_UPDATE,
+          'create': CUSTOMER_UPDATE,
+          'update': CUSTOMER_UPDATE,
+          'delete': CUSTOMER_UPDATE,
         },
         'sales': {
           'read': 'crm:sales:deal:update',
@@ -279,7 +287,7 @@ describe('Permission System Validation', () => {
         },
       };
 
-      expect(resourceActionMap['customers']['read']).toBe('crm:customer:record:update');
+      expect(resourceActionMap['customers']['read']).toBe(CUSTOMER_UPDATE);
       expect(resourceActionMap['sales']['create']).toBe('crm:sales:deal:update');
       expect(resourceActionMap['users']['delete']).toBe('crm:user:record:update');
     });
@@ -290,7 +298,7 @@ describe('Permission System Validation', () => {
       const permissionInheritance = {
         'user': {
           'roles': ['Administrator'],
-          'permissions': ['read', 'write', 'crm:user:record:update', 'crm:customer:record:update'],
+          'permissions': ['read', 'write', 'crm:user:record:update', CUSTOMER_UPDATE],
         },
       };
 

@@ -51,11 +51,4 @@ export const superAdminModule: FeatureModule = {
   },
 };
 
-// Export views for direct imports if needed
-export { default as SuperAdminDashboardPage } from './views/SuperAdminDashboardPage';
-export { default as SuperAdminTenantsPage } from './views/SuperAdminTenantsPage';
-export { default as SuperAdminUsersPage } from './views/SuperAdminUsersPage';
-export { default as SuperAdminAnalyticsPage } from './views/SuperAdminAnalyticsPage';
-export { default as SuperAdminHealthPage } from './views/SuperAdminHealthPage';
-export { default as SuperAdminConfigurationPage } from './views/SuperAdminConfigurationPage';
-export { default as SuperAdminRoleRequestsPage } from './views/SuperAdminRoleRequestsPage';
+// Views are lazy-loaded via routes; avoid static re-exports to preserve chunking

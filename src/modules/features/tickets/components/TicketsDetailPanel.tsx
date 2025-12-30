@@ -3,13 +3,13 @@
  * Read-only side drawer for viewing ticket details
  */
 
-import React, { useState, useRef } from 'react';
-import { Drawer, Button, Row, Col, Tag, Empty, Spin, Input, Avatar, Divider, List, Upload, message, Card, Statistic } from 'antd';
+import React, { useState, useRef, useMemo } from 'react';
+import { Drawer, Button, Row, Col, Tag, Empty, Spin, Input, Avatar, List, Card, Statistic } from 'antd';
 import { EditOutlined, SendOutlined, PaperClipOutlined, ClockCircleOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined, InfoCircleOutlined, UserOutlined, MessageOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/crm';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTicketComments, useCreateTicketComment, useAddCommentReply } from '../hooks/useTicketComments';
-import { useTicketAttachments, useUploadTicketAttachment, useDeleteTicketAttachment, useDownloadTicketAttachment } from '../hooks/useTicketAttachments';
+import { useTicketCommentsCrud, useCreateTicketCommentCrud, useAddCommentReply } from '../hooks/useTicketComments';
+import { useTicketAttachmentsCrud, useCreateTicketAttachmentCrud, useDeleteTicketAttachmentCrud, useDownloadTicketAttachment } from '../hooks/useTicketAttachments';
 import { useReferenceDataLookup } from '@/hooks/useReferenceDataLookup';
 import dayjs from 'dayjs';
 
@@ -71,9 +71,19 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
   onClose,
   onEdit,
 }) => {
-  const { hasPermission, user } = useAuth();
+  const { hasPermission } = useAuth();
   const [newComment, setNewComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ticketId = ticket?.id;
+  const commentFilters = useMemo(
+    () => ({ customFilters: { ticketId } }),
+    [ticketId]
+  );
+  const attachmentFilters = useMemo(
+    () => ({ customFilters: { ticketId } }),
+    [ticketId]
+  );
 
   // Database-driven color lookups
   const { getColor: getStatusColor, getLabel: getStatusLabel } = useReferenceDataLookup('ticket_status');
@@ -107,14 +117,16 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
   };
 
   // Comments hooks
-  const { data: comments = [], isLoading: commentsLoading } = useTicketComments(ticket?.id || '');
-  const createComment = useCreateTicketComment();
+  const { data: commentsResponse, isLoading: commentsLoading } = useTicketCommentsCrud(commentFilters);
+  const comments = commentsResponse?.data || [];
+  const createComment = useCreateTicketCommentCrud();
   const addReply = useAddCommentReply();
 
   // Attachments hooks
-  const { data: attachments = [], isLoading: attachmentsLoading } = useTicketAttachments(ticket?.id || '');
-  const uploadAttachment = useUploadTicketAttachment();
-  const deleteAttachment = useDeleteTicketAttachment();
+  const { data: attachmentsResponse, isLoading: attachmentsLoading } = useTicketAttachmentsCrud(attachmentFilters);
+  const attachments = attachmentsResponse?.data || [];
+  const createAttachment = useCreateTicketAttachmentCrud();
+  const deleteAttachment = useDeleteTicketAttachmentCrud();
   const downloadAttachment = useDownloadTicketAttachment();
 
   // Comment handlers
@@ -123,7 +135,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
 
     try {
       await createComment.mutateAsync({
-        ticketId: ticket.id,
+        ticket_id: ticket.id,
         content: newComment.trim(),
       });
       setNewComment('');
@@ -148,7 +160,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
     if (!ticket) return;
 
     try {
-      await uploadAttachment.mutateAsync({ ticketId: ticket.id, file });
+      await createAttachment.mutateAsync({ ticket_id: ticket.id, file });
     } catch (error) {
       console.error('Error uploading attachment:', error);
     }
@@ -493,7 +505,7 @@ export const TicketsDetailPanel: React.FC<TicketsDetailPanelProps> = ({
                   size="small"
                   icon={<UploadOutlined />}
                   onClick={() => fileInputRef.current?.click()}
-                  loading={uploadAttachment.isPending}
+                  loading={createAttachment.isPending}
                 >
                   Upload File
                 </Button>

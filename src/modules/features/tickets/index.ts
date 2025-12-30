@@ -16,6 +16,8 @@ export { TicketsFormPanel } from './components/TicketsFormPanel';
 // Routes
 export { ticketsRoutes } from './routes';
 import { ticketsRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { ticketService } from '@/services/serviceFactory';
 
 // Module configuration
 export const ticketsModule = {
@@ -28,22 +30,15 @@ export const ticketsModule = {
   
   // Initialize the module
   async initialize() {
-    const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-    const { ticketService } = await import('@/services/serviceFactory');
-    
     // Register ticket service from factory
     registerServiceInstance('ticketService', ticketService);
-    
     console.log('Tickets module initialized');
   },
   
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-    
     // Remove ticket service
     serviceContainer.remove('ticketService');
-    
     console.log('Tickets module cleaned up');
   },
 };

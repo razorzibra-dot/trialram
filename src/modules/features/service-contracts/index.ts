@@ -9,6 +9,8 @@
  */
 import { FeatureModule } from '@/modules/core/types';
 import { serviceContractsRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { serviceContractService } from '@/services/serviceFactory';
 
 export const serviceContractsModule: FeatureModule = {
   name: 'service-contracts',
@@ -21,13 +23,9 @@ export const serviceContractsModule: FeatureModule = {
   async initialize() {
     console.log('[Service Contracts] 🚀 Initializing...');
     try {
-      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { serviceContractService } = await import('@/services/serviceFactory');
-      
       // Register service contract service (as instance, not constructor)
       registerServiceInstance('serviceContractService', serviceContractService);
       console.log('[Service Contracts] ✅ serviceContractService registered');
-      
       console.log('[Service Contracts] ✅ Module initialized successfully');
     } catch (error) {
       console.error('[Service Contracts] ❌ Failed to initialize:', error);
@@ -37,17 +35,12 @@ export const serviceContractsModule: FeatureModule = {
   
   async cleanup() {
     console.log('[Service Contracts] 🧹 Cleaning up...');
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-    
     serviceContainer.remove('serviceContractService');
-    
     console.log('[Service Contracts] ✅ Module cleaned up');
   },
 };
 
-// Export views for direct imports if needed
-export { default as ServiceContractsPage } from './views/ServiceContractsPage';
-export { default as ServiceContractDetailPage } from './views/ServiceContractDetailPage';
+// Views are lazy-loaded via routes; avoid static re-exports to preserve chunking
 
 // Export components
 export { default as ServiceContractFormModal } from './components/ServiceContractFormModal';

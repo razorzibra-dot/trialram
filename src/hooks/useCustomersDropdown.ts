@@ -22,9 +22,12 @@
  * ```
  */
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { customerService } from '@/services/serviceFactory';
+import { serviceFactory } from '@/services/serviceFactory';
 import { Customer } from '@/types/crm';
+import { useOptionalModuleData } from '@/contexts/ModuleDataContext';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 
 /**
  * Customer dropdown option format
@@ -47,11 +50,16 @@ async function fetchActiveCustomers(): Promise<Customer[]> {
     console.log('[useCustomersDropdown] ⚡ Fetching active customers via factory service...');
     console.log('[useCustomersDropdown] API Mode:', import.meta.env.VITE_API_MODE);
     
-    // ✅ Use factory service - routes to Supabase or Mock based on VITE_API_MODE
-    // ✅ Note: SupabaseCustomerService doesn't support page/pageSize, only status filter
-    const response = await customerService.getCustomers({ 
-      status: 'active'
-    });
+    const svc = serviceFactory.getService('customer') as any;
+
+    // Try the newer findMany/getAll shape first; fallback to legacy getCustomers if present
+    const response = typeof svc.findMany === 'function'
+      ? await svc.findMany({ status: 'active', pageSize: 500 })
+      : typeof svc.getAll === 'function'
+      ? await svc.getAll({ status: 'active', pageSize: 500 })
+      : typeof svc.getCustomers === 'function'
+      ? await svc.getCustomers({ status: 'active' })
+      : [];
 
     console.log('[useCustomersDropdown] ✅ Response received:', {
       isArray: Array.isArray(response),
@@ -105,22 +113,40 @@ async function fetchActiveCustomers(): Promise<Customer[]> {
  * @returns React Query result with customerOptions array
  */
 export const useCustomersDropdown = () => {
+  // Opportunistically read preloaded module data if available
+  const moduleCtx = useOptionalModuleData();
+  const currentTenant = useCurrentTenant();
+  const preloadedActiveCustomers: Customer[] | undefined = useMemo(() => {
+    const raw = moduleCtx?.data?.moduleData?.customers;
+    if (!raw) return undefined;
+
+    // Support both array and { data } shapes
+    const list: Customer[] = Array.isArray(raw)
+      ? (raw as Customer[])
+      : Array.isArray((raw as any)?.data)
+      ? ((raw as any).data as Customer[])
+      : [];
+
+    if (!list.length) return [];
+    return list.filter(c => (c as any)?.status === 'active');
+  }, [moduleCtx?.data?.moduleData?.customers]);
+
+  const enabled = !!currentTenant?.id && !preloadedActiveCustomers; // Only fetch if tenant ready and no preloaded data
+
   return useQuery({
-    queryKey: ['customers', 'dropdown', 'active'],
+    queryKey: ['customers', 'dropdown', 'active', currentTenant?.id || 'none'],
     queryFn: fetchActiveCustomers,
-    staleTime: 0, // ⚠️ TEMP: Force fresh fetch every time for debugging
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    // ❌ REMOVED initialData - it was preventing queryFn from being called!
-    refetchOnMount: true, // Force refetch when component mounts
+    // Enterprise React Query defaults
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    gcTime: 10 * 60 * 1000,
+    enabled,
+    initialData: preloadedActiveCustomers,
     select: (customers): CustomerDropdownOption[] => {
-      if (!Array.isArray(customers)) {
-        console.warn('[useCustomersDropdown] Select received non-array:', typeof customers);
-        return [];
-      }
-      console.log('[useCustomersDropdown] Transforming customers to options, count:', customers.length);
-      return customers.map(customer => ({
-        label: `${customer.company_name}${customer.contact_name ? ' • ' + customer.contact_name : ''}`,
+      const arr = Array.isArray(customers) ? customers : [];
+      return arr.map(customer => ({
+        label: `${(customer as any).companyName || (customer as any).company_name || ''}${(customer as any).contactName || (customer as any).contact_name ? ' • ' + ((customer as any).contactName || (customer as any).contact_name) : ''}`,
         value: customer.id,
         customer,
       }));

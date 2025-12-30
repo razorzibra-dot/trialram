@@ -37,6 +37,9 @@ export interface BackendConfig {
     enabled: boolean;
     ttl: number;
     deduplication: boolean;
+    referenceTtlMs?: number;
+    navigationTtlMs?: number;
+    pageDataTtlMs?: number;
   };
   monitoring?: {
     enableLogging: boolean;
@@ -88,6 +91,9 @@ export const backendConfig: BackendConfig = {
     enabled: import.meta.env.VITE_ENABLE_SERVICE_CACHE !== 'false',
     ttl: parseInt(import.meta.env.VITE_CACHE_TTL || '300000'),
     deduplication: import.meta.env.VITE_ENABLE_REQUEST_DEDUPLICATION !== 'false',
+    referenceTtlMs: parseInt(import.meta.env.VITE_REF_DATA_TTL_MS || '300000'),
+    navigationTtlMs: parseInt(import.meta.env.VITE_NAV_ITEMS_TTL_MS || '60000'),
+    pageDataTtlMs: parseInt(import.meta.env.VITE_PAGE_DATA_TTL_MS || '300000'),
   },
 
   monitoring: {

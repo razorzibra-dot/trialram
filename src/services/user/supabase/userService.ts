@@ -29,12 +29,14 @@
 
 import { supabase } from '@/services/supabase/client';
 import { authService } from '../../serviceFactory';
+import { rbacService } from '../../serviceFactory';
 import {
   mapUserRoleToDatabaseRole,
   getValidUserRoles,
   isValidUserRole,
   isPlatformRoleByName,
   mapDatabaseRoleNameToUserRoleSync,
+  getValidUserRolesFromDatabaseRoles,
 } from '@/utils/roleMapping';
 import { isSuperAdmin } from '@/utils/tenantIsolation';
 import {
@@ -149,6 +151,12 @@ function mapUserRow(dbRow: any): UserDTO {
 class SupabaseUserService {
   private table = 'users';
   private activityTable = 'user_activities';
+  // Short-lived cache + in-flight dedupe to avoid duplicate GETs across StrictMode/rerenders
+  private listInFlight: Map<string, Promise<UserDTO[]>> = new Map();
+  private listCache: Map<string, { data: UserDTO[]; timestamp: number }> = new Map();
+  private detailInFlight: Map<string, Promise<UserDTO>> = new Map();
+  private detailCache: Map<string, { data: UserDTO; timestamp: number }> = new Map();
+  private cacheTtlMs = 60 * 1000; // 1 minute
 
   /**
    * Get all users with optional filters
@@ -161,11 +169,24 @@ class SupabaseUserService {
     const currentUser = authService.getCurrentUser();
     const currentTenantId = authService.getCurrentTenantId();
 
-    let query = supabase
-      .from(this.table)
-      .select(USER_SELECT_COLUMNS)
-      .is('deleted_at', null) // Soft delete filter
-      .order('created_at', { ascending: false });
+    const cacheKey = `${currentTenantId || 'system'}|${JSON.stringify(filters || {})}`;
+
+    const cached = this.listCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
+      return cached.data;
+    }
+
+    const inFlight = this.listInFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
+      let query = supabase
+        .from(this.table)
+        .select(USER_SELECT_COLUMNS)
+        .is('deleted_at', null) // Soft delete filter
+        .order('created_at', { ascending: false });
 
     // ⭐ SECURITY: Tenant isolation - non-super-admins can only see users in their tenant
     // Uses systematic tenant isolation utility instead of hardcoded permission check
@@ -206,20 +227,29 @@ class SupabaseUserService {
       }
     }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
-    if (error) {
-      console.error('[UserService] Error fetching users:', error);
-      throw new Error(`Failed to fetch users: ${error.message}`);
+      if (error) {
+        console.error('[UserService] Error fetching users:', error);
+        throw new Error(`Failed to fetch users: ${error.message}`);
+      }
+
+      let users = (data || []).map(mapUserRow);
+
+      if (roleFilterSet && roleFilterSet.size > 0) {
+        users = users.filter((user) => roleFilterSet?.has(user.role));
+      }
+
+      this.listCache.set(cacheKey, { data: users, timestamp: Date.now() });
+      return users;
+    })();
+
+    this.listInFlight.set(cacheKey, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      this.listInFlight.delete(cacheKey);
     }
-
-    let users = (data || []).map(mapUserRow);
-
-    if (roleFilterSet && roleFilterSet.size > 0) {
-      users = users.filter((user) => roleFilterSet?.has(user.role));
-    }
-
-    return users;
   }
 
   /**
@@ -232,6 +262,17 @@ class SupabaseUserService {
      // ⭐ SECURITY: First, validate tenant access by getting the target user
      const currentUser = authService.getCurrentUser();
      const currentTenantId = authService.getCurrentTenantId();
+
+       const cacheKey = `${currentTenantId || 'system'}|${id}`;
+       const cached = this.detailCache.get(cacheKey);
+       if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
+         return cached.data;
+       }
+
+       const inFlight = this.detailInFlight.get(cacheKey);
+       if (inFlight) {
+         return inFlight;
+       }
 
     let query = supabase
       .from(this.table)
@@ -252,23 +293,34 @@ class SupabaseUserService {
      }
      // Super admins can access any user (no tenant filter)
 
-     const { data, error } = await query.single();
+     const fetchPromise = (async () => {
+       const { data, error } = await query.single();
 
-     // Handle not found case (PGRST116) and other errors
-     if (error) {
-       if (error.code === 'PGRST116') {
-         // Don't reveal if user exists in different tenant - generic error
+       // Handle not found case (PGRST116) and other errors
+       if (error) {
+         if (error.code === 'PGRST116') {
+           // Don't reveal if user exists in different tenant - generic error
+           throw new Error('User not found or access denied');
+         }
+         console.error('[UserService] Error fetching user:', error);
+         throw new Error(`Failed to fetch user: ${error.message}`);
+       }
+
+       if (!data) {
          throw new Error('User not found or access denied');
        }
-       console.error('[UserService] Error fetching user:', error);
-       throw new Error(`Failed to fetch user: ${error.message}`);
-     }
 
-     if (!data) {
-       throw new Error('User not found or access denied');
-     }
+       const mapped = mapUserRow(data);
+       this.detailCache.set(cacheKey, { data: mapped, timestamp: Date.now() });
+       return mapped;
+     })();
 
-     return mapUserRow(data);
+     this.detailInFlight.set(cacheKey, fetchPromise);
+     try {
+       return await fetchPromise;
+     } finally {
+       this.detailInFlight.delete(cacheKey);
+     }
    }
 
   /**
@@ -832,9 +884,8 @@ class SupabaseUserService {
      // ✅ DATABASE-DRIVEN: Count users by role using normalized roles from database
      // mapUserRow already normalizes roles from database using mapDatabaseRoleNameToUserRoleSync
      // So user.role is already a valid UserRole enum value derived from database
-     // Get valid UserRole values from database to ensure we're counting correctly
-     const { getValidUserRoles } = await import('@/utils/roleMapping');
-     const validRoles = await getValidUserRoles();
+    // Get valid UserRole values from database to ensure we're counting correctly
+    const validRoles = await getValidUserRoles();
      
      // Initialize counts for all UserRole enum values
      const usersByRole: Record<UserRole, number> = {
@@ -910,12 +961,10 @@ class SupabaseUserService {
     try {
       // Fetch roles from RBAC service (which applies tenant isolation)
       // Use service factory to get the correct service instance (mock or supabase)
-      const { rbacService } = await import('../../serviceFactory');
       const roles = await rbacService.getRoles();
 
       // Map database Role records to UserRole type strings
       // Uses systematic role mapping utility instead of hardcoded map
-      const { getValidUserRolesFromDatabaseRoles } = await import('@/utils/roleMapping');
       const userRoles = getValidUserRolesFromDatabaseRoles(roles);
 
       // Ensure we have at least the tenant-level roles if no roles were found
@@ -925,7 +974,6 @@ class SupabaseUserService {
         try {
           const validRoles = await getValidUserRoles();
           // Filter out platform roles for tenant admins
-          const { isPlatformRoleByName } = await import('@/utils/roleMapping');
           const filteredRoles: UserRole[] = [];
           for (const role of validRoles) {
             const isPlatform = await isPlatformRoleByName(role);
@@ -951,7 +999,6 @@ class SupabaseUserService {
           return validRoles; // Super admins see all roles
         }
         // Filter out platform roles for tenant admins
-        const { isPlatformRoleByName } = await import('@/utils/roleMapping');
         const filteredRoles: UserRole[] = [];
         for (const role of validRoles) {
           const isPlatform = await isPlatformRoleByName(role);

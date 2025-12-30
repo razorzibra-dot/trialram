@@ -103,6 +103,11 @@ const mapSupplier = (row: any): Supplier => {
 // ============================================================================
 
 class SupabaseReferenceDataService {
+  // Enterprise-grade: Single load cache to prevent duplicate calls
+  private allDataCache: Map<string, { data: AllReferenceData; timestamp: number }> = new Map();
+  private inFlightFetches: Map<string, Promise<AllReferenceData>> = new Map();
+  private cacheTtlMs = 5 * 60 * 1000; // 5 minutes - aligns with context auto-refresh
+
   private async resolveTenantId(explicitTenantId?: string): Promise<string | undefined> {
     if (explicitTenantId) {
       return explicitTenantId;
@@ -121,21 +126,26 @@ class SupabaseReferenceDataService {
 
   /**
    * Get status options - context calls without module, module calls with module
+   * ENTERPRISE OPTIMIZATION: When no module filter, returns from cache (zero API calls)
    * RLS automatically filters by tenant_id via session
    */
   async getStatusOptions(module?: string, tenantId?: string): Promise<StatusOption[]> {
     try {
+      // If no module filter, use cached data from getAllReferenceData (zero API calls)
+      if (!module) {
+        const allData = await this.getAllReferenceData(tenantId);
+        return allData.statusOptions.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
+
+      // Module-specific filter requires targeted query
       let query = supabase
         .from('status_options')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('module', module);
 
       if (tenantId) {
         query = query.eq('tenant_id', tenantId);
-      }
-
-      if (module) {
-        query = query.eq('module', module);
       }
 
       const { data, error } = await query
@@ -151,21 +161,26 @@ class SupabaseReferenceDataService {
 
   /**
    * Get reference data by category - context calls without category, module calls with category
+   * ENTERPRISE OPTIMIZATION: When no category filter, returns from cache (zero API calls)
    * RLS automatically filters by tenant_id via session
    */
   async getReferenceData(category?: string, tenantId?: string): Promise<ReferenceData[]> {
     try {
+      // If no category filter, use cached data from getAllReferenceData (zero API calls)
+      if (!category) {
+        const allData = await this.getAllReferenceData(tenantId);
+        return allData.referenceData.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
+
+      // Category-specific filter requires targeted query
       let query = supabase
         .from('reference_data')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('category', category);
 
       if (tenantId) {
         query = query.eq('tenant_id', tenantId);
-      }
-
-      if (category) {
-        query = query.eq('category', category);
       }
 
       const { data, error } = await query
@@ -180,39 +195,15 @@ class SupabaseReferenceDataService {
   }
 
   /**
-   * Get all active categories from reference_data table with category='product_category'
-   * Consistency: Uses reference_data table like all other reference types
-   * RLS automatically filters by tenant_id via session
+   * Get all active categories from cached reference_data
+   * ENTERPRISE OPTIMIZATION: Returns from cache (via getAllReferenceData) - zero extra API calls
+   * Categories are extracted from main reference_data during initial load
    */
   async getCategories(tenantId?: string): Promise<ProductCategory[]> {
     try {
-      let query = supabase
-        .from('reference_data')
-        .select('*')
-        .eq('category', 'product_category')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      
-      // Map reference_data rows to ProductCategory format
-      return data?.map(row => ({
-        id: row.id,
-        tenantId: row.tenant_id,
-        name: row.label,
-        description: row.description,
-        isActive: row.is_active,
-        sortOrder: row.sort_order,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        createdBy: row.created_by,
-      })) || [];
+      // Use cached data from getAllReferenceData (zero additional API calls)
+      const allData = await this.getAllReferenceData(tenantId);
+      return allData.categories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     } catch (error) {
       console.error('Error getting categories:', error);
       return [];
@@ -221,25 +212,14 @@ class SupabaseReferenceDataService {
 
   /**
    * Get all active suppliers
+   * ENTERPRISE OPTIMIZATION: Returns from cache (via getAllReferenceData) - zero extra API calls
    * RLS automatically filters by tenant_id via session
    */
   async getSuppliers(tenantId?: string): Promise<Supplier[]> {
     try {
-      let query = supabase
-        .from('suppliers')
-        .select('*')
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('sort_order', { ascending: true });
-
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data?.map(mapSupplier) || [];
+      // Use cached data from getAllReferenceData (zero additional API calls)
+      const allData = await this.getAllReferenceData(tenantId);
+      return allData.suppliers.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     } catch (error) {
       console.error('Error getting suppliers:', error);
       return [];
@@ -558,7 +538,25 @@ class SupabaseReferenceDataService {
   async getAllReferenceData(tenantId?: string): Promise<AllReferenceData> {
     try {
       const resolvedTenantId = await this.resolveTenantId(tenantId);
+      const cacheKey = resolvedTenantId || 'system';
 
+      // Return cached data if still fresh
+      const cached = this.allDataCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) {
+        console.log(`[ReferenceDataService] ♻️ Returning cached reference data for tenant: ${cacheKey}`);
+        return cached.data;
+      }
+
+      // Return in-flight fetch if already running
+      const inFlight = this.inFlightFetches.get(cacheKey);
+      if (inFlight) {
+        console.log(`[ReferenceDataService] ⏳ Reusing in-flight fetch for tenant: ${cacheKey}`);
+        return inFlight;
+      }
+
+      console.log(`[ReferenceDataService] 🔄 Loading ALL reference data for tenant: ${cacheKey}`);
+
+      // OPTIMIZED: Only 3 queries instead of 4 (categories filtered from reference_data)
       let statusQuery = supabase
         .from('status_options')
         .select('*')
@@ -567,12 +565,6 @@ class SupabaseReferenceDataService {
       let referenceDataQuery = supabase
         .from('reference_data')
         .select('*')
-        .eq('is_active', true);
-
-      let categoriesQuery = supabase
-        .from('reference_data')
-        .select('*')
-        .eq('category', 'product_category')
         .eq('is_active', true);
 
       let suppliersQuery = supabase
@@ -584,36 +576,51 @@ class SupabaseReferenceDataService {
       if (resolvedTenantId) {
         statusQuery = statusQuery.eq('tenant_id', resolvedTenantId);
         referenceDataQuery = referenceDataQuery.eq('tenant_id', resolvedTenantId);
-        categoriesQuery = categoriesQuery.eq('tenant_id', resolvedTenantId);
         suppliersQuery = suppliersQuery.eq('tenant_id', resolvedTenantId);
       }
 
-      const [statusRes, refDataRes, categoriesRes, suppliersRes] = await Promise.all([
-        statusQuery,
-        referenceDataQuery,
-        categoriesQuery,
-        suppliersQuery,
-      ]);
+      const fetchPromise = (async () => {
+        // ENTERPRISE OPTIMIZATION: Only 3 API calls, categories extracted client-side
+        const [statusRes, refDataRes, suppliersRes] = await Promise.all([
+          statusQuery,
+          referenceDataQuery,
+          suppliersQuery,
+        ]);
 
-      // Map reference_data rows to ProductCategory format for categories
-      const categories = categoriesRes.data?.map(row => ({
-        id: row.id,
-        tenantId: row.tenant_id,
-        name: row.label,
-        description: row.description,
-        isActive: row.is_active,
-        sortOrder: row.sort_order,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        createdBy: row.created_by,
-      })) || [];
+        const allReferenceData = refDataRes.data?.map(mapReferenceData) || [];
 
-      return {
-        statusOptions: statusRes.data?.map(mapStatusOption) || [],
-        referenceData: refDataRes.data?.map(mapReferenceData) || [],
-        categories,
-        suppliers: suppliersRes.data?.map(mapSupplier) || [],
-      };
+        // Extract categories from main reference_data (client-side filter - zero extra API calls)
+        const categoryRows = refDataRes.data?.filter(row => row.category === 'product_category') || [];
+        const categories = categoryRows.map(row => ({
+          id: row.id,
+          tenantId: row.tenant_id,
+          name: row.label,
+          description: row.description,
+          isActive: row.is_active,
+          sortOrder: row.sort_order,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          createdBy: row.created_by,
+        }));
+
+        const result: AllReferenceData = {
+          statusOptions: statusRes.data?.map(mapStatusOption) || [],
+          referenceData: allReferenceData,
+          categories,
+          suppliers: suppliersRes.data?.map(mapSupplier) || [],
+        };
+
+        // Cache for 5 minutes
+        this.allDataCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        console.log(`[ReferenceDataService] ✅ Loaded and cached: ${result.statusOptions.length} statuses, ${result.referenceData.length} ref data, ${result.categories.length} categories, ${result.suppliers.length} suppliers`);
+        
+        return result;
+      })();
+
+      this.inFlightFetches.set(cacheKey, fetchPromise);
+      const result = await fetchPromise;
+      this.inFlightFetches.delete(cacheKey);
+      return result;
     } catch (error) {
       console.error('Error loading all reference data:', error);
       throw new Error(`Failed to load reference data: ${error instanceof Error ? error.message : 'Unknown error'}`);

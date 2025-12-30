@@ -15,6 +15,7 @@ export * from './components/DashboardWidgets';
 // Routes
 export { dashboardRoutes } from './routes';
 import { dashboardRoutes } from './routes';
+import { serviceContainer } from '@/modules/core/services/ServiceContainer';
 
 // Module configuration
 export const dashboardModule = {
@@ -34,8 +35,6 @@ export const dashboardModule = {
   
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-    
     // Remove dashboard service
     serviceContainer.remove('dashboardService');
     

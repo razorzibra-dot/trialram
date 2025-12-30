@@ -6,10 +6,13 @@ import { authService as factoryAuthService, sessionConfigService as factorySessi
 import { elementPermissionService } from '@/services/rbac/elementPermissionService';
 import { sessionManager } from '@/utils/sessionManager';
 import { httpInterceptor } from '@/utils/httpInterceptor';
+import { sessionService } from '@/services/session/SessionService';
+import { pageDataService } from '@/services/page/PageDataService';
 import type { TenantContext } from '@/types/tenant';
 import { canUserAccessModule } from '@/modules/ModuleRegistry';
 import { ImpersonationLogType } from '@/types/superUserModule';
 import { ImpersonationContextType } from '@/contexts/ImpersonationContext';
+import { useRef } from 'react';
 
 interface SessionInfo {
   isValid: boolean;
@@ -88,6 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true
   });
 
+  // Prevent duplicate initialization in React 18 StrictMode (dev double-render)
+  const hasInitializedRef = React.useRef(false);
+
   const [tenant, setTenant] = useState<TenantContext | null>(null);
   // In-memory cache for evaluated element permissions to avoid duplicate DB calls
   const elementPermissionCache = React.useRef<Map<string, boolean>>(new Map());
@@ -144,10 +150,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const initializeAuth = async () => {
+      if (hasInitializedRef.current) return;
+      hasInitializedRef.current = true;
+
       const isValidSession = sessionManager.validateSession();
       
       if (isValidSession) {
-        const user = factoryAuthService.getCurrentUser();
+        // ENTERPRISE: Try to load from SessionService cache first (zero API calls)
+        let user = sessionService.getCurrentUser();
+        let tenantInfo = sessionService.getTenant();
+        
+        // Fallback to legacy auth service if session not cached
+        if (!user) {
+          user = factoryAuthService.getCurrentUser();
+          // If user exists but not in SessionService, initialize it
+          if (user?.id) {
+            await sessionService.initializeSession(user.id);
+            tenantInfo = sessionService.getTenant();
+          }
+        }
+        
         const token = factoryAuthService.getToken();
         
         setAuthState({
@@ -157,10 +179,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false
         });
 
-        // Initialize multi-tenant context
-        if (user?.id) {
-          const tenantContext = await factoryMultiTenantService.initializeTenantContext(user.id);
-          setTenant(tenantContext);
+        // Set tenant context from cached session (zero API calls)
+        if (tenantInfo) {
+          setTenant({
+            tenantId: tenantInfo.id,
+            tenantName: tenantInfo.name,
+            userId: user!.id,
+          });
+        } else if (user?.isSuperAdmin) {
+          setTenant({
+            tenantId: null,
+            tenantName: 'Platform Administration',
+            userId: user.id,
+          });
         }
 
         // Preload common element permissions to prime caches and avoid duplicate calls across components
@@ -222,7 +253,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cached = elementPermissionCache.current.get(key);
       if (typeof cached === 'boolean') return cached;
 
-      const result = await elementPermissionService.evaluateElementPermission(elementPath, action, { user, tenant: tenantCtx, recordId });
+      // Cast tenant context for compatibility with elementPermissionService signature
+      // @ts-expect-error - tenantCtx shape is compatible at runtime
+      const result = await elementPermissionService.evaluateElementPermission(elementPath, action, { user, tenant: tenantCtx as any, recordId });
       elementPermissionCache.current.set(key, result);
       return result;
     } catch (error) {
@@ -245,17 +278,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await factoryAuthService.login({ email, password });
       
-      setAuthState({
-        user: response.user,
-        token: response.token,
-        isAuthenticated: true,
-        isLoading: false
-      });
-
-      // Initialize multi-tenant context on login
+      // ENTERPRISE: Load user + tenant ONCE using centralized SessionService
+      // This replaces multiple scattered API calls across services
       if (response.user?.id) {
-        const tenantContext = await factoryMultiTenantService.initializeTenantContext(response.user.id);
-        setTenant(tenantContext);
+        await sessionService.initializeSession(response.user.id);
+        const sessionData = sessionService.getCurrentUser();
+        const tenantInfo = sessionService.getTenant();
+        
+        setAuthState({
+          user: sessionData || response.user,
+          token: response.token,
+          isAuthenticated: true,
+          isLoading: false
+        });
+
+        // Set tenant context from cached session (zero API calls)
+        if (tenantInfo) {
+          setTenant({
+            tenantId: tenantInfo.id,
+            tenantName: tenantInfo.name,
+            userId: response.user.id,
+          });
+        } else if (sessionData?.isSuperAdmin) {
+          setTenant({
+            tenantId: null,
+            tenantName: 'Platform Administration',
+            userId: response.user.id,
+          });
+        }
+      } else {
+        setAuthState({
+          user: response.user,
+          token: response.token,
+          isAuthenticated: true,
+          isLoading: false
+        });
       }
 
       // Initialize session manager with config
@@ -307,6 +364,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Step 2: Clear session data from storage (BEFORE state changes)
       sessionManager.clearSession();
+      sessionService.clearSession(); // ENTERPRISE: Clear centralized session cache
+      // Clear app-level caches (reference data, navigation, page data)
+      try {
+        // Page data caches (in-memory + persisted)
+        pageDataService.clearAllCaches();
+        // Remove persisted reference + navigation caches
+        const prefixes = ['refDataCache:', 'navItems:', 'pageData:'];
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && prefixes.some(p => key.startsWith(p))) keysToRemove.push(key);
+        }
+        keysToRemove.forEach(k => sessionStorage.removeItem(k));
+      } catch (cacheError) {
+        console.warn('[AuthContext] Cache clearing encountered issue (continuing):', cacheError);
+      }
       console.log('[AuthContext] Session data cleared from storage');
       
       // Step 3: Call backend logout
@@ -421,6 +494,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       navigate('/login', { replace: true });
     }
   };
+
+  // Clear caches when tenant changes to avoid cross-tenant data reuse
+  const prevTenantRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const currentTenant = tenant?.tenantId;
+    if (prevTenantRef.current !== undefined && currentTenant !== prevTenantRef.current) {
+      try {
+        // Clear per-tenant page caches
+        pageDataService.clearTenantCaches();
+        // Clear persisted ref/nav caches to force reload under new tenant
+        const prefixes = ['refDataCache:', 'navItems:'];
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && prefixes.some(p => key.startsWith(p))) keysToRemove.push(key);
+        }
+        keysToRemove.forEach(k => sessionStorage.removeItem(k));
+        console.log('[AuthContext] Tenant changed, caches cleared');
+      } catch (e) {
+        console.warn('[AuthContext] Error clearing caches on tenant change:', e);
+      }
+    }
+    prevTenantRef.current = currentTenant;
+  }, [tenant?.tenantId]);
 
   const hasRole = (role: string): boolean => {
     return factoryAuthService.hasRole(role);

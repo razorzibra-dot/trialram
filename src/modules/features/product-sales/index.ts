@@ -7,12 +7,12 @@
  * - Components use useService() hook
  * - No direct service imports in components
  */
-
-export { ProductSalesPage } from './views/ProductSalesPage';
 export { productSalesRoutes } from './routes';
 
 import { productSalesRoutes } from './routes';
 import { FeatureModule } from '@/modules/core/types';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { productSaleService, productService, customerService } from '@/services/serviceFactory';
 
 export const productSalesModule: FeatureModule = {
   name: 'product-sales',
@@ -25,25 +25,15 @@ export const productSalesModule: FeatureModule = {
   async initialize() {
     console.log('[Product Sales] 🚀 Initializing...');
     try {
-      const { registerServiceInstance, serviceContainer } = await import('../../core/services/ServiceContainer');
-      const { productSaleService, productService } = await import('../../../services/serviceFactory');
-      const { CustomerService } = await import('../customers/services/customerService');
-      
       // Register product sales service (as instance, not constructor)
       registerServiceInstance('productSaleService', productSaleService);
       console.log('[Product Sales] ✅ productSaleService registered');
-      
       // Register product service (as instance, not constructor)
       registerServiceInstance('productService', productService);
       console.log('[Product Sales] ✅ productService registered');
-      
-      if (!serviceContainer.has('customerService')) {
-        registerServiceInstance('customerService', new CustomerService());
-        console.log('[Product Sales] ✅ customerService registered (fallback)');
-      } else {
-        console.log('[Product Sales] ℹ️ customerService already registered, skipping');
-      }
-      
+      // Register shared customer service (factory instance)
+      registerServiceInstance('customerService', customerService);
+      console.log('[Product Sales] ✅ customerService registered');
       console.log('[Product Sales] ✅ Module initialized successfully');
     } catch (error) {
       console.error('[Product Sales] ❌ Failed to initialize:', error);
@@ -53,11 +43,8 @@ export const productSalesModule: FeatureModule = {
 
   async cleanup() {
     console.log('[Product Sales] 🧹 Cleaning up...');
-    const { serviceContainer } = await import('../../core/services/ServiceContainer');
-    
     serviceContainer.remove('productSaleService');
     serviceContainer.remove('productService');
-    
     console.log('[Product Sales] ✅ Module cleaned up');
   },
 };

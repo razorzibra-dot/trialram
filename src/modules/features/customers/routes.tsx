@@ -6,10 +6,21 @@
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import { ErrorBoundary } from '@/modules/core/components/ErrorBoundary';
+import { ModuleDataProvider } from '@/contexts/ModuleDataContext';
+import { PageDataRequirements } from '@/services/page/PageDataService';
 
 // Lazy load components
 const CustomerListPage = React.lazy(() => import('./views/CustomerListPage'));
 const CustomerAnalyticsPage = React.lazy(() => import('./views/CustomerAnalyticsPage'));
+
+const CUSTOMERS_PAGE_REQUIREMENTS: PageDataRequirements = {
+  session: true,
+  // Do not fetch reference data here; it's prewarmed by ReferenceDataContext
+  module: {
+    customers: true,
+    users: true,
+  },
+};
 
 // Route wrapper with error boundary
 const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -28,7 +39,9 @@ export const customerRoutes: RouteObject[] = [
         index: true,
         element: (
           <RouteWrapper>
-            <CustomerListPage />
+            <ModuleDataProvider requirements={CUSTOMERS_PAGE_REQUIREMENTS}>
+              <CustomerListPage />
+            </ModuleDataProvider>
           </RouteWrapper>
         ),
       },
@@ -36,7 +49,9 @@ export const customerRoutes: RouteObject[] = [
         path: 'analytics',
         element: (
           <RouteWrapper>
-            <CustomerAnalyticsPage />
+            <ModuleDataProvider requirements={CUSTOMERS_PAGE_REQUIREMENTS}>
+              <CustomerAnalyticsPage />
+            </ModuleDataProvider>
           </RouteWrapper>
         ),
       },

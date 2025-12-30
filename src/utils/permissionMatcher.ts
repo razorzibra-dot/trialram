@@ -1,3 +1,5 @@
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
 type ParsedToken = {
   original: string;
   app?: string;
@@ -52,10 +54,10 @@ const LEGACY_TOKEN_MAP: Record<string, string> = {
   'crm:product:sales:create': 'crm:product-sale:record:create',
   'crm:product:sales:update': 'crm:product-sale:record:update',
   'crm:product:sales:delete': 'crm:product-sale:record:delete',
-  'crm:contact:record:read': 'crm:customer:record:read',
-  'crm:contact:record:create': 'crm:customer:record:create',
-  'crm:contact:record:update': 'crm:customer:record:update',
-  'crm:contact:record:delete': 'crm:customer:record:delete',
+  'crm:contact:record:read': CUSTOMER_PERMISSIONS.READ,
+  'crm:contact:record:create': CUSTOMER_PERMISSIONS.CREATE,
+  'crm:contact:record:update': CUSTOMER_PERMISSIONS.UPDATE,
+  'crm:contact:record:delete': CUSTOMER_PERMISSIONS.DELETE,
   'crm:deal:pipeline:move': 'crm:sales:pipeline:move',
 };
 

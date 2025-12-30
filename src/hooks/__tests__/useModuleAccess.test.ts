@@ -15,6 +15,7 @@ import React from 'react';
 import { useModuleAccess, useAccessibleModules } from '../useModuleAccess';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 
 // Mock dependencies
 jest.mock('@/contexts/AuthContext');
@@ -529,7 +530,7 @@ describe('useAccessibleModules Hook', () => {
     } as any);
 
     mockAuthService.hasPermission.mockImplementation((perm: string) => {
-      return perm === 'crm:customer:record:update' || perm === 'crm:sales:deal:update';
+      return perm === CUSTOMER_PERMISSIONS.UPDATE || perm === 'crm:sales:deal:update';
     });
 
     const { result } = renderHookWithQueryClient(() => useAccessibleModules());

@@ -5,17 +5,32 @@
 
 import { useEffect, useState } from 'react';
 import { multiTenantService as factoryMultiTenantService } from '@/services/serviceFactory';
+import { sessionService } from '@/services/session/SessionService';
 import type { TenantContext } from '@/types/tenant';
 
 export const useTenantContext = () => {
-  const [tenant, setTenant] = useState<TenantContext | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Seed from SessionService cache to avoid any legacy user/tenant queries
+  const cachedTenant = sessionService.getTenant();
+  const cachedUser = sessionService.getCurrentUser();
+  const [tenant, setTenant] = useState<TenantContext | null>(
+    cachedUser
+      ? {
+          tenantId: cachedTenant?.id || null,
+          tenantName: cachedTenant?.name,
+          userId: cachedUser.id,
+          role: cachedUser.role,
+        }
+      : null
+  );
+  const [isLoading, setIsLoading] = useState(!cachedUser);
 
   useEffect(() => {
     // Set initial tenant context
     const currentTenant = factoryMultiTenantService.getCurrentTenant();
     console.log('[useTenantContext] Initialized with tenant:', currentTenant);
-    setTenant(currentTenant);
+    if (currentTenant) {
+      setTenant(currentTenant);
+    }
     setIsLoading(false);
 
     // Subscribe to tenant changes

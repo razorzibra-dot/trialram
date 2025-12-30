@@ -10,6 +10,7 @@ This repository is a modular React + TypeScript application organized around dom
 - **Permissions & navigation:** RBAC lives in `src/constants/permissionTokens.ts` and `src/constants/modulePermissionMap.ts`; route gating and menu visibility rely on `src/config/navigationPermissions.ts` and hooks like `usePermissionBasedNavigation.ts`.
 - **Auth & impersonation:** `src/contexts/AuthContext.tsx`, `src/contexts/ImpersonationContext.tsx`, and related hooks govern user identity, tenant, and impersonation tracking.
 - **Common UI & forms:** Reusable components in `src/components/` (auth/common/forms/layout/ui). Follow existing prop patterns; do not bypass contexts.
+- **Reference baseline:** Treat the customers module as the reference implementation for ModuleDataProvider + single-load pattern. Follow `src/services/page/INTEGRATION_CHECKLIST.md` when migrating other modules.
 
 ## Conventions & Patterns
 - **Access checks:** Use `usePermission()`/`useCanAccessModule()` and `useModuleAccess()` to guard components and routes. Never inline string token checks.
@@ -51,7 +52,328 @@ This repository is a modular React + TypeScript application organized around dom
 - **Validation parity:** Mock and real services enforce identical constraints.
 - **Build/tests:** Ensure `src/__tests__/` suites pass; fix lint/build errors before merging.
 
-### Pointers to Code
+## ⚡ Enterprise Performance Rules (MANDATORY)
+
+### 🎯 Rule 1: Reference Data - Use Context Only (Zero API Calls)
+**CRITICAL:** Reference data (categories, statuses, suppliers) loaded ONCE on app init via `ReferenceDataContext`.
+
+✅ **CORRECT:**
+```typescript
+// In components: Use context (zero API calls)
+import { useReferenceData } from '@/contexts/ReferenceDataContext';
+const { categories, statusOptions, suppliers } = useReferenceData();
+
+// In hooks: Use context-based hooks
+import { useCategories } from '@/hooks/useReferenceDataOptions';
+const { categories } = useCategories();
+```
+
+❌ **WRONG:**
+```typescript
+// ❌ NEVER call services directly from components
+const categories = await referenceDataService.getCategories(); // DUPLICATE API CALL!
+
+// ❌ NEVER make separate queries for reference data
+await supabase.from('reference_data').select('*'); // BYPASS CACHE!
+```
+
+**Service Implementation:**
+- Service: `src/services/referencedata/supabase/referenceDataService.ts`
+- Context: `src/contexts/ReferenceDataContext.tsx`
+- Hooks: `src/hooks/useReferenceDataOptions.ts`
+- Pattern: Single `getAllReferenceData()` fetch, all getters return from cache
+- Cache: 5-minute TTL, survives React StrictMode double-render
+
+---
+
+### 🎯 Rule 2: Session Data - Use SessionService Only (Zero API Calls)
+**CRITICAL:** User + tenant loaded ONCE on login. All services read from `SessionService` cache.
+
+✅ **CORRECT:**
+```typescript
+// Everywhere: Use SessionService (zero API calls)
+import { sessionService } from '@/services/session/SessionService';
+
+const user = sessionService.getCurrentUser(); // Cache
+const tenantId = sessionService.getTenantId(); // Cache
+const tenant = sessionService.getTenant(); // Cache
+```
+
+❌ **WRONG:**
+```typescript
+// ❌ NEVER query users/tenants in services
+const { data: user } = await supabase.from('users').select('*').eq('id', userId).single(); // DUPLICATE!
+const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).single(); // DUPLICATE!
+
+// ❌ NEVER call multiTenantService for user/tenant lookup
+await multiTenantService.initializeTenantContext(userId); // MAKES API CALLS!
+```
+
+**Integration Points:**
+- Service: `src/services/session/SessionService.ts` (singleton)
+- AuthContext: `src/contexts/AuthContext.tsx` (calls initializeSession on login)
+- MultiTenantService: `src/services/multitenant/supabase/multiTenantService.ts` (uses SessionService)
+- All services: Import and use `sessionService` for user/tenant data
+
+**Lifecycle:**
+- Login: `sessionService.initializeSession(userId)` (2 API calls: user + tenant)
+- Page refresh: `sessionService.getCurrentUser()` (0 API calls: loads from sessionStorage)
+- Logout: `sessionService.clearSession()` (clears memory + storage)
+
+---
+
+### 🎯 Rule 3: Service Caching - In-Flight Deduplication (Mandatory)
+**CRITICAL:** ALL services with list/detail methods MUST implement in-flight request deduplication.
+
+✅ **CORRECT:**
+```typescript
+class MyEntityService {
+  private listInFlight: Map<string, Promise<Entity[]>> = new Map();
+  private listCache: Map<string, { data: Entity[]; timestamp: number }> = new Map();
+  private detailInFlight: Map<string, Promise<Entity>> = new Map();
+  private detailCache: Map<string, { data: Entity; timestamp: number }> = new();
+  private cacheTtlMs = 60 * 1000; // 1 minute
+
+  async getEntities(filters?: Filters): Promise<Entity[]> {
+    const cacheKey = `${tenantId}|${JSON.stringify(filters)}`;
+    
+    // 1. Return fresh cache
+    const cached = this.listCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTtlMs) return cached.data;
+    
+    // 2. Reuse in-flight request
+    const inFlight = this.listInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+    
+    // 3. Fetch and cache
+    const promise = (async () => {
+      const result = await this.fetchFromDB(filters);
+      this.listCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
+    })();
+    
+    this.listInFlight.set(cacheKey, promise);
+    try {
+      return await promise;
+    } finally {
+      this.listInFlight.delete(cacheKey);
+    }
+  }
+  
+  // ⚠️ CRITICAL: Clear cache after mutations!
+  async create(data: EntityInput): Promise<Entity> {
+    const result = await this.repository.create(data);
+    // Clear cache to avoid stale lists
+    this.listCache.clear();
+    this.listInFlight.clear();
+    return result;
+  }
+  
+  async update(id: string, data: EntityInput): Promise<Entity> {
+    const result = await this.repository.update(id, data);
+    // Clear cache to avoid stale lists
+    this.listCache.clear();
+    this.listInFlight.clear();
+    this.detailCache.delete(id);
+    return result;
+  }
+  
+  async delete(id: string): Promise<void> {
+    await this.repository.delete(id);
+    // Clear cache to avoid stale lists
+    this.listCache.clear();
+    this.listInFlight.clear();
+    this.detailCache.delete(id);
+    this.detailInFlight.delete(id);
+  }
+      this.listCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
+    })();
+    
+    this.listInFlight.set(cacheKey, promise);
+    try {
+      return await promise;
+    } finally {
+      this.listInFlight.delete(cacheKey);
+    }
+  }
+}
+```
+
+**Apply to ALL services:**
+- ✅ NavigationService: `getNavigationItems()` - implemented
+- ✅ UserService: `getUsers()`, `getUser(id)` - implemented
+- ✅ CustomerService: `findMany()`, `findOne(id)` - implemented
+- ✅ ReferenceDataService: `getAllReferenceData()` - implemented
+- ⚠️ ALL future entity services MUST follow this pattern
+
+**Why:** React 18 StrictMode renders twice in dev; concurrent component mounts trigger duplicate requests without deduplication.
+
+---
+
+### 🎯 Rule 3A: CRITICAL - Cache Invalidation After Mutations (Mandatory)
+**CRITICAL:** ALL mutation methods (create/update/delete) MUST clear service caches to prevent stale data.
+
+❌ **WRONG - Causes Stale Data Bug:**
+```typescript
+class CustomerService {
+  private listCache = new Map();
+  
+  async create(data: Customer): Promise<Customer> {
+    const result = await this.repository.create(data);
+    return result;  // ❌ Cache not cleared! Next findMany() returns OLD data
+  }
+}
+```
+
+✅ **CORRECT - Always Clear Cache:**
+```typescript
+class CustomerService {
+  private listCache = new Map();
+  private listInFlight = new Map();
+  private detailCache = new Map();
+  private detailInFlight = new Map();
+  
+  protected async afterCreate(entity: Customer): Promise<void> {
+    // Clear cache to ensure fresh data on next load
+    this.listCache.clear();
+    this.listInFlight.clear();
+    console.log('[CustomerService] Cache cleared after create');
+  }
+  
+  async update(id: string, data: Partial<Customer>): Promise<Customer> {
+    const result = await this.repository.update(id, data);
+    // Clear caches immediately
+    this.listCache.clear();
+    this.listInFlight.clear();
+    this.detailCache.set(id, { data: result, timestamp: Date.now() }); // Update detail cache
+    console.log('[CustomerService] Cache cleared after update');
+    return result;
+  }
+  
+  async delete(id: string): Promise<void> {
+    await super.delete(id);
+    // Clear ALL caches
+    this.listCache.clear();
+    this.listInFlight.clear();
+    this.detailCache.delete(id);
+    this.detailInFlight.delete(id);
+    console.log('[CustomerService] Cache cleared after delete');
+  }
+}
+```
+
+**⚠️ WHY THIS IS CRITICAL:**
+- PageDataService calls `customerService.findMany()` after mutations
+- If service cache isn't cleared, it returns STALE data
+- UI shows old count/data even after refresh completes
+- Example bug: Create customer → customersCount stays at 3 instead of 4
+
+**✅ IMPLEMENTATION CHECKLIST:**
+- [ ] Clear `listCache` after create/update/delete
+- [ ] Clear `listInFlight` after create/update/delete
+- [ ] Delete specific `detailCache` entry after update/delete
+- [ ] Delete specific `detailInFlight` entry after delete
+- [ ] Add console.log for debugging cache clears
+- [ ] Test: Create/update/delete should show fresh data immediately
+
+**Apply to ALL entity services:**
+- ✅ CustomerService - Fixed 2025-12-29
+- ⚠️ DealService - TODO
+- ⚠️ ProductService - TODO
+- ⚠️ TicketService - TODO
+- ⚠️ ComplaintService - TODO
+- ⚠️ ALL future entity services
+
+---
+
+### 🎯 Rule 4: React Query Configuration (Mandatory)
+**CRITICAL:** All hooks using React Query MUST follow these settings.
+
+✅ **CORRECT:**
+```typescript
+import { useQuery } from '@tanstack/react-query';
+
+export function useEntities(filters?: Filters) {
+  return useQuery({
+    queryKey: ['entities', JSON.stringify(filters || {})], // Stable key
+    queryFn: () => entityService.getEntities(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: false, // Use cache
+    retry: 2,
+  });
+}
+```
+
+**App-Level Defaults:**
+```typescript
+// src/App.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+```
+
+---
+
+### 📋 Pre-Implementation Checklist
+
+Before implementing ANY new feature/service, verify:
+
+**Reference Data:**
+- [ ] Component uses `useReferenceData()` context (not service calls)
+- [ ] No direct `referenceDataService` imports in components
+- [ ] Service getters return from `getAllReferenceData()` cache
+
+**Session Data:**
+- [ ] Service uses `sessionService.getCurrentUser()` (not queries)
+- [ ] Service uses `sessionService.getTenantId()` (not queries)
+- [ ] No user/tenant API calls in service methods
+
+**Service Caching:**
+- [ ] List method has in-flight deduplication
+- [ ] Detail method has in-flight deduplication
+- [ ] Cache keys include tenant + filters
+- [ ] TTL set to 1-5 minutes
+
+**React Query:**
+- [ ] Query keys use `JSON.stringify(filters)`
+- [ ] `staleTime: 5 * 60 * 1000` set
+- [ ] `refetchOnMount: false` set
+- [ ] Cache invalidation on mutations
+
+---
+
+### 🚨 Forbidden Patterns (Auto-Reject)
+
+❌ **NEVER DO THIS:**
+```typescript
+// 1. Direct reference data service calls in components
+const { data } = useQuery(['categories'], () => referenceDataService.getCategories());
+
+// 2. User/tenant queries in services
+const user = await supabase.from('users').select('*').single();
+
+// 3. Services without caching
+class MyService {
+  async getItems() {
+    return supabase.from('items').select('*'); // No cache!
+  }
+}
+
+// 4. Unstable React Query keys
+queryKey: ['items', filters] // filters object changes reference!
+
+// 5. Missing refetchOnMount: false
+useQuery({ queryKey: ['items'] }); // Will refetch every mount!
+```
+
+--- Pointers to Code
 - **Factory & access:** `src/services/serviceFactory.ts`, `src/hooks/useService.ts`
 - **Supabase services:** `src/services/supabase/`
 - **Mocks & tests:** `src/services/__tests__/`, domain-specific mock services
@@ -96,6 +418,7 @@ Maintain consistency: leverage contexts, hooks, and the module registry; never b
 - **RLS compliance:** Follow `RLS_BEST_PRACTICES.md`; ensure queries respect tenant/user constraints and align with auth context. Do not bypass middleware.
 - **Impersonation tracking:** Respect `ImpersonationContext.tsx` and related hooks; enforce rate limits and audit patterns per tests.
 - **NO HARDCODED ROLES:** ⚠️ **CRITICAL ENTERPRISE RULE**: Never hardcode role names in service logic (e.g., `.or('role.eq.agent,role.eq.manager,role.eq.admin')`). Use `src/services/roleService.ts` and database-driven role management. See Enterprise Role Management System section below.
+- **IMPORT STANDARDIZATION:** ⚠️ **CRITICAL BUILD RULE**: Use static imports for all services, utilities, and contexts. Use dynamic imports ONLY for route-level lazy loading and module bootstrap. Mixed static/dynamic imports of the same module cause Vite warnings and prevent proper code splitting. See Import Standardization Policy section below.
 
 ## Enterprise Role Management System (Database-Driven)
 ⚠️ **CRITICAL**: This system uses DATABASE-DRIVEN, tenant-specific role configurations. NEVER hardcode role names in queries.
@@ -313,6 +636,486 @@ async updateEntity(id: string, data: EntityUpdateInput): Promise<Entity> {
   // Step 3: Add system fields
   updateData.updated_by = (await supabaseClient.auth.getUser()).data.user?.id;
   updateData.updated_at = new Date().toISOString();
+}
+```
+
+---
+
+## Enterprise-Grade Coding Standards (Generic, Loosely Coupled, Configurable)
+
+⚠️ **MANDATORY**: Scalable code must be generic/dynamic, loosely coupled via dependency injection, and fully configurable for multi-tenant environments.
+
+### Rule 1: Generic & Dynamic Code Over Hardcoded Solutions
+
+**❌ WRONG: Hardcoded Entity-Specific Code**
+```typescript
+// ❌ Code duplication - same logic for each entity
+async getLeads(): Promise<Lead[]> {
+  return supabase.from('leads').select('*');
+}
+
+async getDeals(): Promise<Deal[]> {
+  return supabase.from('deals').select('*');
+}
+
+// ❌ Hardcoded validation logic
+if (lead.status !== 'qualified' && lead.status !== 'hot') {
+  throw new Error('Invalid status');
+}
+```
+
+**✅ CORRECT: Generic Service Pattern**
+```typescript
+// ✅ Works for ANY entity with same interface
+class GenericEntityService<T extends Entity> {
+  constructor(
+    private tableName: string,
+    private config: EntityConfig<T>
+  ) {}
+
+  async findMany(filters?: Record<string, unknown>): Promise<T[]> {
+    let query = supabase.from(this.tableName).select('*');
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          query = query.eq(key, value);
+        }
+      });
+    }
+    
+    return query;
+  }
+}
+
+// ✅ Reuse for all entities
+const leadService = new GenericEntityService('leads', leadsConfig);
+const dealService = new GenericEntityService('deals', dealsConfig);
+const customerService = new GenericEntityService('customers', customersConfig);
+```
+
+### Rule 2: Dependency Injection Over Hard-Coded Dependencies
+
+**❌ WRONG: Tightly Coupled - Cannot Test or Extend**
+```typescript
+class OrderService {
+  private emailService = new EmailService();  // Hard-coded
+  private notificationService = new NotificationService();  // Hard-coded
+
+  async createOrder(data: OrderData) {
+    const order = await this.saveOrder(data);
+    this.emailService.send(order);  // Cannot mock for testing
+  }
+}
+```
+
+**✅ CORRECT: Constructor Injection for Loose Coupling**
+```typescript
+class OrderService {
+  constructor(
+    private emailService: IEmailService,
+    private notificationService: INotificationService,
+    private logger: ILogger
+  ) {}
+
+  async createOrder(data: OrderData) {
+    const order = await this.saveOrder(data);
+    await this.emailService.send(order);  // Easy to swap/mock
+  }
+}
+
+// Production usage
+const service = new OrderService(
+  new SmtpEmailService(),
+  new PushNotificationService(),
+  new ConsoleLogger()
+);
+
+// Test usage - inject mocks
+const testService = new OrderService(
+  new MockEmailService(),
+  new MockNotificationService(),
+  new MockLogger()
+);
+```
+
+### Rule 3: Centralized Configuration Over Hardcoded Values
+
+**❌ WRONG: Hardcoded Config Scattered Everywhere**
+```typescript
+// ❌ Different timeout values in different files
+class ApiClient {
+  private timeout = 30000;  // Customer service timeout
+}
+
+class OrderService {
+  private timeout = 5000;  // Order service timeout - inconsistent!
+  private retries = 2;  // Different retry count
+}
+
+// ❌ Environment-specific values hardcoded
+const API_URL = 'https://api.example.com';
+const CACHE_TTL = 60000;
+const LOG_LEVEL = 'debug';
+```
+
+**✅ CORRECT: Centralized Configuration**
+```typescript
+// src/config/appConfig.ts - SINGLE SOURCE OF TRUTH
+export const appConfig = {
+  api: {
+    baseUrl: process.env.VITE_API_URL || 'https://api.example.com',
+    timeout: parseInt(process.env.VITE_API_TIMEOUT || '30000'),
+    retries: parseInt(process.env.VITE_API_RETRIES || '3'),
+  },
+  cache: {
+    ttlMs: parseInt(process.env.VITE_CACHE_TTL || '300000'),
+    maxSize: parseInt(process.env.VITE_CACHE_MAX_SIZE || '100'),
+  },
+  logging: {
+    level: process.env.VITE_LOG_LEVEL || 'info',
+  },
+} as const;
+
+// All services use same config
+class CustomerService {
+  constructor(private config: typeof appConfig) {}
+  
+  async fetch() {
+    return apiClient.get('/customers', {
+      timeout: this.config.api.timeout,  // Consistent
+      retries: this.config.api.retries,
+    });
+  }
+}
+
+class OrderService {
+  constructor(private config: typeof appConfig) {}
+  
+  async fetch() {
+    return apiClient.get('/orders', {
+      timeout: this.config.api.timeout,  // Same value
+      retries: this.config.api.retries,
+    });
+  }
+}
+```
+
+### Rule 4: Configuration Objects Over Parameter Overload
+
+**❌ WRONG: Too Many Parameters**
+```typescript
+// ❌ 8 parameters is unmaintainable
+async fetchData(
+  entityType: string,
+  withDetails: boolean,
+  includeDeleted: boolean,
+  sortBy: string,
+  sortDir: 'asc' | 'desc',
+  limit: number,
+  offset: number,
+  cacheEnabled: boolean
+) { /* ... */ }
+```
+
+**✅ CORRECT: Options Object Pattern**
+```typescript
+interface QueryOptions {
+  filters?: Record<string, unknown>;
+  includeDeleted?: boolean;
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  cache?: { enabled: boolean; ttlMs?: number };
+  relations?: string[];
+}
+
+async function fetchData(
+  entityType: string,
+  options: QueryOptions = {}
+): Promise<Entity[]> {
+  const { 
+    filters = {}, 
+    limit = 100, 
+    sortBy,
+    cache = { enabled: true }
+  } = options;
+  
+  // Implementation uses options object
+}
+
+// Usage: Clear and maintainable
+const leads = await fetchData('leads', {
+  filters: { status: 'hot' },
+  limit: 50,
+  sortBy: 'created_at',
+  sortDirection: 'desc',
+});
+```
+
+### Rule 5: Strategy Pattern for Pluggable Logic
+
+**❌ WRONG: Monolithic with If/Else Chains**
+```typescript
+// ❌ Adding new export format requires modifying class
+class DataExporter {
+  async export(data: Entity[], format: 'csv' | 'json' | 'pdf') {
+    if (format === 'csv') return this.toCsv(data);
+    else if (format === 'json') return this.toJson(data);
+    else if (format === 'pdf') return this.toPdf(data);
+  }
+}
+```
+
+**✅ CORRECT: Strategy Pattern for Extensibility**
+```typescript
+interface ExportStrategy {
+  export(data: Entity[]): Promise<Blob>;
+  contentType: string;
+}
+
+class DataExporter {
+  private strategies: Map<string, ExportStrategy> = new Map([
+    ['csv', new CsvStrategy()],
+    ['json', new JsonStrategy()],
+    ['pdf', new PdfStrategy()],
+  ]);
+
+  registerStrategy(format: string, strategy: ExportStrategy) {
+    this.strategies.set(format, strategy);
+  }
+
+  async export(data: Entity[], format: string): Promise<Blob> {
+    const strategy = this.strategies.get(format);
+    if (!strategy) throw new Error(`Unknown format: ${format}`);
+    return strategy.export(data);
+  }
+}
+
+// ✅ Adding Excel support - NO changes to DataExporter
+const exporter = new DataExporter();
+exporter.registerStrategy('xlsx', new ExcelStrategy());
+```
+
+### Rule 6: Higher-Order Functions to Eliminate Code Duplication
+
+**❌ WRONG: Repeated Caching Logic**
+```typescript
+// ❌ DRY violation across multiple services
+class CustomerService {
+  async findMany(filters?: Filters) {
+    const cacheKey = `customers:${JSON.stringify(filters)}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached;
+    
+    const result = await supabase.from('customers').select('*');
+    this.cache.set(cacheKey, result);
+    return result;
+  }
+}
+
+class OrderService {
+  async findMany(filters?: Filters) {
+    const cacheKey = `orders:${JSON.stringify(filters)}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached;
+    
+    const result = await supabase.from('orders').select('*');
+    this.cache.set(cacheKey, result);
+    return result;
+  }
+}
+```
+
+**✅ CORRECT: Reusable Caching Decorator**
+```typescript
+// ✅ Generic caching for ANY async function
+function withCaching<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  prefix: string,
+  ttlMs: number = 300000
+): T {
+  const cache = new Map<string, { data: any; time: number }>();
+
+  return async ((...args: any[]) => {
+    const key = `${prefix}:${JSON.stringify(args)}`;
+    const entry = cache.get(key);
+    
+    if (entry && Date.now() - entry.time < ttlMs) {
+      return entry.data;
+    }
+    
+    const data = await fn(...args);
+    cache.set(key, { data, time: Date.now() });
+    return data;
+  }) as T;
+}
+
+// ✅ Apply to any service
+class CustomerService {
+  findMany = withCaching(
+    this._findMany.bind(this),
+    'customers'
+  );
+  
+  private async _findMany(filters?: Filters) {
+    return supabase.from('customers').select('*');
+  }
+}
+
+class OrderService {
+  findMany = withCaching(
+    this._findMany.bind(this),
+    'orders'
+  );
+  
+  private async _findMany(filters?: Filters) {
+    return supabase.from('orders').select('*');
+  }
+}
+```
+
+### Rule 7: Composition Over Inheritance
+
+**❌ WRONG: Rigid Class Hierarchy**
+```typescript
+// ❌ Fragile base class inheritance
+class BaseEntity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  async save() { /* ... */ }
+}
+
+class Customer extends BaseEntity {
+  name: string;
+}
+
+class Product extends BaseEntity {
+  name: string;
+  price: number;
+}
+
+// ❌ Changing BaseEntity breaks all subclasses
+```
+
+**✅ CORRECT: Composition & Interfaces**
+```typescript
+// ✅ Flexible, composable interfaces
+interface Identifiable {
+  id: string;
+}
+
+interface Auditable {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ✅ Compose as needed
+type Customer = Identifiable & Auditable & {
+  name: string;
+};
+
+type Product = Identifiable & Auditable & {
+  name: string;
+  price: number;
+};
+
+// ✅ Generic functions work with any composition
+function getMetadata<T extends Identifiable & Auditable>(entity: T) {
+  return { id: entity.id, createdAt: entity.createdAt };
+}
+```
+
+### Rule 8: Multi-Tenant Aware by Default
+
+**❌ WRONG: Single-Tenant Code**
+```typescript
+// ❌ No tenant filtering
+async getLeads(): Promise<Lead[]> {
+  return supabase.from('leads').select('*');  // Returns ALL tenants' leads!
+}
+```
+
+**✅ CORRECT: Automatic Tenant Filtering**
+```typescript
+import { sessionService } from '@/services/session/SessionService';
+
+// ✅ All queries automatically filtered by tenant
+async getLeads(filters?: Filters): Promise<Lead[]> {
+  const tenantId = sessionService.getTenantId();
+  
+  let query = supabase
+    .from('leads')
+    .select('*')
+    .eq('tenant_id', tenantId);  // Automatic isolation
+  
+  if (filters?.status) {
+    query = query.eq('status', filters.status);
+  }
+  
+  return query;
+}
+
+// Configuration separates by tenant
+const config = {
+  database: {
+    tenantId: sessionService.getTenantId(),
+  },
+};
+```
+
+### Rule 9: Document Trade-offs & Constraints
+
+**Every generic/shared component must include:**
+
+```typescript
+/**
+ * Generic Entity Service
+ * 
+ * ✅ PROS:
+ * - Reduces boilerplate 80%
+ * - Automatic tenant filtering
+ * - Built-in caching
+ * - Type-safe generics
+ * 
+ * ❌ CONS:
+ * - Cannot handle complex domain logic
+ * - Query filters limited to equals (use custom for complex)
+ * - Relations loaded separately
+ * 
+ * ✅ USE WHEN:
+ * - Simple CRUD operations
+ * - Static reference data
+ * - Audit/logging entities
+ * 
+ * ❌ DO NOT USE FOR:
+ * - Complex domain logic (use domain service)
+ * - Many-to-many with junctions (use custom query)
+ * - Graph queries (use custom query)
+ * 
+ * @example
+ * const service = new GenericEntityService('products', supabase, config);
+ * const items = await service.findMany({ filters: { active: true } });
+ */
+```
+
+### Enterprise Checklist (Before Code Review)
+
+- [ ] No hardcoded values - all config via `appConfig` or environment
+- [ ] No direct service instantiation - dependencies injected via constructor
+- [ ] No tightly coupled imports - can swap implementations easily
+- [ ] No parameter overload - methods use options objects
+- [ ] Reusable patterns - can apply same code to 3+ entities
+- [ ] Documented constraints - comments explain when/why
+- [ ] Tenant-aware - automatic filtering via `sessionService`
+- [ ] Type-safe - generics preserve type information
+- [ ] Testable - all dependencies mockable
+- [ ] Composable - functions combine without side effects
+
+---
 
   const { data: result, error } = await supabaseClient
     .from('entities')

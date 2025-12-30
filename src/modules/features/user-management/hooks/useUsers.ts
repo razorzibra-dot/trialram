@@ -31,7 +31,8 @@ import { LISTS_QUERY_CONFIG, DETAIL_QUERY_CONFIG, STATS_QUERY_CONFIG } from '@/m
 const USER_QUERY_KEYS = {
   all: ['users'] as const,
   lists: () => [...USER_QUERY_KEYS.all, 'list'] as const,
-  list: (filters?: UserFiltersDTO) => [...USER_QUERY_KEYS.lists(), { filters }] as const,
+  // Use stringified filters to produce a stable key and avoid duplicate fetches
+  list: (filters?: UserFiltersDTO) => [...USER_QUERY_KEYS.lists(), JSON.stringify(filters || {})] as const,
   details: () => [...USER_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...USER_QUERY_KEYS.details(), id] as const,
   stats: () => [...USER_QUERY_KEYS.all, 'stats'] as const,
@@ -57,6 +58,7 @@ export function useUsers(filters?: UserFiltersDTO) {
     queryFn: () => userService.getUsers(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
+    refetchOnMount: false,
   });
 
   return {

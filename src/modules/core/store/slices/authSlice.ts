@@ -4,6 +4,7 @@
 
 import { StateCreator } from 'zustand';
 import { User } from '@/types/auth';
+import { authService } from '@/services';
 
 export interface AuthSlice {
   // State
@@ -47,9 +48,6 @@ export const createAuthSlice: StateCreator<
     });
 
     try {
-      // Import auth service dynamically to avoid circular dependencies
-      const { authService } = await import('@/services');
-      
       const response = await authService.login(credentials.email, credentials.password);
       
       set((state) => {
@@ -77,7 +75,6 @@ export const createAuthSlice: StateCreator<
     });
 
     try {
-      const { authService } = await import('@/services');
       await authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
@@ -93,7 +90,6 @@ export const createAuthSlice: StateCreator<
   },
 
   refreshToken: async () => {
-    const { authService } = await import('@/services');
     const newToken = await authService.refreshToken();
     
     set((state) => {

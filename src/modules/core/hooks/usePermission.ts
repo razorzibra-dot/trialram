@@ -6,6 +6,14 @@
 
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
+const {
+  READ: CUSTOMER_READ,
+  CREATE: CUSTOMER_CREATE,
+  UPDATE: CUSTOMER_UPDATE,
+  DELETE: CUSTOMER_DELETE,
+} = CUSTOMER_PERMISSIONS;
 
 export interface PermissionCheckResult {
   hasPermission: boolean;
@@ -57,10 +65,10 @@ export const usePermission = () => {
     // Features are application concepts, permissions are database-driven.
     // If new permissions are added to database, they can be mapped here.
     const featurePermissions: Record<string, string[]> = {
-      customer_management: ['crm:customer:record:read'],
-      customer_creation: ['crm:customer:record:create'],
-      customer_editing: ['crm:customer:record:update'],
-      customer_deletion: ['crm:customer:record:delete'],
+      customer_management: [CUSTOMER_READ],
+      customer_creation: [CUSTOMER_CREATE],
+      customer_editing: [CUSTOMER_UPDATE],
+      customer_deletion: [CUSTOMER_DELETE],
 
       sales_pipeline: ['crm:sales:deal:read'],
       sales_creation: ['crm:sales:deal:create'],

@@ -3,6 +3,10 @@
  * Validates login/logout, JWT token handling, permission caching, tenant isolation, and super admin authentication
  */
 
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
+const { UPDATE: CUSTOMER_UPDATE } = CUSTOMER_PERMISSIONS;
+
 describe('Authentication Service Validation', () => {
   describe('3.1.1: Validate login/logout functionality', () => {
     it('should authenticate user with email and password', () => {
@@ -150,7 +154,7 @@ describe('Authentication Service Validation', () => {
     it('should cache user permissions after first load', () => {
       const permissionCache = new Map<string, Set<string>>();
       const userId = 'user-123';
-      const permissions = new Set(['read', 'write', 'crm:customer:record:update']);
+      const permissions = new Set(['read', 'write', CUSTOMER_UPDATE]);
 
       permissionCache.set(userId, permissions);
 

@@ -53,6 +53,8 @@ import { UserPermission } from '../guards/permissionGuards';
 import { shouldShowTenantIdField } from '@/utils/tenantIsolation';
 import { Role, Permission, RoleTemplate } from '@/types/rbac';
 import { groupPermissionsByCategory } from '@/modules/features/user-management/utils/permissions';
+import { supabase } from '@/services/supabase/client';
+import { isSuperAdmin, filterPermissionsByTenant } from '@/utils/tenantIsolation';
 
 
 interface RoleFormData {
@@ -221,9 +223,7 @@ export const RoleManagementPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Import supabase client and utilities
-      const { supabase } = await import('@/services/supabase/client');
-      const { isSuperAdmin } = await import('@/utils/tenantIsolation');
+      // Use statically imported supabase client and utilities
       
       // Fetch permissions directly from role_permissions table for this specific role
       const { data: rolePermissionsData, error: rolePermissionsError } = await supabase
@@ -277,7 +277,6 @@ export const RoleManagementPage: React.FC = () => {
         } else if (allPermsData) {
           // Filter out system permissions (tenant admins shouldn't see them)
           // But keep them if they're already assigned to the role (for display purposes)
-          const { filterPermissionsByTenant } = await import('@/utils/tenantIsolation');
           const filteredPerms = filterPermissionsByTenant(allPermsData, currentUser);
           
           // Add back any role permissions that were filtered out (so they're visible in tree)
@@ -359,7 +358,7 @@ export const RoleManagementPage: React.FC = () => {
     
     try {
       // Fetch full permission details for this role
-      const { supabase } = await import('@/services/supabase/client');
+      // Use statically imported supabase client
       
       // Get permission IDs from role_permissions table
       const { data: rolePermissionsData, error: rolePermissionsError } = await supabase

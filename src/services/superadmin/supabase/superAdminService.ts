@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/services/supabase/client';
+import { getValidUserRoles } from '@/utils/roleMapping';
 import {
   SuperAdminUser,
   TenantConfig,
@@ -676,8 +677,7 @@ class SupabaseSuperAdminService {
    * ✅ Database-driven: Fetches roles from database
    */
   async getUserRoles(): Promise<string[]> {
-    // ✅ Database-driven: Fetch roles from database
-    const { getValidUserRoles } = await import('@/utils/roleMapping');
+    // ✅ Database-driven: Fetch roles from database (static import)
     return await getValidUserRoles();
   }
 

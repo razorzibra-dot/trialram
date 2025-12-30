@@ -117,10 +117,10 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
       const formData: ComplaintFormData = {
         title: values.title,
         description: values.description,
-        customer_id: values.customer_id,
-        category: values.category,
+        customerId: values.customerId,
+        type: values.type,
         priority: values.priority,
-        assigned_to: values.assigned_to || undefined,
+        assignedEngineerId: values.assignedEngineerId || undefined,
       };
 
       if (isEditMode && complaint) {
@@ -128,8 +128,8 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
           id: complaint.id,
           data: {
             status: values.status,
-            assigned_to: values.assigned_to,
-            resolution: values.resolution,
+            assignedEngineerId: values.assignedEngineerId,
+            engineerResolution: values.engineerResolution,
             priority: values.priority,
           },
         });
@@ -300,7 +300,7 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
 
           <Form.Item
             label="Customer"
-            name="customer_id"
+            name="customerId"
             rules={[{ required: true, message: 'Please select a customer' }]}
             tooltip="Select the customer who reported this complaint"
           >
@@ -324,12 +324,12 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
 
           <Form.Item
             label="Assigned To"
-            name="assigned_to"
-            tooltip="Assign an engineer or owner to handle this complaint (optional)"
+            name="assignedEngineerId"
+            tooltip="Assign an engineer to handle this complaint (optional)"
           >
             <Select
               size="large"
-              placeholder="Select owner (optional)"
+              placeholder="Select engineer (optional)"
               allowClear
               showSearch
               optionFilterProp="children"
@@ -346,8 +346,8 @@ export const ComplaintsFormPanel: React.FC<ComplaintsFormPanelProps> = ({
           {isEditMode && (
               <Form.Item
                 label="Resolution"
-                name="resolution"
-                tooltip="Resolution notes from the owner or engineer"
+                name="engineerResolution"
+                tooltip="Resolution notes from the engineer"
               >
                 <Input.TextArea
                   rows={3}

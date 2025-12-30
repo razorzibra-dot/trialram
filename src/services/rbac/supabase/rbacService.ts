@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/services/supabase/client';
+import { getAuditIPInfo } from '@/api/middleware/ipTracking';
 import { Permission, Role, UserRole, AuditLog, RoleTemplate, PermissionMatrix } from '@/types/rbac';
 import { User } from '@/types/auth';
 import { authService } from '../../serviceFactory';
@@ -1062,9 +1063,6 @@ class SupabaseRBACService {
    */
   private async getClientIp(): Promise<string> {
     try {
-      // Import the IP tracking utilities
-      const { getAuditIPInfo } = await import('@/api/middleware/ipTracking');
-      
       // Get comprehensive IP information
       const ipInfo = await getAuditIPInfo();
       

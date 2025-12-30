@@ -23,6 +23,8 @@ const queryClient = new QueryClient({
       cacheTime: 10 * 60 * 1000, // 10 minutes
       retry: 3,
       refetchOnWindowFocus: false,
+      // Avoid duplicate initial fetches in React 18 StrictMode/dev remounts
+      refetchOnMount: false,
     },
     mutations: {
       retry: 1,

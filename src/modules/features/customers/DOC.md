@@ -44,17 +44,13 @@ The Customers module is a core feature that manages customer lifecycle, contact 
 
 ## 🎨 UI/UX Enhancement Status
 
-**Forms Enhancement**: ✨ **ENTERPRISE-GRADE ENHANCED** (2025-01-31)
+**Forms Enhancement**: 🛑 **RETIRED / REMOVED** (2025-02)
 
-The Customer forms have been professionally redesigned with:
-- 📄 Card-based form sections with icon headers
-- 🎯 Enhanced validation and comprehensive tooltips
-- 📱 Responsive design for all screen sizes
-- 🎨 Professional color scheme and typography
-- 📊 Key metrics display in detail view
-- 🔔 Status alerts for account states
+- Legacy drawers (`CustomerFormPanel`, `CustomerDetailPanel`) and related configs have been deleted from the codebase.
+- Inline create/update now run through `GenericEntityPage` inside `views/CustomerListPage.tsx` with lightweight field configs; no dedicated drawer components remain.
+- Analytics rendering is powered by `GenericAnalyticsPage` in `views/CustomerAnalyticsPage.tsx` with permission-aware sections.
 
-**Reference**: See `CUSTOMER_FORMS_ENHANCEMENT_GUIDE.md` for complete details on form enhancements, design system, and best practices.
+**Reference**: `CUSTOMER_FORMS_ENHANCEMENT_GUIDE.md` is archived for historical context; do not treat it as an active implementation guide.
 
 ---
 
@@ -62,26 +58,22 @@ The Customer forms have been professionally redesigned with:
 
 ```
 customers/
-├── components/              # Reusable UI components
-│   ├── CustomerFormPanel.tsx           ✨ # Enterprise enhanced - create/edit drawer
-│   ├── CustomerDetailPanel.tsx         ✨ # Enterprise enhanced - detail view drawer
-│   └── CustomersList.tsx        # Legacy table component
+├── components/              # (empty; legacy drawers removed)
+├── config/                  # (empty; legacy configs removed)
 ├── hooks/                   # Custom React hooks
-│   ├── useCustomers.ts          # React Query hooks for customer operations
-│   └── useCustomerFilters.ts    # Filter management hooks
+│   ├── index.ts
+│   └── useCustomers.ts          # React Query hooks for customer operations
 ├── services/                # Business logic
 │   ├── customerService.ts       # Service factory-routed service
 │   └── index.ts                 # Service exports
-├── store/                   # State management
-│   ├── customerStore.ts         # Zustand state for customers
-│   └── index.ts
+├── store/                   # (deprecated) legacy Zustand store removed
 ├── views/                   # Page components
-│   ├── CustomersPage.tsx        # Main customers list page
-│   └── CustomerDetailPage.tsx   # Individual customer details
+│   ├── CustomerListPage.tsx     # GenericEntityPage-driven list + inline CRUD
+│   └── CustomerAnalyticsPage.tsx# Generic analytics dashboard
 ├── index.ts                 # Module entry point
 ├── routes.tsx               # Route definitions
 ├── DOC.md                   # This file
-└── CUSTOMER_FORMS_ENHANCEMENT_GUIDE.md  📖 # Comprehensive forms design guide
+└── CUSTOMER_FORMS_ENHANCEMENT_GUIDE.md  📖 # Archived legacy design guide
 ```
 
 ## Key Features
@@ -125,131 +117,44 @@ customers/
 
 ## Component Descriptions
 
-### CustomersPage (Main Page)
+### CustomerListPage (Main View)
 
 **Type**: React FC  
-**Path**: `views/CustomersPage.tsx`
+**Path**: `views/CustomerListPage.tsx`
 
 **Responsibilities**:
-- Display customer list with advanced filtering
-- Show customer statistics and key metrics
-- Handle CRUD operations with confirmation dialogs
-- Manage drawer states for forms and details
-- Permission-based visibility of actions
+- Permission-aware list view powered by `GenericEntityPage`
+- Inline create/update/delete via generic form fields (no legacy drawers)
+- Filter management (search, status) with local state for pagination
+- Uses `useCustomers`, `useCreateCustomer`, `useUpdateCustomer`, `useDeleteCustomer`
 
 **Features**:
-- Statistics cards (Total, Active, Recent, Lifecycle Value)
-- Advanced filtering (status, type, search, industry)
-- Pagination and sorting
-- Bulk actions (export, update status)
-- Role-based access control
-- Action buttons with permission checks
+- Column configuration for company/contact/status/assignment
+- Basic filters (search, status) with automatic pagination reset
+- Optional create/update/delete actions gated by RBAC
+- Generic form field config defined inline (text, select, number, date)
 
-**State Management**:
-```typescript
-const [formVisible, setFormVisible] = useState(false);
-const [detailsVisible, setDetailsVisible] = useState(false);
-const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-const [filterValues, setFilterValues] = useState<CustomerFilters>({});
-```
+### CustomerAnalyticsPage
 
-### CustomerFormPanel
+**Type**: React FC  
+**Path**: `views/CustomerAnalyticsPage.tsx`
 
-**Type**: React FC (Drawer Component)  
-**Path**: `components/CustomerFormPanel.tsx`
+**Responsibilities**:
+- Renders permission-aware analytics via `GenericAnalyticsPage`
+- Pulls data from `useCustomerAnalytics`, segmentation, lifecycle, and behavior hooks
+- Provides retry handling and consolidated loading/error state
 
-**Props**:
-```typescript
-interface CustomerFormPanelProps {
-  visible: boolean;
-  customer?: Customer | null;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-```
+**Features**:
+- Key metric stats, progress widgets, segmentation tables, lifecycle and behavior sections
+- Breadcrumbs and page header aligned with tenants
+- Graceful empty states for missing data
 
-**Form Sections**:
-1. Basic Information (Name, Type, Status)
-2. Contact Information (Email, Phone, Website)
-3. Address (Billing & Shipping)
-4. Business Details (Industry, Revenue, Employees)
-5. Account Settings (Parent Customer, Tags)
-6. Notes & Additional Info
-
-**Validation**:
-- Email format validation
-- Phone number format
-- Required field checks
-- Unique customer name per account
-
-### CustomerDetailPanel
-
-**Type**: React FC (Drawer Component)  
-**Path**: `components/CustomerDetailPanel.tsx`
-
-**Props**:
-```typescript
-interface CustomerDetailPanelProps {
-  visible: boolean;
-  customer?: Customer | null;
-  onClose: () => void;
-  onEdit: () => void;
-}
-```
-
-**Display Sections**:
-- Key metrics (Lifecycle Value, Recent Orders)
-- Contact information
-- Business details
-- Address information
-- Related records (Contracts, Sales, Tickets)
-- Activity timeline
-- Notes and tags
+### Legacy Cleanup
+- Legacy drawer files and configs were removed; rely on list + analytics pages.
 
 ## State Management
 
-### Zustand Store (customerStore.ts)
-
-**State Structure**:
-```typescript
-interface CustomerStore {
-  // Data
-  customers: Customer[];
-  selectedCustomer: Customer | null;
-  customerStats: CustomerStats | null;
-
-  // UI State
-  filters: CustomerFilters;
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-  };
-  isLoading: boolean;
-  error: string | null;
-
-  // Selection
-  selectedCustomerIds: string[];
-
-  // Actions
-  setCustomers: (customers: Customer[]) => void;
-  addCustomer: (customer: Customer) => void;
-  updateCustomer: (id: string, customer: Partial<Customer>) => void;
-  removeCustomer: (id: string) => void;
-  setFilters: (filters: Partial<CustomerFilters>) => void;
-  setSelectedCustomer: (customer: Customer | null) => void;
-  setStats: (stats: CustomerStats) => void;
-  bulkUpdateCustomers: (ids: string[], updates: Partial<Customer>) => void;
-}
-```
-
-**Selector Hooks**:
-- `useCustomers()` - Get customers list
-- `useCustomerPagination()` - Get pagination state
-- `useCustomerFilters()` - Get current filters
-- `useCustomerStats()` - Get statistics
-- `useSelectedCustomer()` - Get selected customer
-- `useCustomerLoading()` - Get loading state
+The legacy Zustand store (`customerStore.ts`) was unused and has been removed. Customer data now flows exclusively through the React Query hooks (`useCustomers.ts`) backed by `serviceFactory` and context-aware services.
 
 ## API & Hooks
 
@@ -549,21 +454,12 @@ export function ExportButton() {
 3. **Lazy Loading**: Routes are code-split for better load performance
 4. **Virtual Scrolling**: Large lists use virtual scrolling for performance
 5. **Pagination**: Data is fetched in pages rather than all at once
-6. **Selector Hooks**: Zustand selectors prevent store re-renders
+6. **Selector Hooks**: React Query selectors/components avoid unnecessary renders
 
 ## Testing
 
 ### Unit Tests
 ```typescript
-// Test store selectors
-describe('customerStore', () => {
-  it('should add customer to list', () => {
-    const store = useCustomerStore();
-    store.addCustomer(mockCustomer);
-    expect(store.customers).toContainEqual(mockCustomer);
-  });
-});
-
 // Test hooks
 describe('useCustomers', () => {
   it('should fetch customers with filters', async () => {

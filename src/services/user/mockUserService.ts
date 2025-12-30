@@ -1,3 +1,4 @@
+import { isValidUserRole, getValidUserRoles } from '@/utils/roleMapping';
 /**
  * Mock User Service
  * Provides mock data for user management operations
@@ -215,7 +216,6 @@ class MockUserService {
     }
 
     // ✅ Database-driven: Validate role exists in database
-    const { isValidUserRole, getValidUserRoles } = await import('@/utils/roleMapping');
     const isValid = await isValidUserRole(data.role);
     if (!isValid) {
       const validRoles = await getValidUserRoles();
@@ -307,7 +307,6 @@ class MockUserService {
 
     // ✅ Database-driven: Validate role exists in database
     if (data.role) {
-      const { isValidUserRole, getValidUserRoles } = await import('@/utils/roleMapping');
       const isValid = await isValidUserRole(data.role);
       if (!isValid) {
         const validRoles = await getValidUserRoles();
@@ -408,7 +407,6 @@ class MockUserService {
    */
   async getRoles(): Promise<UserRole[]> {
     // ✅ Database-driven: Fetch roles from database
-    const { getValidUserRoles } = await import('@/utils/roleMapping');
     return await getValidUserRoles();
   }
 

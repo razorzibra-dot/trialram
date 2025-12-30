@@ -12,6 +12,7 @@ export interface SalesFilters {
   search?: string;
   stage?: string;
   assignedTo?: string;
+  customerId?: string;
   dateRange?: {
     start: string;
     end: string;

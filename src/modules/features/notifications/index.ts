@@ -3,13 +3,14 @@
  * Comprehensive notification management system
  */
 
-// Views exported
-export * from './views/NotificationsPage';
+// Views are lazy-loaded via routes; avoid static re-exports to preserve chunking
 
 // Routes
 export { notificationsRoutes } from './routes';
 import { notificationsRoutes } from './routes';
 import { FeatureModule } from '@/modules/core/types';
+import { registerServiceInstance, unregisterService } from '@/modules/core/services/ServiceContainer';
+import { notificationService } from '@/services/serviceFactory';
 
 // Module configuration  
 export const notificationsModule: FeatureModule = {
@@ -23,12 +24,8 @@ export const notificationsModule: FeatureModule = {
   // Initialize the module
   async initialize() {
     try {
-      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { notificationService } = await import('@/services/serviceFactory');
-      
       // Register notification service (as instance, not constructor)
       registerServiceInstance('notificationService', notificationService);
-      
       console.log('[Notifications] ✅ notificationService registered');
       console.log('[Notifications] ✅ Module initialized successfully');
     } catch (error) {
@@ -40,7 +37,6 @@ export const notificationsModule: FeatureModule = {
   // Cleanup the module
   async cleanup() {
     try {
-      const { unregisterService } = await import('@/modules/core/services/ServiceContainer');
       unregisterService('notificationService');
       console.log('[Notifications] ✅ Services unregistered');
     } catch (error) {

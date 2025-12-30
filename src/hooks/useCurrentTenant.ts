@@ -5,33 +5,47 @@
 
 import { useState, useEffect } from 'react';
 import { multiTenantService } from '@/services/serviceFactory';
+import { sessionService } from '@/services/session/SessionService';
 import { Tenant } from '@/types/rbac';
 
 export const useCurrentTenant = (): Tenant | null => {
-  const [tenant, setTenant] = useState<Tenant | null>(null);
+  // Seed from SessionService cache to avoid any network or legacy calls
+  const initialTenant = sessionService.getTenant();
+  const [tenant, setTenant] = useState<Tenant | null>(
+    initialTenant
+      ? {
+          id: initialTenant.id,
+          name: initialTenant.name,
+          domain: '',
+          status: initialTenant.status || 'active',
+          plan: 'professional',
+          createdAt: new Date().toISOString(),
+          settings: {},
+          usage: {},
+        }
+      : null
+  );
 
   useEffect(() => {
-    // Get initial tenant context and convert to Tenant interface
+    // Align with any in-memory multiTenantService context (already cache-backed)
     const tenantContext = multiTenantService.getCurrentTenant();
-
     if (tenantContext) {
-      const tenantData: Tenant = {
+      setTenant({
         id: tenantContext.tenantId || '',
         name: tenantContext.tenantName || '',
-        domain: '', // Domain not available in context
-        status: 'active', // Default status
-        plan: 'professional', // Default plan
+        domain: '',
+        status: 'active',
+        plan: 'professional',
         createdAt: new Date().toISOString(),
         settings: {},
-        usage: {}
-      };
-      setTenant(tenantData);
+        usage: {},
+      });
     }
 
-    // Subscribe to tenant changes
+    // Subscribe to tenant changes (purely cache/memory, no network)
     const unsubscribe = multiTenantService.subscribe((newContext) => {
       if (newContext) {
-        const tenantData: Tenant = {
+        setTenant({
           id: newContext.tenantId || '',
           name: newContext.tenantName || '',
           domain: '',
@@ -39,9 +53,8 @@ export const useCurrentTenant = (): Tenant | null => {
           plan: 'professional',
           createdAt: new Date().toISOString(),
           settings: {},
-          usage: {}
-        };
-        setTenant(tenantData);
+          usage: {},
+        });
       } else {
         setTenant(null);
       }

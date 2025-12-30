@@ -24,6 +24,7 @@ import {
   canAccessNavigationItem,
   NavigationFilterContext,
 } from './navigationFilter';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 // ⚠️ NOTE: Test file uses mock navigation config for testing purposes
 // In production, navigation items come from database via useNavigation() hook
 // This test file can be updated to use database-driven navigation in the future
@@ -69,7 +70,7 @@ export class NavigationFilterTestSuite {
   private testPermissionFiltering(): void {
     const context = createNavigationFilterContext('admin', [
       'read',
-      'crm:customer:record:update',
+      CUSTOMER_PERMISSIONS.UPDATE,
       'crm:user:record:update',
     ]);
 
@@ -196,7 +197,7 @@ export class NavigationFilterTestSuite {
     const adminContext = createNavigationFilterContext('admin', [
       'read',
       'write',
-      'crm:customer:record:update',
+      CUSTOMER_PERMISSIONS.UPDATE,
       'crm:user:record:update',
       'crm:system:config:manage',
     ]);

@@ -5,6 +5,7 @@
  */
 
 import { authService } from '@/services';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 
 export interface RBACTestResult {
   testName: string;
@@ -75,7 +76,7 @@ export class RBACTester {
       // Test 3: Super admin has all permissions
       const permissions = [
         'read', 'write', 'delete',
-        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update', 'manage_tickets',
         'crm:user:record:update', 'crm:role:record:update', 'crm:platform:control:admin'
       ];
       
@@ -179,7 +180,7 @@ export class RBACTester {
       // Test 2: Admin permissions
       const adminPermissions = [
         'read', 'write', 'delete',
-        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update', 'manage_tickets',
         'crm:user:record:update', 'crm:role:record:update'
       ];
       
@@ -260,7 +261,7 @@ export class RBACTester {
       });
 
       // Test manager permissions
-      const managerPermissions = ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update'];
+      const managerPermissions = ['read', 'write', CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update'];
       const restrictedPermissions = ['delete', 'crm:user:record:update', 'crm:role:record:update'];
       
       const hasManagerPerms = managerPermissions.every(perm => authService.hasPermission(perm));

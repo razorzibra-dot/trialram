@@ -1,9 +1,11 @@
 /**
  * Multi-Tenant Service
  * Manages tenant context and data isolation
+ * ENTERPRISE: Now uses centralized SessionService to avoid duplicate API calls
  */
 
 import { supabase as supabaseClient } from '@/services/supabase/client';
+import { sessionService } from '@/services/session/SessionService';
 
 interface TenantContext {
   tenantId: string | null;
@@ -21,139 +23,58 @@ interface TenantInfo {
 class MultiTenantService {
   private currentTenant: TenantContext | null = null;
   private tenantListeners: Set<(tenant: TenantContext | null) => void> = new Set();
+  // Prevent duplicate initialization per user (React 18 StrictMode double effects)
+  private initPromises: Map<string, Promise<TenantContext | null>> = new Map();
 
   /**
    * Initialize tenant context from session
-   * ⭐ CRITICAL: Handles both tenant users, super admins (tenantId=null), and mock users
+   * ⭐ ENTERPRISE: Uses centralized SessionService - ZERO API calls
+   * SessionService already loaded user + tenant on login
    */
   async initializeTenantContext(userId: string): Promise<TenantContext | null> {
-    try {
-      console.log('[MultiTenantService] Initializing tenant context for user:', userId);
+    // Return in-flight init if already running for this user
+    const existing = this.initPromises.get(userId);
+    if (existing) return existing;
 
-      // First try to get user from database
-      let { data: user, error: userError } = await supabaseClient
-        .from('users')
-        .select('id, tenant_id')
-        .eq('id', userId)
-        .single();
+    const initPromise = (async () => {
+      try {
+        console.log('[MultiTenantService] Initializing tenant context for user:', userId);
 
-      // If user not found in database, attempt to sync from auth.users
-      if (userError && (userError.code === 'PGRST116' || userError.code === 'PGRST301')) { 
-        // PGRST116 = no rows found, PGRST301 = not found
-        console.log('[MultiTenantService] User not found in public.users - attempting to sync from auth.users');
-        
-        // Attempt to sync user from auth.users to public.users
-        const syncResult = await this.syncUserFromAuth(userId);
-        if (syncResult.success) {
-          console.log('[MultiTenantService] User sync successful, retrying to fetch user from database');
-          // Retry fetching the user after sync
-          const retryResult = await supabaseClient
-            .from('users')
-            .select('id, tenant_id')
-            .eq('id', userId)
-            .single();
-            
-          user = retryResult.data;
-          userError = retryResult.error;
-        } else {
-          console.warn('[MultiTenantService] User sync failed:', syncResult.error);
-          console.warn('[MultiTenantService] User % not found. Please run the sync migration or execute fix_missing_user.sql', userId);
-          
-          // Check if this is a mock user by looking at localStorage
-          const mockUserStr = localStorage.getItem('crm_user');
-          if (mockUserStr) {
-            try {
-              const mockUser = JSON.parse(mockUserStr);
-              if (mockUser.id === userId) {
-                console.log('[MultiTenantService] Mock user found in localStorage, creating tenant context');
+        // ENTERPRISE: Use cached session data (ZERO API calls)
+        const user = sessionService.getCurrentUser();
+        const tenant = sessionService.getTenant();
 
-                // Create tenant context for mock user
-                const tenantContext: TenantContext = {
-                  tenantId: mockUser.tenantId || '550e8400-e29b-41d4-a716-446655440001', // Default to Acme tenant
-                  tenantName: mockUser.tenantId === null ? 'Platform Administration' : 'Mock Tenant',
-                  userId,
-                  role: mockUser.role,
-                };
-
-                this.setCurrentTenant(tenantContext);
-                console.log('[MultiTenantService] Mock tenant context initialized successfully');
-                return tenantContext;
-              }
-            } catch (parseError) {
-              console.warn('[MultiTenantService] Error parsing mock user data:', parseError);
-            }
-          }
-
-          console.warn('[MultiTenantService] User not found in database and no mock user context available');
+        if (!user) {
+          console.warn('[MultiTenantService] No user in SessionService - may need to initialize');
           return null;
         }
-      } else if (userError) {
-        // Other database error
-        throw userError;
-      }
 
-      // If user still not found after sync attempt and not a mock user, return null
-      if (!user) {
-        console.warn('[MultiTenantService] User not found in database after sync attempt');
-        return null;
-      }
-
-      // Check if user is a super admin using cached auth data instead of database query
-      // This avoids duplicate API calls since user data is already cached during login
-      const { authService } = await import('@/services/serviceFactory');
-      const currentUser = authService.getCurrentUser();
-      const isSuperAdmin = currentUser?.isSuperAdmin === true || currentUser?.role === 'super_admin';
-
-      // ⭐ CRITICAL: Check if user is a super admin (tenant_id = null or has super_admin role)
-      if (user.tenant_id === null || isSuperAdmin) {
-        console.log('[MultiTenantService] Super admin detected - skipping tenant fetch');
-
+        // Build tenant context from cached session
         const tenantContext: TenantContext = {
-          tenantId: null as string | null, // Super admins have no tenant
-          tenantName: 'Platform Administration',
-          userId,
-          role: isSuperAdmin ? 'super_admin' : undefined,
+          tenantId: tenant?.id || null,
+          tenantName: tenant?.name || (user.isSuperAdmin ? 'Platform Administration' : undefined),
+          userId: user.id,
+          role: user.role,
         };
 
         this.setCurrentTenant(tenantContext);
+        console.log('[MultiTenantService] ✅ Tenant context initialized from cache:', {
+          userId: user.id,
+          tenantId: tenant?.id || 'none',
+          tenantName: tenantContext.tenantName,
+        });
+        
         return tenantContext;
+      } catch (error) {
+        console.error('[MultiTenantService] Error initializing tenant context:', error);
+        return this.bootstrapTenantFromLocalUser();
+      } finally {
+        this.initPromises.delete(userId);
       }
+    })();
 
-      // Validate tenant_id for regular users
-      if (!user.tenant_id || user.tenant_id === 'undefined' || user.tenant_id === null) {
-        console.warn('[MultiTenantService] Invalid tenant_id for user:', user.tenant_id);
-        return null;
-      }
-
-      // Fetch tenant info separately for regular tenant users
-      let tenantName: string | undefined;
-      try {
-        const { data: tenant } = await supabaseClient
-          .from('tenants')
-          .select('id, name')
-          .eq('id', user.tenant_id)
-          .single();
-
-        tenantName = tenant?.name;
-      } catch (tenantError) {
-        console.warn('[MultiTenantService] Could not fetch tenant details:', tenantError);
-        // If tenant doesn't exist, return null
-        return null;
-      }
-
-      const tenantContext: TenantContext = {
-        tenantId: user.tenant_id,
-        tenantName,
-        userId,
-        role: undefined, // Role will be determined by hasRole method when needed
-      };
-
-      this.setCurrentTenant(tenantContext);
-      return tenantContext;
-    } catch (error) {
-      console.error('[MultiTenantService] Error initializing tenant context:', error);
-      return this.bootstrapTenantFromLocalUser();
-    }
+    this.initPromises.set(userId, initPromise);
+    return initPromise;
   }
 
   /**
@@ -166,8 +87,16 @@ class MultiTenantService {
 
   /**
    * Get current tenant ID (enforces tenant isolation for admins)
+   * ENTERPRISE: Uses SessionService cache (zero API calls)
    */
   getCurrentTenantId(): string {
+    // Try SessionService first (zero API calls)
+    const tenantId = sessionService.getTenantId();
+    if (tenantId) {
+      return tenantId;
+    }
+
+    // Fallback to in-memory context
     if (!this.currentTenant) {
       const fallback = this.bootstrapTenantFromLocalUser();
       if (!fallback) {
@@ -275,90 +204,59 @@ class MultiTenantService {
    * Get all tenants for current user
    */
   async getUserTenants(): Promise<TenantInfo[]> {
-    try {
-      const currentUserId = this.getCurrentUserId();
-      
-      // Get user's tenant_id
-      const { data: user, error: userError } = await supabaseClient
-        .from('users')
-        .select('tenant_id')
-        .eq('id', currentUserId)
-        .single();
+    // ENTERPRISE RULE: Session data must come from SessionService cache (zero API calls)
+    const tenant = sessionService.getTenant();
+    const user = sessionService.getCurrentUser();
 
-      if (userError) throw userError;
-      if (!user?.tenant_id) return [];
-
-      // Fetch tenant details
-      const { data: tenant, error: tenantError } = await supabaseClient
-        .from('tenants')
-        .select('id, name, created_at')
-        .eq('id', user.tenant_id)
-        .single();
-
-      if (tenantError) throw tenantError;
-      return tenant ? [tenant] : [];
-    } catch (error) {
-      console.error('Error fetching user tenants:', error);
+    if (user?.isSuperAdmin) {
+      // Super admins have no tenant scope
       return [];
     }
+
+    if (tenant) {
+      return [{ id: tenant.id, name: tenant.name, created_at: undefined }];
+    }
+
+    // Fallback to locally bootstrapped context (still no network)
+    const fallback = this.bootstrapTenantFromLocalUser();
+    if (fallback?.tenantId) {
+      return [{ id: fallback.tenantId, name: fallback.tenantName || '', created_at: undefined }];
+    }
+
+    console.warn('[MultiTenantService] No tenant found in SessionService cache');
+    return [];
   }
 
   /**
    * Switch to different tenant
    */
   async switchTenant(tenantId: string): Promise<boolean> {
-    try {
-      // Verify user has access to this tenant
-      const currentUserId = this.currentTenant?.userId;
-      if (!currentUserId) {
-        console.warn('No current user context');
-        return false;
-      }
+    // ENTERPRISE RULE: No API calls for tenant/user; rely on SessionService cache
+    const cachedTenant = sessionService.getTenant();
+    const cachedUser = sessionService.getCurrentUser();
 
-      // Verify user has access to this tenant (basic check)
-      const { data: user, error } = await supabaseClient
-        .from('users')
-        .select('id, tenant_id')
-        .eq('id', currentUserId)
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (!user) {
-        console.warn('User does not have access to this tenant');
-        return false;
-      }
-
-      // Fetch tenant info separately
-      let tenantName: string | undefined;
-      try {
-        const { data: tenant } = await supabaseClient
-          .from('tenants')
-          .select('id, name')
-          .eq('id', tenantId)
-          .single();
-        
-        tenantName = tenant?.name;
-      } catch (tenantError) {
-        console.warn('Could not fetch tenant details:', tenantError);
-      }
-
-      const tenantContext: TenantContext = {
-        tenantId: user.tenant_id,
-        tenantName,
-        userId: currentUserId,
-        role: undefined, // Role will be determined by hasRole method when needed
-      };
-
-      this.setCurrentTenant(tenantContext);
-      return true;
-    } catch (error) {
-      console.error('Error switching tenant:', error);
+    if (!cachedUser) {
+      console.warn('[MultiTenantService] Cannot switch tenant - no user in session cache');
       return false;
     }
+
+    if (!cachedTenant) {
+      console.warn('[MultiTenantService] Cannot switch tenant - no tenant in session cache');
+      return false;
+    }
+
+    if (cachedTenant.id !== tenantId) {
+      console.warn('[MultiTenantService] Requested tenant not in session cache; skipping network call per enterprise rule');
+      return false;
+    }
+
+    this.setCurrentTenant({
+      tenantId: cachedTenant.id,
+      tenantName: cachedTenant.name,
+      userId: cachedUser.id,
+      role: cachedUser.role,
+    });
+    return true;
   }
 
   /**

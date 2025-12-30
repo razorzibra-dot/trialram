@@ -9,6 +9,8 @@ export type { Complaint, ComplaintComment, ComplaintFilters, ComplaintStats, Com
 // Routes
 export { complaintsRoutes } from './routes';
 import { complaintsRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { complaintService } from '@/services/serviceFactory';
 
 // Module configuration
 export const complaintsModule = {
@@ -21,22 +23,15 @@ export const complaintsModule = {
 
   // Initialize the module
   async initialize() {
-    const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-    const { complaintService } = await import('@/services/serviceFactory');
-
     // Register complaint service from factory
     registerServiceInstance('complaintService', complaintService);
-
     console.log('Complaints module initialized');
   },
 
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-
     // Remove complaint service
     serviceContainer.remove('complaintService');
-
     console.log('Complaints module cleaned up');
   },
 };

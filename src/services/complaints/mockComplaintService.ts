@@ -10,84 +10,84 @@ class MockComplaintService {
       id: '1',
       title: 'Software Update Failed',
       description: 'The latest software update failed to install on the production server, causing system downtime.',
-      customer_id: '1',
+      customerId: '1',
       type: 'software_update',
       status: 'in_progress',
       priority: 'high',
-      assigned_engineer_id: '2',
-      engineer_resolution: null,
+      assignedEngineerId: '2',
+      engineerResolution: null,
       comments: [
         {
           id: '1',
-          complaint_id: '1',
-          user_id: '1',
+          complaintId: '1',
+          userId: '1',
           content: 'Customer reported the issue at 9:00 AM. System went down immediately after update.',
-          created_at: '2024-01-15T09:00:00Z'
+          createdAt: '2024-01-15T09:00:00Z'
         },
         {
           id: '2',
-          complaint_id: '1',
-          user_id: '2',
+          complaintId: '1',
+          userId: '2',
           content: 'Investigating the update logs. Found corruption in update package.',
-          created_at: '2024-01-15T10:30:00Z'
+          createdAt: '2024-01-15T10:30:00Z'
         }
       ],
-      tenant_id: 'tenant_1',
-      created_at: '2024-01-15T09:00:00Z',
-      updated_at: '2024-01-15T10:30:00Z'
+      tenantId: 'tenant_1',
+      createdAt: '2024-01-15T09:00:00Z',
+      updatedAt: '2024-01-15T10:30:00Z'
     },
     {
       id: '2',
       title: 'Preventive Maintenance Required',
       description: 'Regular preventive maintenance check revealed several components need replacement.',
-      customer_id: '2',
+      customerId: '2',
       type: 'preventive',
       status: 'new',
       priority: 'medium',
-      assigned_engineer_id: null,
-      engineer_resolution: null,
+      assignedEngineerId: null,
+      engineerResolution: null,
       comments: [],
-      tenant_id: 'tenant_1',
-      created_at: '2024-01-14T14:00:00Z',
-      updated_at: '2024-01-14T14:00:00Z'
+      tenantId: 'tenant_1',
+      createdAt: '2024-01-14T14:00:00Z',
+      updatedAt: '2024-01-14T14:00:00Z'
     },
     {
       id: '3',
       title: 'Equipment Breakdown',
       description: 'Critical manufacturing equipment broke down during peak production hours.',
-      customer_id: '3',
+      customerId: '3',
       type: 'breakdown',
       status: 'closed',
       priority: 'urgent',
-      assigned_engineer_id: '3',
-      engineer_resolution: 'Replaced faulty motor and recalibrated system. Equipment now operating normally.',
+      assignedEngineerId: '3',
+      engineerResolution: 'Replaced faulty motor and recalibrated system. Equipment now operating normally.',
       comments: [
         {
           id: '3',
-          complaint_id: '3',
-          user_id: '1',
+          complaintId: '3',
+          userId: '1',
           content: 'Emergency breakdown reported. Production line stopped.',
-          created_at: '2024-01-13T08:00:00Z'
+          createdAt: '2024-01-13T08:00:00Z'
         },
         {
           id: '4',
-          complaint_id: '3',
-          user_id: '3',
+          complaintId: '3',
+          userId: '3',
           content: 'On-site diagnosis completed. Motor failure detected.',
-          created_at: '2024-01-13T09:15:00Z'
+          createdAt: '2024-01-13T09:15:00Z'
         },
         {
           id: '5',
-          complaint_id: '3',
-          user_id: '3',
+          complaintId: '3',
+          userId: '3',
           content: 'Repair completed. System tested and approved for production.',
-          created_at: '2024-01-13T16:30:00Z'
+          createdAt: '2024-01-13T16:30:00Z'
         }
       ],
-      tenant_id: 'tenant_1',
-      created_at: '2024-01-13T08:00:00Z',
-      updated_at: '2024-01-13T16:30:00Z',
-      closed_at: '2024-01-13T16:30:00Z'
+      tenantId: 'tenant_1',
+      createdAt: '2024-01-13T08:00:00Z',
+      updatedAt: '2024-01-13T16:30:00Z',
+      closedAt: '2024-01-13T16:30:00Z'
     }
   ];
 
@@ -98,12 +98,9 @@ class MockComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    let complaints = this.mockComplaints.filter(c => c.tenant_id === user.tenant_id);
+    let complaints = this.mockComplaints.filter(c => c.tenantId === user.tenant_id);
 
-    // Apply role-based filtering
-    if (user.role === 'agent') {
-      complaints = complaints.filter(c => c.assigned_engineer_id === user.id);
-    }
+    // Apply role-based filtering removed - RBAC handled at context/hook layer
 
     // Apply filters
     if (filters) {
@@ -116,25 +113,17 @@ class MockComplaintService {
       if (filters.priority) {
         complaints = complaints.filter(c => c.priority === filters.priority);
       }
-      if (filters.assigned_engineer) {
-        complaints = complaints.filter(c => c.assigned_engineer_id === filters.assigned_engineer);
+      if (filters.assignedEngineerId) {
+        complaints = complaints.filter(c => c.assignedEngineerId === filters.assignedEngineerId);
       }
-      if (filters.customer_id) {
-        complaints = complaints.filter(c => c.customer_id === filters.customer_id);
+      if (filters.customerId) {
+        complaints = complaints.filter(c => c.customerId === filters.customerId);
       }
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        complaints = complaints.filter(c =>
-          c.title.toLowerCase().includes(search) ||
-          c.description.toLowerCase().includes(search) ||
-          c.comments.some(comment => comment.content.toLowerCase().includes(search))
-        );
+      if (filters.dateFrom) {
+        complaints = complaints.filter(c => new Date(c.createdAt) >= new Date(filters.dateFrom!));
       }
-      if (filters.date_from) {
-        complaints = complaints.filter(c => new Date(c.created_at) >= new Date(filters.date_from!));
-      }
-      if (filters.date_to) {
-        complaints = complaints.filter(c => new Date(c.created_at) <= new Date(filters.date_to!));
+      if (filters.dateTo) {
+        complaints = complaints.filter(c => new Date(c.createdAt) <= new Date(filters.dateTo!));
       }
     }
 
@@ -148,17 +137,14 @@ class MockComplaintService {
     if (!user) throw new Error('Unauthorized');
 
     const complaint = this.mockComplaints.find(c =>
-      c.id === id && c.tenant_id === user.tenant_id
+      c.id === id && c.tenantId === user.tenant_id
     );
 
     if (!complaint) {
       throw new Error('Complaint not found');
     }
 
-    // Check permissions
-    if (user.role === 'agent' && complaint.assigned_engineer_id !== user.id) {
-      throw new Error('Access denied');
-    }
+    // Removed role-based access check - RBAC handled at context/permission layer
 
     return complaint;
   }
@@ -177,11 +163,11 @@ class MockComplaintService {
       ...complaintData,
       id: Date.now().toString(),
       status: 'new',
-      engineer_resolution: null,
+      engineerResolution: null,
       comments: [],
-      tenant_id: user.tenant_id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      tenantId: user.tenant_id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     this.mockComplaints.push(newComplaint);
@@ -199,7 +185,7 @@ class MockComplaintService {
     }
 
     const complaintIndex = this.mockComplaints.findIndex(c =>
-      c.id === id && c.tenant_id === user.tenant_id
+      c.id === id && c.tenantId === user.tenant_id
     );
 
     if (complaintIndex === -1) {
@@ -208,17 +194,14 @@ class MockComplaintService {
 
     const complaint = this.mockComplaints[complaintIndex];
 
-    // Check permissions
-    if (user.role === 'agent' && complaint.assigned_engineer_id !== user.id) {
-      throw new Error('Access denied');
-    }
+    // Removed role-based access check - RBAC handled at context/permission layer
 
     // Handle status changes
     const updatedComplaint = {
       ...complaint,
       ...updates,
-      updated_at: new Date().toISOString(),
-      closed_at: updates.status === 'closed' ? new Date().toISOString() : complaint.closed_at
+      updatedAt: new Date().toISOString(),
+      closedAt: updates.status === 'closed' ? new Date().toISOString() : complaint.closedAt
     };
 
     this.mockComplaints[complaintIndex] = updatedComplaint;
@@ -236,7 +219,7 @@ class MockComplaintService {
     }
 
     const complaintIndex = this.mockComplaints.findIndex(c =>
-      c.id === id && c.tenant_id === user.tenant_id
+      c.id === id && c.tenantId === user.tenant_id
     );
 
     if (complaintIndex === -1) {
@@ -246,32 +229,29 @@ class MockComplaintService {
     this.mockComplaints.splice(complaintIndex, 1);
   }
 
-  async addComment(complaintId: string, commentData: { content: string; parent_id?: string }): Promise<ComplaintComment> {
+  async addComment(complaintId: string, commentData: { content: string; parentId?: string }): Promise<ComplaintComment> {
     await new Promise(resolve => setTimeout(resolve, 400));
 
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
     const complaint = this.mockComplaints.find(c =>
-      c.id === complaintId && c.tenant_id === user.tenant_id
+      c.id === complaintId && c.tenantId === user.tenant_id
     );
 
     if (!complaint) {
       throw new Error('Complaint not found');
     }
 
-    // Check permissions
-    if (user.role === 'agent' && complaint.assigned_engineer_id !== user.id) {
-      throw new Error('Access denied');
-    }
+    // Removed role-based access check
 
     const newComment: ComplaintComment = {
       id: Date.now().toString(),
-      complaint_id: complaintId,
-      user_id: user.id,
+      complaintId: complaintId,
+      userId: user.id,
       content: commentData.content,
-      parent_id: commentData.parent_id,
-      created_at: new Date().toISOString()
+      parentId: commentData.parentId,
+      createdAt: new Date().toISOString()
     };
 
     complaint.comments.push(newComment);
@@ -284,39 +264,39 @@ class MockComplaintService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    const complaints = this.mockComplaints.filter(c => c.tenant_id === user.tenant_id);
+    const complaints = this.mockComplaints.filter(c => c.tenantId === user.tenant_id);
 
     const stats: ComplaintStats = {
       total: complaints.length,
       new: complaints.filter(c => c.status === 'new').length,
-      in_progress: complaints.filter(c => c.status === 'in_progress').length,
+      inProgress: complaints.filter(c => c.status === 'in_progress').length,
       closed: complaints.filter(c => c.status === 'closed').length,
-      by_type: {
+      byType: {
         breakdown: complaints.filter(c => c.type === 'breakdown').length,
         preventive: complaints.filter(c => c.type === 'preventive').length,
-        software_update: complaints.filter(c => c.type === 'software_update').length,
+        softwareUpdate: complaints.filter(c => c.type === 'software_update').length,
         optimize: complaints.filter(c => c.type === 'optimize').length
       },
-      by_priority: {
+      byPriority: {
         low: complaints.filter(c => c.priority === 'low').length,
         medium: complaints.filter(c => c.priority === 'medium').length,
         high: complaints.filter(c => c.priority === 'high').length,
         urgent: complaints.filter(c => c.priority === 'urgent').length
       },
-      avg_resolution_time: this.calculateAverageResolutionTime(complaints)
+      avgResolutionTime: this.calculateAverageResolutionTime(complaints)
     };
 
     return stats;
   }
 
   private calculateAverageResolutionTime(complaints: Complaint[]): number {
-    const resolvedComplaints = complaints.filter(c => c.status === 'closed' && c.closed_at);
+    const resolvedComplaints = complaints.filter(c => c.status === 'closed' && c.closedAt);
 
     if (resolvedComplaints.length === 0) return 0;
 
     const totalHours = resolvedComplaints.reduce((total, complaint) => {
-      const created = new Date(complaint.created_at);
-      const closed = new Date(complaint.closed_at!);
+      const created = new Date(complaint.createdAt);
+      const closed = new Date(complaint.closedAt!);
       const hours = (closed.getTime() - created.getTime()) / (1000 * 60 * 60);
       return total + hours;
     }, 0);

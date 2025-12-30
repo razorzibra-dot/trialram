@@ -1,6 +1,14 @@
 import { Permission, Role, UserRole, AuditLog, RoleTemplate, PermissionMatrix } from '@/types/rbac';
 import { User } from '@/types/auth';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 import { authService } from '../serviceFactory';
+
+const {
+  READ: CUSTOMER_READ,
+  CREATE: CUSTOMER_CREATE,
+  UPDATE: CUSTOMER_UPDATE,
+  DELETE: CUSTOMER_DELETE,
+} = CUSTOMER_PERMISSIONS;
 
 class MockRBACService {
   private baseUrl = '/api/rbac';
@@ -13,10 +21,10 @@ class MockRBACService {
     { id: 'delete', name: 'Delete', description: 'Delete data', category: 'core', resource: '*', action: 'delete' },
     
     // Module permissions - ALL using {resource}:{action} format
-    { id: 'crm:customer:record:read', name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
-    { id: 'crm:customer:record:create', name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
-    { id: 'crm:customer:record:update', name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
-    { id: 'crm:customer:record:delete', name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
+    { id: CUSTOMER_READ, name: 'View Customers', description: 'View customer data and relationships', category: 'module', resource: 'customers', action: 'read' },
+    { id: CUSTOMER_CREATE, name: 'Create Customers', description: 'Create new customer records', category: 'module', resource: 'customers', action: 'create' },
+    { id: CUSTOMER_UPDATE, name: 'Update Customers', description: 'Edit customer information', category: 'module', resource: 'customers', action: 'update' },
+    { id: CUSTOMER_DELETE, name: 'Delete Customers', description: 'Remove customer records', category: 'module', resource: 'customers', action: 'delete' },
     
     { id: 'crm:sales:deal:read', name: 'View Sales', description: 'View sales processes and deals', category: 'module', resource: 'sales', action: 'read' },
     { id: 'crm:sales:deal:create', name: 'Create Sales', description: 'Create new sales records', category: 'module', resource: 'sales', action: 'create' },
@@ -93,7 +101,7 @@ class MockRBACService {
       name: 'Administrator',
       description: 'Tenant administrator with full tenant permissions',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'delete', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:product-sale:record:delete', 'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete', 'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete', 'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete', 'crm:analytics:insight:view', 'crm:system:config:read', 'crm:system:config:manage', 'crm:company:record:read', 'crm:company:record:update'],
+      permissions: ['read', 'write', 'delete', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, CUSTOMER_DELETE, 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:record:delete', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:contract:service:delete', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product:record:delete', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:product-sale:record:delete', 'crm:project:record:read', 'crm:project:record:create', 'crm:project:record:update', 'crm:project:record:delete', 'crm:dashboard:panel:view', 'crm:reference:data:read', 'crm:user:record:read', 'crm:user:record:read', 'crm:user:record:create', 'crm:user:record:update', 'crm:user:record:delete', 'crm:role:record:read', 'crm:role:record:create', 'crm:role:record:update', 'crm:role:record:delete', 'crm:analytics:insight:view', 'crm:system:config:read', 'crm:system:config:manage', 'crm:company:record:read', 'crm:company:record:update'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -103,7 +111,7 @@ class MockRBACService {
       name: 'Manager',
       description: 'Business operations manager with analytics access',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
+      permissions: ['read', 'write', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -113,7 +121,7 @@ class MockRBACService {
       name: 'User',
       description: 'Standard user with basic operations',
       tenant_id: 'techcorp',
-      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create'],
+      permissions: ['read', 'write', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:complaint:read', 'crm:support:complaint:create'],
       is_system_role: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -146,7 +154,7 @@ class MockRBACService {
       id: 'business_admin',
       name: 'Business Administrator',
       description: 'Complete business operations management',
-      permissions: ['read', 'write', 'delete', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view', 'crm:company:record:read', 'crm:company:record:update'],
+      permissions: ['read', 'write', 'delete', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, CUSTOMER_DELETE, 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view', 'crm:company:record:read', 'crm:company:record:update'],
       is_default: true,
       category: 'business'
     },
@@ -154,7 +162,7 @@ class MockRBACService {
       id: 'sales_manager',
       name: 'Sales Manager',
       description: 'Sales operations and customer management',
-      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete', 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
+      permissions: ['read', 'write', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, CUSTOMER_DELETE, 'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete', 'crm:contract:record:read', 'crm:contract:record:create', 'crm:contract:record:update', 'crm:contract:service:read', 'crm:contract:service:create', 'crm:contract:service:update', 'crm:product:record:read', 'crm:product:record:create', 'crm:product:record:update', 'crm:product-sale:record:read', 'crm:product-sale:record:create', 'crm:product-sale:record:update', 'crm:analytics:insight:view'],
       is_default: true,
       category: 'business'
     },
@@ -162,7 +170,7 @@ class MockRBACService {
       id: 'support_agent',
       name: 'Support Agent',
       description: 'Customer support and ticket management',
-      permissions: ['read', 'write', 'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update'],
+      permissions: ['read', 'write', CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, 'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete', 'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update'],
       is_default: true,
       category: 'business'
     },

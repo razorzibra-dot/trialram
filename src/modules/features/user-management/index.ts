@@ -4,6 +4,8 @@
  */
 import { FeatureModule } from '@/modules/core/types';
 import { userManagementRoutes } from './routes';
+import { registerServiceInstance, unregisterService } from '@/modules/core/services/ServiceContainer';
+import { userService, rbacService } from '@/services/serviceFactory';
 
 export const userManagementModule: FeatureModule = {
   name: 'user-management',
@@ -14,9 +16,6 @@ export const userManagementModule: FeatureModule = {
   dependencies: ['core', 'shared'],
   async initialize() {
     try {
-      const { registerServiceInstance } = await import('@/modules/core/services/ServiceContainer');
-      const { userService, rbacService } = await import('@/services/serviceFactory');
-      
       // Services are factory-routed instances, not constructors
       registerServiceInstance('userService', userService);
       registerServiceInstance('rbacService', rbacService);
@@ -27,7 +26,6 @@ export const userManagementModule: FeatureModule = {
   },
   async cleanup() {
     try {
-      const { unregisterService } = await import('@/modules/core/services/ServiceContainer');
       unregisterService('userService');
       unregisterService('rbacService');
     } catch (error) {
@@ -42,9 +40,4 @@ export type { IUserService } from './services/userService';
 // Export hooks
 export * from './hooks';
 
-// Export views for direct imports if needed
-export { default as UsersPage } from './views/UsersPage';
-// ✅ CONSOLIDATED: UserManagementPage (legacy) consolidated into UsersPage
-// Routes redirect /user-management to /users/list for backward compatibility
-export { default as RoleManagementPage } from './views/RoleManagementPage';
-export { default as PermissionMatrixPage } from './views/PermissionMatrixPage';
+// Views are lazy-loaded via routes; avoid static re-exports to preserve chunking

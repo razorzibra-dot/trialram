@@ -3,6 +3,8 @@
  * Validates custom role creation, permission inheritance, customization boundaries, and business needs adaptation
  */
 
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
 describe('Custom Role Support', () => {
   describe('2.4.1: Implement custom role creation', () => {
     it('should create custom roles with is_system_role = false', () => {
@@ -10,7 +12,7 @@ describe('Custom Role Support', () => {
         name: 'Sales Manager',
         description: 'Manages sales team and operations',
         tenant_id: 'tenant-123',
-        permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
+        permissions: ['read', 'write', 'crm:sales:deal:update', CUSTOMER_PERMISSIONS.UPDATE],
         is_system_role: false, // Custom role
       };
 
@@ -83,7 +85,7 @@ describe('Custom Role Support', () => {
       const template = {
         id: 'template-123',
         name: 'Sales Template',
-        permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
+        permissions: ['read', 'write', 'crm:sales:deal:update', CUSTOMER_PERMISSIONS.UPDATE],
       };
 
       const customRole = {
@@ -137,7 +139,7 @@ describe('Custom Role Support', () => {
     it('should validate inherited permissions exist in system', () => {
       const systemPermissions = [
         'read', 'write', 'delete',
-        'crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets',
+        CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update', 'manage_tickets',
         'crm:user:record:update', 'crm:role:record:update',
       ];
 
@@ -220,7 +222,7 @@ describe('Custom Role Support', () => {
       const systemPermissions = ['crm:platform:control:admin', 'super_admin', 'crm:platform:tenant:manage'];
 
       // Custom roles should not be able to assign system-level permissions
-      const customRolePermissions = ['read', 'write', 'crm:customer:record:update', 'crm:platform:control:admin'];
+      const customRolePermissions = ['read', 'write', CUSTOMER_PERMISSIONS.UPDATE, 'crm:platform:control:admin'];
 
       const hasSystemPermissions = customRolePermissions.some(p => systemPermissions.includes(p));
       
@@ -233,11 +235,11 @@ describe('Custom Role Support', () => {
     it('should maintain role hierarchy constraints', () => {
       // Custom roles cannot exceed the permissions of the creating admin
       const adminRole = {
-        permissions: ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update'],
+        permissions: ['read', 'write', CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update'],
       };
 
       const customRole = {
-        permissions: ['read', 'write', 'crm:customer:record:update', 'crm:sales:deal:update', 'crm:user:record:update'], // Exceeds admin
+        permissions: ['read', 'write', CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update', 'crm:user:record:update'], // Exceeds admin
       };
 
       // Custom role should not have permissions the admin doesn't have
@@ -273,7 +275,7 @@ describe('Custom Role Support', () => {
       const departmentRoles = [
         {
           name: 'Sales Department Manager',
-          permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
+          permissions: ['read', 'write', 'crm:sales:deal:update', CUSTOMER_PERMISSIONS.UPDATE],
         },
         {
           name: 'Support Department Manager',
@@ -313,7 +315,7 @@ describe('Custom Role Support', () => {
         {
           name: 'Sales Representative',
           category: 'business',
-          permissions: ['read', 'write', 'crm:sales:deal:update', 'crm:customer:record:update'],
+          permissions: ['read', 'write', 'crm:sales:deal:update', CUSTOMER_PERMISSIONS.UPDATE],
         },
         {
           name: 'Support Agent',
@@ -323,7 +325,7 @@ describe('Custom Role Support', () => {
         {
           name: 'Account Manager',
           category: 'administrative',
-          permissions: ['read', 'write', 'crm:customer:record:update', 'manage_contracts', 'crm:analytics:insight:view'],
+          permissions: ['read', 'write', CUSTOMER_PERMISSIONS.UPDATE, 'manage_contracts', 'crm:analytics:insight:view'],
         },
       ];
 
@@ -397,7 +399,7 @@ describe('Custom Role Support', () => {
     it('should validate custom roles work with permission checks', () => {
       const customRole = {
         id: 'custom-role-123',
-        permissions: ['read', 'crm:customer:record:update'],
+        permissions: ['read', CUSTOMER_PERMISSIONS.UPDATE],
       };
 
       const user = {
@@ -407,7 +409,7 @@ describe('Custom Role Support', () => {
 
       // User should have permissions from custom role
       const hasPermission = user.roles.some(role => 
-        role.permissions.includes('crm:customer:record:update')
+        role.permissions.includes(CUSTOMER_PERMISSIONS.UPDATE)
       );
 
       expect(hasPermission).toBe(true);

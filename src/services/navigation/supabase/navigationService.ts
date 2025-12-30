@@ -8,9 +8,14 @@ import { supabase } from '@/services/supabase/client';
 import { NavigationItem } from '@/types/navigation';
 import { authService } from '../../serviceFactory';
 import { multiTenantService } from '../../multitenant/supabase/multiTenantService';
+import backendConfig from '@/config/backendConfig';
 
 class SupabaseNavigationService {
   private tableName = 'navigation_items';
+  // Cache in-flight requests per tenant to avoid duplicate fetches (React 18 double render, multiple hooks)
+  private inFlightFetches: Map<string, Promise<NavigationItem[]>> = new Map();
+  private cacheDurationMs = backendConfig.cache?.navigationTtlMs ?? 60 * 1000; // configurable TTL
+  private cachedResults: Map<string, { data: NavigationItem[]; timestamp: number }> = new Map();
 
   /**
    * Get all navigation items for current user's tenant
@@ -21,67 +26,111 @@ class SupabaseNavigationService {
     try {
       const currentUser = authService.getCurrentUser();
       const currentTenantId = await multiTenantService.getCurrentTenantId();
+      const cacheKey = currentTenantId || 'system';
+
+      // Try persisted sessionStorage cache to survive hard refresh
+      try {
+        const persistedRaw = sessionStorage.getItem(`navItems:${cacheKey}`);
+        if (persistedRaw) {
+          const persisted = JSON.parse(persistedRaw) as { data: NavigationItem[]; timestamp: number };
+          if (persisted && Date.now() - persisted.timestamp < this.cacheDurationMs) {
+            this.cachedResults.set(cacheKey, persisted);
+            return persisted.data;
+          }
+        }
+      } catch {
+        // Ignore sessionStorage errors (quota exceeded, private mode, etc.)
+      }
+
+      // Return cached result if still fresh
+      const cached = this.cachedResults.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.cacheDurationMs) {
+        console.log(`[NavigationService] ♻️ Returning cached navigation items for tenant: ${cacheKey}`);
+        return cached.data;
+      }
+
+      // Return existing in-flight request if present
+      const inFlight = this.inFlightFetches.get(cacheKey);
+      if (inFlight) {
+        console.log(`[NavigationService] ⏳ Reusing in-flight navigation fetch for tenant: ${cacheKey}`);
+        return inFlight;
+      }
 
       console.log(`[NavigationService] 🔄 Fetching navigation items for user: ${currentUser?.email}, tenant: ${currentTenantId}`);
 
       // Build query with tenant filtering
       // ✅ Database-driven: Fetch items for current tenant or system items
-      let query = supabase
-        .from(this.tableName)
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+      const fetchPromise = (async () => {
+        let query = supabase
+          .from(this.tableName)
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
 
-      // Apply tenant filter: show items for current tenant OR system items (available to all)
-      if (currentTenantId) {
-        // Use PostgREST OR syntax: (tenant_id = X OR is_system_item = true)
-        query = query.or(`tenant_id.eq.${currentTenantId},is_system_item.eq.true`);
-        console.log(`[NavigationService] 🎯 Query filter: tenant_id = ${currentTenantId} OR is_system_item = true`);
-      } else {
-        // If no tenant context, only show system items
-        query = query.eq('is_system_item', true);
-        console.log(`[NavigationService] 🎯 Query filter: is_system_item = true (no tenant context)`);
-      }
+        // Apply tenant filter: show items for current tenant OR system items (available to all)
+        if (currentTenantId) {
+          // Use PostgREST OR syntax: (tenant_id = X OR is_system_item = true)
+          query = query.or(`tenant_id.eq.${currentTenantId},is_system_item.eq.true`);
+          console.log(`[NavigationService] 🎯 Query filter: tenant_id = ${currentTenantId} OR is_system_item = true`);
+        } else {
+          // If no tenant context, only show system items
+          query = query.eq('is_system_item', true);
+          console.log('[NavigationService] 🎯 Query filter: is_system_item = true (no tenant context)');
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error('[NavigationService] ❌ Error fetching navigation items:', error);
-        return [];
-      }
+        if (error) {
+          console.error('[NavigationService] ❌ Error fetching navigation items:', error);
+          return [];
+        }
 
-      if (!data || data.length === 0) {
-        console.warn('[NavigationService] ⚠️ No navigation items found');
-        return [];
-      }
+        if (!data || data.length === 0) {
+          console.warn('[NavigationService] ⚠️ No navigation items found');
+          return [];
+        }
 
-      console.log(`[NavigationService] 📦 Raw database results: ${data.length} items`);
-      data.forEach(item => {
-        console.log(`[NavigationService] 📋 DB Item: "${item.label}" (key: ${item.key}, permission: ${item.permission_name}, is_system: ${item.is_system_item})`);
-      });
+        console.log(`[NavigationService] 📦 Raw database results: ${data.length} items`);
+        data.forEach(item => {
+          console.log(`[NavigationService] 📋 DB Item: "${item.label}" (key: ${item.key}, permission: ${item.permission_name}, is_system: ${item.is_system_item})`);
+        });
 
-      // ✅ Map database rows to NavigationItem interface (snake_case → camelCase)
-      const mappedItems: NavigationItem[] = data.map(row => ({
-        id: row.id,
-        key: row.key,
-        label: row.label,
-        parentId: row.parent_id,
-        permissionName: row.permission_name,
-        isSection: row.is_section || false,
-        sortOrder: row.sort_order || 0,
-        icon: row.icon,
-        routePath: row.route_path,
-        tenantId: row.tenant_id,
-        isSystemItem: row.is_system_item || false,
-        isActive: row.is_active !== false,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        createdBy: row.created_by,
-        updatedBy: row.updated_by,
-      }));
+        // ✅ Map database rows to NavigationItem interface (snake_case → camelCase)
+        const mappedItems: NavigationItem[] = data.map(row => ({
+          id: row.id,
+          key: row.key,
+          label: row.label,
+          parentId: row.parent_id,
+          permissionName: row.permission_name,
+          isSection: row.is_section || false,
+          sortOrder: row.sort_order || 0,
+          icon: row.icon,
+          routePath: row.route_path,
+          tenantId: row.tenant_id,
+          isSystemItem: row.is_system_item || false,
+          isActive: row.is_active !== false,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          createdBy: row.created_by,
+          updatedBy: row.updated_by,
+        }));
 
-      console.log(`[NavigationService] ✅ Mapped ${mappedItems.length} navigation items`);
-      return mappedItems;
+        console.log(`[NavigationService] ✅ Mapped ${mappedItems.length} navigation items`);
+        const snapshot = { data: mappedItems, timestamp: Date.now() };
+        this.cachedResults.set(cacheKey, snapshot);
+        try {
+          sessionStorage.setItem(`navItems:${cacheKey}`, JSON.stringify(snapshot));
+        } catch {
+          // Ignore sessionStorage errors (quota exceeded, private mode, etc.)
+        }
+        return mappedItems;
+      })();
+
+      this.inFlightFetches.set(cacheKey, fetchPromise);
+      const result = await fetchPromise;
+      this.inFlightFetches.delete(cacheKey);
+      return result;
+
     } catch (error) {
       console.error('[NavigationService] ❌ Error in getNavigationItems:', error);
       return [];

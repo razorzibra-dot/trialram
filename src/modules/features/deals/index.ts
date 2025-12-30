@@ -23,6 +23,8 @@ export * from './hooks/useDeals';
 // Routes
 export { dealsRoutes } from './routes';
 import { dealsRoutes } from './routes';
+import { registerServiceInstance, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { dealsService } from '@/services/serviceFactory';
 
 // Module configuration
 export const dealsModule = {
@@ -37,16 +39,11 @@ export const dealsModule = {
   async initialize() {
     console.log('[Deals Module] Initializing...');
     try {
-      const { registerServiceInstance, serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-      const { dealsService } = await import('@/services/serviceFactory');
-
       console.log('[Deals Module] Registering DealsService...');
       registerServiceInstance('dealsService', dealsService);
-      
       const registered = serviceContainer.has('dealsService');
       console.log('[Deals Module] DealsService registered:', registered);
       console.log('[Deals Module] Registered services:', serviceContainer.getRegisteredServices());
-
       console.log('[Deals Module] Deals module initialized successfully');
     } catch (error) {
       console.error('[Deals Module] Failed to initialize:', error);
@@ -56,7 +53,6 @@ export const dealsModule = {
 
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
     serviceContainer.remove('dealsService');
     console.log('Deals module cleaned up');
   },

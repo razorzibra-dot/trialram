@@ -2,74 +2,72 @@ export interface Complaint {
   id: string;
   title: string;
   description: string;
-  customer_id: string;
-  customer_name?: string;
-  category: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
-  status: 'new' | 'open' | 'in_progress' | 'resolved' | 'closed';
+  customerId: string;
+  type: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
+  status: 'new' | 'in_progress' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_to?: string;
-  assigned_to_name?: string;
-  resolution?: string;
-  comments: ComplaintComment[];
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
-  resolved_at?: string;
+  assignedEngineerId?: string;
+  engineerResolution?: string;
+  comments?: ComplaintComment[];
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string;
 }
 
 export interface ComplaintComment {
   id: string;
-  complaint_id: string;
-  user_id: string;
+  complaintId: string;
+  userId: string;
   content: string;
-  created_at: string;
-  parent_id?: string; // For threaded comments
+  createdAt: string;
+  parentId?: string;
   replies?: ComplaintComment[];
 }
 
 export interface ComplaintFilters {
   status?: string;
-  category?: string;
+  type?: string;
   priority?: string;
-  assigned_to?: string;
-  customer_id?: string;
+  assignedEngineerId?: string;
+  customerId?: string;
   search?: string;
-  date_from?: string;
-  date_to?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface ComplaintStats {
   total: number;
   new: number;
-  in_progress: number;
+  inProgress: number;
   closed: number;
-  by_type: {
+  byType: {
     breakdown: number;
     preventive: number;
-    software_update: number;
+    softwareUpdate: number;
     optimize: number;
   };
-  by_priority: {
+  byPriority: {
     low: number;
     medium: number;
     high: number;
     urgent: number;
   };
-  avg_resolution_time: number; // in hours
+  avgResolutionTime: number;
 }
 
 export interface ComplaintFormData {
   title: string;
   description: string;
-  customer_id: string;
-  category: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
+  customerId: string;
+  type: 'breakdown' | 'preventive' | 'software_update' | 'optimize';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_to?: string;
+  assignedEngineerId?: string;
 }
 
 export interface ComplaintUpdateData {
-  status?: 'new' | 'open' | 'in_progress' | 'resolved' | 'closed';
-  assigned_to?: string;
-  resolution?: string;
+  status?: 'new' | 'in_progress' | 'closed';
+  assignedEngineerId?: string;
+  engineerResolution?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
 }

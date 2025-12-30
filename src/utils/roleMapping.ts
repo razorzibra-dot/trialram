@@ -10,7 +10,7 @@
 
 import { UserRole } from '@/types/dtos/userDtos';
 import { Role } from '@/types/rbac';
-import { authService } from '@/services/serviceFactory';
+import { authService, rbacService } from '@/services/serviceFactory';
 
 /**
  * Role cache to avoid repeated database queries
@@ -34,9 +34,7 @@ function normalizeRoleName(roleName: string): string {
  */
 async function fetchRolesFromDatabase(): Promise<Role[]> {
   try {
-    const { rbacService } = await import('@/services/serviceFactory');
     const roles = await rbacService.getRoles();
-    
     // Update cache
     roleCache = new Map();
     roles.forEach(role => {
@@ -44,7 +42,6 @@ async function fetchRolesFromDatabase(): Promise<Role[]> {
       roleCache!.set(normalized, role);
     });
     roleCacheTimestamp = Date.now();
-    
     return roles;
   } catch (error) {
     console.error('[RoleMapping] Error fetching roles from database:', error);

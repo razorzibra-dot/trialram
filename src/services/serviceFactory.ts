@@ -38,7 +38,7 @@ import { supabaseServiceContractService } from './servicecontract/supabase/servi
 import { supabaseProductSaleService } from './productsale/supabase/productSaleService';
 import { supabaseDealsService } from './deals/supabase/dealsService';
 import { supabaseLeadsService } from './deals/supabase/leadsService';
-import { supabaseCustomerService } from './customer/supabase/customerService';
+import { customerService as supabaseCustomerService } from './customer/supabase/customerService';
 import { supabaseJobWorkService } from './jobwork/supabase/jobWorkService';
 import { supabaseProductService } from './product/supabase/productService';
 import { supabaseCompanyService } from './company/supabase/companyService';
@@ -47,7 +47,7 @@ import { supabaseRbacService } from './rbac/supabase/rbacService';
 import { supabaseNotificationService } from './notification/supabase/notificationService';
 import { supabaseTenantService } from './tenant/supabase/tenantService';
 import { multiTenantService as supabaseMultiTenantService } from './multitenant/supabase/multiTenantService';
-import { supabaseTicketService } from './ticket/supabase/ticketService';
+import { ticketService as refactoredSupabaseTicketService } from './ticket/supabase/TicketService';
 import { supabaseAdminManagementService as supabaseSuperAdminManagementService } from './superadminmanagement/supabase/superAdminManagementService';
 import { supabaseContractService } from './contract/supabase/contractService';
 import { supabaseRoleRequestService } from './rolerequest/supabase/roleRequestService';
@@ -59,8 +59,8 @@ import { supabaseReferenceDataService } from './referencedata/supabase/reference
 import { supabaseReferenceDataLoader } from './referencedata/supabase/referenceDataLoader';
 import { supabaseAuthService } from './auth/supabase/authService';
 import { supabaseSuperAdminService } from './superadmin/supabase/superAdminService';
-import { supabaseComplaintService } from './complaints/supabase/complaintService';
 import { supabaseProductCategoryService } from './productcategory/supabase/productCategoryService';
+import { complaintService as supabaseComplaintService } from './complaints/supabase/complaintService';
 import { ticketCommentService as mockTicketCommentService } from './ticketcomment/mockTicketCommentService';
 import { ticketCommentService as supabaseTicketCommentService } from './ticketcomment/supabase/ticketCommentService';
 import { ticketAttachmentService as mockTicketAttachmentService } from './ticketattachment/mockTicketAttachmentService';
@@ -227,7 +227,7 @@ class ServiceFactory {
       },
       ticket: {
         mock: mockTicketService,
-        supabase: supabaseTicketService,
+        supabase: refactoredSupabaseTicketService,
         description: 'Ticket/issue tracking'
       },
       superadminmanagement: {
@@ -308,6 +308,11 @@ class ServiceFactory {
         mock: mockTicketCommentService,
         supabase: supabaseTicketCommentService,
         description: 'Ticket comment management'
+      },
+      ticketattachment: {
+        mock: mockTicketAttachmentService,
+        supabase: supabaseTicketAttachmentService,
+        description: 'Ticket attachment management'
       },
       salesactivities: {
         mock: mockSalesActivityService,
@@ -439,6 +444,7 @@ export const sessionConfigService = createServiceProxy('sessionconfig');
 export const complaintService = createServiceProxy('complaint');
 export const productCategoryService = createServiceProxy('productcategory');
 export const ticketCommentService = createServiceProxy('ticketcomment');
+export const ticketAttachmentService = createServiceProxy('ticketattachment');
 export const salesActivityService = createServiceProxy('salesactivities');
 export const opportunityService = createServiceProxy('opportunities');
 export const purchaseOrderService = createServiceProxy('purchaseorder');

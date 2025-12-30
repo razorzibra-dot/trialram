@@ -13,6 +13,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 
 // Mock all services for integration testing
 const mockAuthService = {
@@ -56,7 +57,7 @@ const mockUser = {
   role: 'admin',
   isSuperAdmin: false,
   tenantId: 'tenant-1',
-  permissions: ['crm:customer:record:update', 'crm:sales:deal:update', 'manage_tickets'],
+  permissions: [CUSTOMER_PERMISSIONS.UPDATE, 'crm:sales:deal:update', 'manage_tickets'],
 };
 
 const mockCustomer = {

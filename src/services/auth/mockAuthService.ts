@@ -13,6 +13,14 @@
 
 import { User, LoginCredentials, AuthResponse } from '@/types/auth';
 import { Tenant, TenantUser } from '@/types/rbac';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
+
+const {
+  READ: CUSTOMER_READ,
+  CREATE: CUSTOMER_CREATE,
+  UPDATE: CUSTOMER_UPDATE,
+  DELETE: CUSTOMER_DELETE,
+} = CUSTOMER_PERMISSIONS;
 
 class MockAuthService {
   private baseUrl = '/api/auth';
@@ -281,10 +289,10 @@ class MockAuthService {
     delete: 'Delete data',
     
     // Module permissions using {resource}:{action} format
-    'crm:customer:record:read': 'View customer data and relationships',
-    'crm:customer:record:create': 'Create new customer records',
-    'crm:customer:record:update': 'Edit customer information',
-    'crm:customer:record:delete': 'Remove customer records',
+    [CUSTOMER_PERMISSIONS.READ]: 'View customer data and relationships',
+    [CUSTOMER_PERMISSIONS.CREATE]: 'Create new customer records',
+    [CUSTOMER_PERMISSIONS.UPDATE]: 'Edit customer information',
+    [CUSTOMER_PERMISSIONS.DELETE]: 'Remove customer records',
     
     'crm:sales:deal:read': 'View sales processes and deals',
     'crm:sales:deal:create': 'Create new sales records',
@@ -356,7 +364,7 @@ class MockAuthService {
   private rolePermissions = {
     super_admin: [
       'read', 'write', 'delete',
-      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete',
+      CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, CUSTOMER_DELETE,
       'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete',
       'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete',
       'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete',
@@ -373,7 +381,7 @@ class MockAuthService {
     ],
     admin: [
       'read', 'write', 'delete',
-      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update', 'crm:customer:record:delete',
+      CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE, CUSTOMER_DELETE,
       'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update', 'crm:sales:deal:delete',
       'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update', 'crm:support:ticket:delete',
       'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update', 'crm:support:complaint:delete',
@@ -389,7 +397,7 @@ class MockAuthService {
     ],
     manager: [
       'read', 'write',
-      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+      CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE,
       'crm:sales:deal:read', 'crm:sales:deal:create', 'crm:sales:deal:update',
       'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
       'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update',
@@ -402,7 +410,7 @@ class MockAuthService {
     ],
     agent: [
       'read', 'write',
-      'crm:customer:record:read', 'crm:customer:record:create', 'crm:customer:record:update',
+      CUSTOMER_READ, CUSTOMER_CREATE, CUSTOMER_UPDATE,
       'crm:support:ticket:read', 'crm:support:ticket:create', 'crm:support:ticket:update',
       'crm:support:complaint:read', 'crm:support:complaint:create', 'crm:support:complaint:update'
     ],

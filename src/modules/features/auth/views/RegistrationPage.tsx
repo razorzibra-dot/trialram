@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { uiNotificationService as factoryUINotificationService } from '@/services/serviceFactory';
+import { uiNotificationService as factoryUINotificationService, authService } from '@/services/serviceFactory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,9 +119,7 @@ export const RegistrationPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use the auth service register method
-      const authService = (await import('@/services/serviceFactory')).authService;
-
+      // Use the auth service register method (static import)
       const result = await authService.register(
         formData.email,
         formData.password,

@@ -1,3 +1,4 @@
+import { getValidUserRoles } from '@/utils/roleMapping';
 import { 
   SuperAdminUser, 
   TenantConfig, 
@@ -525,8 +526,7 @@ class MockSuperAdminService {
    * ✅ Database-driven: Fetches roles from database
    */
   async getUserRoles(): Promise<string[]> {
-    // ✅ Database-driven: Fetch roles from database
-    const { getValidUserRoles } = await import('@/utils/roleMapping');
+    // ✅ Database-driven: Fetch roles from database via static import
     return await getValidUserRoles();
   }
 

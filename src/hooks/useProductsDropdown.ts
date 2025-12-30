@@ -23,8 +23,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { productService } from '@/services/serviceFactory';
+import { serviceFactory } from '@/services/serviceFactory';
 import { Product } from '@/types/masters';
+import { useOptionalModuleData } from '@/contexts/ModuleDataContext';
+import { useCurrentTenant } from '@/hooks/useCurrentTenant';
 
 /**
  * Product dropdown option format
@@ -46,25 +48,18 @@ async function fetchActiveProducts(): Promise<Product[]> {
   try {
     console.log('[useProductsDropdown] ⚡ Fetching active products via factory service...');
     console.log('[useProductsDropdown] API Mode:', import.meta.env.VITE_API_MODE);
-    console.log('[useProductsDropdown] productService object:', productService);
-    console.log('[useProductsDropdown] productService.getProducts:', typeof productService.getProducts);
-    
-    console.log('[useProductsDropdown] 🔍 CALLING productService.getProducts NOW...');
-    
-    // ✅ Use factory service - routes to Supabase or Mock based on VITE_API_MODE
-    // ✅ Pass BOTH filters for maximum compatibility
+    const svc = serviceFactory.getService('product') as any;
+
+    // Use findMany/getAll first; fallback to getProducts if present
     let response;
-    try {
-      response = await productService.getProducts({
-        isActive: true,  // For Supabase is_active column
-        status: 'active',  // For Supabase status enum column  
-        page: 1,
-        pageSize: 1000
-      });
-      console.log('[useProductsDropdown] ✅ getProducts RETURNED:', response);
-    } catch (serviceError) {
-      console.error('[useProductsDropdown] ❌ getProducts THREW ERROR:', serviceError);
-      throw serviceError;
+    if (typeof svc.findMany === 'function') {
+      response = await svc.findMany({ status: 'active', isActive: true, pageSize: 1000 });
+    } else if (typeof svc.getAll === 'function') {
+      response = await svc.getAll({ status: 'active', isActive: true, pageSize: 1000 });
+    } else if (typeof svc.getProducts === 'function') {
+      response = await svc.getProducts({ status: 'active', isActive: true, page: 1, pageSize: 1000 });
+    } else {
+      response = [];
     }
 
     console.log('[useProductsDropdown] ✅ Response received:', {
@@ -130,25 +125,37 @@ async function fetchActiveProducts(): Promise<Product[]> {
  * @returns React Query result with productOptions array
  */
 export const useProductsDropdown = () => {
+  const moduleCtx = useOptionalModuleData();
+  const currentTenant = useCurrentTenant();
+
+  const preloadedProducts = Array.isArray(moduleCtx?.data?.moduleData?.products)
+    ? (moduleCtx?.data?.moduleData?.products as Product[])
+    : Array.isArray((moduleCtx?.data?.moduleData as any)?.products?.data)
+    ? ((moduleCtx?.data?.moduleData as any).products.data as Product[])
+    : undefined;
+
+  const enabled = !!currentTenant?.id && !preloadedProducts;
+
   return useQuery({
-    queryKey: ['products', 'dropdown', 'active'],
+    queryKey: ['products', 'dropdown', 'active', currentTenant?.id || 'none'],
     queryFn: fetchActiveProducts,
-    staleTime: 0, // ⚠️ TEMP: Force fresh fetch every time for debugging
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    // ❌ REMOVED initialData - it was preventing queryFn from being called!
-    refetchOnMount: true, // Force refetch when component mounts
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    enabled,
+    initialData: preloadedProducts,
     select: (products): ProductDropdownOption[] => {
       if (!Array.isArray(products)) {
-        console.warn('[useProductsDropdown] Select received non-array:', typeof products);
         return [];
       }
-      console.log('[useProductsDropdown] Transforming products to options, count:', products.length);
-      return products.map(product => ({
-        label: `${product.name}${product.sku ? ' • ' + product.sku : ''}`,
-        value: product.id,
-        product,
-      }));
+      return products
+        .filter(p => (p as any).status === 'active' || (p as any).isActive !== false)
+        .map(product => ({
+          label: `${product.name}${(product as any).sku ? ' • ' + (product as any).sku : ''}`,
+          value: product.id,
+          product,
+        }));
     },
   });
 };

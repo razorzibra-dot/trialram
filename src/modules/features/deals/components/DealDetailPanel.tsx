@@ -13,7 +13,7 @@ import { Deal, Customer } from '@/types/crm';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useService } from '@/modules/core/hooks/useService';
-import { CustomerService } from '@/modules/features/customers/services/customerService';
+import type { ICustomerService } from '@/modules/features/customers/services/customerService';
 import { ISalesService } from '../services/salesService';
 import { ConvertToContractModal } from './ConvertToContractModal';
 import { CreateProductSalesModal } from './CreateProductSalesModal';
@@ -79,7 +79,7 @@ export const DealDetailPanel: React.FC<DealDetailPanelProps> = ({
   }>>([]);
   const [loadingContracts, setLoadingContracts] = useState(false);
 
-  const customerService = useService<CustomerService>('customerService');
+  const customerService = useService<ICustomerService>('customerService');
   const salesService = useService<ISalesService>('dealsService');
 
   // Load customer details

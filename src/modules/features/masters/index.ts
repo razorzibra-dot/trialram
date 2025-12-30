@@ -3,9 +3,7 @@
  * Master data management for companies and products
  */
 
-// Service exports
-export * from './services/companyService';
-export * from './services/productService';
+// Services are registered via initialize; avoid re-exporting to prevent static imports
 
 // Hook exports
 export * from './hooks/useCompanies';
@@ -14,6 +12,9 @@ export * from './hooks/useProducts';
 // Routes
 export { mastersRoutes } from './routes';
 import { mastersRoutes } from './routes';
+import { registerService, serviceContainer } from '@/modules/core/services/ServiceContainer';
+import { CompanyService } from './services/companyService';
+import { ProductService } from './services/productService';
 
 // Module configuration
 export const mastersModule = {
@@ -26,25 +27,17 @@ export const mastersModule = {
   
   // Initialize the module
   async initialize() {
-    const { registerService } = await import('@/modules/core/services/ServiceContainer');
-    const { CompanyService } = await import('./services/companyService');
-    const { ProductService } = await import('./services/productService');
-    
     // Register services
     registerService('companyService', CompanyService);
     registerService('productService', ProductService);
-    
     console.log('Masters module initialized');
   },
   
   // Cleanup the module
   async cleanup() {
-    const { serviceContainer } = await import('@/modules/core/services/ServiceContainer');
-    
     // Remove services
     serviceContainer.remove('companyService');
     serviceContainer.remove('productService');
-    
     console.log('Masters module cleaned up');
   },
 };

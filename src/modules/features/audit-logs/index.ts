@@ -35,5 +35,4 @@ export const auditLogsModule: FeatureModule = {
   },
 };
 
-// Export views for direct imports if needed
-export { default as LogsPage } from './views/LogsPage';
+// Views are lazy-loaded via routes; avoid static re-exports to preserve chunking

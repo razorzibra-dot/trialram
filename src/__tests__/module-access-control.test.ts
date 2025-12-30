@@ -19,6 +19,7 @@ import { useCanAccessModule } from '@/hooks/useCanAccessModule';
 import { useAuth } from '@/contexts/AuthContext';
 import { ModuleRegistry } from '@/modules/ModuleRegistry';
 import { User } from '@/types/auth';
+import { CUSTOMER_PERMISSIONS } from '@/modules/features/customers/constants/permissions';
 
 // Mock data
 const mockSuperAdmin: User = {
@@ -41,7 +42,7 @@ const mockRegularUser: User = {
   role: 'user',
   isSuperAdmin: false,
   tenantId: 'tenant-1',
-  permissions: ['crm:customer:record:read', 'crm:sales:deal:read', 'crm:sales:deal:update'],
+  permissions: [CUSTOMER_PERMISSIONS.READ, 'crm:sales:deal:read', 'crm:sales:deal:update'],
   avatar: undefined,
   status: 'active',
 };
@@ -127,7 +128,7 @@ describe('Module Access Control System', () => {
     test('Module with *:read permission requirement', () => {
       // Customers module requires read permission
       const hasReadPermission = mockRegularUser.permissions.some(p => 
-        p === 'crm:customer:record:read' || p.includes(':read')
+        p === CUSTOMER_PERMISSIONS.READ || p.includes(':read')
       );
       expect(hasReadPermission).toBe(true);
     });

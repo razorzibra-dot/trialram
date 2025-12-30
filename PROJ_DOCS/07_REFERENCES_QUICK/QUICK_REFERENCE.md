@@ -15,6 +15,14 @@ VITE_USE_MOCK_API=false
 
 ---
 
+## ✅ Design Assurances (Performance Pattern)
+- **Concurrency safety:** PageDataService and ModuleDataProvider reuse a single in-flight promise per cache key (tenant + requirements) so StrictMode double-render and rapid navigation do not duplicate fetches.
+- **Complex workflows:** Supports parallel fan-out (customers + users + reference) with cached reuse; gate complex pages with feature flags to stage rollout.
+- **Separation/loose coupling:** Modules consume data via useModuleData/useService routed through the factory; reference data stays in context; session data comes from SessionService cache—no direct Supabase/service imports in modules.
+- **Safe pilot/rollback:** Keep legacy hooks available; pilot on Customers first; rollback by removing the ModuleDataProvider wrapper and restoring legacy hooks. Cache stays route-scoped with invalidation on navigation.
+
+---
+
 ## 📦 Import Services
 
 ### ✅ ALWAYS DO THIS:

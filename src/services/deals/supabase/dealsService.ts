@@ -9,6 +9,7 @@
 import { supabase } from '@/services/supabase/client';
 import { Deal, DealItem } from '@/types/crm';
 import { authService } from '../../serviceFactory';
+import { contractService } from '../../serviceFactory';
 
 class SupabaseDealsService {
   private table = 'deals';
@@ -1532,8 +1533,7 @@ class SupabaseDealsService {
         throw new Error('Deal already has a contract linked');
       }
 
-      // Import contract service dynamically to avoid circular imports
-      const { contractService } = await import('../../serviceFactory');
+      // Use contract service via static import
 
       // Create contract from deal data
       const contractTitle = `${deal.title} - Contract`;

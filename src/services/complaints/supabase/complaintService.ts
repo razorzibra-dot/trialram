@@ -1,297 +1,203 @@
-import { supabase } from '../../supabase/client';
-import { Complaint, ComplaintComment, ComplaintFilters, ComplaintStats, ComplaintFormData, ComplaintUpdateData } from '@/types/complaints';
-import { authService } from '../../serviceFactory';
+/**
+ * Complaint Service - REFACTORED
+ * Layer 5: Business logic layer using GenericCrudService pattern
+ * 
+ * Extends GenericCrudService to provide complaint-specific business logic
+ * with lifecycle hooks for validation and authorization.
+ */
 
-class SupabaseComplaintService {
-  private supabase = supabase;
+import { GenericCrudService } from '@/services/core/GenericCrudService';
+import { ComplaintRepository, ComplaintRow } from './ComplaintRepository';
+import { Complaint } from '@/types/complaints';
+import { QueryFilters, ServiceContext } from '@/types/generic';
 
-  async getComplaints(filters?: ComplaintFilters): Promise<Complaint[]> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+/**
+ * ComplaintService
+ * 
+ * Provides business logic for complaint operations:
+ * - CRUD operations with tenant isolation
+ * - Filtering by status, category, priority, assigned user
+ * - Search across title and description
+ * - Role-based authorization (agents see only assigned complaints)
+ */
+export class ComplaintService extends GenericCrudService<Complaint, Partial<Complaint>, Partial<Complaint>, QueryFilters, ComplaintRow> {
+  private complaintRepository: ComplaintRepository;
 
-      let query = this.supabase
-        .from('complaints')
-        .select('*')
-      .eq('tenant_id', user.tenantId)
-      .is('deleted_at', null);
-
-    // Apply role-based filtering
-    if (user.role === 'agent') {
-      query = query.eq('assigned_to', user.id);
-    }
-
-    // Apply filters
-    if (filters) {
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
-      if (filters.priority) {
-        query = query.eq('priority', filters.priority);
-      }
-      if (filters.assigned_to) {
-        query = query.eq('assigned_to', filters.assigned_to);
-      }
-      if (filters.customer_id) {
-        query = query.eq('customer_id', filters.customer_id);
-      }
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-      if (filters.date_from) {
-        query = query.gte('created_at', filters.date_from);
-      }
-      if (filters.date_to) {
-        query = query.lte('created_at', filters.date_to);
-      }
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    // Transform the data to match TypeScript interface
-    return data.map(row => this.mapComplaintRow(row));
+  constructor() {
+    const repository = new ComplaintRepository();
+    super(repository);
+    this.complaintRepository = repository;
   }
 
-  async getComplaint(id: string): Promise<Complaint> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+  /**
+   * Lifecycle hook: Before getting all complaints
+   * Add custom filtering for status, type, priority, assignedEngineerId
+   */
+  protected async beforeGetAll(filters?: QueryFilters): Promise<void> {
+    if (!filters) return;
 
-      const { data, error } = await this.supabase
-        .from('complaints')
-        .select('*')
-      .eq('id', id)
-      .eq('tenant_id', user.tenantId)
-      .is('deleted_at', null)
-      .single();
+    const customFilters = (filters as Record<string, unknown>).customFilters as
+      | {
+          status?: string;
+          type?: string;
+          priority?: string;
+          assignedEngineerId?: string;
+          customerId?: string;
+        }
+      | undefined;
 
-    if (error) throw error;
-    if (!data) throw new Error('Complaint not found');
+    if (!customFilters) return;
 
-    // Check permissions
-    if (user.role === 'agent' && data.assigned_to !== user.id) {
-      throw new Error('Access denied');
+    const filterGroup = (filters as Record<string, any>).filters || {};
+
+    if (customFilters.status) {
+      filterGroup.status = customFilters.status;
     }
 
-    // Load comments separately to avoid view dependency
-    const { data: commentRows, error: commentsError } = await this.supabase
-      .from('complaint_comments')
-      .select('*')
-      .eq('complaint_id', id)
-      .eq('tenant_id', user.tenantId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: true });
+    if (customFilters.type) {
+      filterGroup.type = customFilters.type;
+    }
 
-    if (commentsError) throw commentsError;
+    if (customFilters.priority) {
+      filterGroup.priority = customFilters.priority;
+    }
 
-    const comments = (commentRows || []).map(c => this.mapCommentRow(c));
+    if (customFilters.assignedEngineerId) {
+      filterGroup.assigned_engineer_id = customFilters.assignedEngineerId;
+    }
 
-    return this.mapComplaintRow(data, comments);
+    if (customFilters.customerId) {
+      filterGroup.customer_id = customFilters.customerId;
+    }
+
+    (filters as Record<string, any>).filters = filterGroup;
   }
 
-  async createComplaint(complaintData: ComplaintFormData): Promise<Complaint> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
+  /**
+   * Lifecycle hook: Validate complaint on creation
+   */
+  protected async validateCreate(data: Partial<Complaint>): Promise<void> {
+    const errors: Record<string, string> = {};
 
-    if (!authService.hasPermission('crm:support:complaint:update')) {
-      throw new Error('Insufficient permissions');
+    if (!data.title || data.title.trim() === '') {
+      errors.title = 'Title is required';
     }
 
-    // ✅ Use correct database column names
-    // DB has: category (not type), assigned_to (not assigned_engineer_id)
-    const insertData: Record<string, unknown> = {
-      title: complaintData.title,
-      description: complaintData.description,
-      customer_id: complaintData.customer_id,
-      category: complaintData.category,
-      priority: complaintData.priority,
-      status: 'new',
-      tenant_id: user.tenantId,
-      created_by: user.id,
-      assigned_to: complaintData.assigned_to,
+    if (!data.description || data.description.trim() === '') {
+      errors.description = 'Description is required';
+    }
+
+    if (!data.priority) {
+      errors.priority = 'Priority is required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      const error = new Error('Validation failed');
+      (error as any).validationErrors = errors;
+      throw error;
+    }
+  }
+
+  /**
+   * Lifecycle hook: Validate complaint on update
+   */
+  protected async validateUpdate(
+    id: string,
+    data: Partial<Complaint>
+  ): Promise<void> {
+    const errors: Record<string, string> = {};
+
+    if (data.title !== undefined && data.title.trim() === '') {
+      errors.title = 'Title cannot be empty';
+    }
+
+    if (data.description !== undefined && data.description.trim() === '') {
+      errors.description = 'Description cannot be empty';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      const error = new Error('Validation failed');
+      (error as any).validationErrors = errors;
+      throw error;
+    }
+  }
+
+  /**
+   * Custom method: Get complaints by status
+   */
+  async getByStatus(
+    status: string,
+    page: number = 1,
+    limit: number = 10,
+    context: ServiceContext
+  ): Promise<{ data: Complaint[]; total: number }> {
+    const filters: QueryFilters = {
+      page,
+      limit,
+      customFilters: { status }
     };
 
-    const { data, error } = await this.supabase
-      .from('complaints')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Get the full complaint with details
-    return this.getComplaint(data.id);
+    return this.getAll(filters, context);
   }
 
-  async updateComplaint(id: string, updates: ComplaintUpdateData): Promise<Complaint> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('crm:support:complaint:update')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    // First check if complaint exists and user has access
-    const existingComplaint = await this.getComplaint(id);
-
-    // ✅ Explicit field mapping (DB columns: status, priority, assigned_to, resolution, resolved_at)
-    const updateData: Record<string, unknown> = {
-      updated_at: new Date().toISOString()
+  /**
+   * Custom method: Get complaints by priority
+   */
+  async getByPriority(
+    priority: string,
+    page: number = 1,
+    limit: number = 10,
+    context: ServiceContext
+  ): Promise<{ data: Complaint[]; total: number }> {
+    const filters: QueryFilters = {
+      page,
+      limit,
+      customFilters: { priority }
     };
 
-    // Map fields to correct database column names
-    if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.priority !== undefined) updateData.priority = updates.priority;
-    if (updates.assigned_to !== undefined) updateData.assigned_to = updates.assigned_to;
-    if (updates.resolution !== undefined) updateData.resolution = updates.resolution;
-
-    // Handle status changes - DB column is resolved_at (not closed_at)
-    if (updates.status === 'closed') {
-      updateData.resolved_at = new Date().toISOString();
-    }
-
-    const { data, error } = await this.supabase
-      .from('complaints')
-      .update(updateData)
-      .eq('id', id)
-      .eq('tenant_id', user.tenantId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Get the updated complaint with details
-    return this.getComplaint(id);
+    return this.getAll(filters, context);
   }
 
-  async deleteComplaint(id: string): Promise<void> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    if (!authService.hasPermission('crm:support:complaint:update')) {
-      throw new Error('Insufficient permissions');
-    }
-
-    const { error } = await this.supabase
-      .from('complaints')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('tenant_id', user.tenantId);
-
-    if (error) throw error;
-  }
-
-  async addComment(complaintId: string, commentData: { content: string; parent_id?: string }): Promise<ComplaintComment> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Verify complaint exists and user has access
-    await this.getComplaint(complaintId);
-
-    const { data, error } = await this.supabase
-      .from('complaint_comments')
-      .insert({
-        complaint_id: complaintId,
-        user_id: user.id,
-        content: commentData.content,
-        parent_id: commentData.parent_id,
-        tenant_id: user.tenantId
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return this.mapCommentRow(data);
-  }
-
-  async getComplaintStats(): Promise<ComplaintStats> {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Get all complaints for the tenant
-    const { data: complaints, error } = await this.supabase
-      .from('complaints')
-      .select('*')
-      .eq('tenant_id', user.tenantId)
-      .is('deleted_at', null);
-
-    if (error) throw error;
-
-    const stats: ComplaintStats = {
-      total: complaints.length,
-      new: complaints.filter((c: any) => c.status === 'new' || c.status === 'open').length,
-      in_progress: complaints.filter((c: any) => c.status === 'in_progress').length,
-      closed: complaints.filter((c: any) => c.status === 'closed' || c.status === 'resolved').length,
-      by_type: {
-        breakdown: complaints.filter((c: any) => c.category === 'breakdown').length,
-        preventive: complaints.filter((c: any) => c.category === 'preventive').length,
-        software_update: complaints.filter((c: any) => c.category === 'software_update').length,
-        optimize: complaints.filter((c: any) => c.category === 'optimize').length
-      },
-      by_priority: {
-        low: complaints.filter((c: any) => c.priority === 'low').length,
-        medium: complaints.filter((c: any) => c.priority === 'medium').length,
-        high: complaints.filter((c: any) => c.priority === 'high').length,
-        urgent: complaints.filter((c: any) => c.priority === 'urgent').length
-      },
-      avg_resolution_time: this.calculateAverageResolutionTime(complaints as any[])
+  /**
+   * Custom method: Get complaints assigned to an engineer
+   */
+  async getAssignedToEngineer(
+    engineerId: string,
+    page: number = 1,
+    limit: number = 10,
+    context: ServiceContext
+  ): Promise<{ data: Complaint[]; total: number }> {
+    const filters: QueryFilters = {
+      page,
+      limit,
+      customFilters: { assignedEngineerId: engineerId }
     };
 
-    return stats;
+    return this.getAll(filters, context);
   }
 
-  private mapComplaintRow(row: any, commentsOverride?: ComplaintComment[]): Complaint {
-    return {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      customer_id: row.customer_id,
-      customer_name: row.customer_name,
-      category: row.category,
-      status: row.status,
-      priority: row.priority,
-      assigned_to: row.assigned_to,
-      assigned_to_name: undefined,
-      resolution: row.resolution,
-      comments: commentsOverride
-        ? commentsOverride
-        : Array.isArray(row.comments) ? row.comments.map((c: any) => this.mapCommentRow(c)) : [],
-      tenant_id: row.tenant_id,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      resolved_at: row.resolved_at
-    };
+  /**
+   * Custom method: Resolve complaint
+   */
+  async resolveComplaint(
+    id: string,
+    resolution: string,
+    context: ServiceContext
+  ): Promise<Complaint> {
+    return this.update(id, { status: 'closed', engineerResolution: resolution }, context);
   }
 
-  private mapCommentRow(row: any): ComplaintComment {
-    return {
-      id: row.id,
-      complaint_id: row.complaint_id,
-      user_id: row.user_id,
-      content: row.content,
-      created_at: row.created_at,
-      parent_id: row.parent_id
-    };
-  }
-
-  private calculateAverageResolutionTime(complaints: any[]): number {
-    const resolvedComplaints = complaints.filter(c => c.status === 'closed' && (c.resolved_at || c.closed_at));
-
-    if (resolvedComplaints.length === 0) return 0;
-
-    const totalHours = resolvedComplaints.reduce((total, complaint) => {
-      const created = new Date(complaint.created_at);
-      const closed = new Date(complaint.resolved_at || complaint.closed_at);
-      const hours = (closed.getTime() - created.getTime()) / (1000 * 60 * 60);
-      return total + hours;
-    }, 0);
-
-    return Math.round(totalHours / resolvedComplaints.length);
+  /**
+   * Custom method: Assign complaint to engineer
+   */
+  async assignToEngineer(
+    id: string,
+    engineerId: string,
+    context: ServiceContext
+  ): Promise<Complaint> {
+    return this.update(id, { assignedEngineerId: engineerId }, context);
   }
 }
 
-export const supabaseComplaintService = new SupabaseComplaintService();
+// Export singleton instance
+export const complaintService = new ComplaintService();
